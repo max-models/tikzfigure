@@ -71,6 +71,10 @@ jobs:
           pytest . -xvs
         env:
           CI: true
+  
+  # Linting job
+  lint:
+    runs-on: ubuntu-latest
 
       - name: Test tutorial notebooks
         run: |
