@@ -1,7 +1,6 @@
 import re
 
 import matplotlib.colors as mcolors
-import matplotlib.patches as patches
 import numpy as np
 
 
