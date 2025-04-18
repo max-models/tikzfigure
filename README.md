@@ -1,5 +1,6 @@
-# template-python
-Template repository for python projects
+# maxtikzlib
+
+Python interface to generate (readable) Tikz figures.
 
 # Install
 
@@ -17,8 +18,9 @@ Install the code and requirements with pip
 pip install -e .
 ```
 
-Run the code with
+To install optional dependencies:
 
 ```
-template-python
+pip install -e ".[test]" # For pytest
+pip install -e ".[dev]" For developers
 ```
