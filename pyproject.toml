@@ -16,15 +16,18 @@ classifiers = [
 ]
 dependencies = [
     "matplotlib",
+]
+
+[project.optional-dependencies]
+test = ["pytest", "coverage"]
+dev = [
+    "maxtikzlib[test]",
     "black",
     "isort",
     "ruff",
     "pytest",
 ]
 
-[project.optional-dependencies]
-dev = ["check-manifest"]
-test = ["coverage"]
 [project.urls]
 "Source" = "https://github.com/max-models/maxtikzlib"
 
