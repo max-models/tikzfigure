@@ -25,7 +25,6 @@ jobs:
           ./cloc $(git ls-files)
 
       - name: Code formatting with black
-        continue-on-error: true
         run: |
           pip install black
           pip install "black[jupyter]"
@@ -33,7 +32,6 @@ jobs:
           black --check tutorials/
 
       - name: Code formatting with isort
-        continue-on-error: true
         run: |
           pip install isort
           isort --check src/
