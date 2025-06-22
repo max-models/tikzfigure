@@ -63,4 +63,4 @@ jobs:
           make clean
           make html
           cd ..
-          ls docs/_build/html/index.html
+          ls docs/build/html/index.html
