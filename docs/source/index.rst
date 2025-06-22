@@ -4,7 +4,7 @@
    contain the root `toctree` directive.
 
 python-template documentation
-========================
+=============================
 
 Add your content using ``reStructuredText`` syntax. See the
 `reStructuredText <https://www.sphinx-doc.org/en/master/usage/restructuredtext/index.html>`_
