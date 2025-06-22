@@ -1,5 +1,8 @@
 # template-python
+
 Template repository for python projects
+
+Documentation: https://max-models.github.io/template-python/
 
 # Install
 
