@@ -43,10 +43,17 @@ docs = [
   "sphinx-rtd-theme",
   "scipy",
 ]
+
 # https://medium.com/@pratikdomadiya123/build-project-documentation-quickly-with-the-sphinx-python-2a9732b66594
 docs = [
+    "myst-parser",
     "sphinx",
-    "sphinx_rtd_theme",
+    "sphinx-rtd-theme",
+    "nbsphinx",
+    "ipykernel",
+    "nbconvert",
+    "pre-commit",
+    "pyproject-fmt",
 ]
 
 [project.urls]
