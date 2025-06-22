@@ -1,0 +1,66 @@
+name: Tests
+
+on:
+  push:
+    branches:
+      - main
+      - devel
+  pull_request:
+    branches:
+      - main
+      - devel
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Checkout the repository
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # Set up Python
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'  # Adjust as needed
+
+      # Cache pip dependencies
+      - name: Cache pip
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/pyproject.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y pandoc
+
+      - name: Install project
+        run: |
+          pip install --upgrade pip
+          pip install ".[dev]"
+
+      - name: Check installation
+        run: |
+          template-python
+
+      - name: Run tests
+        run: |
+          pytest .
+
+      - name: Test tutorials
+        run: |
+          jupyter nbconvert --to notebook --execute tutorials/*.ipynb --output-dir=/tmp --ExecutePreprocessor.timeout=300
+
+      - name: Test docs build
+        run: |
+          pip install ".[docs]"
+          cd docs
+          make clean
+          make html
+          cd ..
+          ls docs/build/html/index.html

@@ -1,42 +1,52 @@
 [build-system]
-requires = ["setuptools", "wheel"]
 build-backend = "setuptools.build_meta"
+
+requires = [ "setuptools", "wheel" ]
 
 [project]
 name = "template-python"
 version = "0.1"
 description = "Template python repository."
 readme = "README.md"
+keywords = [ "python" ]
+license = { file = "LICENSE.txt" }
+authors = [ { name = "Max" } ]
 requires-python = ">=3.8"
-license = {file = "LICENSE.txt"}
-keywords = ["python"]
-authors = [{name = "Max"}]
 classifiers = [
-    "Development Status :: 3 - Alpha",
+  "Development Status :: 3 - Alpha",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
 ]
 dependencies = [
-    "numpy",
+  "numpy",
 ]
 
-[project.optional-dependencies]
-test = ["pytest", "coverage"]
-dev = [
-    "template-python[test]",
-    "black",
-    "isort",
-    "ruff",
+optional-dependencies.dev = [
+  "black[jupyter]",
+  "isort",
+  "ruff",
+  "template-python[test,docs]",
 ]
 # https://medium.com/@pratikdomadiya123/build-project-documentation-quickly-with-the-sphinx-python-2a9732b66594
-docs = [
-    "sphinx",
-    "sphinx_rtd_theme",
+optional-dependencies.docs = [
+  "ipykernel",
+  "myst-parser",
+  "nbconvert",
+  "nbsphinx",
+  "jupyterlab",
+  "pre-commit",
+  "pyproject-fmt",
+  "sphinx",
+  "sphinx-rtd-theme",
 ]
-
-[project.urls]
-"Source" = "https://github.com/max-models/template-python"
+optional-dependencies.test = [ "coverage", "pytest" ]
+urls."Source" = "https://github.com/max-models/template-python"
+scripts.template-python = "app.main:main"
 
 [tool.setuptools.packages.find]
-where = ["src"]
-
-[project.scripts]
-template-python = "app.main:main"
+where = [ "src" ]

@@ -1,0 +1,62 @@
+name: Static analysis
+
+on:
+  push:
+    branches:
+      - main
+      - devel
+  pull_request:
+    branches:
+      - main
+      - devel
+
+jobs:
+  static-analysis:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout the code
+        uses: actions/checkout@v4
+
+      - name: Download and run cloc
+        run: |
+          curl -s https://raw.githubusercontent.com/AlDanial/cloc/master/cloc > cloc
+          chmod +x cloc
+          ./cloc --version
+          ./cloc $(git ls-files)
+
+      - name: Code formatting with black
+        run: |
+          pip install black
+          pip install "black[jupyter]"
+          black --check src/
+          black --check tutorials/
+
+      - name: Code formatting with isort
+        run: |
+          pip install isort
+          isort --check src/
+          isort --check tutorials/
+
+      - name: Code formatting with prospector
+        continue-on-error: true
+        run: |
+          pip install mypy
+          mypy src/
+
+      - name: Code formatting with prospector
+        continue-on-error: true
+        run: |
+          pip install prospector
+          prospector src/
+      
+      - name: Code formatting with ruff
+        continue-on-error: true
+        run: |
+          pip install ruff
+          ruff check src/
+
+      - name: Code formatting with pylint
+        continue-on-error: true
+        run: |
+          pip install pylint
+          pylint src/

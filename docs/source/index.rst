@@ -1,5 +1,5 @@
-.. python-template documentation master file, created by
-   sphinx-quickstart on Sun Apr 20 11:40:45 2025.
+.. Documentation master file, created by
+   sphinx-quickstart on Sun Jun 22 11:14:00 2025.
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
@@ -13,5 +13,6 @@ documentation for details.
 
 .. toctree::
    :maxdepth: 2
-   :caption: Contents:
+   :caption: Tutorials:
 
+   tutorials/tutorial_01
