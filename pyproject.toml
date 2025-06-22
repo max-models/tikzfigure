@@ -21,15 +21,22 @@ dependencies = [
 [project.optional-dependencies]
 test = ["pytest", "coverage"]
 dev = [
-    "template-python[test]",
+    "template-python[test,docs]",
     "black",
     "isort",
     "ruff",
 ]
+
 # https://medium.com/@pratikdomadiya123/build-project-documentation-quickly-with-the-sphinx-python-2a9732b66594
 docs = [
+    "myst-parser",
     "sphinx",
-    "sphinx_rtd_theme",
+    "sphinx-rtd-theme",
+    "nbsphinx",
+    "ipykernel",
+    "nbconvert",
+    "pre-commit",
+    "pyproject-fmt",
 ]
 
 [project.urls]
