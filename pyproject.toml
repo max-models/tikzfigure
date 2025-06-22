@@ -57,6 +57,7 @@ optional-dependencies.docs = [
   "myst-parser",
   "nbconvert",
   "nbsphinx",
+  "jupyterlab",
   "pre-commit",
   "pyproject-fmt",
   "sphinx",
