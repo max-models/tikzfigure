@@ -58,6 +58,7 @@ optional-dependencies.docs = [
   "nbconvert",
   "nbsphinx",
   "jupyterlab",
+  "pandoc",
   "pre-commit",
   "pyproject-fmt",
   "sphinx",
