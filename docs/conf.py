@@ -4,6 +4,23 @@
 # https://www.sphinx-doc.org/en/master/usage/configuration.html
 import os
 import sys
+import shutil
+
+
+def copy_tutorials(app):
+    src = os.path.abspath("../tutorials")
+    dst = os.path.abspath("source/tutorials")
+
+    # Remove existing target directory if it exists
+    if os.path.exists(dst):
+        shutil.rmtree(dst)
+
+    shutil.copytree(src, dst)
+
+
+def setup(app):
+    app.connect("builder-inited", copy_tutorials)
+
 
 # sys.path.insert(0, os.path.abspath('..'))
 sys.path.insert(0, os.path.abspath("../src/app"))
