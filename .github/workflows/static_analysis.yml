@@ -37,7 +37,7 @@ jobs:
           isort --check src/
           isort --check tutorials/
 
-      - name: Code formatting with prospector
+      - name: Code formatting with mypy
         continue-on-error: true
         run: |
           pip install mypy
