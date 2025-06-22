@@ -27,7 +27,7 @@ dependencies = [
 ]
 
 optional-dependencies.dev = [
-  "black",
+  "black[jupyter]",
   "isort",
   "ruff",
   "template-python[test,docs]",
