@@ -5,22 +5,20 @@ from scipy.fftpack import hilbert
 from maxtikzlib.figure import Path, TikzFigure
 
 
-def node_positions_to_path(tikz, node_positions, nodelabel, path_actions, layer=1):
+def node_positions_to_path(tikz, node_positions, path_actions, layer=1):
     nodes = []
     for i, node_data in enumerate(node_positions):
         node = tikz.add_node(
             node_data[0],
             node_data[1],
-            # f"{nodelabel}{i}",
             layer=0,
             color="red",
-            # content=f"Node {i}",
         )
         nodes.append(node)
     tikz.add_path(nodes, path_actions=path_actions, layer=layer)
 
 
-def add_grid(tikz, x0, y0, L, N, nodelabel, path_actions, layer=1):
+def add_grid(tikz, x0, y0, L, N, path_actions, layer=1):
     x1 = x0 + L
     y1 = y0 + L
     delta = L / N
@@ -31,15 +29,15 @@ def add_grid(tikz, x0, y0, L, N, nodelabel, path_actions, layer=1):
         # Horizontal line
         y = y0 + i * delta
         node_positions = [[x0, y], [x1, y]]
-        node_positions_to_path(tikz, node_positions, nodelabel, path_actions, layer)
+        node_positions_to_path(tikz, node_positions, path_actions, layer)
 
         # Vertical line
         x = x0 + i * delta
         node_positions = [[x, y0], [x, y1]]
-        node_positions_to_path(tikz, node_positions, nodelabel, path_actions, layer)
+        node_positions_to_path(tikz, node_positions, path_actions, layer)
 
 
-def add_square(tikz, x0, y0, L, nodelabel, path_actions, layer=1):
+def add_square(tikz, x0, y0, L, path_actions, layer=1):
     node_positions = [
         [x0, y0],
         [x0 + L, y0],
@@ -47,7 +45,7 @@ def add_square(tikz, x0, y0, L, nodelabel, path_actions, layer=1):
         [x0, y0 + L],
         [x0, y0],
     ]
-    node_positions_to_path(tikz, node_positions, nodelabel, path_actions, layer)
+    node_positions_to_path(tikz, node_positions, path_actions, layer)
 
 
 def draw_grid(tikz):
@@ -58,7 +56,6 @@ def draw_grid(tikz):
         x0=0,
         y0=0,
         L=8,
-        nodelabel="LevelBG1",
         path_actions=["draw", "line width=0", "fill=yellow!10!white"],
         layer=0,
     )
@@ -68,7 +65,6 @@ def draw_grid(tikz):
         x0=4,
         y0=2,
         L=4,
-        nodelabel="LevelBG2",
         path_actions=["draw", "line width=0", "fill=blue!10!white"],
         layer=1,
     )
@@ -78,7 +74,6 @@ def draw_grid(tikz):
         x0=5,
         y0=3,
         L=1,
-        nodelabel="LevelB3",
         path_actions=["draw", "line width=0", "fill=red!10!white"],
         layer=2,
     )
@@ -90,7 +85,6 @@ def draw_grid(tikz):
         y0=0,
         L=8,
         N=4,
-        nodelabel="",
         path_actions=["draw", "line width=2", "color=black"],
         layer=3,
     )
@@ -102,7 +96,6 @@ def draw_grid(tikz):
         y0=2,
         L=4,
         N=4,
-        nodelabel="",
         path_actions=["draw", "line width=2", "color=blue"],
         layer=4,
     )
@@ -114,7 +107,6 @@ def draw_grid(tikz):
         y0=3,
         L=1.0,
         N=2,
-        nodelabel="",
         path_actions=["draw", "line width=2", "color=red"],
         layer=5,
     )
@@ -161,7 +153,6 @@ def draw_hilbert_curve(save=False):
         node_positions_to_path(
             tikz,
             path,
-            nodelabel=f"ZPath{i}",
             path_actions=["->", "draw", "line width=1", "color=black"],
             layer=6,
         )
@@ -218,7 +209,6 @@ def draw_z_curve(save=False):
         node_positions_to_path(
             tikz,
             path,
-            nodelabel=f"ZPath{i}",
             path_actions=["->", "draw", "line width=1", "color=black"],
             layer=5,
         )
