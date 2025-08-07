@@ -82,7 +82,13 @@ class Node:
 
 class Path:
     def __init__(
-        self, nodes, path_actions=[], cycle=False, label="", layer=0, **kwargs
+        self,
+        nodes,
+        path_actions=[],
+        cycle: bool = False,
+        label: str = "",
+        layer: int = 0,
+        **kwargs,
     ):
         """
         Represents a path (line) connecting multiple nodes.
@@ -139,6 +145,7 @@ class TikzFigure:
         self._label = kwargs.get("label", None)
         self._grid = kwargs.get("grid", False)
         self._tikz_code = kwargs.get("tikz_code", None)
+        self._figure_setup = kwargs.get("figure_setup", None)
 
         # Initialize lists to hold Node and Path objects
         self.nodes = []
@@ -243,7 +250,7 @@ class TikzFigure:
         if layer not in self.layers:
             self.layers[layer] = Tikzlayer(layer)
 
-    def add_node(self, x, y, label=None, content="", layer=0, **kwargs):
+    def add_node(self, x, y, label=None, content: str = "", layer=0, **kwargs):
         """
         Add a node to the TikZ figure.
 
@@ -343,7 +350,11 @@ class TikzFigure:
         Returns:
         - tikz_script (str): The TikZ script as a string.
         """
-        tikz_script = "\\begin{tikzpicture}\n"
+        tikz_script = "\\begin{tikzpicture}"
+        if self._figure_setup:
+            tikz_script += f"[{self._figure_setup}]"
+        tikz_script += "\n"
+
         tikz_script += "% Define the layers library\n"
         layers = sorted([str(layer) for layer in self.layers.keys()])
         for layer in layers:
@@ -407,6 +418,7 @@ class TikzFigure:
         latex_document = (
             "\\documentclass[border=10pt]{standalone}\n"
             "\\usepackage{tikz}\n"
+            "\\usetikzlibrary{arrows.meta}\n"
             "\\begin{document}\n"
             f"{tikz_code}\n"
             "\\end{document}"
@@ -445,6 +457,7 @@ class TikzFigure:
                     f"{output_directory}",
                     tex_file,
                 ]
+                # print(f"running {cmd}")
                 subprocess.run(
                     cmd,
                     cwd=tempdir,
