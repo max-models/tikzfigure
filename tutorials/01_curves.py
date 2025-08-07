@@ -1,6 +1,3 @@
-# running
-# pip install git+https://github.com/max-models/maxtikzlib
-
 from itertools import cycle
 
 from scipy.fftpack import hilbert
@@ -57,18 +54,6 @@ def draw_grid(tikz):
         layer=0,
     )
 
-    # # Level B
-    # for x0 in [0, 4]:
-    #     for y0 in [0, 4]:
-    #         add_square(
-    #             x0=x0,
-    #             y0=y0,
-    #             L=4,
-    #             nodelabel=f"LevelB{x0}{y0}",
-    #             path_actions=["draw", "line width=2", "color=red"],
-    #             layer=3,
-    #         )
-
     # Level C
     for x0 in [0, 2, 4, 6]:
         for y0 in [0, 2, 4, 6]:
@@ -119,7 +104,7 @@ def draw_grid(tikz):
             )
 
 
-def draw_hilbert_curve():
+def draw_hilbert_curve(save=False):
 
     tikz = TikzFigure(figure_setup=">={{Triangle[scale=1]}}")
 
@@ -164,14 +149,17 @@ def draw_hilbert_curve():
             path_actions=["->", "draw", "line width=1", "color=black"],
             layer=5,
         )
-    with open("figure_hilbert.tikz", "w") as f:
-        f.write(tikz.generate_tikz())
-    with open("standalone_hilbert.tex", "w") as f:
-        f.write(tikz.generate_standalone())
-    # tikz.compile_pdf(filename='hilbert_curve.pdf')
+    print(tikz.generate_tikz())
+
+    if save:
+        with open("figure_hilbert.tikz", "w") as f:
+            f.write(tikz.generate_tikz())
+        with open("standalone_hilbert.tex", "w") as f:
+            f.write(tikz.generate_standalone())
+        # tikz.compile_pdf(filename='hilbert_curve.pdf')
 
 
-def draw_z_curve():
+def draw_z_curve(save=False):
 
     tikz = TikzFigure(figure_setup=">={{Triangle[scale=1]}}")
 
@@ -218,10 +206,12 @@ def draw_z_curve():
             path_actions=["->", "draw", "line width=1", "color=black"],
             layer=5,
         )
-    with open("figure_z.tikz", "w") as f:
-        f.write(tikz.generate_tikz())
-    with open("standalone_z.tex", "w") as f:
-        f.write(tikz.generate_standalone())
+    print((tikz.generate_tikz()))
+    if save:
+        with open("figure_z.tikz", "w") as f:
+            f.write(tikz.generate_tikz())
+        with open("standalone_z.tex", "w") as f:
+            f.write(tikz.generate_standalone())
 
     # print(tikz.generate_standalone())
 
