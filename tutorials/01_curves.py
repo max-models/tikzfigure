@@ -33,28 +33,38 @@ def add_square(tikz, x0, y0, L, nodelabel, path_actions, layer=1):
 
 def draw_grid(tikz):
 
-    # Level A
+    # Add backgrounds
     add_square(
         tikz=tikz,
         x0=0,
         y0=0,
         L=8,
-        nodelabel="LevelA",
-        path_actions=["draw", "line width=2"],
-        layer=4,
-    )
-
-    add_square(
-        tikz=tikz,
-        x0=0,
-        y0=0,
-        L=8,
-        nodelabel="LevelBG",
+        nodelabel="LevelBG1",
         path_actions=["draw", "line width=0", "fill=yellow!10!white"],
         layer=0,
     )
 
-    # Level C
+    add_square(
+        tikz=tikz,
+        x0=4,
+        y0=2,
+        L=4,
+        nodelabel="LevelBG2",
+        path_actions=["draw", "line width=0", "fill=blue!10!white"],
+        layer=1,
+    )
+
+    add_square(
+        tikz=tikz,
+        x0=5,
+        y0=3,
+        L=1,
+        nodelabel="LevelB3",
+        path_actions=["draw", "line width=0", "fill=red!10!white"],
+        layer=2,
+    )
+
+    # Level A
     for x0 in [0, 2, 4, 6]:
         for y0 in [0, 2, 4, 6]:
             add_square(
@@ -62,12 +72,12 @@ def draw_grid(tikz):
                 x0=x0,
                 y0=y0,
                 L=2,
-                nodelabel=f"LevelC{x0}{y0}",
-                path_actions=["draw", "line width=2", "color=blue"],
-                layer=2,
+                nodelabel=f"LevelA{x0}{y0}",
+                path_actions=["draw", "line width=2", "color=black"],
+                layer=3,
             )
 
-    # Level D
+    # Level B
     for x0 in [4, 5, 6, 7]:
         for y0 in [2, 3, 4, 5]:
             add_square(
@@ -75,17 +85,16 @@ def draw_grid(tikz):
                 x0=x0,
                 y0=y0,
                 L=1,
-                nodelabel=f"LevelD{x0}{y0}",
+                nodelabel=f"LevelB{x0}{y0}",
                 path_actions=[
                     "draw",
                     "line width=2",
-                    "color=green!50!black",
-                    "fill=green!10!white",
+                    "color=blue",
                 ],
-                layer=1,
+                layer=4,
             )
 
-    # Level E
+    # Level C
     for x0 in [5, 5.5]:
         for y0 in [3, 3.5]:
             add_square(
@@ -93,14 +102,13 @@ def draw_grid(tikz):
                 x0=x0,
                 y0=y0,
                 L=0.5,
-                nodelabel=f"LevelE{round(x0)}{round(y0)}",
+                nodelabel=f"LevelC{round(x0)}{round(y0)}",
                 path_actions=[
                     "draw",
                     "line width=2",
-                    "color=red!50!black",
-                    "fill=red!10!white",
+                    "color=red",
                 ],
-                layer=1,
+                layer=5,
             )
 
 
@@ -147,7 +155,7 @@ def draw_hilbert_curve(save=False):
             path,
             nodelabel=f"ZPath{i}",
             path_actions=["->", "draw", "line width=1", "color=black"],
-            layer=5,
+            layer=6,
         )
     print(tikz.generate_tikz())
 
@@ -219,5 +227,5 @@ def draw_z_curve(save=False):
 
 
 if __name__ == "__main__":
-    draw_hilbert_curve()
-    draw_z_curve()
+    draw_hilbert_curve(save=True)
+    draw_z_curve(save=True)
