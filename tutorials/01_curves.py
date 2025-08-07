@@ -11,13 +11,32 @@ def node_positions_to_path(tikz, node_positions, nodelabel, path_actions, layer=
         node = tikz.add_node(
             node_data[0],
             node_data[1],
-            f"{nodelabel}{i}",
+            # f"{nodelabel}{i}",
             layer=0,
             color="red",
             # content=f"Node {i}",
         )
         nodes.append(node)
     tikz.add_path(nodes, path_actions=path_actions, layer=layer)
+
+
+def add_grid(tikz, x0, y0, L, N, nodelabel, path_actions, layer=1):
+    x1 = x0 + L
+    y1 = y0 + L
+    delta = L / N
+    node_positions = []
+
+    for i in range(N + 1):
+
+        # Horizontal line
+        y = y0 + i * delta
+        node_positions = [[x0, y], [x1, y]]
+        node_positions_to_path(tikz, node_positions, nodelabel, path_actions, layer)
+
+        # Vertical line
+        x = x0 + i * delta
+        node_positions = [[x, y0], [x, y1]]
+        node_positions_to_path(tikz, node_positions, nodelabel, path_actions, layer)
 
 
 def add_square(tikz, x0, y0, L, nodelabel, path_actions, layer=1):
@@ -65,51 +84,40 @@ def draw_grid(tikz):
     )
 
     # Level A
-    for x0 in [0, 2, 4, 6]:
-        for y0 in [0, 2, 4, 6]:
-            add_square(
-                tikz=tikz,
-                x0=x0,
-                y0=y0,
-                L=2,
-                nodelabel=f"LevelA{x0}{y0}",
-                path_actions=["draw", "line width=2", "color=black"],
-                layer=3,
-            )
+    add_grid(
+        tikz,
+        x0=0,
+        y0=0,
+        L=8,
+        N=4,
+        nodelabel="",
+        path_actions=["draw", "line width=2", "color=black"],
+        layer=3,
+    )
 
     # Level B
-    for x0 in [4, 5, 6, 7]:
-        for y0 in [2, 3, 4, 5]:
-            add_square(
-                tikz=tikz,
-                x0=x0,
-                y0=y0,
-                L=1,
-                nodelabel=f"LevelB{x0}{y0}",
-                path_actions=[
-                    "draw",
-                    "line width=2",
-                    "color=blue",
-                ],
-                layer=4,
-            )
+    add_grid(
+        tikz,
+        x0=4,
+        y0=2,
+        L=4,
+        N=4,
+        nodelabel="",
+        path_actions=["draw", "line width=2", "color=blue"],
+        layer=4,
+    )
 
     # Level C
-    for x0 in [5, 5.5]:
-        for y0 in [3, 3.5]:
-            add_square(
-                tikz=tikz,
-                x0=x0,
-                y0=y0,
-                L=0.5,
-                nodelabel=f"LevelC{round(x0)}{round(y0)}",
-                path_actions=[
-                    "draw",
-                    "line width=2",
-                    "color=red",
-                ],
-                layer=5,
-            )
+    add_grid(
+        tikz,
+        x0=5,
+        y0=3,
+        L=1.0,
+        N=2,
+        nodelabel="",
+        path_actions=["draw", "line width=2", "color=red"],
+        layer=5,
+    )
 
 
 def draw_hilbert_curve(save=False):
