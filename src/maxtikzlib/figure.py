@@ -48,7 +48,16 @@ class TikzWrapper:
 
 
 class Node:
-    def __init__(self, x, y, label="", content="", layer=0, **kwargs):
+    def __init__(
+        self,
+        x: float,
+        y: float,
+        label: str = "",
+        content: str = "",
+        comment: str | None = None,
+        layer: int = 0,
+        **kwargs,
+    ):
         """
         Represents a TikZ node.
 
@@ -62,6 +71,7 @@ class Node:
         self.y = y
         self.label = label
         self.content = content
+        self.comment = comment
         self.layer = layer
         self.options = kwargs
 
@@ -77,7 +87,11 @@ class Node:
         )
         if options:
             options = f"[{options}]"
-        return f"\\node{options} ({self.label}) at ({self.x}, {self.y}) {{{self.content}}};\n"
+
+        node_string = f"\\node{options} ({self.label}) at ({self.x}, {self.y}) {{{self.content}}};\n"
+        if self.comment is not None:
+            node_string = f"% {self.comment}\n" + node_string
+        return node_string
 
 
 class Path:
@@ -87,6 +101,7 @@ class Path:
         path_actions=[],
         cycle: bool = False,
         label: str = "",
+        comment: str | None = None,
         layer: int = 0,
         **kwargs,
     ):
@@ -102,6 +117,7 @@ class Path:
         self.cycle = cycle
         self.layer = layer
         self.label = label
+        self.comment = comment
         self.options = kwargs
 
     def to_tikz(self):
@@ -121,7 +137,13 @@ class Path:
         path_str = " to ".join(f"({node.label}.center)" for node in self.nodes)
         if self.cycle:
             path_str += " -- cycle"
-        return f"\\draw{options} {path_str};\n"
+
+        path_str = f"\\draw{options} {path_str};\n"
+
+        if self.comment is not None:
+            path_str = f"% {self.comment}\n" + path_str
+
+        return path_str
 
 
 class TikzFigure:
@@ -250,7 +272,9 @@ class TikzFigure:
         if layer not in self.layers:
             self.layers[layer] = Tikzlayer(layer)
 
-    def add_node(self, x, y, label=None, content: str = "", layer=0, **kwargs):
+    def add_node(
+        self, x, y, label=None, content: str = "", layer=0, comment=None, **kwargs
+    ):
         """
         Add a node to the TikZ figure.
 
@@ -258,6 +282,8 @@ class TikzFigure:
         - x (float): X-coordinate of the node.
         - y (float): Y-coordinate of the node.
         - label (str, optional): Label of the node. If None, a default label will be assigned.
+        - content: (str, optional): Content of the node
+        - comment: (str, optional): Comment to be added before the node
         - **kwargs: Additional TikZ node options (e.g., shape, color).
 
         Returns:
@@ -265,7 +291,15 @@ class TikzFigure:
         """
         if label is None:
             label = f"node{self._node_counter}"
-        node = Node(x=x, y=y, label=label, layer=layer, content=content, **kwargs)
+        node = Node(
+            x=x,
+            y=y,
+            label=label,
+            layer=layer,
+            content=content,
+            comment=comment,
+            **kwargs,
+        )
         self.nodes.append(node)
         if layer in self.layers:
             self.layers[layer].add(node)
@@ -275,7 +309,7 @@ class TikzFigure:
         self._node_counter += 1
         return node
 
-    def add_path(self, nodes, layer=0, **kwargs):
+    def add_path(self, nodes, layer: int = 0, comment: str | None = None, **kwargs):
         """
         Add a line or path connecting multiple nodes.
 
@@ -302,7 +336,7 @@ class TikzFigure:
             )
             for node in nodes
         ]
-        path = Path(nodes, **kwargs)
+        path = Path(nodes, comment=comment, **kwargs)
         self.paths.append(path)
         if layer in self.layers:
             self.layers[layer].add(path)
