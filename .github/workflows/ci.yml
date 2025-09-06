@@ -84,3 +84,16 @@ jobs:
           pip install isort
           black --check src/
           isort --check src/
+
+      - name: Test tutorials
+        run: |
+          jupyter nbconvert --to notebook --execute tutorials/*.ipynb --output-dir=/tmp --ExecutePreprocessor.timeout=300
+
+      - name: Test docs build
+        run: |
+          pip install ".[docs]"
+          cd docs
+          make clean
+          make html
+          cd ..
+          ls docs/build/html/index.html
