@@ -13,6 +13,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    container:
+      image: danteev/texlive:latest
 
     steps:
       # Checkout the repository
@@ -34,10 +36,10 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pip-
       
-      - name: Install TeX Live with pdflatex
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y texlive-full
+      # - name: Install TeX Live with pdflatex
+      #   run: |
+      #     sudo apt-get update
+      #     sudo apt-get install -y texlive-full
       # sudo apt-get install -y texlive texlive-latex-base texlive-latex-extra texlive-fonts-recommended texlive-science
 
       - name: Check if pdflatex is available
