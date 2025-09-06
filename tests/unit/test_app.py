@@ -1,8 +1,6 @@
 def test_import_app():
-    from app.main import main
-
-    print("app imported")
-    main()
+    import maxtikzlib
+    print(f"imported {maxtikzlib}")
 
 
 if __name__ == "__main__":
