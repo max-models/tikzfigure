@@ -18,7 +18,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     container:
-      image: texlive/texlive:latest
+      image: kjarosh/latex:2025.1-basic
 
     steps:
       # Checkout the repository
