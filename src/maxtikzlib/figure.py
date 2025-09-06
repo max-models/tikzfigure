@@ -273,7 +273,14 @@ class TikzFigure:
             self.layers[layer] = Tikzlayer(layer)
 
     def add_node(
-        self, x, y, label=None, content: str = "", layer=0, comment=None, **kwargs
+        self,
+        x,
+        y,
+        label=None,
+        content: str = "",
+        layer=0,
+        comment=None,
+        **kwargs,
     ):
         """
         Add a node to the TikZ figure.
@@ -537,7 +544,7 @@ class TikzFigure:
                     line_width = float(match.group(1))
                 else:
                     print(
-                        f"Invalid line width specification: '{line_width_spec}', defaulting to 1"
+                        f"Invalid line width specification: '{line_width_spec}', defaulting to 1",
                     )
                     line_width = 1
             else:
@@ -651,7 +658,9 @@ def main():
     for i, node_data in enumerate(nodes):
         tikz.add_node(node_data[0], node_data[1], f"M{i}", layer=0)
     tikz.add_path(
-        [f"M{i}" for i in range(len(nodes))], path_actions=path_actions, layer=1
+        [f"M{i}" for i in range(len(nodes))],
+        path_actions=path_actions,
+        layer=1,
     )
 
     print(tikz.generate_standalone())
