@@ -33,6 +33,3 @@ dev = [
 
 [tool.setuptools.packages.find]
 where = ["src"]
-
-[project.scripts]
-maxtikzlib = "maxtikzlib.console.main:main"

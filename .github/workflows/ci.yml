@@ -53,17 +53,20 @@ jobs:
           pip install --upgrade pip
           pip install ".[test]"
 
-      # Run a basic command to check installation
-      - name: Check installation
-        run: |
-          source env/bin/activate
-          maxtikzlib
-
       # Run tests
       - name: Run tests
         run: |
           source env/bin/activate
           pytest .
+        env:
+          CI: true
+
+      # Run tutorials
+      - name: Run tutorials
+        run: |
+          source env/bin/activate
+          python tutorials/00_tutorial_logo.py
+          python tutorials/01_curves.py
         env:
           CI: true
 
