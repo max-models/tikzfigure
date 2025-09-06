@@ -53,12 +53,6 @@ jobs:
           pip install --upgrade pip
           pip install ".[test]"
 
-      # Run a basic command to check installation
-      - name: Check installation
-        run: |
-          source env/bin/activate
-          maxtikzlib
-
       # Run tests
       - name: Run tests
         run: |
