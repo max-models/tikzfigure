@@ -21,7 +21,9 @@ def test_tikz_equivalence():
             content=f"Node {i}",
         )
     tikz.add_path(
-        [f"M{i}" for i in range(len(nodes))], path_actions=path_actions, layer=1
+        [f"M{i}" for i in range(len(nodes))],
+        path_actions=path_actions,
+        layer=1,
     )
     t1 = tikz.generate_tikz()
 
@@ -51,7 +53,9 @@ def test_logo_equivalence():
             content=f"Node {i}",
         )
     tikz.add_path(
-        [f"M{i}" for i in range(len(nodes))], path_actions=path_actions, layer=1
+        [f"M{i}" for i in range(len(nodes))],
+        path_actions=path_actions,
+        layer=1,
     )
     t1 = tikz.generate_tikz()
 

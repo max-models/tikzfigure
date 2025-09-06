@@ -1,8 +1,4 @@
-from itertools import cycle
-
-from scipy.fftpack import hilbert
-
-from maxtikzlib.figure import Path, TikzFigure
+from maxtikzlib.figure import TikzFigure
 
 
 def node_positions_to_path(tikz, node_positions, path_actions, layer=1):
