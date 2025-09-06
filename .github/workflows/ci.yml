@@ -61,6 +61,15 @@ jobs:
         env:
           CI: true
 
+      # Run tutorials
+      - name: Run tutorials
+        run: |
+          source env/bin/activate
+          python tutorials/00_tutorial_logo.py
+          python tutorials/01_curves.py
+        env:
+          CI: true
+
       # Code formatting check with black
       - name: Code formatting with black and isort
         run: |
