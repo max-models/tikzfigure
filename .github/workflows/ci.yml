@@ -18,7 +18,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     container:
-      image: danteev/texlive:latest
+      image: texlive/texlive:latest
 
     steps:
       # Checkout the repository
