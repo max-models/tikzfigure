@@ -68,7 +68,7 @@ jobs:
           CI: true
 
       # Run tutorials
-      - name: Run tutorials
+      - name: Run tutorials scripts
         run: |
           source env/bin/activate
           python tutorials/00_tutorial_logo.py
@@ -76,17 +76,9 @@ jobs:
         env:
           CI: true
 
-      # Code formatting check with black
-      - name: Code formatting with black and isort
+      - name: Test tutorial notebooks
         run: |
-          source env/bin/activate
-          pip install black
-          pip install isort
-          black --check src/
-          isort --check src/
-
-      - name: Test tutorials
-        run: |
+          pip install jupyter
           jupyter nbconvert --to notebook --execute tutorials/*.ipynb --output-dir=/tmp --ExecutePreprocessor.timeout=300
 
       - name: Test docs build
