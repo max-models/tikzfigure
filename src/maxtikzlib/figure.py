@@ -6,13 +6,12 @@ import tempfile
 import matplotlib.patches as patches
 
 from maxtikzlib.color import Color
+from maxtikzlib.layer import Tikzlayer
 from maxtikzlib.linestyle import Linestyle
-
+from maxtikzlib.loop import Loop
 from maxtikzlib.node import Node
 from maxtikzlib.path import Path
 from maxtikzlib.wrapper import TikzWrapper
-from maxtikzlib.layer import Tikzlayer
-from maxtikzlib.loop import TikzLoopContext
 
 
 class TikzFigure:
@@ -230,7 +229,9 @@ class TikzFigure:
         return item
 
     def loop(self, variable, values, layer=0):
-        return TikzLoopContext(self, variable, values, layer)
+        loop_obj = Loop(variable=variable, values=values, layer=layer)
+        self.add_item(loop_obj, layer)
+        return loop_obj
 
     def add_raw(self, raw_tikz, layer=0, **kwargs):
         tikz = TikzWrapper(raw_tikz)

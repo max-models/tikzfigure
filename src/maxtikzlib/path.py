@@ -49,7 +49,7 @@ class Path(TikzObject):
             options = ", ".join(self.path_actions) + ", " + options
         if options:
             options = f"[{options}]"
-        path_str = " to ".join(f"({node.label}.center)" for node in self.nodes)
+        path_str = " to ".join(f"({node.label})" for node in self.nodes)
         if self.cycle:
             path_str += " -- cycle"
 
