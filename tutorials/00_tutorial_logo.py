@@ -40,6 +40,7 @@ fig.add_path(
     color=colors[0],
     fill=f"{colors[0]}!50!white",
     comment="Path for M",
+    center=True,
 )
 
 # T with thick tracing
@@ -71,6 +72,7 @@ fig.add_path(
     color=colors[1],
     fill=f"{colors[1]}!50!white",
     comment="Path for T",
+    center=True,
 )
 
 # L with thick tracing
@@ -93,6 +95,7 @@ fig.add_path(
     color=colors[2],
     fill=f"{colors[2]}!50!white",
     comment="Path for L",
+    center=True,
 )
 
 xvec = np.arange(0, 7, 0.1)
@@ -110,6 +113,7 @@ fig.add_path(
     layer=1,
     color="black",
     comment="Sine wave path",
+    center=True,
 )
 
 # print(fig.generate_tikz())
