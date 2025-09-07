@@ -81,7 +81,7 @@ fig.add_path(
 xvec = np.arange(0, 7, 0.1)
 yvec = np.sin(xvec) * 0.25 + 1.25
 
-nodes_line = [[x, y] for x, y in zip(xvec, yvec)]
+nodes_line = [(x, y) for x, y in zip(xvec, yvec)]
 
 fig.add_path(
     nodes_line,
