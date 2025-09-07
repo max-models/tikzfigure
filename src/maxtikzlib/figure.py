@@ -117,7 +117,7 @@ class TikzFigure:
 
             # Match \draw[attributes] (node1.center) to (node2.center) to (node2.center)...;
             match_draw = re.search(
-                r"\\draw(?:\[([^\]]+)\])? ((?:\(\w+\.center\) to )+\(\w+\.center\));",
+                r"\\draw(?:\[([^\]]+)\])? ((?:\(\w+\.*\) to )+\(\w+\.*\));",
                 line,
             )
             if match_draw:
@@ -129,7 +129,7 @@ class TikzFigure:
                     attribute for attribute in attributes if not attribute == ""
                 ]
                 path = match_draw.group(2)
-                nodes = re.findall(r"\((\w+)\.center\)", path)
+                nodes = re.findall(r"\((\w+)\.*\)", path)
 
                 # print(f"Attributes: {attributes}")
                 # print(f"Path: {path}")

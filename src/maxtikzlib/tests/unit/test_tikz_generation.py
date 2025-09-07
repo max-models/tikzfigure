@@ -62,38 +62,12 @@ def test_logo_equivalence():
     # Create a new TikzFigure instance based on the generated tikz code
     tikz_2 = TikzFigure(tikz_code=tikz.generate_tikz())
     t2 = tikz_2.generate_tikz()
-
+    print(f"{t1}")
+    print(f"{t2}")
     # Check that generated code is equivalant
     assert t1 == t2, "Generated tikz code not the same as original"
 
 
-# Function to manually call all parameterized tests with their first parameter
-def call_all_tests():
-    # Gather all test functions in the current file
-    for name, func in globals().items():
-        if callable(func) and name.startswith("test_"):
-            # Check if the function has pytest parametrize markers
-            parametrize_marker = getattr(func, "pytestmark", None)
-            if parametrize_marker:
-                for mark in parametrize_marker:
-                    if mark.name == "parametrize":
-                        # Extract parameter names and values
-                        param_names, param_values = mark.args
-                        if isinstance(param_names, str):
-                            param_names = [param_names]  # Single parameter case
-                        # Iterate over each parameter combination
-                        for params in param_values:
-                            if not isinstance(params, tuple):
-                                params = (params,)  # Ensure tuple for single parameter
-                            # Create a mapping of parameter names to values
-                            kwargs = dict(zip(param_names, params))
-                            print(f"Calling {name} with {kwargs}")
-                            func(**kwargs)
-            else:
-                print(f"Calling {name} without args")
-                func()
-
-
 if __name__ == "__main__":
-    call_all_tests()
-    print("Passed all tests")
+    test_logo_equivalence()
+    test_tikz_equivalence()

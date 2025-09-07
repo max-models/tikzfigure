@@ -23,5 +23,5 @@ class Tikzlayer:
         tikz_script += f"\\begin{{pgfonlayer}}{{{self.label}}}\n"
         for item in self.items:
             tikz_script += item.to_tikz()
-        tikz_script += f"\\end{{pgfonlayer}}\n"
+        tikz_script += f"\\end{{pgfonlayer}}{{{self.label}}}\n"
         return tikz_script
