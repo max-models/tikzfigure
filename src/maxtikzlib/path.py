@@ -10,6 +10,7 @@ class Path(TikzObject):
         label: str = "",
         comment: str | None = None,
         layer: int = 0,
+        center=False,
         **kwargs,
     ):
         """
@@ -22,6 +23,7 @@ class Path(TikzObject):
         self.nodes = nodes
         self._path_actions = path_actions
         self._cycle = cycle
+        self._center = center
 
         super().__init__(label=label, comment=comment, layer=layer, **kwargs)
 
@@ -32,6 +34,10 @@ class Path(TikzObject):
     @property
     def cycle(self) -> bool:
         return self._cycle
+
+    @property
+    def center(self) -> bool:
+        return self._center
 
     def to_tikz(self):
         """
@@ -49,7 +55,12 @@ class Path(TikzObject):
             options = ", ".join(self.path_actions) + ", " + options
         if options:
             options = f"[{options}]"
-        path_str = " to ".join(f"({node.label})" for node in self.nodes)
+
+        if self.center:
+            path_str = " to ".join(f"({node.label}.center)" for node in self.nodes)
+        else:
+            path_str = " to ".join(f"({node.label})" for node in self.nodes)
+
         if self.cycle:
             path_str += " -- cycle"
 

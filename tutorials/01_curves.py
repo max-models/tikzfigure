@@ -11,7 +11,7 @@ def node_positions_to_path(tikz, node_positions, path_actions, layer=1):
             color="red",
         )
         nodes.append(node)
-    tikz.add_path(nodes, path_actions=path_actions, layer=layer)
+    tikz.add_path(nodes, path_actions=path_actions, layer=layer, center=True)
 
 
 def add_grid(tikz, x0, y0, L, N, path_actions, layer=1):
@@ -159,7 +159,7 @@ def draw_hilbert_curve(save=False):
             f.write(tikz.generate_tikz())
         with open("standalone_hilbert.tex", "w") as f:
             f.write(tikz.generate_standalone())
-        # tikz.compile_pdf(filename='hilbert_curve.pdf')
+        tikz.compile_pdf(filename="hilbert_curve.pdf")
 
 
 def draw_z_curve(save=False):
@@ -217,7 +217,7 @@ def draw_z_curve(save=False):
 
     # print(tikz.generate_standalone())
 
-    # tikz.compile_pdf(filename='z_curve.pdf')
+    tikz.compile_pdf(filename="z_curve.pdf")
 
 
 if __name__ == "__main__":
