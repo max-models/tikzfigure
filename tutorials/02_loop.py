@@ -29,5 +29,5 @@ with fig.loop("i", range(5), layer=0) as loop:
         path_actions=["line width=2"],
     )
 
-# print(fig.generate_standalone())
+print(fig.generate_standalone())
 fig.compile_pdf(filename="loop.pdf")

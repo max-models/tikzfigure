@@ -9,8 +9,46 @@ from maxtikzlib.color import Color
 from maxtikzlib.linestyle import Linestyle
 
 
+class TikzObject:
+    def __init__(
+        self,
+        label: str | None = None,
+        comment: str | None = None,
+        layer: int = 0,
+        **kwargs,
+    ) -> None:
+
+        self._label = label
+        self._comment = comment
+        self._layer = layer
+        self._kwargs = kwargs
+
+    @property
+    def label(self) -> str | None:
+        return self._label
+
+    @property
+    def comment(self) -> str | None:
+        return self._comment
+
+    @property
+    def layer(self) -> int:
+        return self._layer
+
+    @property
+    def kwargs(self) -> dict:
+        return self._kwargs
+
+    @property
+    def options(self) -> str:
+        options = ", ".join(
+            f"{k.replace('_', ' ')}={v}" for k, v in self.kwargs.items()
+        )
+        return options
+
+
 class Tikzlayer:
-    def __init__(self, label):
+    def __init__(self, label, comment=None):
         self.label = label
         self.items = []
 
@@ -47,7 +85,7 @@ class TikzWrapper:
         return self.raw_tikz
 
 
-class Node:
+class Node(TikzObject):
     def __init__(
         self,
         x: float,
@@ -67,13 +105,22 @@ class Node:
         - name (str, optional): Name of the node. If None, a default name will be assigned.
         - **kwargs: Additional TikZ node options (e.g., shape, color).
         """
-        self.x = x
-        self.y = y
-        self.label = label
-        self.content = content
-        self.comment = comment
-        self.layer = layer
-        self.options = kwargs
+        self._x = x
+        self._y = y
+        self._content = content
+        super().__init__(label=label, comment=comment, layer=layer, **kwargs)
+
+    @property
+    def x(self):
+        return self._x
+
+    @property
+    def y(self):
+        return self._y
+
+    @property
+    def content(self):
+        return self._content
 
     def to_tikz(self):
         """
@@ -82,9 +129,11 @@ class Node:
         Returns:
         - tikz_str (str): TikZ code string for the node.
         """
-        options = ", ".join(
-            f"{k.replace('_', ' ')}={v}" for k, v in self.options.items()
-        )
+
+        # options = ", ".join(
+        #     f"{k.replace('_', ' ')}={v}" for k, v in self.options.items()
+        # )
+        options = self.options
         if options:
             options = f"[{options}]"
 
@@ -94,7 +143,7 @@ class Node:
         return node_string
 
 
-class Path:
+class Path(TikzObject):
     def __init__(
         self,
         nodes,
@@ -113,12 +162,18 @@ class Path:
         - **kwargs: Additional TikZ path options (e.g., style, color).
         """
         self.nodes = nodes
-        self.path_actions = path_actions
-        self.cycle = cycle
-        self.layer = layer
-        self.label = label
-        self.comment = comment
-        self.options = kwargs
+        self._path_actions = path_actions
+        self._cycle = cycle
+
+        super().__init__(label=label, comment=comment, layer=layer, **kwargs)
+
+    @property
+    def path_actions(self):
+        return self._path_actions
+
+    @property
+    def cycle(self) -> bool:
+        return self._cycle
 
     def to_tikz(self):
         """
@@ -127,9 +182,11 @@ class Path:
         Returns:
         - tikz_str (str): TikZ code string for the path.
         """
-        options = ", ".join(
-            f"{k.replace('_', ' ')}={v}" for k, v in self.options.items()
-        )
+        # options = ", ".join(
+        #     f"{k.replace('_', ' ')}={v}" for k, v in self.options.items()
+        # )
+
+        options = self.options
         if len(self.path_actions) > 0:
             options = ", ".join(self.path_actions) + ", " + options
         if options:
@@ -146,26 +203,39 @@ class Path:
         return path_str
 
 
-class Loop:
+class Loop(TikzObject):
     def __init__(self, variable, values, layer=0):
-        self.variable = variable
-        self.values = list(values)
-        self.layer = layer
-        self.items = []
+        self._variable = variable
+        self._values = list(values)
+        self._items = []
+
+        super().__init__(layer=layer)
+
+    @property
+    def variable(self):
+        return self._variable
+
+    @property
+    def values(self):
+        return self._values
+
+    @property
+    def items(self):
+        return self._items
 
     def add_node(self, *args, **kwargs):
         node = Node(*args, **kwargs)
-        self.items.append(node)
+        self._items.append(node)
         return node
 
     def add_path(self, nodes, comment: str | None = None, **kwargs):
         path = Path(nodes, comment=comment, **kwargs)
-        self.items.append(path)
+        self._items.append(path)
         return path
 
     def add_raw(self, raw_tikz):
         wrapper = TikzWrapper(raw_tikz)
-        self.items.append(wrapper)
+        self._items.append(wrapper)
         return wrapper
 
     def to_tikz(self):
@@ -176,8 +246,16 @@ class Loop:
 
 class TikzLoopContext:
     def __init__(self, figure, variable, values, layer=0):
-        self.figure = figure
-        self.loop = Loop(variable, values, layer=layer)
+        self._figure = figure
+        self._loop = Loop(variable, values, layer=layer)
+
+    @property
+    def figure(self):
+        return self._figure
+
+    @property
+    def loop(self):
+        return self._loop
 
     def __enter__(self):
         return self.loop
