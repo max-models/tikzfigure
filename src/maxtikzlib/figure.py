@@ -31,7 +31,7 @@ class Tikzlayer:
         tikz_script += f"\\begin{{pgfonlayer}}{{{self.label}}}\n"
         for item in self.items:
             tikz_script += item.to_tikz()
-        tikz_script += f"\\end{{pgfonlayer}}{{{self.label}}}\n"
+        tikz_script += f"\\end{{pgfonlayer}}\n"
         return tikz_script
 
 
@@ -144,6 +144,46 @@ class Path:
             path_str = f"% {self.comment}\n" + path_str
 
         return path_str
+
+
+class Loop:
+    def __init__(self, variable, values, layer=0):
+        self.variable = variable
+        self.values = list(values)
+        self.layer = layer
+        self.items = []
+
+    def add_node(self, *args, **kwargs):
+        node = Node(*args, **kwargs)
+        self.items.append(node)
+        return node
+
+    def add_path(self, nodes, comment: str | None = None, **kwargs):
+        path = Path(nodes, comment=comment, **kwargs)
+        self.items.append(path)
+        return path
+
+    def add_raw(self, raw_tikz):
+        wrapper = TikzWrapper(raw_tikz)
+        self.items.append(wrapper)
+        return wrapper
+
+    def to_tikz(self):
+        values_str = ",".join(str(v) for v in self.values)
+        tikz_body = "".join([item.to_tikz() for item in self.items])
+        return f"\\foreach \\{self.variable} in {{{values_str}}}{{% start \\foreach\n{tikz_body}}}% end \\foreach\n"
+
+
+class TikzLoopContext:
+    def __init__(self, figure, variable, values, layer=0):
+        self.figure = figure
+        self.loop = Loop(variable, values, layer=layer)
+
+    def __enter__(self):
+        return self.loop
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.figure.add_item(self.loop, self.loop.layer)
 
 
 class TikzFigure:
@@ -352,6 +392,17 @@ class TikzFigure:
             self.layers[layer].add(path)
         return path
 
+    def add_item(self, item, layer=0):
+        if layer in self.layers:
+            self.layers[layer].add(item)
+        else:
+            self.layers[layer] = Tikzlayer(layer)
+            self.layers[layer].add(item)
+        return item
+
+    def loop(self, variable, values, layer=0):
+        return TikzLoopContext(self, variable, values, layer)
+
     def add_raw(self, raw_tikz, layer=0, **kwargs):
         tikz = TikzWrapper(raw_tikz)
         if layer in self.layers:
@@ -377,10 +428,10 @@ class TikzFigure:
         tab_str = "    "
         num_tabs = 0
         for line in tikz_script.split("\n"):
-            if "\\end" in line:
+            if "\\end" in line or "end \\foreach" in line:
                 num_tabs = max(num_tabs - 1, 0)
             tikz_script_new += f"{tab_str*num_tabs}{line}\n"
-            if "\\begin" in line:
+            if "\\begin" in line or "start \\foreach" in line:
                 num_tabs += 1
         return tikz_script_new
 
