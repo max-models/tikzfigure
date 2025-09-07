@@ -6,144 +6,12 @@ import tempfile
 import matplotlib.patches as patches
 
 from maxtikzlib.color import Color
+from maxtikzlib.layer import Tikzlayer
 from maxtikzlib.linestyle import Linestyle
-
-
-class Tikzlayer:
-    def __init__(self, label):
-        self.label = label
-        self.items = []
-
-    def add(self, item):
-        self.items.append(item)
-
-    def get_reqs(self):
-        reqs = set()
-        for item in self.items:
-            if isinstance(item, Path):
-                for node in item.nodes:
-                    if not node.layer == self.label:
-                        reqs.add(node.layer)
-        return reqs
-
-    def generate_tikz(self):
-        tikz_script = f"\n% Layer {self.label}\n"
-        tikz_script += f"\\begin{{pgfonlayer}}{{{self.label}}}\n"
-        for item in self.items:
-            tikz_script += item.to_tikz()
-        tikz_script += f"\\end{{pgfonlayer}}{{{self.label}}}\n"
-        return tikz_script
-
-
-class TikzWrapper:
-    def __init__(self, raw_tikz, label="", content="", layer=0, **kwargs):
-        self.raw_tikz = raw_tikz
-        self.label = label
-        self.content = content
-        self.layer = layer
-        self.options = kwargs
-
-    def to_tikz(self):
-        return self.raw_tikz
-
-
-class Node:
-    def __init__(
-        self,
-        x: float,
-        y: float,
-        label: str = "",
-        content: str = "",
-        comment: str | None = None,
-        layer: int = 0,
-        **kwargs,
-    ):
-        """
-        Represents a TikZ node.
-
-        Parameters:
-        - x (float): X-coordinate of the node.
-        - y (float): Y-coordinate of the node.
-        - name (str, optional): Name of the node. If None, a default name will be assigned.
-        - **kwargs: Additional TikZ node options (e.g., shape, color).
-        """
-        self.x = x
-        self.y = y
-        self.label = label
-        self.content = content
-        self.comment = comment
-        self.layer = layer
-        self.options = kwargs
-
-    def to_tikz(self):
-        """
-        Generate the TikZ code for this node.
-
-        Returns:
-        - tikz_str (str): TikZ code string for the node.
-        """
-        options = ", ".join(
-            f"{k.replace('_', ' ')}={v}" for k, v in self.options.items()
-        )
-        if options:
-            options = f"[{options}]"
-
-        node_string = f"\\node{options} ({self.label}) at ({self.x}, {self.y}) {{{self.content}}};\n"
-        if self.comment is not None:
-            node_string = f"% {self.comment}\n" + node_string
-        return node_string
-
-
-class Path:
-    def __init__(
-        self,
-        nodes,
-        path_actions=[],
-        cycle: bool = False,
-        label: str = "",
-        comment: str | None = None,
-        layer: int = 0,
-        **kwargs,
-    ):
-        """
-        Represents a path (line) connecting multiple nodes.
-
-        Parameters:
-        - nodes (list of str): List of node names to connect.
-        - **kwargs: Additional TikZ path options (e.g., style, color).
-        """
-        self.nodes = nodes
-        self.path_actions = path_actions
-        self.cycle = cycle
-        self.layer = layer
-        self.label = label
-        self.comment = comment
-        self.options = kwargs
-
-    def to_tikz(self):
-        """
-        Generate the TikZ code for this path.
-
-        Returns:
-        - tikz_str (str): TikZ code string for the path.
-        """
-        options = ", ".join(
-            f"{k.replace('_', ' ')}={v}" for k, v in self.options.items()
-        )
-        if len(self.path_actions) > 0:
-            options = ", ".join(self.path_actions) + ", " + options
-        if options:
-            options = f"[{options}]"
-        path_str = " to ".join(f"({node.label}.center)" for node in self.nodes)
-        if self.cycle:
-            path_str += " -- cycle"
-
-        path_str = f"\\draw{options} {path_str};\n"
-
-        if self.comment is not None:
-            path_str = f"% {self.comment}\n" + path_str
-
-        return path_str
+from maxtikzlib.loop import Loop
+from maxtikzlib.node import Node
+from maxtikzlib.path import Path
+from maxtikzlib.wrapper import TikzWrapper
 
 
 class TikzFigure:
@@ -249,7 +117,7 @@ class TikzFigure:
 
             # Match \draw[attributes] (node1.center) to (node2.center) to (node2.center)...;
             match_draw = re.search(
-                r"\\draw(?:\[([^\]]+)\])? ((?:\(\w+\.center\) to )+\(\w+\.center\));",
+                r"\\draw(?:\[([^\]]+)\])? ((?:\(\w+\.*\) to )+\(\w+\.*\));",
                 line,
             )
             if match_draw:
@@ -261,7 +129,7 @@ class TikzFigure:
                     attribute for attribute in attributes if not attribute == ""
                 ]
                 path = match_draw.group(2)
-                nodes = re.findall(r"\((\w+)\.center\)", path)
+                nodes = re.findall(r"\((\w+)\.*\)", path)
 
                 # print(f"Attributes: {attributes}")
                 # print(f"Path: {path}")
@@ -316,7 +184,14 @@ class TikzFigure:
         self._node_counter += 1
         return node
 
-    def add_path(self, nodes, layer: int = 0, comment: str | None = None, **kwargs):
+    def add_path(
+        self,
+        nodes,
+        layer: int = 0,
+        comment: str | None = None,
+        center=False,
+        **kwargs,
+    ):
         """
         Add a line or path connecting multiple nodes.
 
@@ -343,7 +218,12 @@ class TikzFigure:
             )
             for node in nodes
         ]
-        path = Path(nodes, comment=comment, **kwargs)
+        path = Path(
+            nodes,
+            comment=comment,
+            center=center,
+            **kwargs,
+        )
         self.paths.append(path)
         if layer in self.layers:
             self.layers[layer].add(path)
@@ -351,6 +231,30 @@ class TikzFigure:
             self.layers[layer] = Tikzlayer(layer)
             self.layers[layer].add(path)
         return path
+
+    def add_item(self, item, layer=0):
+        if layer in self.layers:
+            self.layers[layer].add(item)
+        else:
+            self.layers[layer] = Tikzlayer(layer)
+            self.layers[layer].add(item)
+        return item
+
+    def loop(
+        self,
+        variable,
+        values,
+        layer=0,
+        comment=None,
+    ):
+        loop_obj = Loop(
+            variable=variable,
+            values=values,
+            layer=layer,
+            comment=comment,
+        )
+        self.add_item(loop_obj, layer)
+        return loop_obj
 
     def add_raw(self, raw_tikz, layer=0, **kwargs):
         tikz = TikzWrapper(raw_tikz)
@@ -377,10 +281,10 @@ class TikzFigure:
         tab_str = "    "
         num_tabs = 0
         for line in tikz_script.split("\n"):
-            if "\\end" in line:
+            if "\\end" in line or "end \\foreach" in line:
                 num_tabs = max(num_tabs - 1, 0)
             tikz_script_new += f"{tab_str*num_tabs}{line}\n"
-            if "\\begin" in line:
+            if "\\begin" in line or "start \\foreach" in line:
                 num_tabs += 1
         return tikz_script_new
 
