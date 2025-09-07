@@ -228,8 +228,8 @@ class TikzFigure:
             self.layers[layer].add(item)
         return item
 
-    def loop(self, variable, values, layer=0):
-        loop_obj = Loop(variable=variable, values=values, layer=layer)
+    def loop(self, variable, values, layer=0, comment=None):
+        loop_obj = Loop(variable=variable, values=values, layer=layer, comment=comment)
         self.add_item(loop_obj, layer)
         return loop_obj
 

@@ -34,3 +34,8 @@ class TikzObject:
             f"{k.replace('_', ' ')}={v}" for k, v in self.kwargs.items()
         )
         return options
+
+    def add_comment(self, string_in) -> str:
+        if self.comment is not None:
+            return f"\n% {self.comment}\n{string_in}"
+        return string_in

@@ -55,7 +55,6 @@ class Path(TikzObject):
 
         path_str = f"\\draw{options} {path_str};\n"
 
-        if self.comment is not None:
-            path_str = f"% {self.comment}\n" + path_str
+        path_str = self.add_comment(path_str)
 
         return path_str

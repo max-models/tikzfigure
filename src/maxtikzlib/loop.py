@@ -5,13 +5,13 @@ from maxtikzlib.wrapper import TikzWrapper
 
 
 class Loop(TikzObject):
-    def __init__(self, variable, values, layer=0):
+    def __init__(self, variable, values, layer=0, comment: str | None = None):
 
         self._variable = variable
         self._values = list(values)
         self._items = []
 
-        super().__init__(layer=layer)
+        super().__init__(layer=layer, comment=comment)
 
     def __enter__(self):
         return self
@@ -48,16 +48,20 @@ class Loop(TikzObject):
         self._items.append(wrapper)
         return wrapper
 
-    def add_loop(self, variable, values):
+    def add_loop(self, variable, values, comment: str | None = None):
         """
         Add a nested loop inside this loop.
         Returns the Loop object itself, now a context manager.
         """
-        loop = Loop(variable, values, layer=self.layer)
+        loop = Loop(variable, values, layer=self.layer, comment=comment)
         self._items.append(loop)
         return loop
 
     def to_tikz(self):
         values_str = ",".join(str(v) for v in self.values)
         tikz_body = "".join([item.to_tikz() for item in self.items])
-        return f"\\foreach \\{self.variable} in {{{values_str}}}{{% start \\foreach\n{tikz_body}}}% end \\foreach\n"
+        loop_str = f"\\foreach \\{self.variable} in {{{values_str}}}{{% start \\foreach\n{tikz_body}}}% end \\foreach\n"
+
+        loop_str = self.add_comment(loop_str)
+
+        return loop_str

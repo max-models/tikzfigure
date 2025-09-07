@@ -54,6 +54,5 @@ class Node(TikzObject):
             options = f"[{options}]"
 
         node_string = f"\\node{options} ({self.label}) at ({self.x}, {self.y}) {{{self.content}}};\n"
-        if self.comment is not None:
-            node_string = f"% {self.comment}\n" + node_string
+        node_string = self.add_comment(node_string)
         return node_string
