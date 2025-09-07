@@ -51,7 +51,6 @@ class Loop(TikzObject):
     def add_loop(self, variable, values, comment: str | None = None):
         """
         Add a nested loop inside this loop.
-        Returns the Loop object itself, now a context manager.
         """
         loop = Loop(variable, values, layer=self.layer, comment=comment)
         self._items.append(loop)
