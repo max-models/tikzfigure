@@ -4,8 +4,10 @@ import subprocess
 import tempfile
 
 import matplotlib.patches as patches
+from numpy import isin
 
 from maxtikzlib.color import Color
+from maxtikzlib.coordinate import TikzCoordinate
 from maxtikzlib.layer import Tikzlayer
 from maxtikzlib.linestyle import Linestyle
 from maxtikzlib.loop import Loop
@@ -186,7 +188,7 @@ class TikzFigure:
 
     def add_path(
         self,
-        nodes,
+        nodes: list,
         layer: int = 0,
         comment: str | None = None,
         center=False,
@@ -196,7 +198,7 @@ class TikzFigure:
         Add a line or path connecting multiple nodes.
 
         Parameters:
-        - nodes (list of str): List of node names to connect.
+        - nodes (list of str): List of node names to connect OR list of coordinates
         - **kwargs: Additional TikZ path options (e.g., style, color).
 
         Examples:
@@ -205,21 +207,37 @@ class TikzFigure:
         """
         if not isinstance(nodes, list):
             raise ValueError("nodes parameter must be a list of node names.")
+        # nodes = [
+        #     (
+        #         node
+        #         if isinstance(node, Node)
+        #         else (
+        #             self.get_node(node)
+        #             if isinstance(node, str)
+        #             else ValueError(f"Invalid node type: {type(node)}")
+        #         )
+        #     )
+        #     for node in nodes
+        # ]
 
-        nodes = [
-            (
-                node
-                if isinstance(node, Node)
-                else (
-                    self.get_node(node)
-                    if isinstance(node, str)
-                    else ValueError(f"Invalid node type: {type(node)}")
+        nodes_cleaned = []
+
+        for node in nodes:
+            if isinstance(node, Node):
+                nodes_cleaned.append(node)
+            elif isinstance(node, str):
+                # Find the node by its label
+                nodes_cleaned.append(self.get_node(node))
+            elif isinstance(node, tuple) or isinstance(node, list):
+                node = tuple(node)
+                nodes_cleaned.append(TikzCoordinate(*node, layer=layer))
+            else:
+                raise NotImplementedError(
+                    f"{node = }, {type(node) = } is not a valid node type!"
                 )
-            )
-            for node in nodes
-        ]
+        # print(nodes_cleaned)
         path = Path(
-            nodes,
+            nodes_cleaned,
             comment=comment,
             center=center,
             **kwargs,
