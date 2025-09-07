@@ -18,7 +18,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     container:
-      image: texlive/texlive:latest
+      image: pandoc/latex:latest
 
     steps:
       # Checkout the repository
@@ -85,7 +85,6 @@ jobs:
         run: |
           source env/bin/activate
           pip install ".[docs]"
-          pip install pandoc
           cd docs
           make clean
           make html
