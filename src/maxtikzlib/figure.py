@@ -185,7 +185,12 @@ class TikzFigure:
         return node
 
     def add_path(
-        self, nodes, layer: int = 0, comment: str | None = None, center=False, **kwargs
+        self,
+        nodes,
+        layer: int = 0,
+        comment: str | None = None,
+        center=False,
+        **kwargs,
     ):
         """
         Add a line or path connecting multiple nodes.
@@ -213,7 +218,12 @@ class TikzFigure:
             )
             for node in nodes
         ]
-        path = Path(nodes, comment=comment, center=center, **kwargs)
+        path = Path(
+            nodes,
+            comment=comment,
+            center=center,
+            **kwargs,
+        )
         self.paths.append(path)
         if layer in self.layers:
             self.layers[layer].add(path)
@@ -230,7 +240,13 @@ class TikzFigure:
             self.layers[layer].add(item)
         return item
 
-    def loop(self, variable, values, layer=0, comment=None):
+    def loop(
+        self,
+        variable,
+        values,
+        layer=0,
+        comment=None,
+    ):
         loop_obj = Loop(
             variable=variable,
             values=values,
