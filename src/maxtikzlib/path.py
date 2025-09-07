@@ -1,10 +1,12 @@
 from maxtikzlib.base import TikzObject
+from maxtikzlib.coordinate import TikzCoordinate
+from maxtikzlib.node import Node
 
 
 class Path(TikzObject):
     def __init__(
         self,
-        nodes,
+        nodes: list,
         path_actions=[],
         cycle: bool = False,
         label: str = "",
@@ -46,9 +48,6 @@ class Path(TikzObject):
         Returns:
         - tikz_str (str): TikZ code string for the path.
         """
-        # options = ", ".join(
-        #     f"{k.replace('_', ' ')}={v}" for k, v in self.options.items()
-        # )
 
         options = self.options
         if len(self.path_actions) > 0:
@@ -56,10 +55,21 @@ class Path(TikzObject):
         if options:
             options = f"[{options}]"
 
-        if self.center:
-            path_str = " to ".join(f"({node.label}.center)" for node in self.nodes)
-        else:
-            path_str = " to ".join(f"({node.label})" for node in self.nodes)
+        label_list = []
+        for node in self.nodes:
+            if isinstance(node, Node):
+                if self.center:
+                    label_list.append(f"({node.label}.center)")
+                else:
+                    label_list.append(f"({node.label})")
+            elif isinstance(node, TikzCoordinate):
+                label_list.append(f"({node.x},{node.y})")
+
+        path_str = " to ".join(label_list)
+        # if self.center:
+        #     path_str = " to ".join(f"({node.label}.center)" for node in self.nodes)
+        # else:
+        #     path_str = " to ".join(f"({node.label})" for node in self.nodes)
 
         if self.cycle:
             path_str += " -- cycle"
