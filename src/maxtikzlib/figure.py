@@ -2,11 +2,9 @@ import os
 import re
 import subprocess
 import tempfile
-from pdf2image import convert_from_path
 
-
+import fitz
 import matplotlib.patches as patches
-from numpy import isin
 
 from maxtikzlib.color import Color
 from maxtikzlib.coordinate import TikzCoordinate
@@ -458,15 +456,17 @@ class TikzFigure:
                 if verbose:
                     print(f"Converting {temp_pdf} → {filename}")
 
-                # Convert PDF → image (first page only)
-                images = convert_from_path(temp_pdf, dpi=300)
-                img = images[0]
-                img.save(filename)
+                # Convert PDF → image
+                doc = fitz.open(temp_pdf)
+                page = doc[0]
+                pix = page.get_pixmap(dpi=300)
+                pix.save(filename)
+                doc.close()
         else:
             raise ValueError(f"Unsupported file format: {ext}")
 
     def show(self, verbose=False):
-        from IPython.display import display, Image
+        from IPython.display import Image, display
 
         with tempfile.TemporaryDirectory() as tempdir:
             temp_pdf = os.path.join(tempdir, "temp.png")
