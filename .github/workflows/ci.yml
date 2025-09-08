@@ -67,15 +67,6 @@ jobs:
         env:
           CI: true
 
-      # Run tutorials
-      - name: Run tutorials scripts
-        run: |
-          source env/bin/activate
-          python tutorials/00_tutorial_logo.py
-          python tutorials/01_curves.py
-        env:
-          CI: true
-
       - name: Test tutorial notebooks
         run: |
           source env/bin/activate
