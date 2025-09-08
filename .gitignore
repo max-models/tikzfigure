@@ -179,3 +179,5 @@ junit/
 *.pdf
 *.tex
 *.tikz
+*.png
+*.jpg
