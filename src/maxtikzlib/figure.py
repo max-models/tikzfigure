@@ -465,9 +465,9 @@ class TikzFigure:
         else:
             raise ValueError(f"Unsupported file format: {ext}")
 
-
-    def show(self,verbose=False):
+    def show(self, verbose=False):
         from IPython.display import display, Image
+
         with tempfile.TemporaryDirectory() as tempdir:
             temp_pdf = os.path.join(tempdir, "temp.png")
             self.savefig(filename=temp_pdf, verbose=verbose)
