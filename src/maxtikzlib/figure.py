@@ -2,6 +2,8 @@ import os
 import re
 import subprocess
 import tempfile
+from pdf2image import convert_from_path
+
 
 import matplotlib.patches as patches
 from numpy import isin
@@ -369,11 +371,6 @@ class TikzFigure:
         tikz_script = self.add_tabs(tikz_script)
         return tikz_script
 
-    def savefig(self, filepath):
-        tikz_code = self.generate_tikz()
-        with open(filepath, "w") as f:
-            f.write(tikz_code)
-
     def generate_standalone(self):
         tikz_code = self.generate_tikz()
 
@@ -388,7 +385,7 @@ class TikzFigure:
         )
         return latex_document
 
-    def compile_pdf(self, filename="output.pdf"):
+    def compile_pdf(self, filename="output.pdf", verbose=False):
         """
         Compile the TikZ script into a PDF using pdflatex.
 
@@ -399,7 +396,8 @@ class TikzFigure:
         - Requires 'pdflatex' to be installed and accessible from the command line.
         """
         latex_document = self.generate_standalone()
-
+        if verbose:
+            print(latex_document)
         # Use a temporary directory to store the LaTeX files
         with tempfile.TemporaryDirectory() as tempdir:
             tex_file = os.path.join(tempdir, "figure.tex")
@@ -420,7 +418,8 @@ class TikzFigure:
                     f"{output_directory}",
                     tex_file,
                 ]
-                # print(f"running {cmd}")
+                if verbose:
+                    print(f"{cmd = }")
                 subprocess.run(
                     cmd,
                     cwd=tempdir,
@@ -435,6 +434,44 @@ class TikzFigure:
                 print("An error occurred while compiling the LaTeX document:")
                 print(e.stderr.decode())
                 return
+
+    def savefig(self, filename, verbose=False):
+        """
+        Save the TikZ figure to a file (PDF, PNG, JPG) using pure Python tools.
+        """
+        ext = os.path.splitext(filename)[1].lower()
+
+        if ext == ".pdf":
+            # Direct compile
+            self.compile_pdf(filename=filename, verbose=verbose)
+        elif ext == ".tikz":
+            tikz_code = self.generate_tikz()
+            with open(filename, "w") as f:
+                f.write(tikz_code)
+        elif ext in [".png", ".jpg", ".jpeg"]:
+            # Compile to a temporary PDF first
+            with tempfile.TemporaryDirectory() as tempdir:
+                temp_pdf = os.path.join(tempdir, "temp.pdf")
+                # temp_pdf = "_temp.pdf"
+                self.compile_pdf(filename=temp_pdf, verbose=verbose)
+
+                if verbose:
+                    print(f"Converting {temp_pdf} → {filename}")
+
+                # Convert PDF → image (first page only)
+                images = convert_from_path(temp_pdf, dpi=300)
+                img = images[0]
+                img.save(filename)
+        else:
+            raise ValueError(f"Unsupported file format: {ext}")
+
+
+    def show(self,verbose=False):
+        from IPython.display import display, Image
+        with tempfile.TemporaryDirectory() as tempdir:
+            temp_pdf = os.path.join(tempdir, "temp.png")
+            self.savefig(filename=temp_pdf, verbose=verbose)
+            display(Image(filename=temp_pdf))
 
     # TODO: This should probably be removed and moved to maxplotlib instead
     def plot_matplotlib(self, ax):

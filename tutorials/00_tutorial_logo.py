@@ -1,5 +1,4 @@
 import numpy as np
-
 from maxtikzlib.figure import TikzFigure
 
 fig = TikzFigure()

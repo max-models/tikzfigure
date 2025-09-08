@@ -42,7 +42,7 @@ with fig.loop("i", range(num_xpoints), comment="Blue nodegrid") as loop_i:
     with loop_i.add_loop("j", range(num_ypoints), comment="inner j-loop") as loop_j:
         node = loop_j.add_node(
             f"{dx}*\i",
-            f"3*\j",
+            "3*\j",
             label="xynodes\i\j",
             content=r"\color{white}\i,\j",
             shape="circle",
