@@ -1,6 +1,3 @@
-from maxtikzlib.figure import TikzFigure
-
-
 def main():
     print("Welcome to MaxTikzLib!")
 
