@@ -1,4 +1,3 @@
-
 from maxtikzlib.figure import TikzFigure
 
 
