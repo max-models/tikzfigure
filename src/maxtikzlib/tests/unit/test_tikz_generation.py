@@ -1,4 +1,3 @@
-import pytest
 
 from maxtikzlib.figure import TikzFigure
 
