@@ -1,8 +1,16 @@
 name: Deploy docs to GitHub Pages
 
 on:
+  # push:
+  #   branches: ["devel", "main"] # TODO: Set to main only after release
   push:
-    branches: ["devel", "main"] # TODO: Set to main only after release
+    branches:
+      - main
+      - devel
+  pull_request:
+    branches:
+      - main
+      - devel
   workflow_dispatch:
 
 permissions:
