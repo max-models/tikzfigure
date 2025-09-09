@@ -20,6 +20,8 @@ jobs:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
+    container:
+      image: texlive/texlive:latest
 
     steps:
       - name: Checkout
