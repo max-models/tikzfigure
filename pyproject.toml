@@ -23,10 +23,11 @@ dependencies = [
 test = ["pytest", "coverage"]
 dev = [
     "maxtikzlib[test]",
-    "black",
+    "black[jupyter]",
     "isort",
     "ruff",
     "pytest",
+    "pre-commit",
 ]
 
 # https://medium.com/@pratikdomadiya123/build-project-documentation-quickly-with-the-sphinx-python-2a9732b66594

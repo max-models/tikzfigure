@@ -40,6 +40,11 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pip-
       
+      - name: Install pandoc
+        run: |
+          apt-get update
+          apt-get install -y pandoc
+
       # - name: Install TeX Live with pdflatex
       #   run: |
       #     sudo apt-get update
@@ -48,8 +53,8 @@ jobs:
 
       - name: Check if pdflatex is available
         run: |
-          which pdflatex || echo "pdflatex NOT found!"
-          pdflatex --version || echo "pdflatex command failed!"
+          which pdflatex
+          pdflatex --version
 
       # Create virtual environment and install project from pyproject.toml
       - name: Set up virtual environment and install project
@@ -72,12 +77,12 @@ jobs:
           source env/bin/activate
           jupyter nbconvert --to notebook --execute tutorials/*.ipynb --output-dir=/tmp --ExecutePreprocessor.timeout=300
 
-      # - name: Test docs build
-      #   run: |
-      #     source env/bin/activate
-      #     pip install ".[docs]"
-      #     cd docs
-      #     make clean
-      #     make html
-      #     cd ..
-      #     ls docs/build/html/index.html
+      - name: Test docs build
+        run: |
+          source env/bin/activate
+          pip install ".[docs]"
+          cd docs
+          make clean
+          make html
+          cd ..
+          ls docs/build/html/index.html

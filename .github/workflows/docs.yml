@@ -20,6 +20,8 @@ jobs:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
+    # container:
+    #   image: texlive/texlive:latest
 
     steps:
       - name: Checkout
@@ -27,8 +29,14 @@ jobs:
 
       - name: Install pandoc
         run: |
-          sudo apt-get update
-          sudo apt-get install -y pandoc
+          apt-get update
+          apt-get install -y pandoc
+
+      - name: Install TeX Live with pdflatex
+        run: |
+          apt-get update
+          apt-get install -y texlive-full
+          apt-get install -y texlive texlive-latex-base texlive-latex-extra texlive-fonts-recommended texlive-science
 
       - name: Install Python dependencies
         run: |

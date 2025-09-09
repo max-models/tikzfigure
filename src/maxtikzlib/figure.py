@@ -338,14 +338,16 @@ class TikzFigure:
             reqs = layer.get_reqs()
             if all([r == layer.label for r in reqs]):
                 ordered_layers.append(layer)
-            elif all([r in [l.label for l in ordered_layers] for r in reqs]):
+            elif all([r in [layer.label for layer in ordered_layers] for r in reqs]):
                 ordered_layers.append(layer)
             else:
                 buffered_layers.add(layer)
 
             for buffered_layer in buffered_layers:
                 buff_reqs = buffered_layer.get_reqs()
-                if all([r in [l.label for l in ordered_layers] for r in buff_reqs]):
+                if all(
+                    [r in [layer.label for layer in ordered_layers] for r in buff_reqs]
+                ):
                     print("Move layer from buffer")
                     ordered_layers.append(key)
                     buffered_layers.remove(key)
