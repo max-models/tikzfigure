@@ -23,7 +23,7 @@ dependencies = [
 test = ["pytest", "coverage"]
 dev = [
     "maxtikzlib[test]",
-    "black",
+    "black[jupyter]",
     "isort",
     "ruff",
     "pytest",
