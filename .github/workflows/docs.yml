@@ -37,15 +37,8 @@ jobs:
 
       - name: Install pandoc
         run: |
-          sudo apt-get update
-          sudo apt-get install -y pandoc
-      
-      # - name: Install TeX Live with pdflatex
-      #   run: |
-      #     sudo apt-get update
-      #     sudo apt-get install -y texlive-full
-      # sudo apt-get install -y texlive texlive-latex-base texlive-latex-extra texlive-fonts-recommended texlive-science
-
+          apt-get update
+          apt-get install -y pandoc
 
       - name: Install Python dependencies
         run: |
