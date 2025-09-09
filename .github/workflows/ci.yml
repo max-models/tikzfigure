@@ -53,8 +53,8 @@ jobs:
 
       - name: Check if pdflatex is available
         run: |
-          which pdflatex || echo "pdflatex NOT found!"
-          pdflatex --version || echo "pdflatex command failed!"
+          which pdflatex
+          pdflatex --version
 
       # Create virtual environment and install project from pyproject.toml
       - name: Set up virtual environment and install project
