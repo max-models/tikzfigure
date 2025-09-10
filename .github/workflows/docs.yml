@@ -25,15 +25,19 @@ concurrency:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+    container:
+      image: texlive/texlive:latest
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-    container:
-      image: texlive/texlive:latest
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
 
       - name: Install pandoc
         run: |
