@@ -66,11 +66,6 @@ class Path(TikzObject):
                 label_list.append(f"({node.x},{node.y})")
 
         path_str = " to ".join(label_list)
-        # if self.center:
-        #     path_str = " to ".join(f"({node.label}.center)" for node in self.nodes)
-        # else:
-        #     path_str = " to ".join(f"({node.label})" for node in self.nodes)
-
         if self.cycle:
             path_str += " -- cycle"
 

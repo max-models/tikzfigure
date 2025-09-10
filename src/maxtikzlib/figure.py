@@ -313,7 +313,17 @@ class TikzFigure:
         Returns:
         - tikz_script (str): The TikZ script as a string.
         """
-        tikz_script = "\\begin{tikzpicture}"
+        tikz_script = "\\begin{tikzpicture}\n"
+        tikz_script += "\\begin{axis}[\n"
+        tikz_script += "view={20}{30},\n"
+        # tikz_script += "axis lines=center,\n"
+        # tikz_script += "xlabel={$x$},\n"
+        # tikz_script += "ylabel={$y$},\n"
+        # tikz_script += "zlabel={$z$},\n"
+        # tikz_script += "grid=major\n"
+        tikz_script += "    ]\n"
+        tikz_script += "\\addplot3+[only marks, mark=*] coordinates {(1,2,3)};\n"
+        # tikz_script += "\\node at (axis cs:1,2,3) [anchor=west] {$P(1,2,3)$};\n"
         if self._figure_setup:
             tikz_script += f"[{self._figure_setup}]"
         tikz_script += "\n"
@@ -322,7 +332,8 @@ class TikzFigure:
         layers = sorted([str(layer) for layer in self.layers.keys()])
         for layer in layers:
             tikz_script += f"\\pgfdeclarelayer{{{layer}}}\n"
-        tikz_script += f"\\pgfsetlayers{{{','.join(layers)}}}\n"
+        if len(layers) > 0:
+            tikz_script += f"\\pgfsetlayers{{{','.join(layers)}}}\n"
 
         # Add grid if enabled
         # TODO: Create a Grid class
@@ -357,6 +368,7 @@ class TikzFigure:
         for layer in ordered_layers:
             tikz_script += layer.generate_tikz()
 
+        tikz_script += "\\end{axis}\n"
         tikz_script += "\\end{tikzpicture}"
 
         # Wrap in figure environment if necessary
@@ -378,6 +390,8 @@ class TikzFigure:
         latex_document = (
             "\\documentclass[border=10pt]{standalone}\n"
             "\\usepackage{tikz}\n"
+            "\\usepackage{pgfplots}\n"
+            "\\pgfplotsset{compat=newest}\n"
             "\\usetikzlibrary{arrows.meta}\n"
             "\\begin{document}\n"
             f"{tikz_code}\n"
