@@ -23,13 +23,13 @@ jobs:
     steps:
       # Checkout the repository
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       # Set up Python
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.10'  # Adjust as needed
+          python-version: '3.10'
 
       # Cache pip dependencies
       - name: Cache pip
