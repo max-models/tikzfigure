@@ -52,11 +52,11 @@ class TikzFigure:
             self.tikz_to_figure(self._tikz_code)
 
     def tikz_to_figure(self, tikz_code):
-        # print(tikz_code)
         lines = tikz_code.split("\n")
         lines = [line.lstrip().rstrip() for line in lines]
         lines = [line for line in lines if line not in ["", "\n"]]
         lines = [line for line in lines if not line[0] == "%"]
+
         assert lines[0] == "\\begin{tikzpicture}"
         assert lines[-1] == "\\end{tikzpicture}"
 
@@ -110,9 +110,9 @@ class TikzFigure:
                 # print(coordinates.split(','))
 
                 self.add_node(
-                    coordinates[0],
-                    coordinates[1],
-                    node_name,
+                    x=coordinates[0],
+                    y=coordinates[1],
+                    label=node_name,
                     layer=current_layer,
                     content=content,
                     **attributes_dict,

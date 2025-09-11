@@ -11,9 +11,9 @@ def test_tikz_equivalence():
     nodes = [[0, 0], [0, 3], [1, 2], [2, 3], [2, 0]]
     for i, node_data in enumerate(nodes):
         tikz.add_node(
-            node_data[0],
-            node_data[1],
-            f"M{i}",
+            x=node_data[0],
+            y=node_data[1],
+            label=f"M{i}",
             layer=0,
             color="red",
             content=f"Node {i}",
@@ -27,6 +27,9 @@ def test_tikz_equivalence():
 
     # Create a new TikzFigure instance based on the generated tikz code
     tikz_2 = TikzFigure(tikz_code=tikz.generate_tikz())
+
+    print(tikz_2.nodes)
+
     t2 = tikz_2.generate_tikz()
 
     # Check that generated code is equivalant
@@ -43,9 +46,9 @@ def test_logo_equivalence():
     nodes = [[0, 0], [0, 10], [1, 2], [2, 3], [2, 0]]
     for i, node_data in enumerate(nodes):
         tikz.add_node(
-            node_data[0],
-            node_data[1],
-            f"M{i}",
+            x=node_data[0],
+            y=node_data[1],
+            label=f"M{i}",
             layer=0,
             color="red",
             content=f"Node {i}",
