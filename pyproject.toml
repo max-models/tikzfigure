@@ -17,6 +17,7 @@ classifiers = [
 dependencies = [
     "matplotlib",
     "pymupdf",
+    "fitz",
 ]
 
 [project.optional-dependencies]

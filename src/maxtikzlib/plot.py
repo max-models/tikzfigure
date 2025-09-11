@@ -13,25 +13,25 @@ class Plot3D(Path):
         x: list,
         y: list,
         z: list,
-        path_actions=[],
         cycle: bool = False,
         label: str = "",
         comment: str | None = None,
         layer: int = 0,
         center=False,
+        options: list = [],
         **kwargs,
     ):
 
         nodes = [TikzCoordinate(_x, _y, _z, layer=layer) for _x, _y, _z in zip(x, y, z)]
 
         super().__init__(
-            nodes,
-            path_actions,
-            cycle,
-            label,
-            comment,
-            layer,
-            center,
+            nodes=nodes,
+            cycle=cycle,
+            label=label,
+            comment=comment,
+            layer=layer,
+            center=center,
+            options=options,
             **kwargs,
         )
 

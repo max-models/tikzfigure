@@ -9,12 +9,12 @@ class Path(TikzObject):
     def __init__(
         self,
         nodes: list,
-        path_actions=[],
         cycle: bool = False,
         label: str = "",
         comment: str | None = None,
         layer: int = 0,
-        center=False,
+        center: bool = False,
+        options: list = [],
         **kwargs,
     ):
         """
@@ -25,15 +25,12 @@ class Path(TikzObject):
         - **kwargs: Additional TikZ path options (e.g., style, color).
         """
         self.nodes = nodes
-        self._path_actions = path_actions
         self._cycle = cycle
         self._center = center
 
-        super().__init__(label=label, comment=comment, layer=layer, **kwargs)
-
-    @property
-    def path_actions(self):
-        return self._path_actions
+        super().__init__(
+            label=label, comment=comment, layer=layer, options=options, **kwargs
+        )
 
     @property
     def cycle(self) -> bool:
@@ -49,8 +46,8 @@ class Path(TikzObject):
         options = ", ".join(
             f"{k.replace('_', ' ')}={v}" for k, v in self.kwargs.items()
         )
-        if len(self.path_actions) > 0:
-            options = ", ".join(self.path_actions) + ", " + options
+        if len(self.options) > 0:
+            options = ", ".join(self.options) + ", " + options
 
         return options
 

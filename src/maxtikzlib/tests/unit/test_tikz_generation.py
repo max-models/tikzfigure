@@ -5,7 +5,7 @@ def test_tikz_equivalence():
 
     tikz = TikzFigure()
 
-    path_actions = ["draw", "rounded corners", "line width=3"]
+    options = ["draw", "rounded corners", "line width=3"]
 
     # M
     nodes = [[0, 0], [0, 3], [1, 2], [2, 3], [2, 0]]
@@ -20,7 +20,7 @@ def test_tikz_equivalence():
         )
     tikz.add_path(
         [f"M{i}" for i in range(len(nodes))],
-        path_actions=path_actions,
+        options=options,
         layer=1,
     )
     t1 = tikz.generate_tikz()
@@ -37,7 +37,7 @@ def test_logo_equivalence():
 
     tikz = TikzFigure()
 
-    path_actions = ["draw", "rounded corners", "line width=3"]
+    options = ["draw", "rounded corners", "line width=3"]
 
     # M
     nodes = [[0, 0], [0, 10], [1, 2], [2, 3], [2, 0]]
@@ -52,7 +52,7 @@ def test_logo_equivalence():
         )
     tikz.add_path(
         [f"M{i}" for i in range(len(nodes))],
-        path_actions=path_actions,
+        options=options,
         layer=1,
     )
     t1 = tikz.generate_tikz()

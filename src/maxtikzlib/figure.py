@@ -137,7 +137,7 @@ class TikzFigure:
                 # print(f"Attributes: {attributes}")
                 # print(f"Path: {path}")
                 # print(f"Nodes: {nodes}")
-                self.add_path(nodes, path_actions=attributes, layer=current_layer)
+                self.add_path(nodes, options=attributes, layer=current_layer)
 
     def add_layer(self, layer):
         if layer not in self.layers:
@@ -684,7 +684,7 @@ def main():
 
     tikz = TikzFigure()
 
-    path_actions = ["draw", "rounded corners", "line width=3"]
+    options = ["draw", "rounded corners", "line width=3"]
 
     # M
     nodes = [[0, 0], [0, 3], [1, 2], [2, 3], [2, 0]]
@@ -692,7 +692,7 @@ def main():
         tikz.add_node(node_data[0], node_data[1], f"M{i}", layer=0)
     tikz.add_path(
         [f"M{i}" for i in range(len(nodes))],
-        path_actions=path_actions,
+        options=options,
         layer=1,
     )
 
