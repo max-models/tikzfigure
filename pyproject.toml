@@ -41,6 +41,7 @@ docs = [
   "pyproject-fmt",
   "sphinx",
   "sphinx-rtd-theme",
+  "scipy",
 ]
 
 [project.urls]
