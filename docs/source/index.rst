@@ -11,8 +11,6 @@ Here are a few tutorials to help you get started with `maxtikzlib`
 .. toctree::
    :maxdepth: 2
    :caption: Tutorials:
+   :glob:
 
-   tutorials/tutorial_01
-   tutorials/tutorial_02
-   tutorials/tutorial_03
-   tutorials/tutorial_04
+   tutorials/*
