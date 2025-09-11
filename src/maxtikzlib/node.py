@@ -11,6 +11,7 @@ class Node(TikzObject):
         content: str = "",
         comment: str | None = None,
         layer: int = 0,
+        options: list = [],
         **kwargs,
     ):
         """
@@ -29,9 +30,11 @@ class Node(TikzObject):
             self._ndim = 2
         else:
             self._ndim = 3
-        
+
         self._content = content
-        super().__init__(label=label, comment=comment, layer=layer, **kwargs)
+        super().__init__(
+            label=label, comment=comment, layer=layer, options=options, **kwargs
+        )
 
     @property
     def x(self):
@@ -44,11 +47,10 @@ class Node(TikzObject):
     @property
     def z(self):
         return self._z
-    
+
     @property
     def ndim(self):
         return self._ndim
-
 
     @property
     def content(self):
@@ -65,10 +67,14 @@ class Node(TikzObject):
         # options = ", ".join(
         #     f"{k.replace('_', ' ')}={v}" for k, v in self.options.items()
         # )
-        options = self.options
+        options = self.tikz_options
         if options:
             options = f"[{options}]"
 
-        node_string = f"\\node{options} ({self.label}) at ({self.x}, {self.y}) {{{self.content}}};\n"
+        if self.ndim == 2:
+            node_string = f"\\node{options} ({self.label}) at ({self.x}, {self.y}) {{{self.content}}};\n"
+        else:
+            node_string = f"\\node{options} ({self.label}) at (axis cs:{self.x}, {self.y}, {self.z}) {{{self.content}}};\n"
+
         node_string = self.add_comment(node_string)
         return node_string

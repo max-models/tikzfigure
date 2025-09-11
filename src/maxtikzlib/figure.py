@@ -13,6 +13,7 @@ from maxtikzlib.linestyle import Linestyle
 from maxtikzlib.loop import Loop
 from maxtikzlib.node import Node
 from maxtikzlib.path import Path
+from maxtikzlib.plot import Plot3D
 from maxtikzlib.wrapper import TikzWrapper
 
 
@@ -146,11 +147,12 @@ class TikzFigure:
         self,
         x: float | int,
         y: float | int,
-        z: float | int| None = None,
-        label=None,
+        z: float | int | None = None,
+        label: str | None = None,
         content: str = "",
-        layer=0,
-        comment=None,
+        layer: int = 0,
+        comment: str | None = None,
+        options: list | str = [],
         **kwargs,
     ):
         """
@@ -167,6 +169,9 @@ class TikzFigure:
         Returns:
         - node (Node): The Node object that was added.
         """
+        if isinstance(options, str):
+            options = [options]
+
         if label is None:
             label = f"node{self._node_counter}"
         node = Node(
@@ -177,6 +182,7 @@ class TikzFigure:
             layer=layer,
             content=content,
             comment=comment,
+            options=options,
             **kwargs,
         )
         self.nodes.append(node)
@@ -209,18 +215,6 @@ class TikzFigure:
         """
         if not isinstance(nodes, list):
             raise ValueError("nodes parameter must be a list of node names.")
-        # nodes = [
-        #     (
-        #         node
-        #         if isinstance(node, Node)
-        #         else (
-        #             self.get_node(node)
-        #             if isinstance(node, str)
-        #             else ValueError(f"Invalid node type: {type(node)}")
-        #         )
-        #     )
-        #     for node in nodes
-        # ]
 
         nodes_cleaned = []
 
@@ -252,6 +246,64 @@ class TikzFigure:
             self.layers[layer] = Tikzlayer(layer)
             self.layers[layer].add(path)
         return path
+
+    def add_plot3d(
+        self,
+        x: list,
+        y: list,
+        z: list,
+        layer: int = 0,
+        comment: str | None = None,
+        center=False,
+        **kwargs,
+    ):
+        """
+        Add a line or path connecting multiple nodes.
+
+        Parameters:
+        - nodes (list of str): List of node names to connect OR list of coordinates
+        - **kwargs: Additional TikZ path options (e.g., style, color).
+
+        Examples:
+        - add_path(['A', 'B', 'C'], color='blue')
+          Connects nodes A -> B -> C with a blue line.
+        """
+        # if not isinstance(nodes, list):
+        #     raise ValueError("nodes parameter must be a list of node names.")
+
+        # nodes_cleaned = []
+
+        # for node in nodes:
+        #     if isinstance(node, Node):
+        #         nodes_cleaned.append(node)
+        #     elif isinstance(node, str):
+        #         # Find the node by its label
+        #         nodes_cleaned.append(self.get_node(node))
+        #     elif isinstance(node, tuple) or isinstance(node, list):
+        #         node = tuple(node)
+        #         nodes_cleaned.append(TikzCoordinate(*node, layer=layer))
+        #     else:
+        #         raise NotImplementedError(
+        #             f"{node = }, {type(node) = } is not a valid node type!"
+        #         )
+        # for node in nodes_cleaned:
+        #     print(f"{node.ndim = }")
+        plot = Plot3D(
+            x=x,
+            y=y,
+            z=z,
+            comment=comment,
+            center=center,
+            **kwargs,
+        )
+
+        self.paths.append(plot)
+        if layer in self.layers:
+            self.layers[layer].add(plot)
+        else:
+            self.layers[layer] = Tikzlayer(layer)
+            self.layers[layer].add(plot)
+        return plot
 
     def add_item(self, item, layer=0):
         if layer in self.layers:
@@ -623,6 +675,9 @@ class TikzFigure:
         ax.set_xlim(min(all_x) - padding, max(all_x) + padding)
         ax.set_ylim(min(all_y) - padding, max(all_y) + padding)
         ax.set_aspect("equal", adjustable="datalim")
+
+
+# class TikzFigure3D
 
 
 def main():

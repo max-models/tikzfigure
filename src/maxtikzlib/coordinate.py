@@ -2,7 +2,9 @@ from maxtikzlib.base import TikzObject
 
 
 class TikzCoordinate(TikzObject):
-    def __init__(self, x: float, y: float, z: float | None = None, layer: int = 0) -> None:
+    def __init__(
+        self, x: float, y: float, z: float | None = None, layer: int = 0
+    ) -> None:
         super().__init__(layer=layer, comment=None)
 
         self._x = x
@@ -24,7 +26,7 @@ class TikzCoordinate(TikzObject):
     @property
     def z(self):
         return self._z
-    
+
     @property
     def coordinate(self):
         if self.ndim == 2:
@@ -35,4 +37,3 @@ class TikzCoordinate(TikzObject):
     @property
     def ndim(self):
         return self._ndim
-    
