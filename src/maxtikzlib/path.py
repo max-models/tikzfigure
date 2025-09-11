@@ -63,7 +63,8 @@ class Path(TikzObject):
                 else:
                     label_list.append(f"({node.label})")
             elif isinstance(node, TikzCoordinate):
-                label_list.append(f"({node.x},{node.y})")
+                # label_list.append(f"{node.coordinate}")
+                label_list.append(f"{tuple(float(x) for x in node.coordinate)}")
 
         path_str = " to ".join(label_list)
         if self.cycle:

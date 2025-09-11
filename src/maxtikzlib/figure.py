@@ -144,8 +144,9 @@ class TikzFigure:
 
     def add_node(
         self,
-        x,
-        y,
+        x: float | int,
+        y: float | int,
+        z: float | int| None = None,
         label=None,
         content: str = "",
         layer=0,
@@ -171,6 +172,7 @@ class TikzFigure:
         node = Node(
             x=x,
             y=y,
+            z=z,
             label=label,
             layer=layer,
             content=content,
@@ -235,7 +237,8 @@ class TikzFigure:
                 raise NotImplementedError(
                     f"{node = }, {type(node) = } is not a valid node type!"
                 )
-        # print(nodes_cleaned)
+        # for node in nodes_cleaned:
+        #     print(f"{node.ndim = }")
         path = Path(
             nodes_cleaned,
             comment=comment,
@@ -316,11 +319,11 @@ class TikzFigure:
         tikz_script = "\\begin{tikzpicture}\n"
         tikz_script += "\\begin{axis}[\n"
         tikz_script += "view={20}{30},\n"
-        # tikz_script += "axis lines=center,\n"
+        tikz_script += "axis lines=center,\n"
         # tikz_script += "xlabel={$x$},\n"
         # tikz_script += "ylabel={$y$},\n"
         # tikz_script += "zlabel={$z$},\n"
-        # tikz_script += "grid=major\n"
+        tikz_script += "grid=major\n"
         tikz_script += "    ]\n"
         tikz_script += "\\addplot3+[only marks, mark=*] coordinates {(1,2,3)};\n"
         # tikz_script += "\\node at (axis cs:1,2,3) [anchor=west] {$P(1,2,3)$};\n"
@@ -481,13 +484,13 @@ class TikzFigure:
         else:
             raise ValueError(f"Unsupported file format: {ext}")
 
-    def show(self, verbose=False):
+    def show(self, width=None, height=None, verbose=False):
         from IPython.display import Image, display
 
         with tempfile.TemporaryDirectory() as tempdir:
             temp_pdf = os.path.join(tempdir, "temp.png")
             self.savefig(filename=temp_pdf, verbose=verbose)
-            display(Image(filename=temp_pdf))
+            display(Image(filename=temp_pdf, width=width, height=height))
 
     # TODO: This should probably be removed and moved to maxplotlib instead
     def plot_matplotlib(self, ax):

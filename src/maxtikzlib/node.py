@@ -4,8 +4,9 @@ from maxtikzlib.base import TikzObject
 class Node(TikzObject):
     def __init__(
         self,
-        x: float,
-        y: float,
+        x: float | int,
+        y: float | int,
+        z: float | int | None = None,
         label: str = "",
         content: str = "",
         comment: str | None = None,
@@ -23,6 +24,12 @@ class Node(TikzObject):
         """
         self._x = x
         self._y = y
+        self._z = z
+        if z is None:
+            self._ndim = 2
+        else:
+            self._ndim = 3
+        
         self._content = content
         super().__init__(label=label, comment=comment, layer=layer, **kwargs)
 
@@ -33,6 +40,15 @@ class Node(TikzObject):
     @property
     def y(self):
         return self._y
+
+    @property
+    def z(self):
+        return self._z
+    
+    @property
+    def ndim(self):
+        return self._ndim
+
 
     @property
     def content(self):
