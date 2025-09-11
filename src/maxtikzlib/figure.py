@@ -372,13 +372,12 @@ class TikzFigure:
         tikz_script += "\\begin{axis}[\n"
         tikz_script += "view={20}{30},\n"
         tikz_script += "axis lines=center,\n"
-        # tikz_script += "xlabel={$x$},\n"
-        # tikz_script += "ylabel={$y$},\n"
-        # tikz_script += "zlabel={$z$},\n"
+        tikz_script += "xlabel={$x$},\n"
+        tikz_script += "ylabel={$y$},\n"
+        tikz_script += "zlabel={$z$},\n"
         tikz_script += "grid=major\n"
         tikz_script += "    ]\n"
-        tikz_script += "\\addplot3+[only marks, mark=*] coordinates {(1,2,3)};\n"
-        # tikz_script += "\\node at (axis cs:1,2,3) [anchor=west] {$P(1,2,3)$};\n"
+
         if self._figure_setup:
             tikz_script += f"[{self._figure_setup}]"
         tikz_script += "\n"
