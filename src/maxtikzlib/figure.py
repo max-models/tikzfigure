@@ -13,6 +13,7 @@ from maxtikzlib.linestyle import Linestyle
 from maxtikzlib.loop import Loop
 from maxtikzlib.node import Node
 from maxtikzlib.path import Path
+from maxtikzlib.plot import Plot3D
 from maxtikzlib.wrapper import TikzWrapper
 
 
@@ -51,11 +52,11 @@ class TikzFigure:
             self.tikz_to_figure(self._tikz_code)
 
     def tikz_to_figure(self, tikz_code):
-        # print(tikz_code)
         lines = tikz_code.split("\n")
         lines = [line.lstrip().rstrip() for line in lines]
         lines = [line for line in lines if line not in ["", "\n"]]
         lines = [line for line in lines if not line[0] == "%"]
+
         assert lines[0] == "\\begin{tikzpicture}"
         assert lines[-1] == "\\end{tikzpicture}"
 
@@ -109,9 +110,9 @@ class TikzFigure:
                 # print(coordinates.split(','))
 
                 self.add_node(
-                    coordinates[0],
-                    coordinates[1],
-                    node_name,
+                    x=coordinates[0],
+                    y=coordinates[1],
+                    label=node_name,
                     layer=current_layer,
                     content=content,
                     **attributes_dict,
@@ -136,7 +137,7 @@ class TikzFigure:
                 # print(f"Attributes: {attributes}")
                 # print(f"Path: {path}")
                 # print(f"Nodes: {nodes}")
-                self.add_path(nodes, path_actions=attributes, layer=current_layer)
+                self.add_path(nodes, options=attributes, layer=current_layer)
 
     def add_layer(self, layer):
         if layer not in self.layers:
@@ -144,12 +145,14 @@ class TikzFigure:
 
     def add_node(
         self,
-        x,
-        y,
-        label=None,
+        x: float | int,
+        y: float | int,
+        z: float | int | None = None,
+        label: str | None = None,
         content: str = "",
-        layer=0,
-        comment=None,
+        layer: int = 0,
+        comment: str | None = None,
+        options: list | str = [],
         **kwargs,
     ):
         """
@@ -166,15 +169,20 @@ class TikzFigure:
         Returns:
         - node (Node): The Node object that was added.
         """
+        if isinstance(options, str):
+            options = [options]
+
         if label is None:
             label = f"node{self._node_counter}"
         node = Node(
             x=x,
             y=y,
+            z=z,
             label=label,
             layer=layer,
             content=content,
             comment=comment,
+            options=options,
             **kwargs,
         )
         self.nodes.append(node)
@@ -207,18 +215,6 @@ class TikzFigure:
         """
         if not isinstance(nodes, list):
             raise ValueError("nodes parameter must be a list of node names.")
-        # nodes = [
-        #     (
-        #         node
-        #         if isinstance(node, Node)
-        #         else (
-        #             self.get_node(node)
-        #             if isinstance(node, str)
-        #             else ValueError(f"Invalid node type: {type(node)}")
-        #         )
-        #     )
-        #     for node in nodes
-        # ]
 
         nodes_cleaned = []
 
@@ -235,7 +231,8 @@ class TikzFigure:
                 raise NotImplementedError(
                     f"{node = }, {type(node) = } is not a valid node type!"
                 )
-        # print(nodes_cleaned)
+        # for node in nodes_cleaned:
+        #     print(f"{node.ndim = }")
         path = Path(
             nodes_cleaned,
             comment=comment,
@@ -249,6 +246,64 @@ class TikzFigure:
             self.layers[layer] = Tikzlayer(layer)
             self.layers[layer].add(path)
         return path
+
+    def add_plot3d(
+        self,
+        x: list,
+        y: list,
+        z: list,
+        layer: int = 0,
+        comment: str | None = None,
+        center=False,
+        **kwargs,
+    ):
+        """
+        Add a line or path connecting multiple nodes.
+
+        Parameters:
+        - nodes (list of str): List of node names to connect OR list of coordinates
+        - **kwargs: Additional TikZ path options (e.g., style, color).
+
+        Examples:
+        - add_path(['A', 'B', 'C'], color='blue')
+          Connects nodes A -> B -> C with a blue line.
+        """
+        # if not isinstance(nodes, list):
+        #     raise ValueError("nodes parameter must be a list of node names.")
+
+        # nodes_cleaned = []
+
+        # for node in nodes:
+        #     if isinstance(node, Node):
+        #         nodes_cleaned.append(node)
+        #     elif isinstance(node, str):
+        #         # Find the node by its label
+        #         nodes_cleaned.append(self.get_node(node))
+        #     elif isinstance(node, tuple) or isinstance(node, list):
+        #         node = tuple(node)
+        #         nodes_cleaned.append(TikzCoordinate(*node, layer=layer))
+        #     else:
+        #         raise NotImplementedError(
+        #             f"{node = }, {type(node) = } is not a valid node type!"
+        #         )
+        # for node in nodes_cleaned:
+        #     print(f"{node.ndim = }")
+        plot = Plot3D(
+            x=x,
+            y=y,
+            z=z,
+            comment=comment,
+            center=center,
+            **kwargs,
+        )
+
+        self.paths.append(plot)
+        if layer in self.layers:
+            self.layers[layer].add(plot)
+        else:
+            self.layers[layer] = Tikzlayer(layer)
+            self.layers[layer].add(plot)
+        return plot
 
     def add_item(self, item, layer=0):
         if layer in self.layers:
@@ -313,7 +368,16 @@ class TikzFigure:
         Returns:
         - tikz_script (str): The TikZ script as a string.
         """
-        tikz_script = "\\begin{tikzpicture}"
+        tikz_script = "\\begin{tikzpicture}\n"
+        tikz_script += "\\begin{axis}[\n"
+        tikz_script += "view={20}{30},\n"
+        tikz_script += "axis lines=center,\n"
+        tikz_script += "xlabel={$x$},\n"
+        tikz_script += "ylabel={$y$},\n"
+        tikz_script += "zlabel={$z$},\n"
+        tikz_script += "grid=major\n"
+        tikz_script += "    ]\n"
+
         if self._figure_setup:
             tikz_script += f"[{self._figure_setup}]"
         tikz_script += "\n"
@@ -322,7 +386,8 @@ class TikzFigure:
         layers = sorted([str(layer) for layer in self.layers.keys()])
         for layer in layers:
             tikz_script += f"\\pgfdeclarelayer{{{layer}}}\n"
-        tikz_script += f"\\pgfsetlayers{{{','.join(layers)}}}\n"
+        if len(layers) > 0:
+            tikz_script += f"\\pgfsetlayers{{{','.join(layers)}}}\n"
 
         # Add grid if enabled
         # TODO: Create a Grid class
@@ -357,6 +422,7 @@ class TikzFigure:
         for layer in ordered_layers:
             tikz_script += layer.generate_tikz()
 
+        tikz_script += "\\end{axis}\n"
         tikz_script += "\\end{tikzpicture}"
 
         # Wrap in figure environment if necessary
@@ -378,6 +444,8 @@ class TikzFigure:
         latex_document = (
             "\\documentclass[border=10pt]{standalone}\n"
             "\\usepackage{tikz}\n"
+            "\\usepackage{pgfplots}\n"
+            "\\pgfplotsset{compat=newest}\n"
             "\\usetikzlibrary{arrows.meta}\n"
             "\\begin{document}\n"
             f"{tikz_code}\n"
@@ -467,13 +535,13 @@ class TikzFigure:
         else:
             raise ValueError(f"Unsupported file format: {ext}")
 
-    def show(self, verbose=False):
+    def show(self, width=None, height=None, verbose=False):
         from IPython.display import Image, display
 
         with tempfile.TemporaryDirectory() as tempdir:
             temp_pdf = os.path.join(tempdir, "temp.png")
             self.savefig(filename=temp_pdf, verbose=verbose)
-            display(Image(filename=temp_pdf))
+            display(Image(filename=temp_pdf, width=width, height=height))
 
     # TODO: This should probably be removed and moved to maxplotlib instead
     def plot_matplotlib(self, ax):
@@ -608,11 +676,14 @@ class TikzFigure:
         ax.set_aspect("equal", adjustable="datalim")
 
 
+# class TikzFigure3D
+
+
 def main():
 
     tikz = TikzFigure()
 
-    path_actions = ["draw", "rounded corners", "line width=3"]
+    options = ["draw", "rounded corners", "line width=3"]
 
     # M
     nodes = [[0, 0], [0, 3], [1, 2], [2, 3], [2, 0]]
@@ -620,7 +691,7 @@ def main():
         tikz.add_node(node_data[0], node_data[1], f"M{i}", layer=0)
     tikz.add_path(
         [f"M{i}" for i in range(len(nodes))],
-        path_actions=path_actions,
+        options=options,
         layer=1,
     )
 

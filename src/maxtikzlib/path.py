@@ -1,3 +1,5 @@
+from cProfile import label
+
 from maxtikzlib.base import TikzObject
 from maxtikzlib.coordinate import TikzCoordinate
 from maxtikzlib.node import Node
@@ -7,12 +9,12 @@ class Path(TikzObject):
     def __init__(
         self,
         nodes: list,
-        path_actions=[],
         cycle: bool = False,
         label: str = "",
         comment: str | None = None,
         layer: int = 0,
-        center=False,
+        center: bool = False,
+        options: list = [],
         **kwargs,
     ):
         """
@@ -23,15 +25,12 @@ class Path(TikzObject):
         - **kwargs: Additional TikZ path options (e.g., style, color).
         """
         self.nodes = nodes
-        self._path_actions = path_actions
         self._cycle = cycle
         self._center = center
 
-        super().__init__(label=label, comment=comment, layer=layer, **kwargs)
-
-    @property
-    def path_actions(self):
-        return self._path_actions
+        super().__init__(
+            label=label, comment=comment, layer=layer, options=options, **kwargs
+        )
 
     @property
     def cycle(self) -> bool:
@@ -41,20 +40,19 @@ class Path(TikzObject):
     def center(self) -> bool:
         return self._center
 
-    def to_tikz(self):
-        """
-        Generate the TikZ code for this path.
+    @property
+    def tikz_options(self) -> str:
+        # options = super().tikz_options
+        options = ", ".join(
+            f"{k.replace('_', ' ')}={v}" for k, v in self.kwargs.items()
+        )
+        if len(self.options) > 0:
+            options = ", ".join(self.options) + ", " + options
 
-        Returns:
-        - tikz_str (str): TikZ code string for the path.
-        """
+        return options
 
-        options = self.options
-        if len(self.path_actions) > 0:
-            options = ", ".join(self.path_actions) + ", " + options
-        if options:
-            options = f"[{options}]"
-
+    @property
+    def label_list(self) -> list:
         label_list = []
         for node in self.nodes:
             if isinstance(node, Node):
@@ -63,18 +61,25 @@ class Path(TikzObject):
                 else:
                     label_list.append(f"({node.label})")
             elif isinstance(node, TikzCoordinate):
-                label_list.append(f"({node.x},{node.y})")
+                label_list.append(f"{tuple(float(x) for x in node.coordinate)}")
+        return label_list
+
+    def to_tikz(self):
+        """
+        Generate the TikZ code for this path.
+
+        Returns:
+        - tikz_str (str): TikZ code string for the path.
+        """
+
+        options = self.tikz_options
+        label_list = self.label_list
 
         path_str = " to ".join(label_list)
-        # if self.center:
-        #     path_str = " to ".join(f"({node.label}.center)" for node in self.nodes)
-        # else:
-        #     path_str = " to ".join(f"({node.label})" for node in self.nodes)
-
         if self.cycle:
             path_str += " -- cycle"
 
-        path_str = f"\\draw{options} {path_str};\n"
+        path_str = f"\\draw[{options}] {path_str};\n"
 
         path_str = self.add_comment(path_str)
 

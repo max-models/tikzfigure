@@ -4,12 +4,14 @@ class TikzObject:
         label: str | None = None,
         comment: str | None = None,
         layer: int = 0,
+        options: list = [],
         **kwargs,
     ) -> None:
 
         self._label = label
         self._comment = comment
         self._layer = layer
+        self._options = options
         self._kwargs = kwargs
 
     @property
@@ -25,12 +27,21 @@ class TikzObject:
         return self._layer
 
     @property
+    def options(self) -> list:
+        return self._options
+
+    @property
     def kwargs(self) -> dict:
         return self._kwargs
 
     @property
-    def options(self) -> str:
-        options = ", ".join(
+    def tikz_options(self) -> str:
+        if len(self.options) == 0:
+            options = ""
+        else:
+            options = ", ".join(self.options) + ", "
+
+        options += ", ".join(
             f"{k.replace('_', ' ')}={v}" for k, v in self.kwargs.items()
         )
         return options

@@ -71,7 +71,7 @@ instance/
 
 # Sphinx documentation
 docs/build/
-docs/source/tutorials/
+docs/source/tutorials/*.ipynb
 
 # PyBuilder
 .pybuilder/
