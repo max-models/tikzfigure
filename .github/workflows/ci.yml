@@ -75,6 +75,7 @@ jobs:
       - name: Test tutorial notebooks
         run: |
           source env/bin/activate
+          pip install scipy
           jupyter nbconvert --to notebook --execute tutorials/*.ipynb --output-dir=/tmp --ExecutePreprocessor.timeout=300
 
       - name: Test docs build
