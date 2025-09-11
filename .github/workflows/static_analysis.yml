@@ -10,8 +10,12 @@ on:
       - main
       - devel
 
+defaults:
+  run:
+    shell: bash
+
 jobs:
-  static-analysis:
+  cloc:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout the code
@@ -24,12 +28,23 @@ jobs:
           ./cloc --version
           ./cloc $(git ls-files)
 
+  black:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout the code
+        uses: actions/checkout@v4
+
       - name: Code formatting with black
         run: |
-          pip install black
-          pip install "black[jupyter]"
+          pip install black "black[jupyter]"
           black --check src/
           black --check tutorials/
+
+  isort:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout the code
+        uses: actions/checkout@v4
 
       - name: Code formatting with isort
         run: |
@@ -37,26 +52,50 @@ jobs:
           isort --check src/
           isort --check tutorials/
 
-      - name: Code formatting with mypy
-        continue-on-error: true
+  mypy:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - name: Checkout the code
+        uses: actions/checkout@v4
+
+      - name: Type checking with mypy
         run: |
           pip install mypy
-          mypy src/
+          mypy src/ || true
 
-      - name: Code formatting with prospector
-        continue-on-error: true
+  prospector:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - name: Checkout the code
+        uses: actions/checkout@v4
+
+      - name: Code analysis with prospector
         run: |
           pip install prospector
-          prospector src/
-      
-      - name: Code formatting with ruff
-        continue-on-error: true
+          prospector src/ || true
+
+  ruff:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - name: Checkout the code
+        uses: actions/checkout@v4
+
+      - name: Linting with ruff
         run: |
           pip install ruff
-          ruff check src/
+          ruff check src/ || true
 
-      - name: Code formatting with pylint
-        continue-on-error: true
+  pylint:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - name: Checkout the code
+        uses: actions/checkout@v4
+
+      - name: Linting with pylint
         run: |
           pip install pylint
-          pylint src/
+          pylint src/ || true
