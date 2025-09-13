@@ -1,26 +1,18 @@
 [build-system]
+requires = ["setuptools", "wheel"]
 build-backend = "setuptools.build_meta"
-
-requires = [ "setuptools", "wheel" ]
 
 [project]
 name = "maxtikzlib"
 version = "0.1"
 description = "Python interface to generate (readable) Tikz figures."
 readme = "README.md"
-keywords = [ "python" ]
-license = { file = "LICENSE.txt" }
-authors = [ { name = "Max" } ]
 requires-python = ">=3.8"
+license = {file = "LICENSE.txt"}
+keywords = ["python"]
+authors = [{name = "Max"}]
 classifiers = [
-  "Development Status :: 3 - Alpha",
-  "Programming Language :: Python :: 3 :: Only",
-  "Programming Language :: Python :: 3.8",
-  "Programming Language :: Python :: 3.9",
-  "Programming Language :: Python :: 3.10",
-  "Programming Language :: Python :: 3.11",
-  "Programming Language :: Python :: 3.12",
-  "Programming Language :: Python :: 3.13",
+    "Development Status :: 3 - Alpha",
 ]
 dependencies = [
     "matplotlib",
@@ -50,18 +42,6 @@ docs = [
   "sphinx",
   "sphinx-rtd-theme",
   "scipy",
-]
-# https://medium.com/@pratikdomadiya123/build-project-documentation-quickly-with-the-sphinx-python-2a9732b66594
-optional-dependencies.docs = [
-  "ipykernel",
-  "myst-parser",
-  "nbconvert",
-  "nbsphinx",
-  "jupyterlab",
-  "pre-commit",
-  "pyproject-fmt",
-  "sphinx",
-  "sphinx-rtd-theme",
 ]
 
 [project.urls]
