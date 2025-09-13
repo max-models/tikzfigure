@@ -4,8 +4,6 @@ Python interface to generate (readable) Tikz figures.
 
 Documentation: https://max-models.github.io/maxtikzlib/
 
-Documentation: https://max-models.github.io/template-python/
-
 # Install
 
 Create and activate python environment
