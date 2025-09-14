@@ -43,6 +43,7 @@ optional-dependencies.docs = [
   "pyproject-fmt",
   "sphinx",
   "sphinx-rtd-theme",
+  "sphinx_bootstrap_theme",
 ]
 optional-dependencies.test = [ "coverage", "pytest" ]
 urls."Source" = "https://github.com/max-models/template-python"

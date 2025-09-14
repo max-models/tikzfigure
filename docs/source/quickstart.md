@@ -1,10 +1,10 @@
-# template-python
+# Quickstart
 
-Template repository for python projects
+Clone the repo
 
-Documentation: https://max-models.github.io/template-python/
-
-# Install
+```
+git clone ...
+```
 
 Create and activate python environment
 
@@ -28,9 +28,11 @@ template-python
 
 # Build docs
 
-
 ```
 make html
 cd ../
 open docs/_build/html/index.html
 ```
+
+```{toctree}
+:maxdepth: 1
