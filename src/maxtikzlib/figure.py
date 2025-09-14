@@ -59,99 +59,99 @@ class TikzFigure:
         self._node_counter = 0
 
         if self._tikz_code:
-            self.tikz_to_figure(self._tikz_code)
+            lines = self._tikz_code.split("\n")
+            lines = [line.lstrip().rstrip() for line in lines]
+            lines = [line for line in lines if line not in ["", "\n"]]
+            lines = [line for line in lines if not line[0] == "%"]
 
-    def tikz_to_figure(self, tikz_code):
-        lines = tikz_code.split("\n")
-        lines = [line.lstrip().rstrip() for line in lines]
-        lines = [line for line in lines if line not in ["", "\n"]]
-        lines = [line for line in lines if not line[0] == "%"]
+            assert lines[0] == "\\begin{tikzpicture}"
+            assert lines[-1] == "\\end{tikzpicture}"
 
-        assert lines[0] == "\\begin{tikzpicture}"
-        assert lines[-1] == "\\end{tikzpicture}"
+            current_layer = 0
+            for line in lines[1:-1]:
+                # print(line)
 
-        current_layer = 0
-        for line in lines[1:-1]:
-            # print(line)
+                # Match \begin{pgfonlayer}{layer}
+                match_pgfdeclarelayer = re.search(r"\\pgfdeclarelayer\{(\d+)\}", line)
+                if match_pgfdeclarelayer:
+                    layer = match_pgfdeclarelayer.group(1)
+                    self._add_layer(layer)
+                    # print(f"Layer number: {layer}")
 
-            # Match \begin{pgfonlayer}{layer}
-            match_pgfdeclarelayer = re.search(r"\\pgfdeclarelayer\{(\d+)\}", line)
-            if match_pgfdeclarelayer:
-                layer = match_pgfdeclarelayer.group(1)
-                self.add_layer(layer)
-                # print(f"Layer number: {layer}")
-
-            # Match \begin{pgfonlayer}{layer}
-            match_begin_pgfonlayer = re.search(r"\\begin\{pgfonlayer\}\{(\d+)\}", line)
-            if match_begin_pgfonlayer:
-                current_layer = match_begin_pgfonlayer.group(1)
-                # print(f'Current layer: {current_layer}')
-
-            # Match \end{pgfonlayer}{layer}
-            match_end_pgfonlayer = re.search(r"\\end\{pgfonlayer\}\{(\d+)\}", line)
-            if match_end_pgfonlayer:
-                current_layer = 0
-                # print(f'Current layer: {current_layer}')
-
-            # Match \node[attributes] at (x,y) {content};
-            match_node = re.search(
-                r"\\node(?:\[([^\]]+)\])? \((\w+)\) at \(([^,]+, [^)]+)\) \{(.*)\};",
-                line,
-            )
-            if match_node:
-                attributes = match_node.group(1)
-                attributes = [
-                    attribute.lstrip().rstrip() for attribute in attributes.split(",")
-                ]
-                attributes = [
-                    attribute for attribute in attributes if not attribute == ""
-                ]
-                attributes_dict = dict(attr.split("=") for attr in attributes)
-                node_name = match_node.group(2)
-                coordinates = match_node.group(3)
-                coordinates = [c for c in coordinates.split(",")]
-                coordinates = [c for c in coordinates]
-                coordinates = [c.lstrip().rstrip() for c in coordinates]
-                content = match_node.group(4)
-                # print(f"Attributes: {attributes_dict}")
-                # print(f"Node name: {node_name}")
-                # print(f"Coordinates: {coordinates}")
-                # print(f"Node text: '{node_text}'")
-                # print(coordinates.split(','))
-
-                self.add_node(
-                    x=coordinates[0],
-                    y=coordinates[1],
-                    label=node_name,
-                    layer=current_layer,
-                    content=content,
-                    **attributes_dict,
+                # Match \begin{pgfonlayer}{layer}
+                match_begin_pgfonlayer = re.search(
+                    r"\\begin\{pgfonlayer\}\{(\d+)\}", line
                 )
+                if match_begin_pgfonlayer:
+                    current_layer = match_begin_pgfonlayer.group(1)
+                    # print(f'Current layer: {current_layer}')
 
-            # Match \draw[attributes] (node1.center) to (node2.center) to (node2.center)...;
-            match_draw = re.search(
-                r"\\draw(?:\[([^\]]+)\])? ((?:\(\w+\.*\) to )+\(\w+\.*\));",
-                line,
-            )
-            if match_draw:
-                attributes = match_draw.group(1)
-                attributes = [
-                    attribute.lstrip().rstrip() for attribute in attributes.split(",")
-                ]
-                attributes = [
-                    attribute for attribute in attributes if not attribute == ""
-                ]
-                path = match_draw.group(2)
-                nodes = re.findall(r"\((\w+)\.*\)", path)
+                # Match \end{pgfonlayer}{layer}
+                match_end_pgfonlayer = re.search(r"\\end\{pgfonlayer\}\{(\d+)\}", line)
+                if match_end_pgfonlayer:
+                    current_layer = 0
+                    # print(f'Current layer: {current_layer}')
 
-                # print(f"Attributes: {attributes}")
-                # print(f"Path: {path}")
-                # print(f"Nodes: {nodes}")
-                self.add_path(nodes, options=attributes, layer=current_layer)
+                # Match \node[attributes] at (x,y) {content};
+                match_node = re.search(
+                    r"\\node(?:\[([^\]]+)\])? \((\w+)\) at \(([^,]+, [^)]+)\) \{(.*)\};",
+                    line,
+                )
+                if match_node:
+                    attributes = match_node.group(1)
+                    attributes = [
+                        attribute.lstrip().rstrip()
+                        for attribute in attributes.split(",")
+                    ]
+                    attributes = [
+                        attribute for attribute in attributes if not attribute == ""
+                    ]
+                    attributes_dict = dict(attr.split("=") for attr in attributes)
+                    node_name = match_node.group(2)
+                    coordinates = match_node.group(3)
+                    coordinates = [c for c in coordinates.split(",")]
+                    coordinates = [c for c in coordinates]
+                    coordinates = [c.lstrip().rstrip() for c in coordinates]
+                    content = match_node.group(4)
+                    # print(f"Attributes: {attributes_dict}")
+                    # print(f"Node name: {node_name}")
+                    # print(f"Coordinates: {coordinates}")
+                    # print(f"Node text: '{node_text}'")
+                    # print(coordinates.split(','))
 
-    def add_layer(self, layer):
-        if layer not in self.layers:
-            self.layers[layer] = Tikzlayer(layer)
+                    self.node(
+                        x=coordinates[0],
+                        y=coordinates[1],
+                        label=node_name,
+                        layer=current_layer,
+                        content=content,
+                        **attributes_dict,
+                    )
+
+                # Match \draw[attributes] (node1.center) to (node2.center) to (node2.center)...;
+                match_draw = re.search(
+                    r"\\draw(?:\[([^\]]+)\])? ((?:\(\w+\.*\) to )+\(\w+\.*\));",
+                    line,
+                )
+                if match_draw:
+                    attributes = match_draw.group(1)
+                    attributes = [
+                        attribute.lstrip().rstrip()
+                        for attribute in attributes.split(",")
+                    ]
+                    attributes = [
+                        attribute for attribute in attributes if not attribute == ""
+                    ]
+                    path = match_draw.group(2)
+                    nodes = re.findall(r"\((\w+)\.*\)", path)
+
+                    # print(f"Attributes: {attributes}")
+                    # print(f"Path: {path}")
+                    # print(f"Nodes: {nodes}")
+                    self._add_path(nodes, options=attributes, layer=current_layer)
+
+    # ------------------------------------------------------------- #
+    # Public methods
 
     def colorlet(
         self,
@@ -164,7 +164,7 @@ class TikzFigure:
         self.colors.append((name, color))
         return color
 
-    def add_node(
+    def node(
         self,
         x: float | int,
         y: float | int,
@@ -223,7 +223,7 @@ class TikzFigure:
         center=False,
         **kwargs,
     ):
-        path = self.add_path(
+        path = self._add_path(
             nodes=nodes,
             layer=layer,
             comment=comment,
@@ -241,7 +241,7 @@ class TikzFigure:
         center=False,
         **kwargs,
     ):
-        path = self.add_path(
+        path = self._add_path(
             nodes=nodes,
             layer=layer,
             comment=comment,
@@ -251,61 +251,7 @@ class TikzFigure:
         )
         return path
 
-    def add_path(
-        self,
-        nodes: list,
-        layer: int = 0,
-        comment: str | None = None,
-        center=False,
-        tikz_command="draw",
-        **kwargs,
-    ):
-        """
-        Add a line or path connecting multiple nodes.
-
-        Parameters:
-        - nodes (list of str): List of node names to connect OR list of coordinates
-        - **kwargs: Additional TikZ path options (e.g., style, color).
-
-        Examples:
-        - add_path(['A', 'B', 'C'], color='blue')
-          Connects nodes A -> B -> C with a blue line.
-        """
-        if not isinstance(nodes, list):
-            raise ValueError("nodes parameter must be a list of node names.")
-
-        nodes_cleaned = []
-
-        for node in nodes:
-            if isinstance(node, Node):
-                nodes_cleaned.append(node)
-            elif isinstance(node, str):
-                # Find the node by its label
-                nodes_cleaned.append(self.get_node(node))
-            elif isinstance(node, tuple) or isinstance(node, list):
-                node = tuple(node)
-                nodes_cleaned.append(TikzCoordinate(*node, layer=layer))
-            else:
-                raise NotImplementedError(
-                    f"{node = }, {type(node) = } is not a valid node type!"
-                )
-
-        path = Path(
-            nodes_cleaned,
-            comment=comment,
-            center=center,
-            tikz_command=tikz_command,
-            **kwargs,
-        )
-        self.paths.append(path)
-        if layer in self.layers:
-            self.layers[layer].add(path)
-        else:
-            self.layers[layer] = Tikzlayer(layer)
-            self.layers[layer].add(path)
-        return path
-
-    def add_plot3d(
+    def plot3d(
         self,
         x: list,
         y: list,
@@ -332,14 +278,6 @@ class TikzFigure:
             self.layers[layer].add(plot)
         return plot
 
-    def add_item(self, item, layer=0):
-        if layer in self.layers:
-            self.layers[layer].add(item)
-        else:
-            self.layers[layer] = Tikzlayer(layer)
-            self.layers[layer].add(item)
-        return item
-
     def loop(
         self,
         variable,
@@ -353,40 +291,11 @@ class TikzFigure:
             layer=layer,
             comment=comment,
         )
-        self.add_item(loop_obj, layer)
+        self._add_item(
+            item=loop_obj,
+            layer=layer,
+        )
         return loop_obj
-
-    def add_raw(self, raw_tikz, layer=0, **kwargs):
-        tikz = TikzWrapper(raw_tikz)
-        if layer in self.layers:
-            self.layers[layer].add(tikz)
-        else:
-            self.layers[layer] = Tikzlayer(layer)
-            self.layers[layer].add(tikz)
-        return tikz
-
-    def get_node(self, node_label):
-        for node in self.nodes:
-            if node.label == node_label:
-                return node
-
-    def get_layer(self, item):
-        for layer, layer_items in self.layers.items():
-            if item in [layer_item.label for layer_item in layer_items]:
-                return layer
-        print(f"Item {item} not found in any layer!")
-
-    def add_tabs(self, tikz_script):
-        tikz_script_new = ""
-        tab_str = "    "
-        num_tabs = 0
-        for line in tikz_script.split("\n"):
-            if "\\end" in line or "end \\foreach" in line:
-                num_tabs = max(num_tabs - 1, 0)
-            tikz_script_new += f"{tab_str*num_tabs}{line}\n"
-            if "\\begin" in line or "start \\foreach" in line:
-                num_tabs += 1
-        return tikz_script_new
 
     def generate_tikz(self):
         """
@@ -467,7 +376,7 @@ class TikzFigure:
                 figure_env += f"    \\label{{{self._label}}}\n"
             figure_env += "\\end{figure}"
             tikz_script = figure_env
-        tikz_script = self.add_tabs(tikz_script)
+        tikz_script = self._add_tabs(tikz_script)
         return tikz_script
 
     def generate_standalone(self):
@@ -576,32 +485,97 @@ class TikzFigure:
             self.savefig(filename=temp_pdf, verbose=verbose)
             display(Image(filename=temp_pdf, width=width, height=height))
 
+    # ------------------------------------------------------------- #
+    # Private methods
+
+    def _add_layer(self, layer):
+        if layer not in self.layers:
+            self.layers[layer] = Tikzlayer(layer)
+
+    def _add_path(
+        self,
+        nodes: list,
+        layer: int = 0,
+        comment: str | None = None,
+        center=False,
+        tikz_command="draw",
+        **kwargs,
+    ):
+        """
+        Add a line or path connecting multiple nodes.
+
+        Parameters:
+        - nodes (list of str): List of node names to connect OR list of coordinates
+        - **kwargs: Additional TikZ path options (e.g., style, color).
+
+        Examples:
+        - add_path(['A', 'B', 'C'], color='blue')
+          Connects nodes A -> B -> C with a blue line.
+        """
+        if not isinstance(nodes, list):
+            raise ValueError("nodes parameter must be a list of node names.")
+
+        nodes_cleaned = []
+
+        for node in nodes:
+            if isinstance(node, Node):
+                nodes_cleaned.append(node)
+            elif isinstance(node, str):
+                # Find the node by its label
+                nodes_cleaned.append(self._get_node(node))
+            elif isinstance(node, tuple) or isinstance(node, list):
+                node = tuple(node)
+                nodes_cleaned.append(TikzCoordinate(*node, layer=layer))
+            else:
+                raise NotImplementedError(
+                    f"{node = }, {type(node) = } is not a valid node type!"
+                )
+
+        path = Path(
+            nodes_cleaned,
+            comment=comment,
+            center=center,
+            tikz_command=tikz_command,
+            **kwargs,
+        )
+        self.paths.append(path)
+        self._add_item(item=path, layer=layer)
+        return path
+
+    def _add_item(self, item, layer=0):
+        if layer in self.layers:
+            self.layers[layer].add(item)
+        else:
+            self.layers[layer] = Tikzlayer(layer)
+            self.layers[layer].add(item)
+        return item
+
+    def _get_node(self, node_label):
+        for node in self.nodes:
+            if node.label == node_label:
+                return node
+
+    def _get_layer(self, item):
+        for layer, layer_items in self.layers.items():
+            if item in [layer_item.label for layer_item in layer_items]:
+                return layer
+        print(f"Item {item} not found in any layer!")
+
+    def _add_tabs(self, tikz_script):
+        tikz_script_new = ""
+        tab_str = "    "
+        num_tabs = 0
+        for line in tikz_script.split("\n"):
+            if "\\end" in line or "end \\foreach" in line:
+                num_tabs = max(num_tabs - 1, 0)
+            tikz_script_new += f"{tab_str*num_tabs}{line}\n"
+            if "\\begin" in line or "start \\foreach" in line:
+                num_tabs += 1
+        return tikz_script_new
+
+    # ---------------------------------------------------------------- #
+    # Properties
+
     @property
     def ndim(self):
         return self._ndim
-
-
-# class TikzFigure3D
-
-
-def main():
-
-    tikz = TikzFigure()
-
-    options = ["draw", "rounded corners", "line width=3"]
-
-    # M
-    nodes = [[0, 0], [0, 3], [1, 2], [2, 3], [2, 0]]
-    for i, node_data in enumerate(nodes):
-        tikz.add_node(node_data[0], node_data[1], f"M{i}", layer=0)
-    tikz.add_path(
-        [f"M{i}" for i in range(len(nodes))],
-        options=options,
-        layer=1,
-    )
-
-    print(tikz.generate_standalone())
-
-
-if __name__ == "__main__":
-    main()

@@ -43,11 +43,6 @@ class Loop(TikzObject):
         self._items.append(path)
         return path
 
-    def add_raw(self, raw_tikz):
-        wrapper = TikzWrapper(raw_tikz)
-        self._items.append(wrapper)
-        return wrapper
-
     def add_loop(self, variable, values, comment: str | None = None):
         """
         Add a nested loop inside this loop.
