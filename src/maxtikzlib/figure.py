@@ -204,12 +204,49 @@ class TikzFigure:
         self._node_counter += 1
         return node
 
+    def filldraw(
+        self,
+        nodes: list,
+        layer: int = 0,
+        comment: str | None = None,
+        center=False,
+        **kwargs,
+    ):
+        path = self.add_path(
+            nodes=nodes,
+            layer=layer,
+            comment=comment,
+            center=center,
+            tikz_command="filldraw",
+            **kwargs,
+        )
+        return path
+
+    def draw(
+        self,
+        nodes: list,
+        layer: int = 0,
+        comment: str | None = None,
+        center=False,
+        **kwargs,
+    ):
+        path = self.add_path(
+            nodes=nodes,
+            layer=layer,
+            comment=comment,
+            center=center,
+            tikz_command="draw",
+            **kwargs,
+        )
+        return path
+
     def add_path(
         self,
         nodes: list,
         layer: int = 0,
         comment: str | None = None,
         center=False,
+        tikz_command="draw",
         **kwargs,
     ):
         """
@@ -241,12 +278,12 @@ class TikzFigure:
                 raise NotImplementedError(
                     f"{node = }, {type(node) = } is not a valid node type!"
                 )
-        # for node in nodes_cleaned:
-        #     print(f"{node.ndim = }")
+
         path = Path(
             nodes_cleaned,
             comment=comment,
             center=center,
+            tikz_command=tikz_command,
             **kwargs,
         )
         self.paths.append(path)

@@ -15,6 +15,7 @@ class Path(TikzObject):
         layer: int = 0,
         center: bool = False,
         options: list = [],
+        tikz_command: str = "draw",
         **kwargs,
     ):
         """
@@ -27,6 +28,7 @@ class Path(TikzObject):
         self.nodes = nodes
         self._cycle = cycle
         self._center = center
+        self._tikz_command = tikz_command
 
         super().__init__(
             label=label, comment=comment, layer=layer, options=options, **kwargs
@@ -64,6 +66,10 @@ class Path(TikzObject):
                 label_list.append(f"{tuple(float(x) for x in node.coordinate)}")
         return label_list
 
+    @property
+    def tikz_command(self) -> str:
+        return self._tikz_command
+
     def to_tikz(self):
         """
         Generate the TikZ code for this path.
@@ -79,7 +85,7 @@ class Path(TikzObject):
         if self.cycle:
             path_str += " -- cycle"
 
-        path_str = f"\\draw[{options}] {path_str};\n"
+        path_str = f"\\{self.tikz_command}[{options}] {path_str};\n"
 
         path_str = self.add_comment(path_str)
 
