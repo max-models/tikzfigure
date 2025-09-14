@@ -33,7 +33,11 @@ class Node(TikzObject):
 
         self._content = content
         super().__init__(
-            label=label, comment=comment, layer=layer, options=options, **kwargs
+            label=label,
+            comment=comment,
+            layer=layer,
+            options=options,
+            **kwargs,
         )
 
     @property
