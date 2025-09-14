@@ -3,7 +3,11 @@ from maxtikzlib.base import TikzObject
 
 class TikzCoordinate(TikzObject):
     def __init__(
-        self, x: float, y: float, z: float | None = None, layer: int = 0
+        self,
+        x: float,
+        y: float,
+        z: float | None = None,
+        layer: int = 0,
     ) -> None:
         super().__init__(layer=layer, comment=None)
 

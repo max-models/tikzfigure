@@ -1,7 +1,6 @@
 from maxtikzlib.base import TikzObject
 from maxtikzlib import Node
 from maxtikzlib.path import Path
-from maxtikzlib.wrapper import TikzWrapper
 
 
 class Loop(TikzObject):
@@ -32,18 +31,18 @@ class Loop(TikzObject):
     def items(self):
         return self._items
 
-    def node(self, *args, **kwargs):
+    def add_node(self, *args, **kwargs):
         node = Node(*args, **kwargs)
         self._items.append(node)
         return node
 
-    def path(self, nodes, comment: str | None = None, **kwargs):
+    def add_path(self, nodes, comment: str | None = None, **kwargs):
 
         path = Path(nodes, comment=comment, layer=self.layer, **kwargs)
         self._items.append(path)
         return path
 
-    def loop(self, variable, values, comment: str | None = None):
+    def add_loop(self, variable, values, comment: str | None = None):
         """
         Add a nested loop inside this loop.
         """
