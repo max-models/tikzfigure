@@ -4,9 +4,12 @@ class TikzObject:
         label: str | None = None,
         comment: str | None = None,
         layer: int = 0,
-        options: list = [],
+        options: list | None = None,
         **kwargs,
     ) -> None:
+
+        if options is None:
+            options = []
 
         self._label = label
         self._comment = comment

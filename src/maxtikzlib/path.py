@@ -12,7 +12,7 @@ class Path(TikzObject):
         comment: str | None = None,
         layer: int = 0,
         center: bool = False,
-        options: list = [],
+        options: list | None = None,
         tikz_command: str = "draw",
         **kwargs,
     ):
@@ -23,6 +23,10 @@ class Path(TikzObject):
         - nodes (list of str): List of node names to connect.
         - **kwargs: Additional TikZ path options (e.g., style, color).
         """
+
+        if options is None:
+            options = []
+
         self._nodes = nodes
         self._cycle = cycle
         self._center = center

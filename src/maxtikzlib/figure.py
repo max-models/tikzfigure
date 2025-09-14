@@ -184,7 +184,7 @@ class TikzFigure:
         content: str = "",
         layer: int = 0,
         comment: str | None = None,
-        options: list | str = [],
+        options: list | str = None,
         **kwargs,
     ):
         """
@@ -201,6 +201,9 @@ class TikzFigure:
         Returns:
         - node (Node): The Node object that was added.
         """
+        if options is None:
+            options = []
+
         if isinstance(options, str):
             options = [options]
 

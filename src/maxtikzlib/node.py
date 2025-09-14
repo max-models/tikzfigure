@@ -11,7 +11,7 @@ class Node(TikzObject):
         content: str = "",
         comment: str | None = None,
         layer: int = 0,
-        options: list = [],
+        options: list | None = None,
         **kwargs,
     ):
         """
@@ -23,6 +23,9 @@ class Node(TikzObject):
         - name (str, optional): Name of the node. If None, a default name will be assigned.
         - **kwargs: Additional TikZ node options (e.g., shape, color).
         """
+        if options is None:
+            options = []
+
         self._x = x
         self._y = y
         self._z = z
