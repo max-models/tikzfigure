@@ -1,9 +1,9 @@
 import os
 import re
 import subprocess
-from tabnanny import verbose
 import tempfile
 from importlib.metadata import version
+from tabnanny import verbose
 
 import fitz
 
@@ -78,7 +78,8 @@ class TikzFigure:
 
                 # Match \begin{pgfonlayer}{layer}
                 match_begin_pgfonlayer = re.search(
-                    r"\\begin\{pgfonlayer\}\{(\d+)\}", line
+                    r"\\begin\{pgfonlayer\}\{(\d+)\}",
+                    line,
                 )
                 if match_begin_pgfonlayer:
                     current_layer = match_begin_pgfonlayer.group(1)
@@ -351,7 +352,7 @@ class TikzFigure:
             for buffered_layer in buffered_layers:
                 buff_reqs = buffered_layer.get_reqs()
                 if all(
-                    [r in [layer.label for layer in ordered_layers] for r in buff_reqs]
+                    [r in [layer.label for layer in ordered_layers] for r in buff_reqs],
                 ):
                     print("Move layer from buffer")
                     ordered_layers.append(key)
@@ -428,7 +429,7 @@ class TikzFigure:
                     tex_file,
                 ]
                 if verbose:
-                    print(f"{cmd = }")
+                    print(f"{cmd =}")
                 subprocess.run(
                     cmd,
                     cwd=tempdir,
@@ -528,7 +529,7 @@ class TikzFigure:
                 nodes_cleaned.append(TikzCoordinate(*node, layer=layer))
             else:
                 raise NotImplementedError(
-                    f"{node = }, {type(node) = } is not a valid node type!"
+                    f"{node =}, {type(node) =} is not a valid node type!",
                 )
 
         if verbose:
@@ -553,13 +554,13 @@ class TikzFigure:
             self._layers[layer].add(item)
 
         if verbose:
-            print(f"Added {item} to layer {layer}, {self._layers[layer] = }")
+            print(f"Added {item} to layer {layer}, {self._layers[layer] =}")
 
         return item
 
     def _get_node(self, node_label):
         for layer in self.layers.values():
-            print(f"{layer = }")
+            print(f"{layer =}")
             for item in layer.items:
                 if isinstance(item, Node) and item.label == node_label:
                     return item

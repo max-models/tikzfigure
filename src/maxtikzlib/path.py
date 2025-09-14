@@ -29,7 +29,11 @@ class Path(TikzObject):
         self._tikz_command = tikz_command
 
         super().__init__(
-            label=label, comment=comment, layer=layer, options=options, **kwargs
+            label=label,
+            comment=comment,
+            layer=layer,
+            options=options,
+            **kwargs,
         )
 
     @property
