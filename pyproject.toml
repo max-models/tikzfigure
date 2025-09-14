@@ -31,17 +31,16 @@ dev = [
     "isort",
     "ruff",
     "pre-commit",
+    "pyproject-fmt",
+    "jupyterlab",
+    "ipykernel",
 ]
 
 # https://medium.com/@pratikdomadiya123/build-project-documentation-quickly-with-the-sphinx-python-2a9732b66594
 docs = [
-  "ipykernel",
   "myst-parser",
   "nbconvert",
   "nbsphinx",
-  "jupyterlab",
-  "pre-commit",
-  "pyproject-fmt",
   "sphinx",
   "sphinx_bootstrap_theme",
   "scipy",
