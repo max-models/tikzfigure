@@ -153,7 +153,7 @@ class TikzFigure:
     # ------------------------------------------------------------- #
     # Public methods
 
-    def add(self, items: list | tuple | Node | Path, layer=0):
+    def add(self, items: list | tuple | Node, layer=0):
         if not isinstance(items, list | tuple):
             items = [items]
 
