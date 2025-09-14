@@ -1,5 +1,3 @@
-from cProfile import label
-
 from maxtikzlib.base import TikzObject
 from maxtikzlib.coordinate import TikzCoordinate
 from maxtikzlib.node import Node
