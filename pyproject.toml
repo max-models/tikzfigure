@@ -15,33 +15,36 @@ classifiers = [
     "Development Status :: 3 - Alpha",
 ]
 dependencies = [
-    "matplotlib",
     "pymupdf",
 ]
 
 [project.optional-dependencies]
-test = ["pytest", "coverage"]
+
+test = [
+    "pytest",
+    "coverage",
+]
+
 dev = [
     "maxtikzlib[test]",
     "black[jupyter]",
     "isort",
     "ruff",
-    "pytest",
     "pre-commit",
+    "pyproject-fmt",
+    "jupyterlab",
+    "ipykernel",
+    "numpy",
+    "scipy",
 ]
 
 # https://medium.com/@pratikdomadiya123/build-project-documentation-quickly-with-the-sphinx-python-2a9732b66594
 docs = [
-  "ipykernel",
   "myst-parser",
   "nbconvert",
   "nbsphinx",
-  "jupyterlab",
-  "pre-commit",
-  "pyproject-fmt",
   "sphinx",
   "sphinx_bootstrap_theme",
-  "scipy",
 ]
 
 [project.urls]
