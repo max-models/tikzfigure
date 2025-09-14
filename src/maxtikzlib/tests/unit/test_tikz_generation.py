@@ -10,7 +10,7 @@ def test_tikz_equivalence():
     # M
     nodes = [[0, 0], [0, 3], [1, 2], [2, 3], [2, 0]]
     for i, node_data in enumerate(nodes):
-        tikz.add_node(
+        tikz.node(
             x=node_data[0],
             y=node_data[1],
             label=f"M{i}",
@@ -18,7 +18,7 @@ def test_tikz_equivalence():
             color="red",
             content=f"Node {i}",
         )
-    tikz.add_path(
+    tikz.draw(
         [f"M{i}" for i in range(len(nodes))],
         options=options,
         layer=1,
@@ -45,7 +45,7 @@ def test_logo_equivalence():
     # M
     nodes = [[0, 0], [0, 10], [1, 2], [2, 3], [2, 0]]
     for i, node_data in enumerate(nodes):
-        tikz.add_node(
+        tikz.node(
             x=node_data[0],
             y=node_data[1],
             label=f"M{i}",
@@ -53,7 +53,7 @@ def test_logo_equivalence():
             color="red",
             content=f"Node {i}",
         )
-    tikz.add_path(
+    tikz.draw(
         [f"M{i}" for i in range(len(nodes))],
         options=options,
         layer=1,
