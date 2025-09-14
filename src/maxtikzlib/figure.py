@@ -176,9 +176,10 @@ class TikzFigure:
 
     def add_node(
         self,
-        x: float | int,
-        y: float | int,
+        x: float | int | None = None,
+        y: float | int | None = None,
         z: float | int | None = None,
+        relative_position: str | None = None,
         label: str | None = None,
         content: str = "",
         layer: int = 0,

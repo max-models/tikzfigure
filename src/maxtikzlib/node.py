@@ -4,8 +4,8 @@ from maxtikzlib.base import TikzObject
 class Node(TikzObject):
     def __init__(
         self,
-        x: float | int,
-        y: float | int,
+        x: float | int | None = None,
+        y: float | int | None = None,
         z: float | int | None = None,
         label: str = "",
         content: str = "",
@@ -74,8 +74,9 @@ class Node(TikzObject):
         options = self.tikz_options
         if options:
             options = f"[{options}]"
-
-        if self.ndim == 2:
+        if self.x is None and self.y is None:
+            node_string = f"\\node{options} ({self.label}) {{{self.content}}};\n"
+        elif self.ndim == 2:
             node_string = f"\\node{options} ({self.label}) at ({self.x}, {self.y}) {{{self.content}}};\n"
         else:
             node_string = f"\\node{options} ({self.label}) at (axis cs:{self.x}, {self.y}, {self.z}) {{{self.content}}};\n"
