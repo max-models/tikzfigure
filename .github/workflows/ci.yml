@@ -62,7 +62,7 @@ jobs:
           python -m venv env
           source env/bin/activate
           pip install --upgrade pip
-          pip install ".[test, dev, docs]"
+          pip install ".[test]"
 
       # Run tests
       - name: Run tests
