@@ -40,7 +40,7 @@ docs = [
   "pre-commit",
   "pyproject-fmt",
   "sphinx",
-  "sphinx-rtd-theme",
+  "sphinx_bootstrap_theme",
   "scipy",
 ]
 

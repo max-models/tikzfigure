@@ -18,7 +18,7 @@ from maxtikzlib.wrapper import TikzWrapper
 
 
 class TikzFigure:
-    def __init__(self, **kwargs):
+    def __init__(self, ndim=2, **kwargs):
         """
         Initialize the TikzFigure class for creating TikZ figures.
 
@@ -44,6 +44,7 @@ class TikzFigure:
         self.nodes = []
         self.paths = []
         self.layers = {}
+        self._ndim = ndim
 
         # Counter for unnamed nodes
         self._node_counter = 0
@@ -369,14 +370,15 @@ class TikzFigure:
         - tikz_script (str): The TikZ script as a string.
         """
         tikz_script = "\\begin{tikzpicture}\n"
-        tikz_script += "\\begin{axis}[\n"
-        tikz_script += "view={20}{30},\n"
-        tikz_script += "axis lines=center,\n"
-        tikz_script += "xlabel={$x$},\n"
-        tikz_script += "ylabel={$y$},\n"
-        tikz_script += "zlabel={$z$},\n"
-        tikz_script += "grid=major\n"
-        tikz_script += "    ]\n"
+        if self.ndim == 3:
+            tikz_script += "\\begin{axis}[\n"
+            tikz_script += "view={20}{30},\n"
+            tikz_script += "axis lines=center,\n"
+            tikz_script += "xlabel={$x$},\n"
+            tikz_script += "ylabel={$y$},\n"
+            tikz_script += "zlabel={$z$},\n"
+            tikz_script += "grid=major\n"
+            tikz_script += "    ]\n"
 
         if self._figure_setup:
             tikz_script += f"[{self._figure_setup}]"
@@ -422,7 +424,8 @@ class TikzFigure:
         for layer in ordered_layers:
             tikz_script += layer.generate_tikz()
 
-        tikz_script += "\\end{axis}\n"
+        if self.ndim == 3:
+            tikz_script += "\\end{axis}\n"
         tikz_script += "\\end{tikzpicture}"
 
         # Wrap in figure environment if necessary
@@ -674,6 +677,10 @@ class TikzFigure:
         ax.set_xlim(min(all_x) - padding, max(all_x) + padding)
         ax.set_ylim(min(all_y) - padding, max(all_y) + padding)
         ax.set_aspect("equal", adjustable="datalim")
+
+    @property
+    def ndim(self):
+        return self._ndim
 
 
 # class TikzFigure3D
