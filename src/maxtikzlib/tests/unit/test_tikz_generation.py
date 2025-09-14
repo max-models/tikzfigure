@@ -18,7 +18,7 @@ def test_tikz_equivalence():
             color="red",
             content=f"Node {i}",
         )
-    tikz._add_path(
+    tikz.draw(
         [f"M{i}" for i in range(len(nodes))],
         options=options,
         layer=1,
@@ -53,7 +53,7 @@ def test_logo_equivalence():
             color="red",
             content=f"Node {i}",
         )
-    tikz._add_path(
+    tikz.draw(
         [f"M{i}" for i in range(len(nodes))],
         options=options,
         layer=1,
