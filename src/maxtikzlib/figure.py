@@ -49,10 +49,8 @@ class TikzFigure:
 
         # Initialize lists to hold Node and Path objects
         # TODO: nodes, paths, layers should have @property and @setter methods
-        self._nodelist = []
-        self.paths = []
-        self.layers = {}
-        self.colors = []
+        self._layers = {}
+        self._colors = []
         self._ndim = ndim
 
         # Counter for unnamed nodes
@@ -161,7 +159,6 @@ class TikzFigure:
             if isinstance(item, Node):
                 if item.label == "":
                     item._label = f"node{self._node_counter}"
-                self._nodelist.append(item)
                 self._node_counter += 1
                 self._add_item(item=item, layer=layer)
 
@@ -173,7 +170,7 @@ class TikzFigure:
     ) -> Color:
         color = Color(color_spec=color_spec)
 
-        self.colors.append((name, color))
+        self._colors.append((name, color))
         return color
 
     def add_node(
@@ -218,7 +215,6 @@ class TikzFigure:
             options=options,
             **kwargs,
         )
-        self._nodelist.append(node)
         self._node_counter += 1
         self._add_item(item=node, layer=layer)
         return node
@@ -278,12 +274,7 @@ class TikzFigure:
             **kwargs,
         )
 
-        self.paths.append(plot)
-        if layer in self.layers:
-            self.layers[layer].add(plot)
-        else:
-            self.layers[layer] = Tikzlayer(layer)
-            self.layers[layer].add(plot)
+        self._add_item(item=plot, layer=layer)
         return plot
 
     def add_loop(
@@ -498,7 +489,7 @@ class TikzFigure:
 
     def _add_layer(self, layer):
         if layer not in self.layers:
-            self.layers[layer] = Tikzlayer(layer)
+            self._layers[layer] = Tikzlayer(layer)
 
     def _add_path(
         self,
@@ -550,25 +541,25 @@ class TikzFigure:
             tikz_command=tikz_command,
             **kwargs,
         )
-        self.paths.append(path)
         self._add_item(item=path, layer=layer)
         return path
 
     def _add_item(self, item, layer=0):
         if layer in self.layers:
-            self.layers[layer].add(item)
+            self._layers[layer].add(item)
         else:
-            self.layers[layer] = Tikzlayer(layer)
-            self.layers[layer].add(item)
+            self._layers[layer] = Tikzlayer(layer)
+            self._layers[layer].add(item)
         return item
 
     def _get_node(self, node_label):
-        for node in self._nodelist:
-            if node.label == node_label:
-                return node
+        for layer in self._layers:
+            for item in layer.items:
+                if isinstance(item, Node) and item.label == node_label:
+                    return item
 
     def _get_layer(self, item):
-        for layer, layer_items in self.layers.items():
+        for layer, layer_items in self._layers.items():
             if item in [layer_item.label for layer_item in layer_items]:
                 return layer
         print(f"Item {item} not found in any layer!")
@@ -591,3 +582,11 @@ class TikzFigure:
     @property
     def ndim(self):
         return self._ndim
+
+    @property
+    def layers(self):
+        return self._layers
+
+    @property
+    def colors(self):
+        return self._colors
