@@ -5,7 +5,6 @@ import tempfile
 from importlib.metadata import version
 
 import fitz
-import matplotlib.patches as patches
 
 from maxtikzlib.color import Color
 from maxtikzlib.coordinate import TikzCoordinate
@@ -50,9 +49,11 @@ class TikzFigure:
         self._figure_setup = kwargs.get("figure_setup", None)
 
         # Initialize lists to hold Node and Path objects
+        # TODO: nodes, paths, layers should have @property and @setter methods
         self.nodes = []
         self.paths = []
         self.layers = {}
+        self.colors = []
         self._ndim = ndim
 
         # Counter for unnamed nodes
@@ -152,6 +153,17 @@ class TikzFigure:
     def add_layer(self, layer):
         if layer not in self.layers:
             self.layers[layer] = Tikzlayer(layer)
+
+    def colorlet(
+        self,
+        name,
+        color_spec: str,
+        layer: int = 0,
+    ) -> Color:
+        color = Color(color_spec=color_spec)
+
+        self.colors.append((name, color))
+        return color
 
     def add_node(
         self,
@@ -304,37 +316,6 @@ class TikzFigure:
         center=False,
         **kwargs,
     ):
-        """
-        Add a line or path connecting multiple nodes.
-
-        Parameters:
-        - nodes (list of str): List of node names to connect OR list of coordinates
-        - **kwargs: Additional TikZ path options (e.g., style, color).
-
-        Examples:
-        - add_path(['A', 'B', 'C'], color='blue')
-          Connects nodes A -> B -> C with a blue line.
-        """
-        # if not isinstance(nodes, list):
-        #     raise ValueError("nodes parameter must be a list of node names.")
-
-        # nodes_cleaned = []
-
-        # for node in nodes:
-        #     if isinstance(node, Node):
-        #         nodes_cleaned.append(node)
-        #     elif isinstance(node, str):
-        #         # Find the node by its label
-        #         nodes_cleaned.append(self.get_node(node))
-        #     elif isinstance(node, tuple) or isinstance(node, list):
-        #         node = tuple(node)
-        #         nodes_cleaned.append(TikzCoordinate(*node, layer=layer))
-        #     else:
-        #         raise NotImplementedError(
-        #             f"{node = }, {type(node) = } is not a valid node type!"
-        #         )
-        # for node in nodes_cleaned:
-        #     print(f"{node.ndim = }")
         plot = Plot3D(
             x=x,
             y=y,
@@ -417,6 +398,11 @@ class TikzFigure:
         """
         tikz_script = TIKZFIGURE_HEADER
         tikz_script += "\\begin{tikzpicture}\n"
+        if self._figure_setup:
+            tikz_script += f"[{self._figure_setup}]"
+        if len(self.colors) > 0:
+            for name, color in self.colors:
+                tikz_script += f"\\colorlet{{{name}}}{{{color.color_spec}}}\n"
         if self.ndim == 3:
             tikz_script += "\\begin{axis}[\n"
             tikz_script += "view={20}{30},\n"
@@ -427,8 +413,6 @@ class TikzFigure:
             tikz_script += "grid=major\n"
             tikz_script += "    ]\n"
 
-        if self._figure_setup:
-            tikz_script += f"[{self._figure_setup}]"
         tikz_script += "\n"
 
         tikz_script += "% Define the layers library\n"
