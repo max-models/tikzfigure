@@ -1,7 +1,6 @@
 from maxtikzlib.base import TikzObject
 from maxtikzlib.node import Node
 from maxtikzlib.path import Path
-from maxtikzlib.wrapper import TikzWrapper
 
 
 class Loop(TikzObject):
