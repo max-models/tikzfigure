@@ -1,6 +1,7 @@
 import os
 import re
 import subprocess
+from tabnanny import verbose
 import tempfile
 from importlib.metadata import version
 
@@ -543,7 +544,7 @@ class TikzFigure:
         self._add_item(item=path, layer=layer)
         return path
 
-    def _add_item(self, item, layer=0):
+    def _add_item(self, item, layer=0, verbose=False):
 
         if layer in self.layers:
             self._layers[layer].add(item)
@@ -551,7 +552,8 @@ class TikzFigure:
             self._layers[layer] = Tikzlayer(layer)
             self._layers[layer].add(item)
 
-        print(f"Added {item} to layer {layer}, {self._layers[layer] = }")
+        if verbose:
+            print(f"Added {item} to layer {layer}, {self._layers[layer] = }")
 
         return item
 
