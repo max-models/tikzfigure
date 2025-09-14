@@ -176,14 +176,15 @@ class TikzFigure:
 
     def add_node(
         self,
-        x: float | int,
-        y: float | int,
+        x: float | int | None = None,
+        y: float | int | None = None,
         z: float | int | None = None,
+        relative_position: str | None = None,
         label: str | None = None,
         content: str = "",
         layer: int = 0,
         comment: str | None = None,
-        options: list | str = [],
+        options: list | str = None,
         **kwargs,
     ):
         """
@@ -200,6 +201,9 @@ class TikzFigure:
         Returns:
         - node (Node): The Node object that was added.
         """
+        if options is None:
+            options = []
+
         if isinstance(options, str):
             options = [options]
 

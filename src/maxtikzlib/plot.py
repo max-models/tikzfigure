@@ -13,9 +13,12 @@ class Plot3D(Path):
         comment: str | None = None,
         layer: int = 0,
         center=False,
-        options: list = [],
+        options: list | None = None,
         **kwargs,
     ):
+
+        if options is None:
+            options = []
 
         nodes = [TikzCoordinate(_x, _y, _z, layer=layer) for _x, _y, _z in zip(x, y, z)]
 
