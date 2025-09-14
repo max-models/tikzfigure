@@ -682,6 +682,7 @@ class TikzFigure:
     def ndim(self):
         return self._ndim
 
+
 # class TikzFigure3D
 
 
