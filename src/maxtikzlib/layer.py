@@ -13,7 +13,7 @@ class Tikzlayer:
         reqs = set()
         for item in self.items:
             if isinstance(item, Path):
-                for node in item.nodes:
+                for node in item._nodes:
                     if not node.layer == self.label:
                         reqs.add(node.layer)
         return reqs

@@ -49,7 +49,7 @@ class TikzFigure:
 
         # Initialize lists to hold Node and Path objects
         # TODO: nodes, paths, layers should have @property and @setter methods
-        self.nodes = []
+        self._nodelist = []
         self.paths = []
         self.layers = {}
         self.colors = []
@@ -153,6 +153,18 @@ class TikzFigure:
     # ------------------------------------------------------------- #
     # Public methods
 
+    def add(self, items: list | tuple | Node | Path, layer=0):
+        if not isinstance(items, list | tuple):
+            items = [items]
+
+        for item in items:
+            if isinstance(item, Node):
+                if item.label == "":
+                    item._label = f"node{self._node_counter}"
+                self._nodelist.append(item)
+                self._node_counter += 1
+                self._add_item(item=item, layer=layer)
+
     def colorlet(
         self,
         name,
@@ -206,13 +218,9 @@ class TikzFigure:
             options=options,
             **kwargs,
         )
-        self.nodes.append(node)
-        if layer in self.layers:
-            self.layers[layer].add(node)
-        else:
-            self.layers[layer] = Tikzlayer(layer)
-            self.layers[layer].add(node)
+        self._nodelist.append(node)
         self._node_counter += 1
+        self._add_item(item=node, layer=layer)
         return node
 
     def filldraw(
@@ -499,6 +507,7 @@ class TikzFigure:
         comment: str | None = None,
         center=False,
         tikz_command="draw",
+        verbose=False,
         **kwargs,
     ):
         """
@@ -531,8 +540,11 @@ class TikzFigure:
                     f"{node = }, {type(node) = } is not a valid node type!"
                 )
 
+        if verbose:
+            print(f"Creating a path with the following nodes {nodes_cleaned}")
+
         path = Path(
-            nodes_cleaned,
+            nodes=nodes_cleaned,
             comment=comment,
             center=center,
             tikz_command=tikz_command,
@@ -551,7 +563,7 @@ class TikzFigure:
         return item
 
     def _get_node(self, node_label):
-        for node in self.nodes:
+        for node in self._nodelist:
             if node.label == node_label:
                 return node
 
