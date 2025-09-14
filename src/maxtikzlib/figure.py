@@ -119,7 +119,7 @@ class TikzFigure:
                     # print(f"Node text: '{node_text}'")
                     # print(coordinates.split(','))
 
-                    self.node(
+                    self.add_node(
                         x=coordinates[0],
                         y=coordinates[1],
                         label=node_name,
@@ -164,7 +164,7 @@ class TikzFigure:
         self.colors.append((name, color))
         return color
 
-    def node(
+    def add_node(
         self,
         x: float | int,
         y: float | int,
@@ -278,7 +278,7 @@ class TikzFigure:
             self.layers[layer].add(plot)
         return plot
 
-    def loop(
+    def add_loop(
         self,
         variable,
         values,
