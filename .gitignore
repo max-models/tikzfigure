@@ -71,7 +71,9 @@ instance/
 
 # Sphinx documentation
 docs/build/
+docs/_build/
 docs/source/tutorials/*.ipynb
+docs/source/tutorials/
 
 # PyBuilder
 .pybuilder/
@@ -172,7 +174,6 @@ cython_debug/
 
 # Unit test output
 junit/
-
 
 # LaTeX files
 *.aux
