@@ -545,15 +545,20 @@ class TikzFigure:
         return path
 
     def _add_item(self, item, layer=0):
+
         if layer in self.layers:
             self._layers[layer].add(item)
         else:
             self._layers[layer] = Tikzlayer(layer)
             self._layers[layer].add(item)
+
+        print(f"Added {item} to layer {layer}, {self._layers[layer] = }")
+
         return item
 
     def _get_node(self, node_label):
-        for layer in self._layers:
+        for layer in self.layers.values():
+            print(f"{layer = }")
             for item in layer.items:
                 if isinstance(item, Node) and item.label == node_label:
                     return item
