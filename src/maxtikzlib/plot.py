@@ -1,9 +1,4 @@
-from click import option
-
-from maxtikzlib import coordinate
-from maxtikzlib.base import TikzObject
 from maxtikzlib.coordinate import TikzCoordinate
-from maxtikzlib.node import Node
 from maxtikzlib.path import Path
 
 
