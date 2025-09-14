@@ -11,7 +11,7 @@ from maxtikzlib.color import Color
 from maxtikzlib.coordinate import TikzCoordinate
 from maxtikzlib.layer import Tikzlayer
 from maxtikzlib.loop import Loop
-from maxtikzlib import Node
+from maxtikzlib.node import Node
 from maxtikzlib.path import Path
 from maxtikzlib.plot import Plot3D
 

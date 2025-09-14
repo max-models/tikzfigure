@@ -1,5 +1,5 @@
 from maxtikzlib.base import TikzObject
-from maxtikzlib import Node
+from maxtikzlib.node import Node
 from maxtikzlib.path import Path
 
 
