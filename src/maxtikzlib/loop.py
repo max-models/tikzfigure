@@ -32,18 +32,18 @@ class Loop(TikzObject):
     def items(self):
         return self._items
 
-    def add_node(self, *args, **kwargs):
+    def node(self, *args, **kwargs):
         node = Node(*args, **kwargs)
         self._items.append(node)
         return node
 
-    def add_path(self, nodes, comment: str | None = None, **kwargs):
+    def path(self, nodes, comment: str | None = None, **kwargs):
 
         path = Path(nodes, comment=comment, layer=self.layer, **kwargs)
         self._items.append(path)
         return path
 
-    def add_loop(self, variable, values, comment: str | None = None):
+    def loop(self, variable, values, comment: str | None = None):
         """
         Add a nested loop inside this loop.
         """
