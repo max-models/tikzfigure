@@ -20,12 +20,6 @@ Install the code and requirements with pip
 pip install -e .
 ```
 
-Run the code with
-
-```
-template-python
-```
-
 # Build docs
 
 ```
