@@ -3,14 +3,12 @@ import re
 import subprocess
 import tempfile
 from importlib.metadata import version
-from tabnanny import verbose
 
 import fitz
-from numpy import var
 
 from maxtikzlib.color import Color
 from maxtikzlib.coordinate import TikzCoordinate
-from maxtikzlib.layer import LayerCollection, Tikzlayer
+from maxtikzlib.layer import LayerCollection
 from maxtikzlib.loop import Loop
 from maxtikzlib.node import Node
 from maxtikzlib.path import Path

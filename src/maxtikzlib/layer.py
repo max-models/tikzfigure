@@ -1,9 +1,5 @@
-from maxtikzlib.coordinate import TikzCoordinate
-from maxtikzlib.loop import Loop
 from maxtikzlib.node import Node
 from maxtikzlib.path import Path
-from maxtikzlib.plot import Plot3D
-from maxtikzlib.variable import Variable
 
 
 class Tikzlayer:
