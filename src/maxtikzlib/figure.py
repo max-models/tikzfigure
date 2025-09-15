@@ -25,27 +25,26 @@ TIKZFIGURE_HEADER = line_separator + version_string + link_string + line_separat
 
 
 class TikzFigure:
-    def __init__(self, ndim=2, **kwargs):
-        """
-        Initialize the TikzFigure class for creating TikZ figures.
+    def __init__(
+        self,
+        ndim=2,
+        label: str | None = None,
+        grid: bool = False,
+        tikz_code: str | None = None,
+        figure_setup: str | None = None,
+        figsize: tuple = (10, 6),
+        caption: str | None = None,
+        description: str | None = None,
+    ):
+        """Initialize the TikzFigure class for creating TikZ figures."""
 
-        Parameters:
-        **kwargs: Arbitrary keyword arguments.
-            - figsize (tuple): Figure size (default is (10, 6)).
-            - caption (str): Caption for the figure.
-            - description (str): Description of the figure.
-            - label (str): Label for the figure.
-            - grid (bool): Whether to display grid lines (default is False).
-            TODO: Add all options
-        """
-        # Set default values
-        self._figsize = kwargs.get("figsize", (10, 6))
-        self._caption = kwargs.get("caption", None)
-        self._description = kwargs.get("description", None)
-        self._label = kwargs.get("label", None)
-        self._grid = kwargs.get("grid", False)
-        self._tikz_code = kwargs.get("tikz_code", None)
-        self._figure_setup = kwargs.get("figure_setup", None)
+        self._figsize = figsize
+        self._caption = caption
+        self._description = description
+        self._label = label
+        self._grid = grid
+        self._tikz_code = tikz_code
+        self._figure_setup = figure_setup
 
         # Initialize lists to hold Node and Path objects
         # TODO: nodes, paths, layers should have @property and @setter methods
@@ -184,7 +183,7 @@ class TikzFigure:
         content: str = "",
         layer: int = 0,
         comment: str | None = None,
-        options: list | str = None,
+        options: list | str | None = None,
         **kwargs,
     ):
         """
