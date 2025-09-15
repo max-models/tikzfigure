@@ -6,6 +6,7 @@ from importlib.metadata import version
 from tabnanny import verbose
 
 import fitz
+from numpy import var
 
 from maxtikzlib.color import Color
 from maxtikzlib.coordinate import TikzCoordinate
@@ -50,6 +51,7 @@ class TikzFigure:
         # Initialize lists to hold Node and Path objects
         # TODO: nodes, paths, layers should have @property and @setter methods
         self._layers = LayerCollection()
+        self._variables = []
         self._colors = []
         self._ndim = ndim
 
@@ -176,9 +178,9 @@ class TikzFigure:
 
     def add_node(
         self,
-        x: float | int | None = None,
-        y: float | int | None = None,
-        z: float | int | None = None,
+        x: float | int | str | None = None,
+        y: float | int | str | None = None,
+        z: float | int | str | None = None,
         label: str | None = None,
         content: str = "",
         layer: int = 0,
@@ -238,8 +240,10 @@ class TikzFigure:
             layer=layer,
             comment=comment,
         )
+        self._variables.append(variable)
 
-        self.layers.add_item(item=variable, layer=layer, verbose=verbose)
+        # TODO: Allow for special variables in each layer
+        # self.layers.add_item(item=variable, layer=layer, verbose=verbose)
         return variable
 
     def filldraw(
@@ -330,9 +334,20 @@ class TikzFigure:
         tikz_script += "\\begin{tikzpicture}\n"
         if self._figure_setup:
             tikz_script += f"[{self._figure_setup}]"
+
+        # Add variables
+        if len(self.variables) > 0:
+            for variable in self.variables:
+                tikz_script += (
+                    f"\\pgfmathsetmacro{{\\{variable.label}}}{{{variable.value}}}\n"
+                )
+
+        # Add colors
         if len(self.colors) > 0:
             for name, color in self.colors:
                 tikz_script += f"\\colorlet{{{name}}}{{{color.color_spec}}}\n"
+
+        # Add 3D axis
         if self.ndim == 3:
             tikz_script += "\\begin{axis}[\n"
             tikz_script += "view={20}{30},\n"
@@ -589,3 +604,7 @@ class TikzFigure:
     @property
     def colors(self):
         return self._colors
+
+    @property
+    def variables(self) -> list:
+        return self._variables
