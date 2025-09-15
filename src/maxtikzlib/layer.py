@@ -1,3 +1,4 @@
+from maxtikzlib.node import Node
 from maxtikzlib.path import Path
 
 
@@ -25,3 +26,45 @@ class Tikzlayer:
             tikz_script += item.to_tikz()
         tikz_script += f"\\end{{pgfonlayer}}{{{self.label}}}\n"
         return tikz_script
+
+
+class LayerCollection:
+    def __init__(self) -> None:
+        # self._layers = []
+        self._layers = {}
+
+    def add_layer(self, layer):
+        if layer not in self.layers:
+            self._layers[layer] = Tikzlayer(layer)
+
+    def add_item(self, item, layer: int | None = 0, verbose=False):
+
+        if layer in self.layers:
+            self._layers[layer].add(item)
+        else:
+            self.add_layer(layer)
+            self._layers[layer].add(item)
+
+        if verbose:
+            print(f"Added {item} to layer {layer}, {self._layers[layer] =}")
+
+        return item
+
+    def get_node(self, node_label):
+        for layer in self.layers.values():
+            print(f"{layer =}")
+            for item in layer.items:
+                if isinstance(item, Node) and item.label == node_label:
+                    return item
+
+    def get_layer(self, item):
+        for layer, layer_items in self._layers.items():
+            if item in [layer_item.label for layer_item in layer_items]:
+                return layer
+        print(f"Item {item} not found in any layer!")
+
+    @property
+    def layers(self) -> dict:
+        return self._layers
+
+        return self._layers

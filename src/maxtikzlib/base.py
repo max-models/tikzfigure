@@ -3,7 +3,7 @@ class TikzObject:
         self,
         label: str | None = None,
         comment: str | None = None,
-        layer: int = 0,
+        layer: int | None = 0,
         options: list | None = None,
         **kwargs,
     ) -> None:
