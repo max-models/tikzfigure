@@ -87,7 +87,7 @@ jobs:
           cd ..
           ls docs/build/html/index.html
 
-  test-publish:
+  test-build:
     runs-on: ubuntu-latest
 
     steps:
