@@ -1,5 +1,5 @@
 def main():
-    print("Welcome to MaxTikzLib!")
+    print("Welcome to tikzpics!")
 
 
 if __name__ == "__main__":

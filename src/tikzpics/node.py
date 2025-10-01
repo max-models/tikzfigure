@@ -1,4 +1,4 @@
-from maxtikzlib.base import TikzObject
+from tikzpics.base import TikzObject
 
 
 class Node(TikzObject):

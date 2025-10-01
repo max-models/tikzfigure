@@ -3,7 +3,7 @@ requires = ["setuptools", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "maxtikzlib"
+name = "tikzpics"
 version = "0.1"
 description = "Python interface to generate (readable) Tikz figures."
 readme = "README.md"
@@ -26,7 +26,7 @@ test = [
 ]
 
 dev = [
-    "maxtikzlib[test]",
+    "tikzpics[test]",
     "black[jupyter]",
     "isort",
     "ruff",
@@ -48,7 +48,7 @@ docs = [
 ]
 
 [project.urls]
-"Source" = "https://github.com/max-models/maxtikzlib"
+"Source" = "https://github.com/max-models/tikzpics"
 
 [tool.setuptools.packages.find]
 where = ["src"]

@@ -1,6 +1,6 @@
-from maxtikzlib.base import TikzObject
-from maxtikzlib.node import Node
-from maxtikzlib.path import Path
+from tikzpics.base import TikzObject
+from tikzpics.node import Node
+from tikzpics.path import Path
 
 
 class Loop(TikzObject):

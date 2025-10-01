@@ -1,4 +1,4 @@
-from maxtikzlib import TikzFigure
+from tikzpics import TikzFigure
 
 
 def test_tikz_equivalence():

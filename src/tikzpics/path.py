@@ -1,6 +1,6 @@
-from maxtikzlib.base import TikzObject
-from maxtikzlib.coordinate import TikzCoordinate
-from maxtikzlib.node import Node
+from tikzpics.base import TikzObject
+from tikzpics.coordinate import TikzCoordinate
+from tikzpics.node import Node
 
 
 class Path(TikzObject):

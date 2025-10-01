@@ -30,7 +30,7 @@ def setup(app):
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
-project = "maxtikzlib"
+project = "tikzpics"
 copyright = "2025, Max Lindqvist"
 author = "Max Lindqvist"
 
