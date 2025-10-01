@@ -1,5 +1,8 @@
-# template-python
-Template repository for python projects
+# tikzpics
+
+Python interface to generate (readable) Tikz figures.
+
+Documentation: https://max-models.github.io/tikzpics/
 
 # Install
 
@@ -17,8 +20,9 @@ Install the code and requirements with pip
 pip install -e .
 ```
 
-Run the code with
+To install optional dependencies:
 
 ```
-template-python
+pip install -e ".[test]" # For pytest
+pip install -e ".[dev]" For developers
 ```

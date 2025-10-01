@@ -3,7 +3,7 @@ requires = ["setuptools", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "maxtikzlib"
+name = "tikzpics"
 version = "0.1"
 description = "Python interface to generate (readable) Tikz figures."
 readme = "README.md"
@@ -15,21 +15,40 @@ classifiers = [
     "Development Status :: 3 - Alpha",
 ]
 dependencies = [
-    "matplotlib",
-    "black",
-    "isort",
-    "ruff",
-    "pytest",
+    "pymupdf",
 ]
 
 [project.optional-dependencies]
-dev = ["check-manifest"]
-test = ["coverage"]
+
+test = [
+    "pytest",
+    "coverage",
+]
+
+dev = [
+    "tikzpics[test]",
+    "black[jupyter]",
+    "isort",
+    "ruff",
+    "pre-commit",
+    "pyproject-fmt",
+    "jupyterlab",
+    "ipykernel",
+    "numpy",
+    "scipy",
+]
+
+# https://medium.com/@pratikdomadiya123/build-project-documentation-quickly-with-the-sphinx-python-2a9732b66594
+docs = [
+  "myst-parser",
+  "nbconvert",
+  "nbsphinx",
+  "sphinx",
+  "sphinx_bootstrap_theme",
+]
+
 [project.urls]
-"Source" = "https://github.com/max-models/maxtikzlib"
+"Source" = "https://github.com/max-models/tikzpics"
 
 [tool.setuptools.packages.find]
 where = ["src"]
-
-[project.scripts]
-maxtikzlib = "maxtikzlib.console.main:main"

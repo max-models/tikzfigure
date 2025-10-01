@@ -1,0 +1,101 @@
+name: Static analysis
+
+on:
+  push:
+    branches:
+      - main
+      - devel
+  pull_request:
+    branches:
+      - main
+      - devel
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  cloc:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout the code
+        uses: actions/checkout@v4
+
+      - name: Download and run cloc
+        run: |
+          curl -s https://raw.githubusercontent.com/AlDanial/cloc/master/cloc > cloc
+          chmod +x cloc
+          ./cloc --version
+          ./cloc $(git ls-files)
+
+  black:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout the code
+        uses: actions/checkout@v4
+
+      - name: Code formatting with black
+        run: |
+          pip install black "black[jupyter]"
+          black --check src/
+          black --check tutorials/
+
+  isort:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout the code
+        uses: actions/checkout@v4
+
+      - name: Code formatting with isort
+        run: |
+          pip install isort
+          isort --check src/
+          isort --check tutorials/
+
+  mypy:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - name: Checkout the code
+        uses: actions/checkout@v4
+
+      - name: Type checking with mypy
+        run: |
+          pip install mypy
+          mypy src/ || true
+
+  prospector:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - name: Checkout the code
+        uses: actions/checkout@v4
+
+      - name: Code analysis with prospector
+        run: |
+          pip install prospector
+          prospector src/ || true
+
+  ruff:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - name: Checkout the code
+        uses: actions/checkout@v4
+
+      - name: Linting with ruff
+        run: |
+          pip install ruff
+          ruff check src/ || true
+
+  pylint:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - name: Checkout the code
+        uses: actions/checkout@v4
+
+      - name: Linting with pylint
+        run: |
+          pip install pylint
+          pylint src/ || true

@@ -1,0 +1,109 @@
+name: Testing
+
+on:
+  push:
+    branches:
+      - main
+      - devel
+  pull_request:
+    branches:
+      - main
+      - devel
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container:
+      image: texlive/texlive:latest
+
+    steps:
+      # Checkout the repository
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Set up Python
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      # Cache pip dependencies
+      - name: Cache pip
+        uses: actions/cache@v3
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/pyproject.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+      
+      - name: Install pandoc
+        run: |
+          apt-get update
+          apt-get install -y pandoc
+
+      # - name: Install TeX Live with pdflatex
+      #   run: |
+      #     sudo apt-get update
+      #     sudo apt-get install -y texlive-full
+      # sudo apt-get install -y texlive texlive-latex-base texlive-latex-extra texlive-fonts-recommended texlive-science
+
+      - name: Check if pdflatex is available
+        run: |
+          which pdflatex
+          pdflatex --version
+
+      # Create virtual environment and install project from pyproject.toml
+      - name: Set up virtual environment and install project
+        run: |
+          python -m venv env
+          source env/bin/activate
+          pip install --upgrade pip
+          pip install ".[dev]"
+
+      # Run tests
+      - name: Run tests
+        run: |
+          source env/bin/activate
+          pytest . -xvs
+        env:
+          CI: true
+
+      - name: Test tutorial notebooks
+        run: |
+          source env/bin/activate
+          jupyter nbconvert --to notebook --execute tutorials/*.ipynb --output-dir=/tmp --ExecutePreprocessor.timeout=300
+
+      - name: Test docs build
+        run: |
+          source env/bin/activate
+          pip install ".[docs]"
+          cd docs
+          make clean
+          make html
+          cd ..
+          ls docs/build/html/index.html
+
+  test-build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+
+      - name: Install build tools
+        run: |
+          python -m pip install --upgrade pip
+          pip install build twine
+
+      - name: Build the package
+        run: python -m build
+
