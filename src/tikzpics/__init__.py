@@ -1,4 +1,4 @@
-from maxtikzlib.figure import TikzFigure
-from maxtikzlib.node import Node
+from tikzpics.figure import TikzFigure
+from tikzpics.node import Node
 
 __all__ = ["TikzFigure", "Node"]

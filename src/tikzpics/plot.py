@@ -1,5 +1,5 @@
-from maxtikzlib.coordinate import TikzCoordinate
-from maxtikzlib.path import Path
+from tikzpics.coordinate import TikzCoordinate
+from tikzpics.path import Path
 
 
 class Plot3D(Path):
