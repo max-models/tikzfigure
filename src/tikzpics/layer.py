@@ -27,6 +27,15 @@ class Tikzlayer:
         tikz_script += f"\\end{{pgfonlayer}}{{{self.label}}}\n"
         return tikz_script
 
+    def _get_items_by_type(self, item_type) -> list:
+        return [item for item in self.items if isinstance(item, item_type)]
+
+    def get_nodes(self) -> list[Node]:
+        return self._get_items_by_type(Node)
+
+    def get_paths(self) -> list[Path]:
+        return self._get_items_by_type(Path)
+
 
 class LayerCollection:
     def __init__(self) -> None:
@@ -50,21 +59,31 @@ class LayerCollection:
 
         return item
 
-    def get_node(self, node_label):
+    def get_node(self, node_label) -> Node:
         for layer in self.layers.values():
-            print(f"{layer =}")
             for item in layer.items:
                 if isinstance(item, Node) and item.label == node_label:
                     return item
+        raise ValueError(f"Node with label {node_label} not found in any layer!")
 
-    def get_layer(self, item):
+    def _get_items_by_type(self, item_type) -> list:
+        items = []
+        for layer in self.layers.values():
+            items.extend(layer._get_items_by_type(item_type))
+        return items
+
+    def get_nodes(self) -> list[Node]:
+        return self._get_items_by_type(Node)
+
+    def get_paths(self) -> list[Path]:
+        return self._get_items_by_type(Path)
+
+    def get_layer(self, item) -> int:
         for layer, layer_items in self._layers.items():
             if item in [layer_item.label for layer_item in layer_items]:
                 return layer
-        print(f"Item {item} not found in any layer!")
+        raise ValueError(f"Item {item} not found in any layer!")
 
     @property
     def layers(self) -> dict:
-        return self._layers
-
         return self._layers
