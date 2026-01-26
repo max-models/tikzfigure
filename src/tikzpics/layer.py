@@ -4,18 +4,18 @@ from tikzpics.path import Path
 
 class Tikzlayer:
     """Represents a single layer in a TikZ figure.
-    
+
     Layers allow organizing TikZ elements in different drawing levels,
     useful for controlling z-order and managing complex figures.
-    
+
     Attributes:
         label: Unique identifier for the layer.
         items: List of TikZ items (nodes, paths, etc.) in this layer.
     """
-    
+
     def __init__(self, label, comment=None):
         """Initialize a TikZ layer.
-        
+
         Args:
             label: Unique identifier for the layer (typically an integer).
             comment: Optional comment for documentation purposes.
@@ -25,7 +25,7 @@ class Tikzlayer:
 
     def add(self, item):
         """Add an item (node, path, etc.) to this layer.
-        
+
         Args:
             item: A TikZ object (Node, Path, etc.) to add to the layer.
         """
@@ -33,10 +33,10 @@ class Tikzlayer:
 
     def get_reqs(self):
         """Get layer requirements (dependencies on other layers).
-        
+
         Analyzes paths in this layer to find nodes from other layers,
         which establishes layer dependencies for proper rendering order.
-        
+
         Returns:
             Set of layer labels that this layer depends on.
         """
@@ -50,9 +50,9 @@ class Tikzlayer:
 
     def generate_tikz(self):
         """Generate TikZ code for this layer.
-        
+
         Creates the pgfonlayer environment and includes all items in the layer.
-        
+
         Returns:
             String containing the complete TikZ code for this layer.
         """
@@ -65,10 +65,10 @@ class Tikzlayer:
 
     def _get_items_by_type(self, item_type) -> list:
         """Get all items of a specific type from this layer.
-        
+
         Args:
             item_type: The type to filter by (e.g., Node, Path).
-            
+
         Returns:
             List of items matching the specified type.
         """
@@ -76,7 +76,7 @@ class Tikzlayer:
 
     def get_nodes(self) -> list[Node]:
         """Get all nodes in this layer.
-        
+
         Returns:
             List of Node objects in this layer.
         """
@@ -84,7 +84,7 @@ class Tikzlayer:
 
     def get_paths(self) -> list[Path]:
         """Get all paths in this layer.
-        
+
         Returns:
             List of Path objects in this layer.
         """
@@ -93,15 +93,15 @@ class Tikzlayer:
 
 class LayerCollection:
     """Manages a collection of TikZ layers.
-    
+
     Provides methods to create layers, add items to layers, and retrieve
     items across all layers. Handles layer creation automatically when
     items are added to non-existent layers.
-    
+
     Attributes:
         _layers: Dictionary mapping layer labels to Tikzlayer objects.
     """
-    
+
     def __init__(self) -> None:
         """Initialize an empty layer collection."""
         # self._layers = []
@@ -109,9 +109,9 @@ class LayerCollection:
 
     def add_layer(self, layer):
         """Add a new layer to the collection.
-        
+
         If the layer already exists, this method does nothing.
-        
+
         Args:
             layer: Label for the new layer (typically an integer).
         """
@@ -120,14 +120,14 @@ class LayerCollection:
 
     def add_item(self, item, layer: int | None = 0, verbose=False):
         """Add an item to a specific layer.
-        
+
         Creates the layer automatically if it doesn't exist.
-        
+
         Args:
             item: A TikZ object (Node, Path, etc.) to add.
             layer: Layer label to add the item to. Defaults to 0.
             verbose: If True, print debug information.
-            
+
         Returns:
             The item that was added.
         """
@@ -145,13 +145,13 @@ class LayerCollection:
 
     def get_node(self, node_label) -> Node:
         """Retrieve a node by its label from any layer.
-        
+
         Args:
             node_label: The label of the node to find.
-            
+
         Returns:
             The Node object with the specified label.
-            
+
         Raises:
             ValueError: If no node with the given label exists in any layer.
         """
@@ -163,10 +163,10 @@ class LayerCollection:
 
     def _get_items_by_type(self, item_type) -> list:
         """Get all items of a specific type across all layers.
-        
+
         Args:
             item_type: The type to filter by (e.g., Node, Path).
-            
+
         Returns:
             List of items matching the specified type from all layers.
         """
@@ -177,7 +177,7 @@ class LayerCollection:
 
     def get_nodes(self) -> list[Node]:
         """Get all nodes across all layers.
-        
+
         Returns:
             List of all Node objects in the collection.
         """
@@ -185,7 +185,7 @@ class LayerCollection:
 
     def get_paths(self) -> list[Path]:
         """Get all paths across all layers.
-        
+
         Returns:
             List of all Path objects in the collection.
         """
@@ -193,13 +193,13 @@ class LayerCollection:
 
     def get_layer_by_item(self, item) -> int:
         """Find which layer contains an item with the given label.
-        
+
         Args:
             item: Label of the item to search for.
-            
+
         Returns:
             The layer label containing the item.
-            
+
         Raises:
             ValueError: If the item is not found in any layer.
         """
@@ -211,7 +211,7 @@ class LayerCollection:
     @property
     def layers(self) -> dict:
         """Get the dictionary of all layers.
-        
+
         Returns:
             Dictionary mapping layer labels to Tikzlayer objects.
         """
