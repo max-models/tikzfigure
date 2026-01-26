@@ -78,9 +78,9 @@ class LayerCollection:
     def get_paths(self) -> list[Path]:
         return self._get_items_by_type(Path)
 
-    def get_layer(self, item) -> int:
+    def get_layer_by_item(self, item) -> int:
         for layer, layer_items in self._layers.items():
-            if item in [layer_item.label for layer_item in layer_items]:
+            if item in [layer_item.label for layer_item in layer_items.items]:
                 return layer
         raise ValueError(f"Item {item} not found in any layer!")
 
