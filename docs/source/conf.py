@@ -22,7 +22,7 @@ if tutorials_source.exists():
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
-project = "python-template"
+project = "tikzpics"
 copyright = "2025, Max"
 author = "Max"
 
@@ -71,13 +71,13 @@ html_theme_options = {
     "icon_links": [
         {
             "name": "GitHub",
-            "url": "https://github.com/max-models/template-projects/",
+            "url": "https://github.com/max-models/tikzpics/",
             "icon": "fab fa-github",
             "type": "fontawesome",
         },
         {
             "name": "⭐ Star us!",
-            "url": "https://github.com/max-models/template-projects/",
+            "url": "https://github.com/max-models/tikzpics/",
             "icon": "fas fa-star",
             "type": "fontawesome",
         },

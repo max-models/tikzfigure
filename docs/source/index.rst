@@ -1,4 +1,4 @@
-template-python Documentation
+tikzpics Documentation
 =============================
 
 Write the documentation of your python package here.
@@ -8,5 +8,4 @@ Write the documentation of your python package here.
    :caption: Documentation
 
    guides/install
-   guides/quickstart
    tutorials

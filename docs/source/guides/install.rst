@@ -9,22 +9,4 @@ Create and activate python environment::
 
 Install the code and requirements with pip::
 
-   pip install -e .
-
-Run the code with::
-
-   template-python
-
-
-Build docs
-==========
-
-::
-
-   make html
-   cd ../
-   open docs/_build/html/index.html
-
-
-.. toctree::
-   :maxdepth: 1
+   pip install tikzpics
