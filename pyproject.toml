@@ -44,7 +44,9 @@ docs = [
   "nbconvert",
   "nbsphinx",
   "sphinx",
-  "sphinx_bootstrap_theme",
+  "sphinx-book-theme",
+  "sphinxcontrib-mermaid",
+  "sphinx-design",
 ]
 
 [project.urls]
