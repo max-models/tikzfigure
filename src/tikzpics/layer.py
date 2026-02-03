@@ -48,7 +48,7 @@ class Tikzlayer:
                         reqs.add(node.layer)
         return reqs
 
-    def generate_tikz(self):
+    def generate_tikz(self, verbose: bool = False) -> str:
         """Generate TikZ code for this layer.
 
         Creates the pgfonlayer environment and includes all items in the layer.
@@ -118,7 +118,7 @@ class LayerCollection:
         if layer not in self.layers:
             self._layers[layer] = Tikzlayer(layer)
 
-    def add_item(self, item, layer: int | None = 0, verbose=False):
+    def add_item(self, item, layer: int | None = 0, verbose: bool = False):
         """Add an item to a specific layer.
 
         Creates the layer automatically if it doesn't exist.
