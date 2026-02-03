@@ -1,0 +1,39 @@
+name: Test Documentation Build
+
+on:
+  push:
+    branches:
+      - main
+      - devel
+  pull_request:
+    branches:
+      - main
+      - devel
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  test-docs:
+    runs-on: ubuntu-latest
+    container:
+      image: texlive/texlive:latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build documentation
+        uses: ./.github/actions/build-docs
+        with:
+          python-version: "3.10"
+          treat-warnings-as-errors: "true"
+
+      - name: Upload docs artifact
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: documentation
+          path: docs/build/html/
+          retention-days: 7

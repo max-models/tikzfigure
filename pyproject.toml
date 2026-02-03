@@ -1,54 +1,58 @@
 [build-system]
-requires = ["setuptools", "wheel"]
 build-backend = "setuptools.build_meta"
+
+requires = [ "setuptools", "wheel" ]
 
 [project]
 name = "tikzpics"
-version = "0.1.1"
+version = "0.1.2"
 description = "Python interface to generate (readable) Tikz figures."
 readme = "README.md"
+keywords = [ "python" ]
+license = { file = "LICENSE.txt" }
+authors = [ { name = "Max" } ]
 requires-python = ">=3.8"
-license = {file = "LICENSE.txt"}
-keywords = ["python"]
-authors = [{name = "Max"}]
 classifiers = [
-    "Development Status :: 3 - Alpha",
+  "Development Status :: 3 - Alpha",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
 ]
 dependencies = [
-    "pymupdf",
+  "pymupdf",
 ]
 
-[project.optional-dependencies]
-
-test = [
-    "pytest",
-    "coverage",
+optional-dependencies.dev = [
+  "black[jupyter]",
+  "isort",
+  "pre-commit",
+  "pyproject-fmt",
+  "ruff",
+  "tikzpics[docs]",
+  "tikzpics[test]",
 ]
-
-dev = [
-    "tikzpics[test]",
-    "black[jupyter]",
-    "isort",
-    "ruff",
-    "pre-commit",
-    "pyproject-fmt",
-    "jupyterlab",
-    "ipykernel",
-    "numpy",
-    "scipy",
-]
-
-# https://medium.com/@pratikdomadiya123/build-project-documentation-quickly-with-the-sphinx-python-2a9732b66594
-docs = [
+optional-dependencies.docs = [
+  "ipykernel",
+  "jupyterlab",
   "myst-parser",
   "nbconvert",
   "nbsphinx",
+  "numpy",
+  "scipy",
   "sphinx",
-  "sphinx_bootstrap_theme",
+  "sphinx-book-theme",
+  "sphinx-design",
+  "sphinxcontrib-mermaid",
 ]
-
-[project.urls]
-"Source" = "https://github.com/max-models/tikzpics"
+optional-dependencies.test = [
+  "coverage",
+  "pytest",
+]
+urls."Source" = "https://github.com/max-models/tikzpics"
 
 [tool.setuptools.packages.find]
-where = ["src"]
+where = [ "src" ]
