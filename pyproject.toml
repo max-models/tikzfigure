@@ -34,10 +34,16 @@ optional-dependencies.dev = [
   "ruff",
   "tikzpics[docs]",
   "tikzpics[test]",
+  "tikzpics[vis]",
 ]
+
+optional-dependencies.vis = [
+  "matplotlib",
+  "jupyterlab",
+]
+
 optional-dependencies.docs = [
   "ipykernel",
-  "jupyterlab",
   "myst-parser",
   "nbconvert",
   "nbsphinx",
@@ -47,6 +53,7 @@ optional-dependencies.docs = [
   "sphinx-book-theme",
   "sphinx-design",
   "sphinxcontrib-mermaid",
+  "tikzpics[vis]",
 ]
 optional-dependencies.test = [
   "coverage",
