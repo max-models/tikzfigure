@@ -244,6 +244,18 @@ class TikzFigure:
         # self.layers.add_item(item=variable, layer=layer, verbose=verbose)
         return variable
 
+    def add_raw(self, tikz_code: str, layer: int = 0, verbose: bool = False):
+        from tikzpics.raw import RawTikz
+
+        raw_tikz = RawTikz(tikz_code=tikz_code)
+
+        self.layers.add_item(
+            item=raw_tikz,
+            layer=layer,
+            verbose=verbose,
+        )
+        return raw_tikz
+
     def filldraw(
         self,
         nodes: list,
@@ -321,7 +333,7 @@ class TikzFigure:
         self.layers.add_item(item=loop_obj, layer=layer, verbose=verbose)
         return loop_obj
 
-    def generate_tikz(self):
+    def generate_tikz(self, verbose: bool = False) -> str:
         """
         Generate the TikZ script for the figure.
 
@@ -389,14 +401,14 @@ class TikzFigure:
                 if all(
                     [r in [layer.label for layer in ordered_layers] for r in buff_reqs],
                 ):
-                    print("Move layer from buffer")
+                    # print("Move layer from buffer")
                     ordered_layers.append(key)
                     buffered_layers.remove(key)
         assert (
             len(buffered_layers) == 0
         ), f"Layer order is impossible for layer {[layer.label for layer in buffered_layers]}"
         for layer in ordered_layers:
-            tikz_script += layer.generate_tikz()
+            tikz_script += layer.generate_tikz(verbose=verbose)
 
         if self.ndim == 3:
             tikz_script += "\\end{axis}\n"
