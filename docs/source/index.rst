@@ -4,8 +4,9 @@ template-python Documentation
 Write the documentation of your python package here.
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
    :caption: Documentation
 
-   getting_started
-   api/index
+   guides/install
+   guides/quickstart
+   tutorials
