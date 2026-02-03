@@ -1,15 +1,21 @@
+---
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v5.0.0  # Use the latest stable version
+    rev: v6.0.0
     hooks:
+      - id: check-yaml
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
       - id: check-added-large-files # Prevent giant files from being committed.
-        args: ["--maxkb=1000"]     
-      - id: check-merge-conflict    # Check for files that contain merge conflict strings.
-      - id: check-toml              # Attempts to load all TOML files to verify syntax.
-      - id: check-yaml              # Attempts to load all yaml files to verify syntax.
-        args: ["--unsafe"]
-
+        args: [--maxkb=500]
+      - id: check-merge-conflict # Check for files that contain merge conflict strings.
   - repo: https://github.com/kynan/nbstripout
-    rev: 0.8.1
+    rev: 0.9.0
     hooks:
-      - id: nbstripout # remove jupyter notebook cell output
+      - id: nbstripout # strip jupyter noteook output
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.9.1
+    hooks:
+      - id: ruff
+        args: [--fix, --select, I]
+      - id: ruff-format
