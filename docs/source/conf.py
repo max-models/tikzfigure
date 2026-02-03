@@ -10,7 +10,7 @@ from pathlib import Path
 sys.path.insert(0, os.path.abspath("../src"))
 
 # Copy tutorial notebooks from project root to docs/source/tutorials/
-tutorials_source = Path(__file__).parent.parent / "tutorials"
+tutorials_source = Path(__file__).parent.parent.parent / "tutorials"
 tutorials_dest = Path(__file__).parent / "tutorials"
 
 if tutorials_source.exists():
