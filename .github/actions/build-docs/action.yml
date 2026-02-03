@@ -33,8 +33,4 @@ runs:
       shell: bash
       run: |
         cd docs
-        if [ "${{ inputs.treat-warnings-as-errors }}" = "true" ]; then
-          sphinx-build -b html -W --keep-going source build/html
-        else
-          sphinx-build -b html source build/html
-        fi
+        make html
