@@ -135,7 +135,3 @@ def test_unload_extension(ip):
     assert "tikz_load" in ip.magics_manager.magics["line"]
 
     ip.run_line_magic("unload_ext", "tikzpics")
-
-
-if __name__ == "__main__":
-    pytest.main([__file__, "-v"])
