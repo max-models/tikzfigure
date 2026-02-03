@@ -26,6 +26,8 @@ fig.show()
 print(fig.generate_tikz())
 ```
 
+Note that to visualize the plots in a popup or in jupyterlab, install with `pip install tikzpics[vis]`
+
 ## IPython Magic Commands
 
 tikzpics includes IPython magic commands for compiling TikZ figures directly in Jupyter notebooks!

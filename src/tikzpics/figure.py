@@ -534,13 +534,135 @@ class TikzFigure:
         else:
             raise ValueError(f"Unsupported file format: {ext}")
 
-    def show(self, width=None, height=None, verbose=False):
-        from IPython.display import Image, display
+    def show(
+        self,
+        width: int | None = None,
+        height: int | None = None,
+        verbose: bool = False,
+        backend: str = "matplotlib",
+    ):
+        """
+        Display the TikZ figure.
+
+        In Jupyter notebooks, displays inline.
+        In regular Python, opens according to the backend parameter.
+
+        Parameters:
+        -----------
+        width : int, optional
+            Display width in pixels (Jupyter only)
+        height : int, optional
+            Display height in pixels (Jupyter only)
+        verbose : bool
+            Print compilation details
+        backend : str
+            Display backend for non-Jupyter environments.
+            Options: "matplotlib" (default), "system", "pillow"
+            - "matplotlib": Opens in matplotlib window
+            - "system": Opens with system default image viewer
+            - "pillow": Opens with PIL/Pillow viewer
+        """
+        # Check if we're in a Jupyter/IPython environment
+        try:
+            from IPython import get_ipython
+
+            if get_ipython() is not None and "IPKernelApp" in get_ipython().config:
+                # We're in Jupyter - use IPython display
+                from IPython.display import Image, display
+
+                with tempfile.TemporaryDirectory() as tempdir:
+                    temp_pdf = os.path.join(tempdir, "temp.png")
+                    self.savefig(filename=temp_pdf, verbose=verbose)
+                    display(Image(filename=temp_pdf, width=width, height=height))
+                return
+        except (ImportError, AttributeError):
+            pass
+
+        # Not in Jupyter - use specified backend
+        if backend == "matplotlib":
+            self._show_matplotlib(verbose=verbose)
+        elif backend == "system":
+            self._show_system(verbose=verbose)
+        elif backend == "pillow":
+            self._show_pillow(verbose=verbose)
+        else:
+            raise ValueError(
+                f"Unknown backend '{backend}'. "
+                "Options: 'matplotlib', 'system', 'pillow'"
+            )
+
+    def _show_matplotlib(self, verbose: bool = False):
+        """Show figure using matplotlib."""
+        try:
+            import matplotlib.image as mpimg
+            import matplotlib.pyplot as plt
+        except ImportError:
+            raise ImportError(
+                "matplotlib is required for this backend. "
+                "Install with: pip install matplotlib\n"
+                "Or use backend='system' or backend='pillow'"
+            )
 
         with tempfile.TemporaryDirectory() as tempdir:
-            temp_pdf = os.path.join(tempdir, "temp.png")
-            self.savefig(filename=temp_pdf, verbose=verbose)
-            display(Image(filename=temp_pdf, width=width, height=height))
+            temp_png = os.path.join(tempdir, "temp.png")
+            self.savefig(filename=temp_png, verbose=verbose)
+
+            img = mpimg.imread(temp_png)
+
+            # Calculate figure size based on image dimensions
+            dpi = 100
+            height_inches = img.shape[0] / dpi
+            width_inches = img.shape[1] / dpi
+
+            fig, ax = plt.subplots(figsize=(width_inches, height_inches))
+            ax.imshow(img)
+            ax.axis("off")
+            plt.tight_layout(pad=0)
+            plt.show()
+
+    def _show_system(self, verbose: bool = False):
+        """Show figure using system default image viewer."""
+        with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp:
+            temp_path = tmp.name
+
+        try:
+            self.savefig(filename=temp_path, verbose=verbose)
+
+            # Open with system default viewer
+            import platform
+
+            system = platform.system()
+
+            if system == "Darwin":  # macOS
+                subprocess.run(["open", temp_path], check=True)
+            elif system == "Linux":
+                subprocess.run(["xdg-open", temp_path], check=True)
+            elif system == "Windows":
+                os.startfile(temp_path)
+            else:
+                print(f"Saved figure to: {temp_path}")
+                print("Please open manually (unsupported platform for auto-display)")
+        except Exception as e:
+            print(f"Could not open figure automatically: {e}")
+            print(f"Figure saved to: {temp_path}")
+
+    def _show_pillow(self, verbose: bool = False):
+        """Show figure using PIL/Pillow."""
+        try:
+            from PIL import Image
+        except ImportError:
+            raise ImportError(
+                "Pillow is required for this backend. "
+                "Install with: pip install Pillow\n"
+                "Or use backend='system' or backend='matplotlib'"
+            )
+
+        with tempfile.TemporaryDirectory() as tempdir:
+            temp_png = os.path.join(tempdir, "temp.png")
+            self.savefig(filename=temp_png, verbose=verbose)
+
+            img = Image.open(temp_png)
+            img.show()
 
     # ------------------------------------------------------------- #
     # Private methods
