@@ -2,7 +2,6 @@ from tikzpics import TikzFigure
 
 
 def test_tikz_equivalence():
-
     tikz = TikzFigure()
 
     options = ["draw", "rounded corners", "line width=3"]
@@ -35,7 +34,6 @@ def test_tikz_equivalence():
 
 
 def test_logo_equivalence():
-
     tikz = TikzFigure()
 
     options = ["draw", "rounded corners", "line width=3"]

@@ -39,7 +39,7 @@ jobs:
           key: ${{ runner.os }}-pip-${{ hashFiles('**/pyproject.toml') }}
           restore-keys: |
             ${{ runner.os }}-pip-
-      
+
       - name: Install pandoc
         run: |
           apt-get update
@@ -106,4 +106,3 @@ jobs:
 
       - name: Build the package
         run: python -m build
-

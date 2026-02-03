@@ -2,136 +2,100 @@
 #
 # For the full list of built-in configuration values, see the documentation:
 # https://www.sphinx-doc.org/en/master/usage/configuration.html
-
 import os
 import shutil
+import sys
+from pathlib import Path
 
-# At the top.
-import sphinx_bootstrap_theme
+sys.path.insert(0, os.path.abspath("../src"))
 
+# Copy tutorial notebooks from project root to docs/source/tutorials/
+tutorials_source = Path(__file__).parent.parent.parent / "tutorials"
+tutorials_dest = Path(__file__).parent / "tutorials"
 
-def copy_tutorials(app):
-    src = os.path.abspath("../tutorials")
-    dst = os.path.abspath("source/tutorials")
-
-    # Remove existing target directory if it exists
-    if os.path.exists(dst):
-        shutil.rmtree(dst)
-
-    shutil.copytree(src, dst)
-
-
-def setup(app):
-    app.connect("builder-inited", copy_tutorials)
-    # app.add_stylesheet("my-styles.css")
-    app.add_css_file("custom.css")
+if tutorials_source.exists():
+    tutorials_dest.mkdir(exist_ok=True)
+    for notebook in tutorials_source.glob("*.ipynb"):
+        shutil.copy2(notebook, tutorials_dest / notebook.name)
 
 
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = "tikzpics"
-copyright = "2025, Max Lindqvist"
-author = "Max Lindqvist"
+copyright = "2025, Max"
+author = "Max"
 
 # -- General configuration ---------------------------------------------------
-# https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
+# Add any Sphinx extension module names here, as strings. They can be
+# extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
+# ones.
 extensions = [
-    "nbsphinx",
-    "sphinx.ext.mathjax",
     "sphinx.ext.autodoc",
-    "myst_parser",  # enable Markdown support
+    "sphinx.ext.autosummary",
+    "sphinx.ext.viewcode",
+    "sphinx.ext.napoleon",
+    "sphinxcontrib.mermaid",
+    "sphinx_design",
+    "nbsphinx",
 ]
 
-exclude_patterns = []
-
-# Recognize both .rst and .md
-source_suffix = {
-    ".rst": "restructuredtext",
-    ".md": "markdown",
-}
-
-# -- Options for HTML output -------------------------------------------------
-# https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
-
-# html_theme = "furo"
-# conf.py
-# ...
-
-# Activate the theme.
-html_theme = "bootstrap"
-html_theme_path = sphinx_bootstrap_theme.get_html_theme_path()
-
-# (Optional) Logo. Should be small enough to fit the navbar (ideally 24x24).
-# Path should be relative to the ``_static`` files directory.
-# html_logo = "my_logo.png"
-
-# Theme options are theme-specific and customize the look and feel of a
-# theme further.
-html_theme_options = {
-    # Navigation bar title. (Default: ``project`` value)
-    "navbar_title": "python-template",
-    # Tab name for entire site. (Default: "Site")
-    "navbar_site_name": "Site",
-    # A list of tuples containing pages or urls to link to.
-    # Valid tuples should be in the following forms:
-    #    (name, page)                 # a link to a page
-    #    (name, "/aa/bb", 1)          # a link to an arbitrary relative url
-    #    (name, "http://example.com", True) # arbitrary absolute url
-    # Note the "1" or "True" value above as the third argument to indicate
-    # an arbitrary url.
-    "navbar_links": [
-        ("Quickstart", "quickstart"),
-        ("Tutorials", "tutorials"),
-        ("API", "api"),
-        # ("Link", "http://example.com", True),
-    ],
-    # Render the next and previous page links in navbar. (Default: true)
-    "navbar_sidebarrel": False,
-    # Render the current pages TOC in the navbar. (Default: true)
-    "navbar_pagenav": False,
-    # Tab name for the current pages TOC. (Default: "Page")
-    "navbar_pagenav_name": "Page",
-    # Global TOC depth for "site" navbar tab. (Default: 1)
-    # Switching to -1 shows all levels.
-    "globaltoc_depth": 2,
-    # Include hidden TOCs in Site navbar?
-    #
-    # Note: If this is "false", you cannot have mixed ``:hidden:`` and
-    # non-hidden ``toctree`` directives in the same page, or else the build
-    # will break.
-    #
-    # Values: "true" (default) or "false"
-    "globaltoc_includehidden": "true",
-    # HTML navbar class (Default: "navbar") to attach to <div> element.
-    # For black navbar, do "navbar navbar-inverse"
-    "navbar_class": "navbar inverse",
-    # Fix navigation bar to top of page?
-    # Values: "true" (default) or "false"
-    "navbar_fixed_top": "true",
-    # Location of link to source.
-    # Options are "nav" (default), "footer" or anything else to exclude.
-    "source_link_position": "footer",
-    # Bootswatch (http://bootswatch.com/) theme.
-    #
-    # Options are nothing (default) or the name of a valid theme
-    # such as "cosmo" or "sandstone".
-    #
-    # The set of valid themes depend on the version of Bootstrap
-    # that's used (the next config option).
-    #
-    # Currently, the supported themes are:
-    # - Bootstrap 2: https://bootswatch.com/2
-    # - Bootstrap 3: https://bootswatch.com/3
-    "bootswatch_theme": "flatly",
-    # Choose Bootstrap version.
-    # Values: "3" (default) or "2" (in quotes)
-    "bootstrap_version": "3",
-}
-
-html_static_path = ["_static"]
+# Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]
 
+# List of patterns, relative to source directory, that match files and
+# directories to ignore when looking for source files.
+# This pattern also affects html_static_path and html_extra_path.
+exclude_patterns = ["_build", "Thumbs.db", ".DS_Store", "**/.ipynb_checkpoints"]
 
-html_sidebars = {"**": []}
+# nbsphinx configuration
+nbsphinx_execute = "always"  # Execute notebooks during build
+
+
+# -- Options for HTML output -------------------------------------------------
+
+# The theme to use for HTML and HTML Help pages.  See the documentation for
+# a list of builtin themes.
+#
+html_theme = "sphinx_book_theme"
+
+html_theme_options = {
+    "repository_branch": "devel",
+    "show_toc_level": 2,
+    "secondary_sidebar_items": ["page-toc"],
+    "use_sidenotes": True,
+    "home_page_in_toc": True,
+    "collapse_navigation": False,
+    "navigation_depth": 2,
+    "icon_links": [
+        {
+            "name": "GitHub",
+            "url": "https://github.com/max-models/tikzpics/",
+            "icon": "fab fa-github",
+            "type": "fontawesome",
+        },
+        {
+            "name": "⭐ Star us!",
+            "url": "https://github.com/max-models/tikzpics/",
+            "icon": "fas fa-star",
+            "type": "fontawesome",
+        },
+    ],
+}
+
+# Add any paths that contain custom static files (such as style sheets) here,
+# relative to this directory. They are copied after the builtin static files,
+# so a file named "default.css" will overwrite the builtin "default.css".
+breathe_separate_member_pages = False
+html_theme = "sphinx_book_theme"
+html_static_path = ["_static"]
+html_css_files = ["custom.css"]
+
+autosummary_generate = True
+
+autodoc_default_options = {
+    "members": True,
+    "undoc-members": False,
+    "show-inheritance": True,
+}

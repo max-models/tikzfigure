@@ -16,7 +16,6 @@ class Plot3D(Path):
         options: list | None = None,
         **kwargs,
     ):
-
         if options is None:
             options = []
 

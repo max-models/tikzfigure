@@ -9,7 +9,6 @@ class Variable(TikzObject):
         layer: int | None = 0,
         comment: str | None = None,
     ) -> None:
-
         super().__init__(label=label, layer=layer, comment=comment)
         self._value = value
 
