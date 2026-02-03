@@ -23,6 +23,12 @@ runs:
         sudo apt-get update
         sudo apt-get install -y pandoc
 
+    - name: Check if pdflatex is available
+      shell: bash
+      run: |
+        which pdflatex
+        pdflatex --version
+
     - name: Install Python dependencies
       shell: bash
       run: |

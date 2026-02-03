@@ -17,6 +17,9 @@ defaults:
 jobs:
   test-docs:
     runs-on: ubuntu-latest
+    container:
+      image: texlive/texlive:latest
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
