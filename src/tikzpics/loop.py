@@ -5,7 +5,6 @@ from tikzpics.path import Path
 
 class Loop(TikzObject):
     def __init__(self, variable, values, layer=0, comment: str | None = None):
-
         self._variable = variable
         self._values = list(values)
         self._items = []
@@ -37,7 +36,6 @@ class Loop(TikzObject):
         return node
 
     def add_path(self, nodes, comment: str | None = None, **kwargs):
-
         path = Path(nodes, comment=comment, layer=self.layer, **kwargs)
         self._items.append(path)
         return path

@@ -7,7 +7,6 @@ class TikzObject:
         options: list | None = None,
         **kwargs,
     ) -> None:
-
         if options is None:
             options = []
 

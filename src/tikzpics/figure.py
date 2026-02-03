@@ -404,9 +404,9 @@ class TikzFigure:
                     # print("Move layer from buffer")
                     ordered_layers.append(key)
                     buffered_layers.remove(key)
-        assert (
-            len(buffered_layers) == 0
-        ), f"Layer order is impossible for layer {[layer.label for layer in buffered_layers]}"
+        assert len(buffered_layers) == 0, (
+            f"Layer order is impossible for layer {[layer.label for layer in buffered_layers]}"
+        )
         for layer in ordered_layers:
             tikz_script += layer.generate_tikz(verbose=verbose)
 
@@ -595,7 +595,7 @@ class TikzFigure:
         for line in tikz_script.split("\n"):
             if "\\end" in line or "end \\foreach" in line:
                 num_tabs = max(num_tabs - 1, 0)
-            tikz_script_new += f"{tab_str*num_tabs}{line}\n"
+            tikz_script_new += f"{tab_str * num_tabs}{line}\n"
             if "\\begin" in line or "start \\foreach" in line:
                 num_tabs += 1
         return tikz_script_new
