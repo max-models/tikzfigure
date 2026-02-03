@@ -62,8 +62,8 @@ class TikzFigure:
             lines = [line for line in lines if line not in ["", "\n"]]
             lines = [line for line in lines if not line[0] == "%"]
 
-            assert lines[0] == "\\begin{tikzpicture}"
-            assert lines[-1] == "\\end{tikzpicture}"
+            assert lines[0] == "\\begin{tikzpicture}", f"Found: {lines[0]}"
+            assert lines[-1] == "\\end{tikzpicture}", f"Found: {lines[-1]}"
 
             current_layer = 0
             for line in lines[1:-1]:
@@ -148,6 +148,16 @@ class TikzFigure:
                     # print(f"Path: {path}")
                     # print(f"Nodes: {nodes}")
                     self._add_path(nodes, options=attributes, layer=current_layer)
+
+    # ------------------------------------------------------------- #
+    # Class methods
+
+    @classmethod
+    def from_tikz_code(cls, tikz_code: str, **kwargs):
+        """
+        Create a TikzFigure instance from existing TikZ code.
+        """
+        return cls(tikz_code=tikz_code, **kwargs)
 
     # ------------------------------------------------------------- #
     # Public methods
