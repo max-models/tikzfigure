@@ -20,25 +20,21 @@ dependencies = [
 
 [project.optional-dependencies]
 
-test = [
-    "pytest",
-    "coverage",
-]
-
 dev = [
     "tikzpics[test]",
+    "tikzpics[docs]",
     "black[jupyter]",
     "isort",
     "ruff",
     "pre-commit",
     "pyproject-fmt",
-    "jupyterlab",
-    "ipykernel",
-    "numpy",
-    "scipy",
 ]
 
-# https://medium.com/@pratikdomadiya123/build-project-documentation-quickly-with-the-sphinx-python-2a9732b66594
+test = [
+    "pytest",
+    "coverage",
+]
+
 docs = [
   "myst-parser",
   "nbconvert",
@@ -47,6 +43,10 @@ docs = [
   "sphinx-book-theme",
   "sphinxcontrib-mermaid",
   "sphinx-design",
+  "jupyterlab",
+  "ipykernel",
+  "numpy",
+  "scipy",
 ]
 
 [project.urls]
