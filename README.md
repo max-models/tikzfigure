@@ -23,7 +23,6 @@ n2 = fig.add_node(5, 0, shape="circle", color="white", fill="red", content="Hi!"
 fig.draw([n1, n2], options=["->", "line width=2"], color="gray")
 
 fig.show()
-print(fig.generate_tikz())
 ```
 
 Note that to visualize the plots in a popup or in jupyterlab, install with `pip install tikzpics[vis]`
@@ -46,4 +45,4 @@ Then use the `%%tikz` cell magic:
 \end{tikzpicture}
 ```
 
-See [tutorials/tutorial_07_ipython_magic.ipynb](tutorials/tutorial_07_ipython_magic.ipynb) for more examples!
+See [tutorials](https://max-models.github.io/tikzpics/tutorials) for more examples!
