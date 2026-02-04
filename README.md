@@ -25,7 +25,7 @@ fig.draw([n1, n2], options=["->", "line width=2"], color="gray")
 fig.show()
 ```
 
-Note that to visualize the plots in a popup or in jupyterlab, install with `pip install tikzpics[vis]`
+Note that to visualize the plots in a popup or in jupyterlab, install with `pip install "tikzpics[vis]"`
 
 ## IPython Magic Commands
 
@@ -37,7 +37,7 @@ Load the extension:
 ```
 
 Then use the `%%tikz` cell magic:
-```python
+```tikz
 %%tikz
 \begin{tikzpicture}
 \draw[thick, blue] (0,0) circle (2cm);
