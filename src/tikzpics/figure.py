@@ -562,6 +562,14 @@ class TikzFigure:
             - "system": Opens with system default image viewer
             - "pillow": Opens with PIL/Pillow viewer
         """
+        # Skip display in test/headless environments
+        if os.environ.get("TIKZPICS_NO_SHOW") == "1" or os.environ.get(
+            "PYTEST_CURRENT_TEST"
+        ):
+            if verbose:
+                print("Display suppressed (test/headless mode).")
+            return
+
         # Check if we're in a Jupyter/IPython environment
         try:
             from IPython import get_ipython
