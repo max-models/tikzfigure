@@ -48,7 +48,7 @@ class Tikzlayer:
                         reqs.add(node.layer)
         return reqs
 
-    def generate_tikz(self, verbose: bool = False) -> str:
+    def generate_tikz(self, use_layers: bool = True, verbose: bool = False) -> str:
         """Generate TikZ code for this layer.
 
         Creates the pgfonlayer environment and includes all items in the layer.
@@ -56,11 +56,14 @@ class Tikzlayer:
         Returns:
             String containing the complete TikZ code for this layer.
         """
-        tikz_script = f"\n% Layer {self.label}\n"
-        tikz_script += f"\\begin{{pgfonlayer}}{{{self.label}}}\n"
+        tikz_script = ""
+        if use_layers:
+            tikz_script += f"\n% Layer {self.label}\n"
+            tikz_script += f"\\begin{{pgfonlayer}}{{{self.label}}}\n"
         for item in self.items:
             tikz_script += item.to_tikz()
-        tikz_script += f"\\end{{pgfonlayer}}{{{self.label}}}\n"
+        if use_layers:
+            tikz_script += f"\\end{{pgfonlayer}}{{{self.label}}}\n"
         return tikz_script
 
     def _get_items_by_type(self, item_type) -> list:
@@ -216,3 +219,12 @@ class LayerCollection:
             Dictionary mapping layer labels to Tikzlayer objects.
         """
         return self._layers
+
+    @property
+    def num_layers(self) -> int:
+        """Get the number of layers in the collection.
+
+        Returns:
+            The total number of layers.
+        """
+        return len(self._layers)

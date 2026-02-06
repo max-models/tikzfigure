@@ -343,7 +343,7 @@ class TikzFigure:
         self.layers.add_item(item=loop_obj, layer=layer, verbose=verbose)
         return loop_obj
 
-    def generate_tikz(self, verbose: bool = False) -> str:
+    def generate_tikz(self, use_layers: bool = True, verbose: bool = False) -> str:
         """
         Generate the TikZ script for the figure.
 
@@ -380,12 +380,17 @@ class TikzFigure:
 
         tikz_script += "\n"
 
-        tikz_script += "% Define the layers library\n"
+        if self.layers.num_layers <= 1:
+            use_layers = False
+
+        # TODO: self.layers.layers is a bit clunky
         layers = sorted([str(layer) for layer in self.layers.layers.keys()])
-        for layer in layers:
-            tikz_script += f"\\pgfdeclarelayer{{{layer}}}\n"
-        if len(layers) > 0:
-            tikz_script += f"\\pgfsetlayers{{{','.join(layers)}}}\n"
+        if use_layers:
+            tikz_script += "% Define the layers library\n"
+            for layer in layers:
+                tikz_script += f"\\pgfdeclarelayer{{{layer}}}\n"
+            if len(layers) > 0:
+                tikz_script += f"\\pgfsetlayers{{{','.join(layers)}}}\n"
 
         # Add grid if enabled
         # TODO: Create a Grid class
@@ -418,7 +423,7 @@ class TikzFigure:
             f"Layer order is impossible for layer {[layer.label for layer in buffered_layers]}"
         )
         for layer in ordered_layers:
-            tikz_script += layer.generate_tikz(verbose=verbose)
+            tikz_script += layer.generate_tikz(use_layers=use_layers, verbose=verbose)
 
         if self.ndim == 3:
             tikz_script += "\\end{axis}\n"
@@ -436,8 +441,8 @@ class TikzFigure:
         tikz_script = self._add_tabs(tikz_script)
         return tikz_script
 
-    def generate_standalone(self):
-        tikz_code = self.generate_tikz()
+    def generate_standalone(self, verbose: bool = False) -> str:
+        tikz_code = self.generate_tikz(verbose=verbose)
 
         # Create a minimal LaTeX document
         latex_document = (
