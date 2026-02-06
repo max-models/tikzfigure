@@ -755,6 +755,15 @@ class TikzFigure:
                 num_tabs += 1
         return tikz_script_new
 
+    # ------------------------------------------------------------- #
+    def __repr__(self):
+        """Representation of the TikzFigure. Returns the TikZ code."""
+        return self.generate_tikz()
+
+    def __str__(self):
+        """String representation of the TikzFigure. Returns the TikZ code."""
+        return self.generate_tikz()
+
     # ---------------------------------------------------------------- #
     # Properties
 
