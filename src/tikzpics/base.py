@@ -50,5 +50,5 @@ class TikzObject:
 
     def add_comment(self, string_in) -> str:
         if self.comment is not None:
-            return f"\n% {self.comment}\n{string_in}"
+            return f"% {self.comment}\n{string_in}"
         return string_in
