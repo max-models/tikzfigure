@@ -353,7 +353,7 @@ class TikzFigure:
         tikz_script = TIKZFIGURE_HEADER
         tikz_script += "\\begin{tikzpicture}\n"
         if self._figure_setup:
-            tikz_script += f"[{self._figure_setup}]"
+            tikz_script += f"[{self._figure_setup}]\n"
 
         # Add variables
         if len(self.variables) > 0:
@@ -377,8 +377,6 @@ class TikzFigure:
             tikz_script += "zlabel={$z$},\n"
             tikz_script += "grid=major\n"
             tikz_script += "    ]\n"
-
-        tikz_script += "\n"
 
         if self.layers.num_layers <= 1:
             use_layers = False
@@ -507,7 +505,12 @@ class TikzFigure:
                 print(e.stderr.decode())
                 return
 
-    def savefig(self, filename, verbose=False):
+    def savefig(
+        self,
+        filename: str,
+        dpi: int = 300,
+        verbose: bool = False,
+    ):
         """
         Save the TikZ figure to a file (PDF, PNG, JPG) using pure Python tools.
         """
@@ -517,6 +520,8 @@ class TikzFigure:
             # Direct compile
             self.compile_pdf(filename=filename, verbose=verbose)
         elif ext == ".tikz":
+            if verbose:
+                print(f"Saving TikZ code to {filename}")
             tikz_code = self.generate_tikz()
             with open(filename, "w") as f:
                 f.write(tikz_code)
@@ -524,7 +529,10 @@ class TikzFigure:
             # Compile to a temporary PDF first
             with tempfile.TemporaryDirectory() as tempdir:
                 temp_pdf = os.path.join(tempdir, "temp.pdf")
-                # temp_pdf = "_temp.pdf"
+
+                if verbose:
+                    print(f"Compiling TikZ to temporary PDF: {temp_pdf}")
+
                 self.compile_pdf(filename=temp_pdf, verbose=verbose)
 
                 if verbose:
@@ -533,7 +541,7 @@ class TikzFigure:
                 # Convert PDF → image
                 doc = fitz.open(temp_pdf)
                 page = doc[0]
-                pix = page.get_pixmap(dpi=300)
+                pix = page.get_pixmap(dpi=dpi)
                 pix.save(filename)
                 doc.close()
         else:
@@ -543,6 +551,7 @@ class TikzFigure:
         self,
         width: int | None = None,
         height: int | None = None,
+        dpi: int = 300,
         verbose: bool = False,
         backend: str = "matplotlib",
     ):
@@ -593,18 +602,18 @@ class TikzFigure:
 
         # Not in Jupyter - use specified backend
         if backend == "matplotlib":
-            self._show_matplotlib(verbose=verbose)
+            self._show_matplotlib(dpi=dpi, verbose=verbose)
         elif backend == "system":
-            self._show_system(verbose=verbose)
+            self._show_system(dpi=dpi, verbose=verbose)
         elif backend == "pillow":
-            self._show_pillow(verbose=verbose)
+            self._show_pillow(dpi=dpi, verbose=verbose)
         else:
             raise ValueError(
                 f"Unknown backend '{backend}'. "
                 "Options: 'matplotlib', 'system', 'pillow'"
             )
 
-    def _show_matplotlib(self, verbose: bool = False):
+    def _show_matplotlib(self, dpi: int = 300, verbose: bool = False):
         """Show figure using matplotlib."""
         try:
             import matplotlib.image as mpimg
@@ -616,30 +625,31 @@ class TikzFigure:
                 "Or use backend='system' or backend='pillow'"
             )
 
+        if verbose:
+            print("Using matplotlib backend for display.")
+
         with tempfile.TemporaryDirectory() as tempdir:
             temp_png = os.path.join(tempdir, "temp.png")
-            self.savefig(filename=temp_png, verbose=verbose)
+            self.savefig(filename=temp_png, dpi=dpi, verbose=verbose)
 
             img = mpimg.imread(temp_png)
 
             # Calculate figure size based on image dimensions
-            dpi = 100
-            height_inches = img.shape[0] / dpi
-            width_inches = img.shape[1] / dpi
+            height_width_ratio = img.shape[0] / img.shape[1]
 
-            fig, ax = plt.subplots(figsize=(width_inches, height_inches))
+            fig, ax = plt.subplots(figsize=(10, 10 * height_width_ratio))
             ax.imshow(img)
             ax.axis("off")
             plt.tight_layout(pad=0)
             plt.show()
 
-    def _show_system(self, verbose: bool = False):
+    def _show_system(self, dpi: int = 300, verbose: bool = False):
         """Show figure using system default image viewer."""
         with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp:
             temp_path = tmp.name
 
         try:
-            self.savefig(filename=temp_path, verbose=verbose)
+            self.savefig(filename=temp_path, dpi=dpi, verbose=verbose)
 
             # Open with system default viewer
             import platform
@@ -659,7 +669,7 @@ class TikzFigure:
             print(f"Could not open figure automatically: {e}")
             print(f"Figure saved to: {temp_path}")
 
-    def _show_pillow(self, verbose: bool = False):
+    def _show_pillow(self, dpi: int = 300, verbose: bool = False):
         """Show figure using PIL/Pillow."""
         try:
             from PIL import Image
@@ -672,7 +682,7 @@ class TikzFigure:
 
         with tempfile.TemporaryDirectory() as tempdir:
             temp_png = os.path.join(tempdir, "temp.png")
-            self.savefig(filename=temp_png, verbose=verbose)
+            self.savefig(filename=temp_png, dpi=dpi, verbose=verbose)
 
             img = Image.open(temp_png)
             img.show()
