@@ -507,7 +507,12 @@ class TikzFigure:
                 print(e.stderr.decode())
                 return
 
-    def savefig(self, filename, verbose=False):
+    def savefig(
+        self,
+        filename: str,
+        dpi: int = 300,
+        verbose: bool = False,
+    ):
         """
         Save the TikZ figure to a file (PDF, PNG, JPG) using pure Python tools.
         """
@@ -517,6 +522,8 @@ class TikzFigure:
             # Direct compile
             self.compile_pdf(filename=filename, verbose=verbose)
         elif ext == ".tikz":
+            if verbose:
+                print(f"Saving TikZ code to {filename}")
             tikz_code = self.generate_tikz()
             with open(filename, "w") as f:
                 f.write(tikz_code)
@@ -524,7 +531,10 @@ class TikzFigure:
             # Compile to a temporary PDF first
             with tempfile.TemporaryDirectory() as tempdir:
                 temp_pdf = os.path.join(tempdir, "temp.pdf")
-                # temp_pdf = "_temp.pdf"
+
+                if verbose:
+                    print(f"Compiling TikZ to temporary PDF: {temp_pdf}")
+
                 self.compile_pdf(filename=temp_pdf, verbose=verbose)
 
                 if verbose:
@@ -533,7 +543,7 @@ class TikzFigure:
                 # Convert PDF → image
                 doc = fitz.open(temp_pdf)
                 page = doc[0]
-                pix = page.get_pixmap(dpi=300)
+                pix = page.get_pixmap(dpi=dpi)
                 pix.save(filename)
                 doc.close()
         else:
@@ -604,7 +614,7 @@ class TikzFigure:
                 "Options: 'matplotlib', 'system', 'pillow'"
             )
 
-    def _show_matplotlib(self, verbose: bool = False):
+    def _show_matplotlib(self, dpi: int = 300, verbose: bool = False):
         """Show figure using matplotlib."""
         try:
             import matplotlib.image as mpimg
@@ -616,14 +626,16 @@ class TikzFigure:
                 "Or use backend='system' or backend='pillow'"
             )
 
+        if verbose:
+            print("Using matplotlib backend for display.")
+
         with tempfile.TemporaryDirectory() as tempdir:
             temp_png = os.path.join(tempdir, "temp.png")
-            self.savefig(filename=temp_png, verbose=verbose)
+            self.savefig(filename=temp_png, dpi=dpi, verbose=verbose)
 
             img = mpimg.imread(temp_png)
 
             # Calculate figure size based on image dimensions
-            dpi = 100
             height_inches = img.shape[0] / dpi
             width_inches = img.shape[1] / dpi
 
