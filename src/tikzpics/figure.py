@@ -27,12 +27,12 @@ TIKZFIGURE_HEADER = line_separator + version_string + link_string + line_separat
 class TikzFigure:
     def __init__(
         self,
-        ndim=2,
+        ndim: int = 2,
         label: str | None = None,
         grid: bool = False,
         tikz_code: str | None = None,
         figure_setup: str | None = None,
-        figsize: tuple = (10, 6),
+        figsize: tuple[float, float] = (10, 6),
         caption: str | None = None,
         description: str | None = None,
     ):
