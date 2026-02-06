@@ -418,7 +418,8 @@ class TikzFigure:
                     ordered_layers.append(key)
                     buffered_layers.remove(key)
         assert len(buffered_layers) == 0, (
-            f"Layer order is impossible for layer {[layer.label for layer in buffered_layers]}"
+            "Layer order is impossible for layer"
+            + f"{[layer.label for layer in buffered_layers]}"
         )
         for layer in ordered_layers:
             tikz_script += layer.generate_tikz(use_layers=use_layers, verbose=verbose)

@@ -69,7 +69,7 @@ class Path(TikzObject):
         for node in self.nodes:
             if isinstance(node, Node):
                 assert node.label != "", (
-                    "Trying to draw a path using a node without a label!"
+                    "Trying to draw a path " + "using a node without a label!"
                 )
                 if self.center:
                     label_list.append(f"({node.label}.center)")
