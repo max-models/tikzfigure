@@ -51,7 +51,7 @@ class Loop(TikzObject):
     def to_tikz(self):
         values_str = ",".join(str(v) for v in self.values)
         tikz_body = "".join([item.to_tikz() for item in self.items])
-        loop_str = f"\\foreach \\{self.variable} in {{{values_str}}}{{% start \\foreach\n{tikz_body}}}% end \\foreach\n"
+        loop_str = f"\\foreach \\{self.variable} in {{{values_str}}}{{\n{tikz_body}}}\n"
 
         loop_str = self.add_comment(loop_str)
 

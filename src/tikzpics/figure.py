@@ -27,12 +27,12 @@ TIKZFIGURE_HEADER = line_separator + version_string + link_string + line_separat
 class TikzFigure:
     def __init__(
         self,
-        ndim=2,
+        ndim: int = 2,
         label: str | None = None,
         grid: bool = False,
         tikz_code: str | None = None,
         figure_setup: str | None = None,
-        figsize: tuple = (10, 6),
+        figsize: tuple[float, float] = (10, 6),
         caption: str | None = None,
         description: str | None = None,
     ):
@@ -418,7 +418,8 @@ class TikzFigure:
                     ordered_layers.append(key)
                     buffered_layers.remove(key)
         assert len(buffered_layers) == 0, (
-            f"Layer order is impossible for layer {[layer.label for layer in buffered_layers]}"
+            "Layer order is impossible for layer"
+            + f"{[layer.label for layer in buffered_layers]}"
         )
         for layer in ordered_layers:
             tikz_script += layer.generate_tikz(use_layers=use_layers, verbose=verbose)
@@ -754,6 +755,15 @@ class TikzFigure:
             if "\\begin" in line or "start \\foreach" in line:
                 num_tabs += 1
         return tikz_script_new
+
+    # ------------------------------------------------------------- #
+    def __repr__(self):
+        """Representation of the TikzFigure. Returns the TikZ code."""
+        return self.generate_tikz()
+
+    def __str__(self):
+        """String representation of the TikzFigure. Returns the TikZ code."""
+        return self.generate_tikz()
 
     # ---------------------------------------------------------------- #
     # Properties
