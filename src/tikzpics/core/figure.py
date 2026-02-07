@@ -197,7 +197,7 @@ class TikzFigure:
         options: list | str | None = None,
         verbose: bool = False,
         **kwargs,
-    ):
+    ) -> Node:
         """
         Add a node to the TikZ figure.
 
