@@ -1,6 +1,6 @@
-from tikzpics.base import TikzObject
-from tikzpics.node import Node
-from tikzpics.path import Path
+from tikzpics.core.base import TikzObject
+from tikzpics.core.node import Node
+from tikzpics.core.path import Path
 
 
 class Loop(TikzObject):

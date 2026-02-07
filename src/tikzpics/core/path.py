@@ -1,6 +1,6 @@
-from tikzpics.base import TikzObject
-from tikzpics.coordinate import TikzCoordinate
-from tikzpics.node import Node
+from tikzpics.core.base import TikzObject
+from tikzpics.core.coordinate import TikzCoordinate
+from tikzpics.core.node import Node
 
 
 class Path(TikzObject):
