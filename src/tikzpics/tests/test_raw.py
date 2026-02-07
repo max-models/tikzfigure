@@ -1,4 +1,4 @@
-from tikzpics.raw import RawTikz
+from tikzpics.core.raw import RawTikz
 
 
 def test_raw_tikz_to_tikz():

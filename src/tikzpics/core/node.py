@@ -1,4 +1,4 @@
-from tikzpics.base import TikzObject
+from tikzpics.core.base import TikzObject
 
 
 class Node(TikzObject):
