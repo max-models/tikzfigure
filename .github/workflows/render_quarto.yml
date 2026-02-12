@@ -1,3 +1,5 @@
+name: Convert README.qmd to README.md
+
 on: push
 jobs:
   render:
