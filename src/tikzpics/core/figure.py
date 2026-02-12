@@ -408,14 +408,14 @@ class TikzFigure:
             else:
                 buffered_layers.add(layer)
 
-            for buffered_layer in buffered_layers:
+            for buffered_layer in list(buffered_layers):
                 buff_reqs = buffered_layer.get_reqs()
                 if all(
                     [r in [layer.label for layer in ordered_layers] for r in buff_reqs],
                 ):
                     # print("Move layer from buffer")
-                    ordered_layers.append(key)
-                    buffered_layers.remove(key)
+                    ordered_layers.append(buffered_layer)
+                    buffered_layers.remove(buffered_layer)
         assert len(buffered_layers) == 0, (
             "Layer order is impossible for layer"
             + f"{[layer.label for layer in buffered_layers]}"
