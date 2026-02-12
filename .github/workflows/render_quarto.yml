@@ -8,7 +8,7 @@ jobs:
       image: texlive/texlive:latest
     steps:
       - uses: actions/checkout@v3
-      - run: apt-get update && apt-get install -y jq
+      - run: apt-get update && apt-get install -y jq wget
       - uses: quarto-dev/quarto-actions/setup@v2
       - uses: actions/setup-python@v4
         with:
