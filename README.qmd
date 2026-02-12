@@ -6,8 +6,6 @@ format:
 jupyter: python3
 ---
 
-# Tikzpics
-
 Python interface to generate (readable) Tikz figures.
 
 # Install

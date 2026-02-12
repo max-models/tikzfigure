@@ -1,8 +1,6 @@
 # Tikzpics
 
 
-# Tikzpics
-
 Python interface to generate (readable) Tikz figures.
 
 # Install
