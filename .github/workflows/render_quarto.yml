@@ -1,0 +1,19 @@
+name: Convert README.qmd to README.md
+
+on: []
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - run: sudo apt-get update && sudo apt-get install -y texlive texlive-fonts-recommended texlive-latex-extra
+      - uses: quarto-dev/quarto-actions/setup@v2
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      - run: pip install -e ".[dev]"
+      - run: quarto render README.qmd --to md
+      - uses: stefanzweifel/git-auto-commit-action@v4
+        with:
+          commit_message: "Auto-render README.md from README.qmd"
+          file_pattern: "README.md"
