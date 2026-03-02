@@ -32,6 +32,8 @@ class TikzFigure:
         label: str | None = None,
         grid: bool = False,
         tikz_code: str | None = None,
+        extra_packages: list | None = None,
+        document_setup: str | None = None,
         figure_setup: str | None = None,
         figsize: tuple[float, float] = (10, 6),
         caption: str | None = None,
@@ -46,7 +48,8 @@ class TikzFigure:
         self._grid = grid
         self._tikz_code = tikz_code
         self._figure_setup = figure_setup
-
+        self._extra_packages = extra_packages
+        self._document_setup = document_setup
         # Initialize lists to hold Node and Path objects
         # TODO: nodes, paths, layers should have @property and @setter methods
         self._layers = LayerCollection()
@@ -449,10 +452,16 @@ class TikzFigure:
             "\\usepackage{pgfplots}\n"
             "\\pgfplotsset{compat=newest}\n"
             "\\usetikzlibrary{arrows.meta}\n"
-            "\\begin{document}\n"
-            f"{tikz_code}\n"
-            "\\end{document}"
         )
+        if self._extra_packages:
+            for pkg in self._extra_packages:
+                latex_document += f"\\usepackage{{{pkg}}}\n"
+
+        if self.document_setup:
+            latex_document += f"% Custom document setup\n"
+            latex_document += f"{self.document_setup}\n"
+
+        latex_document += f"\\begin{{document}}\n{tikz_code}\n\\end{{document}}"
         return latex_document
 
     def compile_pdf(self, filename="output.pdf", verbose=False):
@@ -766,6 +775,14 @@ class TikzFigure:
 
     # ---------------------------------------------------------------- #
     # Properties
+
+    @property
+    def document_setup(self) -> str | None:
+        return self._document_setup
+
+    @property
+    def extra_packages(self) -> list | None:
+        return self._extra_packages
 
     @property
     def ndim(self):
