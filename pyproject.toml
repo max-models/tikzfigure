@@ -27,6 +27,7 @@ dependencies = [
 ]
 
 optional-dependencies.dev = [
+  "pyyaml",
   "black[jupyter]",
   "isort",
   "pre-commit",
