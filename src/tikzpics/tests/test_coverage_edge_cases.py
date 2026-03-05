@@ -59,33 +59,37 @@ class TestShowWithoutIPython:
     def test_show_except_handler_path_exists(self):
         """Test exception handling when Jupyter detection fails (covers figure.py 600-601).
 
-        After the except (ImportError, AttributeError) block, the code should proceed
-        to backend selection even if Jupyter detection raised an exception.
+        This test mocks get_ipython() to raise an AttributeError, which triggers the
+        except (ImportError, AttributeError): pass block in show(). The code should then
+        continue to backend selection.
         """
         fig = TikzFigure()
         fig.add_node(x=0, y=0, label="A", content="A")
 
-        # Test that show() gracefully handles exception and continues to backend selection
-        with patch(
-            "tikzpics.core.figure.TikzFigure._show_matplotlib"
-        ) as mock_matplotlib:
-            # Clear environment to avoid early return
-            original_env = dict(os.environ)
-            try:
-                # Remove test environment flags to let show() run
-                os.environ.pop("PYTEST_CURRENT_TEST", None)
-                os.environ.pop("TIKZPICS_NO_SHOW", None)
+        # Mock get_ipython from IPython to raise AttributeError - this triggers the except block
+        with patch("IPython.get_ipython", side_effect=AttributeError("test")):
+            with patch(
+                "tikzpics.core.figure.TikzFigure._show_matplotlib"
+            ) as mock_matplotlib:
+                # Clear environment to avoid early return
+                original_env = dict(os.environ)
+                try:
+                    # Remove test environment flags to let show() run
+                    os.environ.pop("PYTEST_CURRENT_TEST", None)
+                    os.environ.pop("TIKZPICS_NO_SHOW", None)
 
-                fig.show(backend="matplotlib")
-                # If we got here, the except handler was successfully processed
-                mock_matplotlib.assert_called_once()
-            except Exception:
-                # If there's an error, that's fine - we're testing the logic exists
-                pass
-            finally:
-                # Restore environment
-                os.environ.clear()
-                os.environ.update(original_env)
+                    fig.show(backend="matplotlib")
+                    # If we got here, the except handler was successfully executed
+                    # and we fell through to backend selection
+                    mock_matplotlib.assert_called_once()
+                except Exception as e:
+                    pytest.fail(
+                        f"show() should handle AttributeError gracefully, got: {e}"
+                    )
+                finally:
+                    # Restore environment
+                    os.environ.clear()
+                    os.environ.update(original_env)
 
 
 class TestIPythonMagicExceptionHandling:
