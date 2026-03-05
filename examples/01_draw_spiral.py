@@ -1,6 +1,6 @@
 import math
 
-from tikzpics.figure import TikzFigure
+from tikzpics import TikzFigure
 
 
 def main():
