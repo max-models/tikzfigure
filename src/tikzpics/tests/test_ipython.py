@@ -18,10 +18,7 @@ def ip(session_ip):
     """Get IPython instance and clean up after each test."""
     yield session_ip
     # Clean up any loaded extensions
-    try:
-        session_ip.run_line_magic("unload_ext", "tikzpics")
-    except:
-        pass
+    session_ip.run_line_magic("unload_ext", "tikzpics")
 
 
 def test_load_extension(ip):

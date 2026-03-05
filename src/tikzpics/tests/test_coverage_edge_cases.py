@@ -1,7 +1,6 @@
 """Tests for edge cases and exception handling to achieve full coverage."""
 
 import os
-import sys
 import tempfile
 from unittest.mock import MagicMock, patch
 
@@ -103,6 +102,7 @@ class TestIPythonMagicExceptionHandling:
         with pytest.raises(FileNotFoundError):
             with open(nonexistent_file, "r") as f:
                 content = f.read()
+                print(content)
 
     def test_generic_exception_handling(self):
         """Test that generic exceptions can be caught (covers ipython.py line 123-124)."""
@@ -118,7 +118,6 @@ class TestIPythonMagicExceptionHandling:
     def test_ipython_tikz_load_simulation(self):
         """Simulate the tikz_load magic command execution (covers ipython.py 115-119, 123-124)."""
         # This test simulates what the tikz_load magic command does
-        import tempfile
 
         from tikzpics import TikzFigure
 
@@ -164,7 +163,6 @@ class TestIPythonMagicExceptionHandling:
             import tempfile
 
             from IPython.core.interactiveshell import InteractiveShell
-            from IPython.terminal.interactiveshell import ZMQTerminalIPythonApp
 
             from tikzpics.core.ipython import TikzMagics
 
@@ -226,6 +224,7 @@ class TestShowBackends:
         # The show() method should skip display when PYTEST_CURRENT_TEST is set
         # (which should be set during pytest execution)
         with patch("tikzpics.core.figure.TikzFigure._show_matplotlib") as mock_show:
+            print(f"Testing show() with test environment suppression... {mock_show}")
             fig.show(backend="matplotlib")
             # In test environment, it should return early without calling matplotlib
             # So we verify it wasn't called or we verify environment detection

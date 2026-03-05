@@ -105,10 +105,10 @@ def test_plot3d_to_tikz():
 
 def test_loop_to_tikz_and_nested():
     loop = Loop("i", [1, 2], comment="outer")
-    with loop as l:
-        l.add_node(0, 0, label="n", content="A")
-        l.add_path([Node(0, 0, label="m")])
-        inner = l.add_loop("j", [3], comment="inner")
+    with loop as loop_l:
+        loop_l.add_node(0, 0, label="n", content="A")
+        loop_l.add_path([Node(0, 0, label="m")])
+        inner = loop_l.add_loop("j", [3], comment="inner")
         inner.add_node(0, 0, label="n2")
 
     tikz = loop.to_tikz()
