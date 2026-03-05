@@ -32,6 +32,8 @@ class TikzFigure:
         label: str | None = None,
         grid: bool = False,
         tikz_code: str | None = None,
+        extra_packages: list | None = None,
+        document_setup: str | None = None,
         figure_setup: str | None = None,
         figsize: tuple[float, float] = (10, 6),
         caption: str | None = None,
@@ -46,7 +48,8 @@ class TikzFigure:
         self._grid = grid
         self._tikz_code = tikz_code
         self._figure_setup = figure_setup
-
+        self._extra_packages = extra_packages
+        self._document_setup = document_setup
         # Initialize lists to hold Node and Path objects
         # TODO: nodes, paths, layers should have @property and @setter methods
         self._layers = LayerCollection()
@@ -155,15 +158,14 @@ class TikzFigure:
 
     @classmethod
     def from_tikz_code(cls, tikz_code: str, **kwargs):
-        """
-        Create a TikzFigure instance from existing TikZ code.
-        """
+        """Create a TikzFigure instance from existing TikZ code."""
         return cls(tikz_code=tikz_code, **kwargs)
 
     # ------------------------------------------------------------- #
     # Public methods
 
     def add(self, items: list | tuple | Node, layer=0, verbose: bool = False):
+        """Add an item to the figure."""
         if not isinstance(items, list | tuple):
             items = [items]
 
@@ -180,6 +182,7 @@ class TikzFigure:
         color_spec: str,
         layer: int = 0,
     ) -> Color:
+        """Add a colorlet to the figure."""
         color = Color(color_spec=color_spec)
 
         self._colors.append((name, color))
@@ -243,6 +246,7 @@ class TikzFigure:
         comment: str | None = None,
         verbose: bool = False,
     ):
+        """Add a variable to the figure."""
         variable = Variable(
             label=label,
             value=value,
@@ -255,7 +259,13 @@ class TikzFigure:
         # self.layers.add_item(item=variable, layer=layer, verbose=verbose)
         return variable
 
-    def add_raw(self, tikz_code: str, layer: int = 0, verbose: bool = False):
+    def add_raw(
+        self,
+        tikz_code: str,
+        layer: int = 0,
+        verbose: bool = False,
+    ):
+        """Add raw TikZ code to the figure."""
         raw_tikz = RawTikz(tikz_code=tikz_code)
 
         self.layers.add_item(
@@ -273,6 +283,7 @@ class TikzFigure:
         center=False,
         **kwargs,
     ):
+        """Add a filled line or path connecting multiple nodes."""
         path = self._add_path(
             nodes=nodes,
             layer=layer,
@@ -291,6 +302,7 @@ class TikzFigure:
         center=False,
         **kwargs,
     ):
+        """Add a line or path connecting multiple nodes."""
         path = self._add_path(
             nodes=nodes,
             layer=layer,
@@ -312,6 +324,7 @@ class TikzFigure:
         verbose: bool = False,
         **kwargs,
     ):
+        """Add a 3D plot to the figure."""
         plot = Plot3D(
             x=x,
             y=y,
@@ -332,6 +345,7 @@ class TikzFigure:
         comment=None,
         verbose: bool = False,
     ):
+        """Add a loop to the figure."""
         loop_obj = Loop(
             variable=variable,
             values=values,
@@ -440,6 +454,7 @@ class TikzFigure:
         return tikz_script
 
     def generate_standalone(self, verbose: bool = False) -> str:
+        """Generate a standalone LaTeX document containing the TikZ figure."""
         tikz_code = self.generate_tikz(verbose=verbose)
 
         # Create a minimal LaTeX document
@@ -449,10 +464,16 @@ class TikzFigure:
             "\\usepackage{pgfplots}\n"
             "\\pgfplotsset{compat=newest}\n"
             "\\usetikzlibrary{arrows.meta}\n"
-            "\\begin{document}\n"
-            f"{tikz_code}\n"
-            "\\end{document}"
         )
+        if self._extra_packages:
+            for pkg in self._extra_packages:
+                latex_document += f"\\usepackage{{{pkg}}}\n"
+
+        if self.document_setup:
+            latex_document += f"% Custom document setup\n"
+            latex_document += f"{self.document_setup}\n"
+
+        latex_document += f"\\begin{{document}}\n{tikz_code}\n\\end{{document}}"
         return latex_document
 
     def compile_pdf(self, filename="output.pdf", verbose=False):
@@ -745,6 +766,7 @@ class TikzFigure:
         return path
 
     def _add_tabs(self, tikz_script):
+        """Add tabs to the TikZ script for better readability."""
         tikz_script_new = ""
         tab_str = "    "
         num_tabs = 0
@@ -769,17 +791,31 @@ class TikzFigure:
     # Properties
 
     @property
+    def document_setup(self) -> str | None:
+        """Custom LaTeX document setup to be included in the preamble of the standalone document."""
+        return self._document_setup
+
+    @property
+    def extra_packages(self) -> list | None:
+        """List of extra LaTeX packages to be included in the preamble of the standalone document."""
+        return self._extra_packages
+
+    @property
     def ndim(self):
+        """Number of dimensions of the figure."""
         return self._ndim
 
     @property
     def layers(self) -> LayerCollection:
+        """The layers of the figure, stored as a LayerCollection object."""
         return self._layers
 
     @property
     def colors(self):
+        """The colors used in the figure."""
         return self._colors
 
     @property
     def variables(self) -> list:
+        """The variables used in the figure."""
         return self._variables
