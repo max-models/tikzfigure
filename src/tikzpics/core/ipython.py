@@ -120,8 +120,6 @@ class TikzMagics(Magics):
 
         except FileNotFoundError:
             print(f"Error: File '{args.filename}' not found.")
-        except Exception as e:
-            print(f"Error: {e}")
 
 
 def load_ipython_extension(ipython):
