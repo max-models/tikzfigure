@@ -470,7 +470,7 @@ class TikzFigure:
                 latex_document += f"\\usepackage{{{pkg}}}\n"
 
         if self.document_setup:
-            latex_document += f"% Custom document setup\n"
+            latex_document += "% Custom document setup\n"
             latex_document += f"{self.document_setup}\n"
 
         latex_document += f"\\begin{{document}}\n{tikz_code}\n\\end{{document}}"
