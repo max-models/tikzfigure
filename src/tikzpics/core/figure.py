@@ -623,7 +623,6 @@ class TikzFigure:
 
         # Not in Jupyter - use specified backend
         if backend == "matplotlib":
-            print("Using matplotlib backend for display.")
             self._show_matplotlib(dpi=dpi, verbose=verbose)
         elif backend == "system":
             self._show_system(dpi=dpi, verbose=verbose)
