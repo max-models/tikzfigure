@@ -1,4 +1,76 @@
+from typing import Literal
+
 from tikzpics.core.base import TikzObject
+
+_Shape = (
+    Literal[
+        "circle",
+        "rectangle",
+        "diamond",
+        "ellipse",
+        "star",
+        "regular polygon",
+        "trapezium",
+        "semicircle",
+        "cylinder",
+        "dart",
+        "kite",
+        "isosceles triangle",
+        "signal",
+        "cloud",
+        "forbidden sign",
+        "cross out",
+        "strike out",
+    ]
+    | str
+    | None
+)
+
+_Anchor = (
+    Literal[
+        "center",
+        "north",
+        "south",
+        "east",
+        "west",
+        "north east",
+        "north west",
+        "south east",
+        "south west",
+        "base",
+        "mid",
+        "base east",
+        "base west",
+        "mid east",
+        "mid west",
+    ]
+    | str
+    | None
+)
+
+_LineCap = Literal["butt", "rect", "round"] | str | None
+_LineJoin = Literal["miter", "bevel", "round"] | str | None
+_Align = Literal["left", "center", "right", "justify"] | str | None
+_Shading = Literal["axis", "radial", "ball"] | str | None
+
+_Pattern = (
+    Literal[
+        "horizontal lines",
+        "vertical lines",
+        "north east lines",
+        "north west lines",
+        "grid",
+        "crosshatch",
+        "dots",
+        "crosshatch dots",
+        "fivepointed stars",
+        "sixpointed stars",
+        "bricks",
+        "checkerboard",
+    ]
+    | str
+    | None
+)
 
 
 class Node(TikzObject):
@@ -13,7 +85,7 @@ class Node(TikzObject):
         layer: int = 0,
         options: list | None = None,
         # Shape
-        shape: str | None = None,
+        shape: _Shape = None,
         # Color
         color: str | None = None,
         fill: str | None = None,
@@ -42,9 +114,9 @@ class Node(TikzObject):
         text_width: str | None = None,
         text_height: str | None = None,
         text_depth: str | None = None,
-        align: str | None = None,
+        align: _Align = None,
         # Anchor
-        anchor: str | None = None,
+        anchor: _Anchor = None,
         # Positioning (relative)
         above: str | None = None,
         below: str | None = None,
@@ -75,9 +147,9 @@ class Node(TikzObject):
         dash_pattern: str | None = None,
         dash_phase: str | None = None,
         # Pattern / shading
-        pattern: str | None = None,
+        pattern: _Pattern = None,
         pattern_color: str | None = None,
-        shading: str | None = None,
+        shading: _Shading = None,
         shading_angle: float | None = None,
         left_color: str | None = None,
         right_color: str | None = None,
