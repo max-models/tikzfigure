@@ -199,22 +199,296 @@ class TikzFigure:
         comment: str | None = None,
         options: list | str | None = None,
         verbose: bool = False,
+        # Shape
+        shape: str | None = None,
+        # Color
+        color: str | None = None,
+        fill: str | None = None,
+        draw: str | None = None,
+        text: str | None = None,
+        # Opacity
+        opacity: float | None = None,
+        fill_opacity: float | None = None,
+        draw_opacity: float | None = None,
+        text_opacity: float | None = None,
+        # Size
+        minimum_width: str | None = None,
+        minimum_height: str | None = None,
+        minimum_size: str | None = None,
+        # Separation
+        inner_sep: str | None = None,
+        inner_xsep: str | None = None,
+        inner_ysep: str | None = None,
+        outer_sep: str | None = None,
+        outer_xsep: str | None = None,
+        outer_ysep: str | None = None,
+        # Line
+        line_width: str | None = None,
+        # Text
+        font: str | None = None,
+        text_width: str | None = None,
+        text_height: str | None = None,
+        text_depth: str | None = None,
+        align: str | None = None,
+        # Anchor
+        anchor: str | None = None,
+        # Positioning (relative)
+        above: str | None = None,
+        below: str | None = None,
+        left: str | None = None,
+        right: str | None = None,
+        above_left: str | None = None,
+        above_right: str | None = None,
+        below_left: str | None = None,
+        below_right: str | None = None,
+        above_of: str | None = None,
+        below_of: str | None = None,
+        left_of: str | None = None,
+        right_of: str | None = None,
+        node_distance: str | None = None,
+        # Transformations
+        rotate: float | None = None,
+        xshift: str | None = None,
+        yshift: str | None = None,
+        scale: float | None = None,
+        xscale: float | None = None,
+        yscale: float | None = None,
+        xslant: float | None = None,
+        yslant: float | None = None,
+        # Border
+        rounded_corners: str | None = None,
+        double: str | None = None,
+        double_distance: str | None = None,
+        dash_pattern: str | None = None,
+        dash_phase: str | None = None,
+        # Pattern / shading
+        pattern: str | None = None,
+        pattern_color: str | None = None,
+        shading: str | None = None,
+        shading_angle: float | None = None,
+        left_color: str | None = None,
+        right_color: str | None = None,
+        top_color: str | None = None,
+        bottom_color: str | None = None,
+        inner_color: str | None = None,
+        outer_color: str | None = None,
+        ball_color: str | None = None,
+        # Shape-specific
+        regular_polygon_sides: int | None = None,
+        star_points: int | None = None,
+        star_point_ratio: float | None = None,
+        star_point_height: str | None = None,
+        # Shadow
+        shadow_xshift: str | None = None,
+        shadow_yshift: str | None = None,
+        shadow_color: str | None = None,
+        shadow_opacity: float | None = None,
+        shadow_scale: float | None = None,
+        # Pin / label on node
+        pin: str | None = None,
+        # Catch-all for unlisted TikZ options
         **kwargs,
     ) -> Node:
-        """
-        Add a node to the TikZ figure.
+        """Add a node to the TikZ figure.
 
-        Parameters:
-        - x (float): X-coordinate of the node.
-        - y (float): Y-coordinate of the node.
-        - label (str, optional): Label of the node. If None, a default label will be assigned.
-        - content: (str, optional): Content of the node
-        - comment: (str, optional): Comment to be added before the node
-        - **kwargs: Additional TikZ node options (e.g., shape, color).
+        Parameters
+        ----------
+        x : float, int, or str, optional
+            X-coordinate of the node.
+        y : float, int, or str, optional
+            Y-coordinate of the node.
+        z : float, int, or str, optional
+            Z-coordinate (for 3-D figures).
+        label : str, optional
+            Internal name of the node. Auto-assigned if *None*.
+        content : str
+            Text displayed inside the node.
+        layer : int
+            Layer to place the node on.
+        comment : str, optional
+            Comment placed before the node in the TikZ source.
+        options : list or str, optional
+            TikZ option strings for flags without values
+            (e.g., ``["draw", "thick"]``).
+        verbose : bool
+            Print debug information.
+        shape : str, optional
+            Node shape (e.g., ``"circle"``, ``"rectangle"``,
+            ``"diamond"``, ``"ellipse"``, ``"star"``,
+            ``"regular polygon"``).
+        color : str, optional
+            Text color (e.g., ``"red"``, ``"blue!50"``).
+        fill : str, optional
+            Fill color.
+        draw : str, optional
+            Border / stroke color. Use ``"none"`` to hide the border.
+        text : str, optional
+            Alias for text color.
+        opacity : float, optional
+            Overall opacity (0 to 1).
+        fill_opacity : float, optional
+            Fill opacity.
+        draw_opacity : float, optional
+            Border opacity.
+        text_opacity : float, optional
+            Text opacity.
+        minimum_width : str, optional
+            Minimum node width (e.g., ``"2cm"``).
+        minimum_height : str, optional
+            Minimum node height.
+        minimum_size : str, optional
+            Minimum size in both dimensions.
+        inner_sep : str, optional
+            Inner separation between content and border (e.g., ``"3pt"``).
+        inner_xsep : str, optional
+            Horizontal inner separation.
+        inner_ysep : str, optional
+            Vertical inner separation.
+        outer_sep : str, optional
+            Outer separation between border and anchors.
+        outer_xsep : str, optional
+            Horizontal outer separation.
+        outer_ysep : str, optional
+            Vertical outer separation.
+        line_width : str, optional
+            Border line width (e.g., ``"1pt"``).
+        font : str, optional
+            Font specification (e.g., ``"\\\\tiny"``, ``"\\\\bfseries"``).
+        text_width : str, optional
+            Text width for automatic line wrapping.
+        text_height : str, optional
+            Explicit text height.
+        text_depth : str, optional
+            Explicit text depth.
+        align : str, optional
+            Text alignment: ``"left"``, ``"center"``, or ``"right"``.
+        anchor : str, optional
+            Anchor point (e.g., ``"center"``, ``"north"``, ``"south west"``).
+        above : str, optional
+            Place above, with optional offset (e.g., ``"5pt"``).
+        below : str, optional
+            Place below.
+        left : str, optional
+            Place left.
+        right : str, optional
+            Place right.
+        above_left : str, optional
+            Place above-left.
+        above_right : str, optional
+            Place above-right.
+        below_left : str, optional
+            Place below-left.
+        below_right : str, optional
+            Place below-right.
+        above_of : str, optional
+            Place above a named node (e.g., ``"nodeA"``).
+        below_of : str, optional
+            Place below a named node.
+        left_of : str, optional
+            Place left of a named node.
+        right_of : str, optional
+            Place right of a named node.
+        node_distance : str, optional
+            Distance for relative positioning (e.g., ``"1cm"``).
+        rotate : float, optional
+            Rotation angle in degrees.
+        xshift : str, optional
+            Horizontal shift (e.g., ``"1cm"``).
+        yshift : str, optional
+            Vertical shift.
+        scale : float, optional
+            Uniform scaling factor.
+        xscale : float, optional
+            Horizontal scaling factor.
+        yscale : float, optional
+            Vertical scaling factor.
+        xslant : float, optional
+            Horizontal slant factor.
+        yslant : float, optional
+            Vertical slant factor.
+        rounded_corners : str, optional
+            Corner rounding radius (e.g., ``"3pt"``).
+        double : str, optional
+            Inner color for double borders.
+        double_distance : str, optional
+            Distance between double borders.
+        dash_pattern : str, optional
+            Custom dash pattern (e.g., ``"on 2pt off 3pt"``).
+        dash_phase : str, optional
+            Dash pattern starting offset.
+        pattern : str, optional
+            Fill pattern (e.g., ``"north east lines"``).
+        pattern_color : str, optional
+            Color for the fill pattern.
+        shading : str, optional
+            Shading type (e.g., ``"axis"``, ``"radial"``, ``"ball"``).
+        shading_angle : float, optional
+            Angle for axis shading.
+        left_color : str, optional
+            Left color for axis shading.
+        right_color : str, optional
+            Right color for axis shading.
+        top_color : str, optional
+            Top color for axis shading.
+        bottom_color : str, optional
+            Bottom color for axis shading.
+        inner_color : str, optional
+            Inner color for radial shading.
+        outer_color : str, optional
+            Outer color for radial shading.
+        ball_color : str, optional
+            Ball color for ball shading.
+        regular_polygon_sides : int, optional
+            Number of sides for ``shape="regular polygon"``.
+        star_points : int, optional
+            Number of points for ``shape="star"``.
+        star_point_ratio : float, optional
+            Ratio of inner to outer radius for stars.
+        star_point_height : str, optional
+            Height of star points.
+        shadow_xshift : str, optional
+            Horizontal shadow shift.
+        shadow_yshift : str, optional
+            Vertical shadow shift.
+        shadow_color : str, optional
+            Shadow color.
+        shadow_opacity : float, optional
+            Shadow opacity.
+        shadow_scale : float, optional
+            Shadow scale factor.
+        pin : str, optional
+            Pin label specification (e.g., ``"above:text"``).
+        **kwargs
+            Additional TikZ options not listed above.
+            Underscores in keys become spaces (e.g., ``signal_from`` →
+            ``signal from``).
 
-        Returns:
-        - node (Node): The Node object that was added.
+        Returns
+        -------
+        Node
+            The Node object that was added.
         """
+        _params = locals().copy()
+        _non_tikz = {
+            "self",
+            "x",
+            "y",
+            "z",
+            "label",
+            "content",
+            "layer",
+            "comment",
+            "options",
+            "verbose",
+            "kwargs",
+            "__class__",
+        }
+
+        tikz_kwargs = dict(kwargs)
+        tikz_kwargs.update(
+            {k: v for k, v in _params.items() if k not in _non_tikz and v is not None}
+        )
+
         if options is None:
             options = []
 
@@ -232,7 +506,7 @@ class TikzFigure:
             content=content,
             comment=comment,
             options=options,
-            **kwargs,
+            **tikz_kwargs,
         )
         self._node_counter += 1
         self.layers.add_item(item=node, layer=layer, verbose=verbose)
@@ -280,17 +554,131 @@ class TikzFigure:
         nodes: list,
         layer: int = 0,
         comment: str | None = None,
-        center=False,
+        center: bool = False,
+        verbose: bool = False,
+        # Path structure
+        options: list | str | None = None,
+        cycle: bool = False,
+        # Color
+        color: str | None = None,
+        fill: str | None = None,
+        draw: str | None = None,
+        text: str | None = None,
+        # Opacity
+        opacity: float | None = None,
+        draw_opacity: float | None = None,
+        fill_opacity: float | None = None,
+        text_opacity: float | None = None,
+        # Line width
+        line_width: str | None = None,
+        # Line style
+        line_cap: str | None = None,
+        line_join: str | None = None,
+        miter_limit: float | None = None,
+        # Dash
+        dash_pattern: str | None = None,
+        dash_phase: str | None = None,
+        # Double lines
+        double: str | None = None,
+        double_distance: str | None = None,
+        # Corners
+        rounded_corners: str | None = None,
+        # Transformations
+        rotate: float | None = None,
+        xshift: str | None = None,
+        yshift: str | None = None,
+        scale: float | None = None,
+        xscale: float | None = None,
+        yscale: float | None = None,
+        xslant: float | None = None,
+        yslant: float | None = None,
+        # Path bending
+        bend_left: float | None = None,
+        bend_right: float | None = None,
+        in_angle: float | None = None,
+        out_angle: float | None = None,
+        looseness: float | None = None,
+        in_looseness: float | None = None,
+        out_looseness: float | None = None,
+        min_distance: str | None = None,
+        max_distance: str | None = None,
+        # Smooth curves
+        tension: float | None = None,
+        # Pattern fills
+        pattern: str | None = None,
+        pattern_color: str | None = None,
+        # Shading
+        shading: str | None = None,
+        shading_angle: float | None = None,
+        left_color: str | None = None,
+        right_color: str | None = None,
+        top_color: str | None = None,
+        bottom_color: str | None = None,
+        middle_color: str | None = None,
+        inner_color: str | None = None,
+        outer_color: str | None = None,
+        ball_color: str | None = None,
+        # Decoration
+        decoration: str | None = None,
+        # Grid
+        step: str | None = None,
+        # Positioning
+        pos: float | None = None,
+        # Arrow specification
+        arrows: str | None = None,
+        # Font
+        font: str | None = None,
+        # Path naming
+        name_path: str | None = None,
+        # Custom to-path
+        to_path: str | None = None,
+        # Plot
+        domain: str | None = None,
+        samples: int | None = None,
+        # Marks
+        mark: str | None = None,
+        mark_size: str | None = None,
+        # Catch-all for unlisted TikZ options
         **kwargs,
     ):
-        """Add a filled line or path connecting multiple nodes."""
+        """Add a filled line or path connecting multiple nodes.
+
+        Accepts the same TikZ options as :meth:`draw`.
+        """
+        _params = locals().copy()
+        _non_tikz = {
+            "self",
+            "nodes",
+            "layer",
+            "comment",
+            "center",
+            "verbose",
+            "options",
+            "cycle",
+            "kwargs",
+            "in_angle",
+            "out_angle",
+            "__class__",
+        }
+        tikz_kwargs = dict(kwargs)
+        tikz_kwargs.update(
+            {k: v for k, v in _params.items() if k not in _non_tikz and v is not None}
+        )
+        if in_angle is not None:
+            tikz_kwargs["in"] = in_angle
+        if out_angle is not None:
+            tikz_kwargs["out"] = out_angle
+
         path = self._add_path(
             nodes=nodes,
             layer=layer,
             comment=comment,
             center=center,
             tikz_command="filldraw",
-            **kwargs,
+            verbose=verbose,
+            options=options,
+            cycle=cycle,
+            **tikz_kwargs,
         )
         return path
 
@@ -299,17 +687,281 @@ class TikzFigure:
         nodes: list,
         layer: int = 0,
         comment: str | None = None,
-        center=False,
+        center: bool = False,
+        verbose: bool = False,
+        # Path structure
+        options: list | str | None = None,
+        cycle: bool = False,
+        # Color
+        color: str | None = None,
+        fill: str | None = None,
+        draw: str | None = None,
+        text: str | None = None,
+        # Opacity
+        opacity: float | None = None,
+        draw_opacity: float | None = None,
+        fill_opacity: float | None = None,
+        text_opacity: float | None = None,
+        # Line width
+        line_width: str | None = None,
+        # Line style
+        line_cap: str | None = None,
+        line_join: str | None = None,
+        miter_limit: float | None = None,
+        # Dash
+        dash_pattern: str | None = None,
+        dash_phase: str | None = None,
+        # Double lines
+        double: str | None = None,
+        double_distance: str | None = None,
+        # Corners
+        rounded_corners: str | None = None,
+        # Transformations
+        rotate: float | None = None,
+        xshift: str | None = None,
+        yshift: str | None = None,
+        scale: float | None = None,
+        xscale: float | None = None,
+        yscale: float | None = None,
+        xslant: float | None = None,
+        yslant: float | None = None,
+        # Path bending
+        bend_left: float | None = None,
+        bend_right: float | None = None,
+        in_angle: float | None = None,
+        out_angle: float | None = None,
+        looseness: float | None = None,
+        in_looseness: float | None = None,
+        out_looseness: float | None = None,
+        min_distance: str | None = None,
+        max_distance: str | None = None,
+        # Smooth curves
+        tension: float | None = None,
+        # Pattern fills
+        pattern: str | None = None,
+        pattern_color: str | None = None,
+        # Shading
+        shading: str | None = None,
+        shading_angle: float | None = None,
+        left_color: str | None = None,
+        right_color: str | None = None,
+        top_color: str | None = None,
+        bottom_color: str | None = None,
+        middle_color: str | None = None,
+        inner_color: str | None = None,
+        outer_color: str | None = None,
+        ball_color: str | None = None,
+        # Decoration
+        decoration: str | None = None,
+        # Grid
+        step: str | None = None,
+        # Positioning
+        pos: float | None = None,
+        # Arrow specification
+        arrows: str | None = None,
+        # Font
+        font: str | None = None,
+        # Path naming
+        name_path: str | None = None,
+        # Custom to-path
+        to_path: str | None = None,
+        # Plot
+        domain: str | None = None,
+        samples: int | None = None,
+        # Marks
+        mark: str | None = None,
+        mark_size: str | None = None,
+        # Catch-all for unlisted TikZ options
         **kwargs,
     ):
-        """Add a line or path connecting multiple nodes."""
+        """Add a line or path connecting multiple nodes.
+
+        Parameters
+        ----------
+        nodes : list
+            List of nodes, node labels, or coordinate tuples to connect.
+        layer : int
+            Layer to add the path to.
+        comment : str, optional
+            Comment to add before the path in the TikZ code.
+        center : bool
+            If True, connect through node centers.
+        verbose : bool
+            Print debug information.
+        options : list or str, optional
+            TikZ option strings for flags without values
+            (e.g., ``["->", "thick", "dashed"]``).
+        cycle : bool
+            If True, close the path with ``-- cycle``.
+        color : str, optional
+            Line color (e.g., ``"red"``, ``"blue!50"``).
+        fill : str, optional
+            Fill color for the path.
+        draw : str, optional
+            Stroke color (when different from *color*).
+        text : str, optional
+            Text color for labels on the path.
+        opacity : float, optional
+            Overall opacity (0 to 1).
+        draw_opacity : float, optional
+            Stroke opacity.
+        fill_opacity : float, optional
+            Fill opacity.
+        text_opacity : float, optional
+            Text opacity.
+        line_width : str, optional
+            Line width (e.g., ``"1pt"``, ``"0.5mm"``).
+            For predefined widths use *options* (``"thin"``, ``"thick"``, …).
+        line_cap : str, optional
+            Line cap style: ``"butt"``, ``"rect"``, or ``"round"``.
+        line_join : str, optional
+            Line join style: ``"miter"``, ``"bevel"``, or ``"round"``.
+        miter_limit : float, optional
+            Miter limit factor for miter joins.
+        dash_pattern : str, optional
+            Custom dash pattern (e.g., ``"on 2pt off 3pt"``).
+        dash_phase : str, optional
+            Dash pattern starting offset (e.g., ``"2pt"``).
+        double : str, optional
+            Inner line color for double lines (e.g., ``"white"``).
+        double_distance : str, optional
+            Distance between double lines (e.g., ``"2pt"``).
+        rounded_corners : str, optional
+            Corner rounding radius (e.g., ``"5pt"``).
+        rotate : float, optional
+            Rotation angle in degrees.
+        xshift : str, optional
+            Horizontal shift (e.g., ``"1cm"``).
+        yshift : str, optional
+            Vertical shift (e.g., ``"1cm"``).
+        scale : float, optional
+            Uniform scaling factor.
+        xscale : float, optional
+            Horizontal scaling factor.
+        yscale : float, optional
+            Vertical scaling factor.
+        xslant : float, optional
+            Horizontal slant factor.
+        yslant : float, optional
+            Vertical slant factor.
+        bend_left : float, optional
+            Bend the path left by the given angle.
+        bend_right : float, optional
+            Bend the path right by the given angle.
+        in_angle : float, optional
+            Incoming angle for curved paths (TikZ ``in`` key).
+        out_angle : float, optional
+            Outgoing angle for curved paths (TikZ ``out`` key).
+        looseness : float, optional
+            Looseness of curved paths (default 1).
+        in_looseness : float, optional
+            Incoming looseness for curved paths.
+        out_looseness : float, optional
+            Outgoing looseness for curved paths.
+        min_distance : str, optional
+            Minimum distance for curved paths.
+        max_distance : str, optional
+            Maximum distance for curved paths.
+        tension : float, optional
+            Tension for smooth curves.
+        pattern : str, optional
+            Fill pattern name (e.g., ``"north east lines"``, ``"dots"``).
+        pattern_color : str, optional
+            Color for the fill pattern.
+        shading : str, optional
+            Shading type (e.g., ``"axis"``, ``"radial"``, ``"ball"``).
+        shading_angle : float, optional
+            Angle for axis shading.
+        left_color : str, optional
+            Left color for axis shading.
+        right_color : str, optional
+            Right color for axis shading.
+        top_color : str, optional
+            Top color for axis shading.
+        bottom_color : str, optional
+            Bottom color for axis shading.
+        middle_color : str, optional
+            Middle color for axis shading.
+        inner_color : str, optional
+            Inner color for radial shading.
+        outer_color : str, optional
+            Outer color for radial shading.
+        ball_color : str, optional
+            Ball color for ball shading.
+        decoration : str, optional
+            Decoration specification (e.g., ``"zigzag"``, ``"snake"``).
+            Use with ``options=["decorate"]``.
+        step : str, optional
+            Step size for grid patterns (e.g., ``"1cm"``).
+        pos : float, optional
+            Position along the path for labels (0 to 1).
+        arrows : str, optional
+            Arrow tip specification (e.g., ``"-Stealth"``, ``"Latex-Latex"``).
+        font : str, optional
+            Font specification (e.g., ``"\\\\tiny"``, ``"\\\\bfseries"``).
+        name_path : str, optional
+            Name for path intersection calculations.
+        to_path : str, optional
+            Custom to-path specification.
+        domain : str, optional
+            Domain for plot paths (e.g., ``"0:360"``).
+        samples : int, optional
+            Number of samples for plot paths.
+        mark : str, optional
+            Mark type for plot paths (e.g., ``"*"``, ``"o"``, ``"x"``).
+        mark_size : str, optional
+            Size of plot marks (e.g., ``"2pt"``).
+        **kwargs
+            Additional TikZ options not listed above.
+            Underscores in keys become spaces (e.g., ``near_start`` →
+            ``near start``).
+
+        Returns
+        -------
+        Path
+            The Path object that was added.
+        """
+        # Snapshot explicit params before creating any locals
+        _params = locals().copy()
+
+        # Keys that are not TikZ drawing options
+        _non_tikz = {
+            "self",
+            "nodes",
+            "layer",
+            "comment",
+            "center",
+            "verbose",
+            "options",
+            "cycle",
+            "kwargs",
+            "in_angle",
+            "out_angle",
+            "__class__",
+        }
+
+        # Start with catch-all kwargs, then overlay explicit params
+        tikz_kwargs = dict(kwargs)
+        tikz_kwargs.update(
+            {k: v for k, v in _params.items() if k not in _non_tikz and v is not None}
+        )
+
+        # Map Python-safe names to TikZ key names
+        if in_angle is not None:
+            tikz_kwargs["in"] = in_angle
+        if out_angle is not None:
+            tikz_kwargs["out"] = out_angle
+
         path = self._add_path(
             nodes=nodes,
             layer=layer,
             comment=comment,
             center=center,
             tikz_command="draw",
-            **kwargs,
+            verbose=verbose,
+            options=options,
+            cycle=cycle,
+            **tikz_kwargs,
         )
         return path
 
@@ -719,6 +1371,8 @@ class TikzFigure:
         center=False,
         tikz_command="draw",
         verbose=False,
+        options: list | str | None = None,
+        cycle: bool = False,
         **kwargs,
     ):
         """
@@ -759,6 +1413,8 @@ class TikzFigure:
             comment=comment,
             center=center,
             tikz_command=tikz_command,
+            options=options,
+            cycle=cycle,
             **kwargs,
         )
         self.layers.add_item(item=path, layer=layer, verbose=verbose)
