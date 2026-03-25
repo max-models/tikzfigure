@@ -35,6 +35,83 @@ def test_tikzobject_options_and_comments():
     assert obj2.add_comment("Y") == "% note\nY"
 
 
+def test_tikzobject_to_dict_from_dict():
+    obj = TikzObject(label="a", comment="note", layer=2, options=["thick"], fill="red")
+    d = obj.to_dict()
+    assert d == {
+        "label": "a",
+        "comment": "note",
+        "layer": 2,
+        "options": ["thick"],
+        "kwargs": {"fill": "red"},
+    }
+
+    obj2 = TikzObject.from_dict(d)
+    assert obj2.label == "a"
+    assert obj2.comment == "note"
+    assert obj2.layer == 2
+    assert obj2.options == ["thick"]
+    assert obj2.kwargs == {"fill": "red"}
+
+
+def test_tikzfigure_to_dict_from_dict_roundtrip():
+    fig = TikzFigure(
+        ndim=2,
+        label="fig1",
+        grid=True,
+        figsize=(8, 5),
+        caption="Test",
+        description="desc",
+        extra_packages=["pgfplots"],
+        document_setup="\\usepackage{xcolor}",
+        figure_setup="scale=1.5",
+    )
+
+    # Add nodes, a path, a variable, a color, raw tikz, and a loop
+    n1 = fig.add_node(x=0, y=0, label="A", content="Hello", fill="red")
+    n2 = fig.add_node(x=1, y=1, label="B", content="World")
+    fig.draw([n1, n2])
+    fig.add_raw("\\draw (0,0) -- (1,1);")
+    fig.add_variable("myvar", 42)
+    fig.colorlet("mycolor", "blue!30")
+
+    loop = fig.add_loop("i", [1, 2, 3])
+    ln = loop.add_node(x="\\i", y=0, label="L\\i", content="")
+    loop.add_path([ln])
+
+    d = fig.to_dict()
+
+    # Check top-level keys
+    assert d["type"] == "TikzFigure"
+    assert d["ndim"] == 2
+    assert d["label"] == "fig1"
+    assert d["grid"] is True
+    assert d["figsize"] == [8, 5]
+    assert d["caption"] == "Test"
+    assert d["extra_packages"] == ["pgfplots"]
+    assert len(d["variables"]) == 1
+    assert d["variables"][0]["value"] == 42
+    assert len(d["colors"]) == 1
+    assert d["colors"][0]["name"] == "mycolor"
+    assert d["colors"][0]["color_spec"] == "blue!30"
+
+    # Round-trip
+    fig2 = TikzFigure.from_dict(d)
+    assert fig2.ndim == 2
+    assert fig2._label == "fig1"
+    assert fig2._grid is True
+    assert fig2._figsize == (8, 5)
+    assert fig2._caption == "Test"
+    assert fig2._extra_packages == ["pgfplots"]
+    assert len(fig2._variables) == 1
+    assert fig2._variables[0].value == 42
+    assert len(fig2._colors) == 1
+    assert fig2._colors[0][0] == "mycolor"
+
+    # TikZ output should be identical
+    assert fig.generate_tikz() == fig2.generate_tikz()
+
+
 def test_color_variable_coordinate():
     color = Color("blue!20")
     assert color.color_spec == "blue!20"

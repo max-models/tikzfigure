@@ -3,6 +3,7 @@ import re
 import subprocess
 import tempfile
 from importlib.metadata import version
+from typing import Any
 
 import fitz
 
@@ -171,6 +172,94 @@ class TikzFigure:
     def from_tikz_code(cls, tikz_code: str, **kwargs):
         """Create a TikzFigure instance from existing TikZ code."""
         return cls(tikz_code=tikz_code, **kwargs)
+
+    def to_dict(self) -> dict[str, Any]:
+        """Serialize the figure to a dictionary."""
+        layers_dict: dict[Any, list[dict[str, Any]]] = {}
+        for layer_label, layer in self._layers.layers.items():
+            layers_dict[layer_label] = [item.to_dict() for item in layer.items]
+        return {
+            "type": "TikzFigure",
+            "ndim": self._ndim,
+            "label": self._label,
+            "grid": self._grid,
+            "extra_packages": (
+                list(self._extra_packages) if self._extra_packages else None
+            ),
+            "document_setup": self._document_setup,
+            "figure_setup": self._figure_setup,
+            "figsize": list(self._figsize),
+            "caption": self._caption,
+            "description": self._description,
+            "layers": layers_dict,
+            "variables": [v.to_dict() for v in self._variables],
+            "colors": [
+                {"name": name, **color.to_dict()} for name, color in self._colors
+            ],
+        }
+
+    @classmethod
+    def from_dict(cls, d: dict[str, Any]) -> "TikzFigure":
+        """Reconstruct a TikzFigure from a dictionary produced by :meth:`to_dict`."""
+        fig = cls(
+            ndim=d.get("ndim", 2),
+            label=d.get("label"),
+            grid=d.get("grid", False),
+            extra_packages=d.get("extra_packages"),
+            document_setup=d.get("document_setup"),
+            figure_setup=d.get("figure_setup"),
+            figsize=tuple(d.get("figsize", [10, 6])),
+            caption=d.get("caption"),
+            description=d.get("description"),
+        )
+
+        for var_dict in d.get("variables", []):
+            fig._variables.append(Variable.from_dict(var_dict))
+
+        for color_entry in d.get("colors", []):
+            fig._colors.append((color_entry["name"], Color.from_dict(color_entry)))
+
+        # Build node lookup across all layers for path deserialization
+        layers_data: dict[Any, list[dict[str, Any]]] = d.get("layers", {})
+        node_lookup: dict[str, Node] = {}
+        for items_data in layers_data.values():
+            for item_data in items_data:
+                if item_data.get("type") == "Node":
+                    node = Node.from_dict(item_data)
+                    node_lookup[node.label] = node
+
+        # Reconstruct layers in order
+        for layer_label, items_data in layers_data.items():
+            for item_data in items_data:
+                item_type = item_data.get("type")
+                if item_type == "Node":
+                    fig.layers.add_item(
+                        node_lookup[item_data["label"]], layer=layer_label
+                    )
+                elif item_type == "Path":
+                    fig.layers.add_item(
+                        Path.from_dict(item_data, node_lookup=node_lookup),
+                        layer=layer_label,
+                    )
+                elif item_type == "Plot3D":
+                    fig.layers.add_item(Plot3D.from_dict(item_data), layer=layer_label)
+                elif item_type == "Loop":
+                    fig.layers.add_item(Loop.from_dict(item_data), layer=layer_label)
+                elif item_type == "RawTikz":
+                    fig.layers.add_item(RawTikz.from_dict(item_data), layer=layer_label)
+
+        # Keep node counter consistent with restored nodes
+        max_auto = -1
+        for label in node_lookup:
+            if label.startswith("node"):
+                try:
+                    max_auto = max(max_auto, int(label[4:]))
+                except ValueError:
+                    pass
+        if max_auto >= 0:
+            fig._node_counter = max_auto + 1
+
+        return fig
 
     # ------------------------------------------------------------- #
     # Public methods
