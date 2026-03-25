@@ -239,7 +239,7 @@ class TikzFigure:
                     )
                 elif item_type == "Path":
                     fig.layers.add_item(
-                        Path.from_dict(item_data, node_lookup=node_lookup),
+                        TikzPath.from_dict(item_data, node_lookup=node_lookup),
                         layer=layer_label,
                     )
                 elif item_type == "Plot3D":

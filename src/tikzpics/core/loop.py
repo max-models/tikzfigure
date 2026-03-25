@@ -87,7 +87,9 @@ class Loop(TikzObject):
                 loop._items.append(node)
                 node_lookup[node.label] = node
             elif item_type == "Path":
-                loop._items.append(Path.from_dict(item_data, node_lookup=node_lookup))
+                loop._items.append(
+                    TikzPath.from_dict(item_data, node_lookup=node_lookup)
+                )
             elif item_type == "Loop":
                 loop._items.append(Loop.from_dict(item_data))
         return loop
