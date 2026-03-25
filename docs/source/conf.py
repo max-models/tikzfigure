@@ -7,7 +7,7 @@ import shutil
 import sys
 from pathlib import Path
 
-sys.path.insert(0, os.path.abspath("../src"))
+sys.path.insert(0, str((Path(__file__).parent.parent / "src").resolve()))
 
 # Copy tutorial notebooks from project root to docs/source/tutorials/
 tutorials_source = Path(__file__).parent.parent.parent / "tutorials"

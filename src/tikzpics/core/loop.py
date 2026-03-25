@@ -1,6 +1,6 @@
 from tikzpics.core.base import TikzObject
 from tikzpics.core.node import Node
-from tikzpics.core.path import Path
+from tikzpics.core.path import TikzPath
 
 
 class Loop(TikzObject):
@@ -36,7 +36,7 @@ class Loop(TikzObject):
         return node
 
     def add_path(self, nodes, comment: str | None = None, **kwargs):
-        path = Path(nodes, comment=comment, layer=self.layer, **kwargs)
+        path = TikzPath(nodes, comment=comment, layer=self.layer, **kwargs)
         self._items.append(path)
         return path
 

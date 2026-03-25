@@ -1,5 +1,5 @@
 from tikzpics.core.node import Node
-from tikzpics.core.path import Path
+from tikzpics.core.path import TikzPath
 
 
 class Tikzlayer:
@@ -42,7 +42,7 @@ class Tikzlayer:
         """
         reqs = set()
         for item in self.items:
-            if isinstance(item, Path):
+            if isinstance(item, TikzPath):
                 for node in item._nodes:
                     if not node.layer == self.label:
                         reqs.add(node.layer)
@@ -85,13 +85,13 @@ class Tikzlayer:
         """
         return self._get_items_by_type(Node)
 
-    def get_paths(self) -> list[Path]:
+    def get_paths(self) -> list[TikzPath]:
         """Get all paths in this layer.
 
         Returns:
             List of Path objects in this layer.
         """
-        return self._get_items_by_type(Path)
+        return self._get_items_by_type(TikzPath)
 
 
 class LayerCollection:
@@ -186,13 +186,13 @@ class LayerCollection:
         """
         return self._get_items_by_type(Node)
 
-    def get_paths(self) -> list[Path]:
+    def get_paths(self) -> list[TikzPath]:
         """Get all paths across all layers.
 
         Returns:
             List of all Path objects in the collection.
         """
-        return self._get_items_by_type(Path)
+        return self._get_items_by_type(TikzPath)
 
     def get_layer_by_item(self, item) -> int:
         """Find which layer contains an item with the given label.
