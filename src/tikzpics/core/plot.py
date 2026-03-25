@@ -1,10 +1,10 @@
 from typing import Any
 
 from tikzpics.core.coordinate import TikzCoordinate
-from tikzpics.core.path import Path
+from tikzpics.core.path import TikzPath
 
 
-class Plot3D(Path):
+class Plot3D(TikzPath):
     def __init__(
         self,
         x: list,

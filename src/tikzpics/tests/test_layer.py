@@ -2,7 +2,7 @@ import pytest
 
 from tikzpics.core.layer import LayerCollection, Tikzlayer
 from tikzpics.core.node import Node
-from tikzpics.core.path import Path
+from tikzpics.core.path import TikzPath
 
 
 class TestTikzlayer:
@@ -27,7 +27,7 @@ class TestTikzlayer:
         layer = Tikzlayer(label=0)
         node1 = Node(x=0, y=0, label="node1")
         node2 = Node(x=1, y=1, label="node2")
-        path = Path(nodes=[node1, node2], label="path1")
+        path = TikzPath(nodes=[node1, node2], label="path1")
         layer.add(path)
         assert len(layer.items) == 1
         assert layer.items[0] == path
@@ -37,7 +37,7 @@ class TestTikzlayer:
         layer = Tikzlayer(label=0)
         node1 = Node(x=0, y=0, label="node1")
         node2 = Node(x=1, y=1, label="node2")
-        path = Path(nodes=[node1, node2], label="path1")
+        path = TikzPath(nodes=[node1, node2], label="path1")
 
         layer.add(node1)
         layer.add(node2)
@@ -50,7 +50,7 @@ class TestTikzlayer:
         layer = Tikzlayer(label=0)
         node1 = Node(x=0, y=0, label="node1")
         node2 = Node(x=1, y=1, label="node2")
-        path = Path(nodes=[node1, node2], label="path1")
+        path = TikzPath(nodes=[node1, node2], label="path1")
 
         layer.add(node1)
         layer.add(node2)
@@ -66,8 +66,8 @@ class TestTikzlayer:
         layer = Tikzlayer(label=0)
         node1 = Node(x=0, y=0, label="node1")
         node2 = Node(x=1, y=1, label="node2")
-        path1 = Path(nodes=[node1, node2], label="path1")
-        path2 = Path(nodes=[node2, node1], label="path2")
+        path1 = TikzPath(nodes=[node1, node2], label="path1")
+        path2 = TikzPath(nodes=[node2, node1], label="path2")
 
         layer.add(node1)
         layer.add(path1)
@@ -83,7 +83,7 @@ class TestTikzlayer:
         layer1 = Tikzlayer(label=1)
         node1 = Node(x=0, y=0, label="node1", layer=0)
         node2 = Node(x=1, y=1, label="node2", layer=1)
-        path = Path(nodes=[node1, node2], label="path1")
+        path = TikzPath(nodes=[node1, node2], label="path1")
 
         layer1.add(path)
         reqs = layer1.get_reqs()
@@ -191,7 +191,7 @@ class TestLayerCollection:
         node1 = Node(x=0, y=0, label="node1")
         node2 = Node(x=1, y=1, label="node2")
         node3 = Node(x=2, y=2, label="node3")
-        path = Path(nodes=[node1, node2], label="path1")
+        path = TikzPath(nodes=[node1, node2], label="path1")
 
         collection.add_item(node1, layer=0)
         collection.add_item(node2, layer=0)
@@ -209,8 +209,8 @@ class TestLayerCollection:
         collection = LayerCollection()
         node1 = Node(x=0, y=0, label="node1")
         node2 = Node(x=1, y=1, label="node2")
-        path1 = Path(nodes=[node1, node2], label="path1")
-        path2 = Path(nodes=[node2, node1], label="path2")
+        path1 = TikzPath(nodes=[node1, node2], label="path1")
+        path2 = TikzPath(nodes=[node2, node1], label="path2")
 
         collection.add_item(node1, layer=0)
         collection.add_item(path1, layer=0)
