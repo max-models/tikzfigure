@@ -1,3 +1,5 @@
+from typing import Any
+
 from tikzpics.core.base import TikzObject
 
 
@@ -18,3 +20,17 @@ class Variable(TikzObject):
     @property
     def value(self):
         return self._value
+
+    def to_dict(self) -> dict[str, Any]:
+        d = super().to_dict()
+        d.update({"type": "Variable", "value": self._value})
+        return d
+
+    @classmethod
+    def from_dict(cls, d: dict[str, Any]) -> "Variable":
+        return cls(
+            label=d["label"],
+            value=d["value"],
+            layer=d.get("layer", 0),
+            comment=d.get("comment"),
+        )

@@ -1,3 +1,5 @@
+from typing import Any
+
 from tikzpics.core.base import TikzObject
 from tikzpics.core.coordinate import TikzCoordinate
 from tikzpics.core.node import Node
@@ -104,3 +106,46 @@ class Path(TikzObject):
         path_str = self.add_comment(path_str)
 
         return path_str
+
+    def to_dict(self) -> dict[str, Any]:
+        d = super().to_dict()
+        serialized_nodes = []
+        for node in self._nodes:
+            if isinstance(node, Node):
+                serialized_nodes.append({"type": "NodeRef", "label": node.label})
+            elif isinstance(node, TikzCoordinate):
+                serialized_nodes.append(node.to_dict())
+        d.update(
+            {
+                "type": "Path",
+                "nodes": serialized_nodes,
+                "cycle": self._cycle,
+                "center": self._center,
+                "tikz_command": self._tikz_command,
+            }
+        )
+        return d
+
+    @classmethod
+    def from_dict(
+        cls, d: dict[str, Any], node_lookup: dict[str, Any] | None = None
+    ) -> "Path":
+        node_lookup = node_lookup or {}
+        nodes = []
+        for node_data in d.get("nodes", []):
+            if node_data["type"] == "NodeRef":
+                nodes.append(node_lookup[node_data["label"]])
+            elif node_data["type"] == "TikzCoordinate":
+                nodes.append(TikzCoordinate.from_dict(node_data))
+        kwargs = d.get("kwargs", {})
+        return cls(
+            nodes=nodes,
+            cycle=d.get("cycle", False),
+            label=d.get("label", ""),
+            comment=d.get("comment"),
+            layer=d.get("layer", 0),
+            center=d.get("center", False),
+            options=d.get("options"),
+            tikz_command=d.get("tikz_command", "draw"),
+            **kwargs,
+        )

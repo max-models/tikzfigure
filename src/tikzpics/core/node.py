@@ -1,3 +1,5 @@
+from typing import Any
+
 from tikzpics.core.base import TikzObject
 from tikzpics.core.types import _Align, _Anchor, _Pattern, _Shading, _Shape
 
@@ -190,3 +192,31 @@ class Node(TikzObject):
 
         node_string = self.add_comment(node_string)
         return node_string
+
+    def to_dict(self) -> dict[str, Any]:
+        d = super().to_dict()
+        d.update(
+            {
+                "type": "Node",
+                "x": self._x,
+                "y": self._y,
+                "z": self._z,
+                "content": self._content,
+            }
+        )
+        return d
+
+    @classmethod
+    def from_dict(cls, d: dict[str, Any]) -> "Node":
+        kwargs = d.get("kwargs", {})
+        return cls(
+            x=d.get("x"),
+            y=d.get("y"),
+            z=d.get("z"),
+            label=d.get("label"),
+            content=d.get("content", ""),
+            comment=d.get("comment"),
+            layer=d.get("layer"),
+            options=d.get("options"),
+            **kwargs,
+        )

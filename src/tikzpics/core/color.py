@@ -1,3 +1,6 @@
+from typing import Any
+
+
 class Color:
     def __init__(self, color_spec):
         """
@@ -12,3 +15,10 @@ class Color:
     @property
     def color_spec(self):
         return self._color_spec
+
+    def to_dict(self) -> dict[str, Any]:
+        return {"type": "Color", "color_spec": self._color_spec}
+
+    @classmethod
+    def from_dict(cls, d: dict[str, Any]) -> "Color":
+        return cls(color_spec=d["color_spec"])
