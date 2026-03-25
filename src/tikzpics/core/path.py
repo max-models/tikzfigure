@@ -5,7 +5,7 @@ from tikzpics.core.coordinate import TikzCoordinate
 from tikzpics.core.node import Node
 
 
-class Path(TikzObject):
+class TikzPath(TikzObject):
     def __init__(
         self,
         nodes: list,

@@ -3,6 +3,7 @@ import re
 import subprocess
 import tempfile
 from importlib.metadata import version
+from pathlib import Path
 from typing import Any
 
 import fitz
@@ -12,7 +13,7 @@ from tikzpics.core.coordinate import TikzCoordinate
 from tikzpics.core.layer import LayerCollection
 from tikzpics.core.loop import Loop
 from tikzpics.core.node import Node
-from tikzpics.core.path import Path
+from tikzpics.core.path import TikzPath
 from tikzpics.core.plot import Plot3D
 from tikzpics.core.raw import RawTikz
 from tikzpics.core.types import (
@@ -238,7 +239,7 @@ class TikzFigure:
                     )
                 elif item_type == "Path":
                     fig.layers.add_item(
-                        Path.from_dict(item_data, node_lookup=node_lookup),
+                        TikzPath.from_dict(item_data, node_lookup=node_lookup),
                         layer=layer_label,
                     )
                 elif item_type == "Plot3D":
@@ -1228,28 +1229,35 @@ class TikzFigure:
         latex_document += f"\\begin{{document}}\n{tikz_code}\n\\end{{document}}"
         return latex_document
 
-    def compile_pdf(self, filename="output.pdf", verbose=False):
+    def compile_pdf(self, filename: TikzPath | str = Path("output.pdf"), verbose=False):
         """
         Compile the TikZ script into a PDF using pdflatex.
 
         Parameters:
-        - filename (str): The name of the output PDF file (default is 'output.pdf').
+        - filename (Path | str): The name of the output PDF file (default is 'output.pdf').
 
         Notes:
         - Requires 'pdflatex' to be installed and accessible from the command line.
         """
+        if isinstance(filename, str):
+            filename = Path(filename)
+
         latex_document = self.generate_standalone()
         if verbose:
             print(latex_document)
         # Use a temporary directory to store the LaTeX files
         with tempfile.TemporaryDirectory() as tempdir:
-            tex_file = os.path.join(tempdir, "figure.tex")
+            print(f"{type(tempdir) = } {tempdir = }")
+            # tempdir = Path(tempdir)
+            # tex_file = tempdir / "figure.tex"
+            tex_file = Path(tempdir) / "figure.tex"
             with open(tex_file, "w") as f:
                 f.write(latex_document)
             # Run pdflatex
             try:
                 # Split the path
-                head_tail = os.path.split(os.path.abspath(filename))
+                head_tail = (str(filename.parent), filename.name)
+
                 output_directory = head_tail[0]
                 jobname = head_tail[1].replace(".pdf", "")
                 cmd = [
@@ -1271,8 +1279,8 @@ class TikzFigure:
                     stderr=subprocess.PIPE,
                 )
                 # Remove .aux and .log files
-                os.remove(os.path.abspath(filename).replace(".pdf", ".aux"))
-                os.remove(os.path.abspath(filename).replace(".pdf", ".log"))
+                os.remove(filename.with_suffix(".aux"))
+                os.remove(filename.with_suffix(".log"))
             except subprocess.CalledProcessError as e:
                 print("An error occurred while compiling the LaTeX document:")
                 print(e.stderr.decode())
@@ -1280,14 +1288,17 @@ class TikzFigure:
 
     def savefig(
         self,
-        filename: str,
+        filename: Path | str,
         dpi: int = 300,
         verbose: bool = False,
     ):
         """
         Save the TikZ figure to a file (PDF, PNG, JPG) using pure Python tools.
         """
-        ext = os.path.splitext(filename)[1].lower()
+        if isinstance(filename, str):
+            filename = Path(filename)
+
+        ext = filename.suffix.lower()
 
         if ext == ".pdf":
             # Direct compile
@@ -1301,7 +1312,7 @@ class TikzFigure:
         elif ext in [".png", ".jpg", ".jpeg"]:
             # Compile to a temporary PDF first
             with tempfile.TemporaryDirectory() as tempdir:
-                temp_pdf = os.path.join(tempdir, "temp.pdf")
+                temp_pdf = Path(tempdir) / "temp.pdf"
 
                 if verbose:
                     print(f"Compiling TikZ to temporary PDF: {temp_pdf}")
@@ -1366,7 +1377,7 @@ class TikzFigure:
                 from IPython.display import Image, display
 
                 with tempfile.TemporaryDirectory() as tempdir:
-                    temp_pdf = os.path.join(tempdir, "temp.png")
+                    temp_pdf = Path(tempdir) / "temp.png"
                     self.savefig(filename=temp_pdf, verbose=verbose)
                     display(Image(filename=temp_pdf, width=width, height=height))
                 return
@@ -1402,7 +1413,7 @@ class TikzFigure:
             print("Using matplotlib backend for display.")
 
         with tempfile.TemporaryDirectory() as tempdir:
-            temp_png = os.path.join(tempdir, "temp.png")
+            temp_png = Path(tempdir) / "temp.png"
             self.savefig(filename=temp_png, dpi=dpi, verbose=verbose)
 
             img = mpimg.imread(temp_png)
@@ -1454,7 +1465,7 @@ class TikzFigure:
             )
 
         with tempfile.TemporaryDirectory() as tempdir:
-            temp_png = os.path.join(tempdir, "temp.png")
+            temp_png = Path(tempdir) / "temp.png"
             self.savefig(filename=temp_png, dpi=dpi, verbose=verbose)
 
             img = Image.open(temp_png)
@@ -1508,7 +1519,7 @@ class TikzFigure:
         if verbose:
             print(f"Creating a path with the following nodes {nodes_cleaned}")
 
-        path = Path(
+        path = TikzPath(
             nodes=nodes_cleaned,
             comment=comment,
             center=center,

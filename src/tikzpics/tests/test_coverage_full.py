@@ -14,7 +14,7 @@ from tikzpics.core.coordinate import TikzCoordinate
 from tikzpics.core.figure import TikzFigure
 from tikzpics.core.loop import Loop
 from tikzpics.core.node import Node
-from tikzpics.core.path import Path
+from tikzpics.core.path import TikzPath
 from tikzpics.core.plot import Plot3D
 from tikzpics.core.variable import Variable
 
@@ -148,7 +148,7 @@ def test_path_label_list_and_options():
     n2 = Node(1, 1, label="b")
     coord = TikzCoordinate(2, 2)
 
-    path = Path(nodes=[n1, n2, coord], options=["thick"], color="red")
+    path = TikzPath(nodes=[n1, n2, coord], options=["thick"], color="red")
     label_list = path.label_list
     assert "(a)" in label_list[0]
     assert "(b)" in label_list[1]
@@ -158,10 +158,10 @@ def test_path_label_list_and_options():
     assert "thick" in tikz
     assert "color=red" in tikz
 
-    centered = Path(nodes=[n1], center=True)
+    centered = TikzPath(nodes=[n1], center=True)
     assert centered.label_list == ["(a.center)"]
 
-    cycle = Path(nodes=[n1, n2], cycle=True)
+    cycle = TikzPath(nodes=[n1, n2], cycle=True)
     assert "-- cycle" in cycle.to_tikz()
 
 
@@ -295,13 +295,13 @@ def test_compile_pdf_success_and_failure(tmp_path, monkeypatch, capsys):
         return 0
 
     monkeypatch.setattr(subprocess, "run", fake_run)
-    fig.compile_pdf(filename=str(output_pdf), verbose=True)
+    fig.compile_pdf(filename=output_pdf, verbose=True)
 
     def raise_run(*args, **kwargs):
         raise subprocess.CalledProcessError(1, "pdflatex", stderr=b"boom")
 
     monkeypatch.setattr(subprocess, "run", raise_run)
-    fig.compile_pdf(filename=str(output_pdf), verbose=False)
+    fig.compile_pdf(filename=output_pdf, verbose=False)
     captured = capsys.readouterr()
     assert "An error occurred" in captured.out
 
