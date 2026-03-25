@@ -1,3 +1,6 @@
+from typing import Any
+
+
 class TikzObject:
     def __init__(
         self,
@@ -52,3 +55,23 @@ class TikzObject:
         if self.comment is not None:
             return f"% {self.comment}\n{string_in}"
         return string_in
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "label": self._label,
+            "comment": self._comment,
+            "layer": self._layer,
+            "options": list(self._options),
+            "kwargs": dict(self._kwargs),
+        }
+
+    @classmethod
+    def from_dict(cls, d: dict[str, Any]) -> "TikzObject":
+        kwargs = d.get("kwargs", {})
+        return cls(
+            label=d.get("label"),
+            comment=d.get("comment"),
+            layer=d.get("layer"),
+            options=d.get("options"),
+            **kwargs,
+        )

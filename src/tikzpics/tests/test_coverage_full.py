@@ -35,6 +35,25 @@ def test_tikzobject_options_and_comments():
     assert obj2.add_comment("Y") == "% note\nY"
 
 
+def test_tikzobject_to_dict_from_dict():
+    obj = TikzObject(label="a", comment="note", layer=2, options=["thick"], fill="red")
+    d = obj.to_dict()
+    assert d == {
+        "label": "a",
+        "comment": "note",
+        "layer": 2,
+        "options": ["thick"],
+        "kwargs": {"fill": "red"},
+    }
+
+    obj2 = TikzObject.from_dict(d)
+    assert obj2.label == "a"
+    assert obj2.comment == "note"
+    assert obj2.layer == 2
+    assert obj2.options == ["thick"]
+    assert obj2.kwargs == {"fill": "red"}
+
+
 def test_color_variable_coordinate():
     color = Color("blue!20")
     assert color.color_spec == "blue!20"
