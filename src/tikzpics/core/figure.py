@@ -477,9 +477,7 @@ class TikzFigure:
         latex_document += f"\\begin{{document}}\n{tikz_code}\n\\end{{document}}"
         return latex_document
 
-    def compile_pdf(
-        self, filename: TikzPath | str = TikzPath("output.pdf"), verbose=False
-    ):
+    def compile_pdf(self, filename: TikzPath | str = Path("output.pdf"), verbose=False):
         """
         Compile the TikZ script into a PDF using pdflatex.
 
@@ -490,7 +488,7 @@ class TikzFigure:
         - Requires 'pdflatex' to be installed and accessible from the command line.
         """
         if isinstance(filename, str):
-            filename = TikzPath(filename)
+            filename = Path(filename)
 
         latex_document = self.generate_standalone()
         if verbose:
@@ -500,7 +498,7 @@ class TikzFigure:
             print(f"{type(tempdir) = } {tempdir = }")
             # tempdir = Path(tempdir)
             # tex_file = tempdir / "figure.tex"
-            tex_file = TikzPath(tempdir) / "figure.tex"
+            tex_file = Path(tempdir) / "figure.tex"
             with open(tex_file, "w") as f:
                 f.write(latex_document)
             # Run pdflatex
@@ -538,7 +536,7 @@ class TikzFigure:
 
     def savefig(
         self,
-        filename: TikzPath | str,
+        filename: Path | str,
         dpi: int = 300,
         verbose: bool = False,
     ):
@@ -546,7 +544,7 @@ class TikzFigure:
         Save the TikZ figure to a file (PDF, PNG, JPG) using pure Python tools.
         """
         if isinstance(filename, str):
-            filename = TikzPath(filename)
+            filename = Path(filename)
 
         ext = filename.suffix.lower()
 
@@ -562,7 +560,7 @@ class TikzFigure:
         elif ext in [".png", ".jpg", ".jpeg"]:
             # Compile to a temporary PDF first
             with tempfile.TemporaryDirectory() as tempdir:
-                temp_pdf = TikzPath(tempdir) / TikzPath("temp.pdf")
+                temp_pdf = Path(tempdir) / "temp.pdf"
 
                 if verbose:
                     print(f"Compiling TikZ to temporary PDF: {temp_pdf}")
@@ -627,7 +625,7 @@ class TikzFigure:
                 from IPython.display import Image, display
 
                 with tempfile.TemporaryDirectory() as tempdir:
-                    temp_pdf = TikzPath(tempdir) / TikzPath("temp.png")
+                    temp_pdf = Path(tempdir) / "temp.png"
                     self.savefig(filename=temp_pdf, verbose=verbose)
                     display(Image(filename=temp_pdf, width=width, height=height))
                 return
@@ -663,7 +661,7 @@ class TikzFigure:
             print("Using matplotlib backend for display.")
 
         with tempfile.TemporaryDirectory() as tempdir:
-            temp_png = TikzPath(tempdir) / TikzPath("temp.png")
+            temp_png = Path(tempdir) / "temp.png"
             self.savefig(filename=temp_png, dpi=dpi, verbose=verbose)
 
             img = mpimg.imread(temp_png)
@@ -715,7 +713,7 @@ class TikzFigure:
             )
 
         with tempfile.TemporaryDirectory() as tempdir:
-            temp_png = TikzPath(tempdir) / TikzPath("temp.png")
+            temp_png = Path(tempdir) / "temp.png"
             self.savefig(filename=temp_png, dpi=dpi, verbose=verbose)
 
             img = Image.open(temp_png)
