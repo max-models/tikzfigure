@@ -1,3 +1,5 @@
+from typing import Any
+
 from tikzpics.core.base import TikzObject
 from tikzpics.core.node import Node
 from tikzpics.core.path import TikzPath
@@ -56,3 +58,36 @@ class Loop(TikzObject):
         loop_str = self.add_comment(loop_str)
 
         return loop_str
+
+    def to_dict(self) -> dict[str, Any]:
+        d = super().to_dict()
+        d.update(
+            {
+                "type": "Loop",
+                "variable": self._variable,
+                "values": list(self._values),
+                "items": [item.to_dict() for item in self._items],
+            }
+        )
+        return d
+
+    @classmethod
+    def from_dict(cls, d: dict[str, Any]) -> "Loop":
+        loop = cls(
+            variable=d["variable"],
+            values=d["values"],
+            layer=d.get("layer", 0),
+            comment=d.get("comment"),
+        )
+        node_lookup: dict[str, Node] = {}
+        for item_data in d.get("items", []):
+            item_type = item_data.get("type")
+            if item_type == "Node":
+                node = Node.from_dict(item_data)
+                loop._items.append(node)
+                node_lookup[node.label] = node
+            elif item_type == "Path":
+                loop._items.append(Path.from_dict(item_data, node_lookup=node_lookup))
+            elif item_type == "Loop":
+                loop._items.append(Loop.from_dict(item_data))
+        return loop

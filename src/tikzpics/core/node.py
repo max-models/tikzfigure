@@ -1,4 +1,7 @@
+from typing import Any
+
 from tikzpics.core.base import TikzObject
+from tikzpics.core.types import _Align, _Anchor, _Pattern, _Shading, _Shape
 
 
 class Node(TikzObject):
@@ -12,17 +15,120 @@ class Node(TikzObject):
         comment: str | None = None,
         layer: int = 0,
         options: list | None = None,
+        # Shape
+        shape: _Shape = None,
+        # Color
+        color: str | None = None,
+        fill: str | None = None,
+        draw: str | None = None,
+        text: str | None = None,
+        # Opacity
+        opacity: float | None = None,
+        fill_opacity: float | None = None,
+        draw_opacity: float | None = None,
+        text_opacity: float | None = None,
+        # Size
+        minimum_width: str | None = None,
+        minimum_height: str | None = None,
+        minimum_size: str | None = None,
+        # Separation
+        inner_sep: str | None = None,
+        inner_xsep: str | None = None,
+        inner_ysep: str | None = None,
+        outer_sep: str | None = None,
+        outer_xsep: str | None = None,
+        outer_ysep: str | None = None,
+        # Line
+        line_width: str | None = None,
+        # Text
+        font: str | None = None,
+        text_width: str | None = None,
+        text_height: str | None = None,
+        text_depth: str | None = None,
+        align: _Align = None,
+        # Anchor
+        anchor: _Anchor = None,
+        # Positioning (relative)
+        above: str | None = None,
+        below: str | None = None,
+        left: str | None = None,
+        right: str | None = None,
+        above_left: str | None = None,
+        above_right: str | None = None,
+        below_left: str | None = None,
+        below_right: str | None = None,
+        above_of: str | None = None,
+        below_of: str | None = None,
+        left_of: str | None = None,
+        right_of: str | None = None,
+        node_distance: str | None = None,
+        # Transformations
+        rotate: float | None = None,
+        xshift: str | None = None,
+        yshift: str | None = None,
+        scale: float | None = None,
+        xscale: float | None = None,
+        yscale: float | None = None,
+        xslant: float | None = None,
+        yslant: float | None = None,
+        # Border
+        rounded_corners: str | None = None,
+        double: str | None = None,
+        double_distance: str | None = None,
+        dash_pattern: str | None = None,
+        dash_phase: str | None = None,
+        # Pattern / shading
+        pattern: _Pattern = None,
+        pattern_color: str | None = None,
+        shading: _Shading = None,
+        shading_angle: float | None = None,
+        left_color: str | None = None,
+        right_color: str | None = None,
+        top_color: str | None = None,
+        bottom_color: str | None = None,
+        inner_color: str | None = None,
+        outer_color: str | None = None,
+        ball_color: str | None = None,
+        # Shape-specific
+        regular_polygon_sides: int | None = None,
+        star_points: int | None = None,
+        star_point_ratio: float | None = None,
+        star_point_height: str | None = None,
+        # Shadow
+        shadow_xshift: str | None = None,
+        shadow_yshift: str | None = None,
+        shadow_color: str | None = None,
+        shadow_opacity: float | None = None,
+        shadow_scale: float | None = None,
+        # Pin / label on node
+        pin: str | None = None,
+        # Catch-all for unlisted TikZ options
         **kwargs,
     ):
-        """
-        Represents a TikZ node.
+        """Represents a TikZ node.
 
-        Parameters:
-        - x (float): X-coordinate of the node.
-        - y (float): Y-coordinate of the node.
-        - name (str, optional): Name of the node. If None, a default name will be assigned.
-        - **kwargs: Additional TikZ node options (e.g., shape, color).
+        Accepts the same TikZ options as :meth:`TikzFigure.add_node`.
         """
+        _params = locals().copy()
+        _non_tikz = {
+            "self",
+            "x",
+            "y",
+            "z",
+            "label",
+            "content",
+            "comment",
+            "layer",
+            "options",
+            "kwargs",
+            "__class__",
+        }
+
+        tikz_kwargs = dict(kwargs)
+        tikz_kwargs.update(
+            {k: v for k, v in _params.items() if k not in _non_tikz and v is not None}
+        )
+
         if options is None:
             options = []
 
@@ -40,7 +146,7 @@ class Node(TikzObject):
             comment=comment,
             layer=layer,
             options=options,
-            **kwargs,
+            **tikz_kwargs,
         )
 
     @property
@@ -86,3 +192,31 @@ class Node(TikzObject):
 
         node_string = self.add_comment(node_string)
         return node_string
+
+    def to_dict(self) -> dict[str, Any]:
+        d = super().to_dict()
+        d.update(
+            {
+                "type": "Node",
+                "x": self._x,
+                "y": self._y,
+                "z": self._z,
+                "content": self._content,
+            }
+        )
+        return d
+
+    @classmethod
+    def from_dict(cls, d: dict[str, Any]) -> "Node":
+        kwargs = d.get("kwargs", {})
+        return cls(
+            x=d.get("x"),
+            y=d.get("y"),
+            z=d.get("z"),
+            label=d.get("label"),
+            content=d.get("content", ""),
+            comment=d.get("comment"),
+            layer=d.get("layer"),
+            options=d.get("options"),
+            **kwargs,
+        )

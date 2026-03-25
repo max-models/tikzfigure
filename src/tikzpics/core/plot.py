@@ -1,3 +1,5 @@
+from typing import Any
+
 from tikzpics.core.coordinate import TikzCoordinate
 from tikzpics.core.path import TikzPath
 
@@ -46,3 +48,28 @@ class Plot3D(TikzPath):
         plot_str = self.add_comment(plot_str)
 
         return plot_str
+
+    def to_dict(self) -> dict[str, Any]:
+        d = super().to_dict()
+        d["type"] = "Plot3D"
+        return d
+
+    @classmethod
+    def from_dict(cls, d: dict[str, Any]) -> "Plot3D":
+        nodes_data = d.get("nodes", [])
+        x = [n["x"] for n in nodes_data]
+        y = [n["y"] for n in nodes_data]
+        z = [n["z"] for n in nodes_data]
+        kwargs = d.get("kwargs", {})
+        return cls(
+            x=x,
+            y=y,
+            z=z,
+            cycle=d.get("cycle", False),
+            label=d.get("label", ""),
+            comment=d.get("comment"),
+            layer=d.get("layer", 0),
+            center=d.get("center", False),
+            options=d.get("options"),
+            **kwargs,
+        )

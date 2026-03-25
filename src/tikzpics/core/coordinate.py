@@ -1,3 +1,5 @@
+from typing import Any
+
 from tikzpics.core.base import TikzObject
 
 
@@ -41,3 +43,16 @@ class TikzCoordinate(TikzObject):
     @property
     def ndim(self):
         return self._ndim
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "type": "TikzCoordinate",
+            "x": self._x,
+            "y": self._y,
+            "z": self._z,
+            "layer": self._layer,
+        }
+
+    @classmethod
+    def from_dict(cls, d: dict[str, Any]) -> "TikzCoordinate":
+        return cls(x=d["x"], y=d["y"], z=d.get("z"), layer=d.get("layer", 0))
