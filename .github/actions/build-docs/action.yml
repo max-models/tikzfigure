@@ -1,12 +1,12 @@
 name: "Build Documentation"
-description: "Build Sphinx documentation"
+description: "Build MkDocs documentation"
 inputs:
   python-version:
     description: "Python version to use"
     required: false
     default: "3.10"
-  treat-warnings-as-errors:
-    description: "Treat warnings as errors (-W flag)"
+  strict:
+    description: "Treat warnings as errors (--strict flag)"
     required: false
     default: "false"
 runs:
@@ -16,12 +16,6 @@ runs:
       uses: actions/setup-python@v5
       with:
         python-version: ${{ inputs.python-version }}
-
-    - name: Install pandoc
-      shell: bash
-      run: |
-        apt-get update
-        apt-get install -y pandoc
 
     - name: Check if pdflatex is available
       shell: bash
@@ -35,8 +29,11 @@ runs:
         python -m pip install --upgrade pip
         python -m pip install ".[docs]"
 
-    - name: Build Sphinx docs
+    - name: Build MkDocs docs
       shell: bash
       run: |
-        cd docs
-        make html
+        if [ "${{ inputs.strict }}" = "true" ]; then
+          mkdocs build --strict
+        else
+          mkdocs build
+        fi
