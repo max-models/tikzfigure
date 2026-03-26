@@ -45,15 +45,12 @@ optional-dependencies.vis = [
 
 optional-dependencies.docs = [
   "ipykernel",
-  "myst-parser",
+  "mkdocs-material",
+  "mkdocs-jupyter",
+  "mkdocstrings[python]",
   "nbconvert",
-  "nbsphinx",
   "numpy",
   "scipy",
-  "sphinx",
-  "sphinx-book-theme",
-  "sphinx-design",
-  "sphinxcontrib-mermaid",
   "tikzpics[vis]",
 ]
 optional-dependencies.test = [

@@ -31,7 +31,7 @@ jobs:
         uses: ./.github/actions/build-docs
         with:
           python-version: "3.10"
-          treat-warnings-as-errors: "false"
+          strict: "false"
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
@@ -39,7 +39,7 @@ jobs:
       - name: Upload built docs
         uses: actions/upload-pages-artifact@v3
         with:
-          path: docs/build/html/
+          path: site/
 
       - name: Deploy to GitHub Pages
         id: deployment
