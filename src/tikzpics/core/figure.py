@@ -52,6 +52,7 @@ class TikzFigure:
         figsize: tuple[float, float] = (10, 6),
         caption: str | None = None,
         description: str | None = None,
+        show_axes: bool = False,
     ):
         """Initialize the TikzFigure class for creating TikZ figures."""
 
@@ -60,6 +61,7 @@ class TikzFigure:
         self._description = description
         self._label = label
         self._grid = grid
+        self._show_axes = show_axes
         self._tikz_code = tikz_code
         self._figure_setup = figure_setup
         self._extra_packages = extra_packages
@@ -199,6 +201,7 @@ class TikzFigure:
             "ndim": self._ndim,
             "label": self._label,
             "grid": self._grid,
+            "show_axes": self._show_axes,
             "extra_packages": (
                 list(self._extra_packages) if self._extra_packages else None
             ),
@@ -227,6 +230,7 @@ class TikzFigure:
             figsize=tuple(d.get("figsize", [10, 6])),
             caption=d.get("caption"),
             description=d.get("description"),
+            show_axes=d.get("show_axes", False),
         )
 
         for var_dict in d.get("variables", []):
@@ -1152,11 +1156,14 @@ class TikzFigure:
         if self.ndim == 3:
             tikz_script += "\\begin{axis}[\n"
             tikz_script += "view={20}{30},\n"
-            tikz_script += "axis lines=center,\n"
-            tikz_script += "xlabel={$x$},\n"
-            tikz_script += "ylabel={$y$},\n"
-            tikz_script += "zlabel={$z$},\n"
-            tikz_script += "grid=major\n"
+            if self._show_axes:
+                tikz_script += "axis lines=center,\n"
+                tikz_script += "xlabel={$x$},\n"
+                tikz_script += "ylabel={$y$},\n"
+                tikz_script += "zlabel={$z$},\n"
+                tikz_script += "grid=major\n"
+            else:
+                tikz_script += "hide axis\n"
             tikz_script += "    ]\n"
 
         if self.layers.num_layers <= 1:
@@ -1262,7 +1269,7 @@ class TikzFigure:
             print(latex_document)
         # Use a temporary directory to store the LaTeX files
         with tempfile.TemporaryDirectory() as tempdir:
-            print(f"{type(tempdir) = } {tempdir = }")
+            # print(f"{type(tempdir) = } {tempdir = }")
             # tempdir = Path(tempdir)
             # tex_file = tempdir / "figure.tex"
             tex_file = Path(tempdir) / "figure.tex"
