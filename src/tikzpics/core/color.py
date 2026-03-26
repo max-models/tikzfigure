@@ -16,6 +16,11 @@ class Color:
     def color_spec(self):
         return self._color_spec
 
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, Color):
+            return NotImplemented
+        return self.to_dict() == other.to_dict()
+
     def to_dict(self) -> dict[str, Any]:
         return {"type": "Color", "color_spec": self._color_spec}
 
