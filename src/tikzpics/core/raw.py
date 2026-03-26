@@ -8,6 +8,11 @@ class RawTikz:
     def to_tikz(self) -> str:
         return self.tikz_code + "\n"
 
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, RawTikz):
+            return NotImplemented
+        return self.to_dict() == other.to_dict()
+
     def to_dict(self) -> dict[str, Any]:
         return {"type": "RawTikz", "tikz_code": self.tikz_code}
 

@@ -56,14 +56,15 @@ class TikzPath(TikzObject):
 
     @property
     def tikz_options(self) -> str:
-        # options = super().tikz_options
-        options = ", ".join(
+        parts = []
+        if self.options:
+            parts.append(", ".join(self.options))
+        kwargs_str = ", ".join(
             f"{k.replace('_', ' ')}={v}" for k, v in self.kwargs.items()
         )
-        if len(self.options) > 0:
-            options = ", ".join(self.options) + ", " + options
-
-        return options
+        if kwargs_str:
+            parts.append(kwargs_str)
+        return ", ".join(parts)
 
     @property
     def label_list(self) -> list:

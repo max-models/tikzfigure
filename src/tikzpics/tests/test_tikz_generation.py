@@ -36,8 +36,6 @@ def test_tikz_equivalence():
 def test_logo_equivalence():
     tikz = TikzFigure()
 
-    options = ["draw", "rounded corners", "line width=3"]
-
     # M
     nodes = [[0, 0], [0, 10], [1, 2], [2, 3], [2, 0]]
     for i, node_data in enumerate(nodes):
@@ -51,7 +49,9 @@ def test_logo_equivalence():
         )
     tikz.draw(
         [f"M{i}" for i in range(len(nodes))],
-        options=options,
+        rounded_corners="1pt",
+        line_width="3pt",
+        draw="black",
         layer=1,
     )
     t1 = tikz.generate_tikz()
@@ -63,6 +63,11 @@ def test_logo_equivalence():
     print(f"{t2}")
     # Check that generated code is equivalant
     assert t1 == t2, "Generated tikz code not the same as original"
+    print(tikz.to_dict())
+    print(tikz_2.to_dict())
+    assert tikz == tikz_2, (
+        f"TikzFigure instances not the same, {tikz.to_dict()} != {tikz_2.to_dict()}"
+    )
 
 
 if __name__ == "__main__":
