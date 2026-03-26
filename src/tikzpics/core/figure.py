@@ -628,6 +628,63 @@ class TikzFigure:
         self.layers.add_item(item=node, layer=layer, verbose=verbose)
         return node
 
+    def midpoint(
+        self,
+        node1: "Node | str",
+        node2: "Node | str",
+        label: str | None = None,
+        layer: int = 0,
+        content: str = "",
+        **kwargs,
+    ) -> Node:
+        """Add a node at the midpoint between two nodes.
+
+        Args:
+            node1: First node or node label string.
+            node2: Second node or node label string.
+            label: Label for the new midpoint node.
+            layer: Layer for the new midpoint node.
+            content: Content for the new midpoint node.
+            **kwargs: Additional options forwarded to :meth:`add_node`.
+
+        Returns:
+            The new Node placed at the midpoint.
+
+        Raises:
+            ValueError: If either node lacks explicit numeric coordinates.
+        """
+        if isinstance(node1, str):
+            node1 = self.layers.get_node(node1)
+        if isinstance(node2, str):
+            node2 = self.layers.get_node(node2)
+
+        if node1.x is None or node1.y is None:
+            raise ValueError(
+                f"Node '{node1.label}' does not have explicit coordinates."
+            )
+        if node2.x is None or node2.y is None:
+            raise ValueError(
+                f"Node '{node2.label}' does not have explicit coordinates."
+            )
+
+        mid_x = (node1.x + node2.x) / 2
+        mid_y = (node1.y + node2.y) / 2
+
+        if node1.ndim == 3 and node2.ndim == 3:
+            mid_z = (node1.z + node2.z) / 2
+        else:
+            mid_z = None
+
+        return self.add_node(
+            x=mid_x,
+            y=mid_y,
+            z=mid_z,
+            label=label,
+            layer=layer,
+            content=content,
+            **kwargs,
+        )
+
     def add_variable(
         self,
         label: str,
