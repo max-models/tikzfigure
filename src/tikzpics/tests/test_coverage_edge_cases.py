@@ -303,3 +303,67 @@ class TestEdgeCasesInGeneration:
         assert "\\begin{tikzpicture}" in str_output
         assert "\\end{tikzpicture}" in str_output
         assert "\\pgfmathsetmacro" in str_output
+
+
+class TestMidpoint:
+    """Tests for TikzFigure.midpoint()."""
+
+    def test_midpoint_with_node_objects(self):
+        fig = TikzFigure()
+        n1 = fig.add_node(x=0, y=0, label="A")
+        n2 = fig.add_node(x=4, y=2, label="B")
+        mid = fig.midpoint(n1, n2, label="M")
+        assert mid.x == 2.0
+        assert mid.y == 1.0
+        assert mid.label == "M"
+
+    def test_midpoint_with_string_labels(self):
+        fig = TikzFigure()
+        fig.add_node(x=0, y=0, label="A")
+        fig.add_node(x=2, y=4, label="B")
+        mid = fig.midpoint("A", "B")
+        assert mid.x == 1.0
+        assert mid.y == 2.0
+
+    def test_midpoint_mixed_node_and_label(self):
+        fig = TikzFigure()
+        n1 = fig.add_node(x=1, y=3, label="A")
+        fig.add_node(x=3, y=1, label="B")
+        mid = fig.midpoint(n1, "B")
+        assert mid.x == 2.0
+        assert mid.y == 2.0
+
+    def test_midpoint_3d(self):
+        fig = TikzFigure(ndim=3)
+        n1 = fig.add_node(x=0, y=0, z=0, label="A")
+        n2 = fig.add_node(x=2, y=4, z=6, label="B")
+        mid = fig.midpoint(n1, n2)
+        assert mid.x == 1.0
+        assert mid.y == 2.0
+        assert mid.z == 3.0
+
+    def test_midpoint_forwards_kwargs(self):
+        fig = TikzFigure()
+        fig.add_node(x=0, y=0, label="A")
+        fig.add_node(x=2, y=2, label="B")
+        mid = fig.midpoint("A", "B", content="mid", fill="red")
+        assert mid.content == "mid"
+        assert mid.x == 1.0
+
+    def test_midpoint_node_added_to_figure(self):
+        fig = TikzFigure()
+        fig.add_node(x=0, y=0, label="A")
+        fig.add_node(x=2, y=2, label="B")
+        mid = fig.midpoint("A", "B", label="M")
+        retrieved = fig.layers.get_node("M")
+        assert retrieved is mid
+
+    def test_midpoint_missing_coordinates_raises(self):
+        from tikzpics.core.node import Node
+
+        fig = TikzFigure()
+        fig.add_node(x=0, y=0, label="A")
+        # Node without explicit coordinates (uses relative positioning)
+        fig.layers.add_item(Node(label="C", above_of="A"), layer=0)
+        with pytest.raises(ValueError, match="does not have explicit coordinates"):
+            fig.midpoint("A", "C")
