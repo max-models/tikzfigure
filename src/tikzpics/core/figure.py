@@ -8,6 +8,7 @@ from typing import Any
 
 import fitz
 
+from tikzpics.core.base import TikzObject
 from tikzpics.core.color import Color
 from tikzpics.core.coordinate import TikzCoordinate
 from tikzpics.core.layer import LayerCollection
@@ -89,7 +90,7 @@ class TikzFigure:
                 # Match \begin{pgfonlayer}{layer}
                 match_pgfdeclarelayer = re.search(r"\\pgfdeclarelayer\{(\d+)\}", line)
                 if match_pgfdeclarelayer:
-                    layer = match_pgfdeclarelayer.group(1)
+                    layer = int(match_pgfdeclarelayer.group(1))
                     self.layers.add_layer(layer)
                     # print(f"Layer number: {layer}")
 
@@ -99,7 +100,7 @@ class TikzFigure:
                     line,
                 )
                 if match_begin_pgfonlayer:
-                    current_layer = match_begin_pgfonlayer.group(1)
+                    current_layer = int(match_begin_pgfonlayer.group(1))
                     # print(f'Current layer: {current_layer}')
 
                 # Match \end{pgfonlayer}{layer}
@@ -125,9 +126,10 @@ class TikzFigure:
                     attributes_dict = dict(attr.split("=") for attr in attributes)
                     node_name = match_node.group(2)
                     coordinates = match_node.group(3)
-                    coordinates = [c for c in coordinates.split(",")]
-                    coordinates = [c for c in coordinates]
-                    coordinates = [c.lstrip().rstrip() for c in coordinates]
+                    coordinates = [c.strip() for c in coordinates.split(",")]
+                    coordinates = [
+                        int(c) if "." not in c else float(c) for c in coordinates
+                    ]
                     content = match_node.group(4)
                     # print(f"Attributes: {attributes_dict}")
                     # print(f"Node name: {node_name}")
@@ -164,7 +166,20 @@ class TikzFigure:
                     # print(f"Attributes: {attributes}")
                     # print(f"Path: {path}")
                     # print(f"Nodes: {nodes}")
-                    self._add_path(nodes, options=attributes, layer=current_layer)
+                    attrs_kwargs = {}
+                    attrs_options = []
+                    for attr in attributes:
+                        if "=" in attr:
+                            k, v = attr.split("=", 1)
+                            attrs_kwargs[k.strip().replace(" ", "_")] = v.strip()
+                        else:
+                            attrs_options.append(attr)
+                    self._add_path(
+                        nodes,
+                        options=attrs_options or None,
+                        layer=current_layer,
+                        **attrs_kwargs,
+                    )
 
     # ------------------------------------------------------------- #
     # Class methods
@@ -1585,3 +1600,8 @@ class TikzFigure:
     def variables(self) -> list:
         """The variables used in the figure."""
         return self._variables
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, TikzFigure):
+            return NotImplemented
+        return self.to_dict() == other.to_dict()

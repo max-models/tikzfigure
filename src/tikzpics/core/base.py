@@ -75,3 +75,8 @@ class TikzObject:
             options=d.get("options"),
             **kwargs,
         )
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, TikzObject):
+            return NotImplemented
+        return self.to_dict() == other.to_dict()
