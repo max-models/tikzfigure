@@ -15,7 +15,7 @@ defaults:
     shell: bash
 
 jobs:
-  build:
+  test:
     runs-on: ubuntu-latest
     container:
       image: texlive/texlive:latest
@@ -24,6 +24,9 @@ jobs:
       # Checkout the repository
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Install Quarto
+        uses: quarto-dev/quarto-actions/setup@v2
 
       # Set up Python
       - name: Set up Python
@@ -66,9 +69,6 @@ jobs:
           pytest . -xvs
         env:
           CI: true
-
-      - name: Install Quarto
-        uses: quarto-dev/quarto-actions/setup@v2
 
       - name: Test tutorials
         run: |
