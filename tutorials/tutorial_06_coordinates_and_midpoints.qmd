@@ -1,0 +1,175 @@
+---
+title: "Tutorial 6 — Coordinates and Midpoints"
+jupyter: python3
+---
+
+tikzpics can compute new node positions geometrically from existing ones.
+`fig.midpoint(node_a, node_b)` places a new node exactly halfway between two
+existing nodes. You may pass either `Node` objects or label strings.
+
+This tutorial covers:
+- basic midpoint usage
+- using label strings as references
+- edge labels on a triangle
+- recursive bisection
+- computing a triangle's centroid via iterated midpoints
+
+```{python}
+from tikzpics import TikzFigure
+```
+
+## Basic midpoint
+
+Pass two nodes (or label strings) and any additional node kwargs.
+The returned node has `.x` and `.y` set to the computed midpoint.
+
+```{python}
+fig = TikzFigure()
+
+n1 = fig.add_node(
+    0, 0, label="A", content="A", shape="circle", fill="blue!30", draw="blue"
+)
+n2 = fig.add_node(
+    4, 0, label="B", content="B", shape="circle", fill="red!30", draw="red"
+)
+
+mid = fig.midpoint(
+    n1, "B", label="M", content="M", shape="circle", fill="green!30", draw="green"
+)
+
+fig.draw([n1, n2], options=["dashed", "gray"])
+
+fig.show()
+print(f"Midpoint: ({mid.x}, {mid.y})")
+```
+
+## Using label strings
+
+You can refer to any node by its label string instead of keeping the Python object.
+
+```{python}
+fig = TikzFigure()
+
+fig.add_node(
+    0, 2, label="P", content="P", shape="circle", fill="orange!40", draw="orange"
+)
+fig.add_node(
+    6, 2, label="Q", content="Q", shape="circle", fill="orange!40", draw="orange"
+)
+
+fig.midpoint(
+    "P", "Q", label="PQ", content="mid", shape="circle", fill="white", draw="black"
+)
+
+fig.draw(["P", "Q"], options=["dashed", "gray"])
+
+fig.show()
+```
+
+## Edge labels on a triangle
+
+A classic use case: place a label at the midpoint of each edge.
+
+```{python}
+fig = TikzFigure(figure_setup="every node/.append style={draw, minimum size=0.7cm}")
+
+fig.add_node(0, 0, label="A", content="A", shape="circle", fill="blue!20")
+fig.add_node(4, 0, label="B", content="B", shape="circle", fill="blue!20")
+fig.add_node(2, 3, label="C", content="C", shape="circle", fill="blue!20")
+
+fig.draw(["A", "B"], color="black")
+fig.draw(["B", "C"], color="black")
+fig.draw(["A", "C"], color="black")
+
+fig.midpoint("A", "B", label="AB", content="$c$", draw="none", fill="yellow!60")
+fig.midpoint("B", "C", label="BC", content="$a$", draw="none", fill="yellow!60")
+fig.midpoint("A", "C", label="AC", content="$b$", draw="none", fill="yellow!60")
+
+fig.show()
+```
+
+## Recursive bisection
+
+Repeatedly calling `midpoint` bisects a segment.
+Here we produce three levels of binary subdivision.
+
+```{python}
+fig = TikzFigure()
+
+dot = dict(
+    shape="circle",
+    minimum_size="6pt",
+    fill="black",
+    draw="black",
+    inner_sep="0pt",
+    content="",
+)
+
+left = fig.add_node(0, 0, label="L", **dot)
+right = fig.add_node(8, 0, label="R", **dot)
+fig.draw([left, right], color="gray")
+
+m1 = fig.midpoint(left, right, label="M1", **dot)
+m2a = fig.midpoint(left, m1, label="M2a", **dot)
+m2b = fig.midpoint(m1, right, label="M2b", **dot)
+
+fig.midpoint(left, m2a, label="M3a", **dot)
+fig.midpoint(m2a, m1, label="M3b", **dot)
+fig.midpoint(m1, m2b, label="M3c", **dot)
+fig.midpoint(m2b, right, label="M3d", **dot)
+
+fig.show()
+```
+
+## Triangle centroid via iterated midpoints
+
+The centroid $G$ of a triangle satisfies $G = \frac{A+B+C}{3}$.
+We can reach it with two midpoint calls:
+$G = \text{midpoint}(\text{midpoint}(A, B),\; C)$
+
+(This is equivalent to taking 2/3 along the median from $C$ to the midpoint of $AB$.)
+
+```{python}
+fig = TikzFigure()
+
+A = fig.add_node(
+    0, 0, label="A", content="$A$", shape="circle", fill="blue!20", draw="blue"
+)
+B = fig.add_node(
+    6, 0, label="B", content="$B$", shape="circle", fill="blue!20", draw="blue"
+)
+C = fig.add_node(
+    2, 4, label="C", content="$C$", shape="circle", fill="blue!20", draw="blue"
+)
+
+fig.draw([A, B, C], cycle=True, color="blue")
+
+# Midpoint of BC — used to draw the median from A
+mid_BC = fig.midpoint(
+    B,
+    C,
+    label="MBC",
+    content="",
+    shape="circle",
+    minimum_size="4pt",
+    fill="gray",
+    draw="gray",
+    inner_sep="0pt",
+)
+fig.draw([A, mid_BC], options=["dashed"], color="gray")
+
+# Centroid = midpoint(midpoint(A, B), C)
+centroid = fig.midpoint(
+    fig.midpoint(A, B, label="_MAB", content=""),
+    C,
+    label="G",
+    content="$G$",
+    shape="circle",
+    fill="red!60",
+    draw="red",
+)
+
+fig.show()
+print(f"Centroid: ({centroid.x}, {centroid.y})")
+print(f"Expected: ({(0 + 6 + 2) / 3}, {(0 + 0 + 4) / 3})")
+```

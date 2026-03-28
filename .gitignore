@@ -76,6 +76,9 @@ docs/_build/
 # MkDocs generated tutorials copy
 docs/tutorials/
 
+# Quarto cache
+.quarto/
+
 # PyBuilder
 .pybuilder/
 target/

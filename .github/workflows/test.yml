@@ -67,10 +67,15 @@ jobs:
         env:
           CI: true
 
-      - name: Test tutorial notebooks
+      - name: Install Quarto
+        uses: quarto-dev/quarto-actions/setup@v2
+
+      - name: Test tutorials
         run: |
           source env/bin/activate
-          jupyter nbconvert --to notebook --execute tutorials/*.ipynb --output-dir=/tmp --ExecutePreprocessor.timeout=300
+          for qmd in tutorials/*.qmd; do
+            quarto render "$qmd" --to gfm --output-dir /tmp/quarto-test
+          done
 
       - name: Test docs build
         run: |
