@@ -27,5 +27,5 @@ fig.show()
 
 - [Source code](https://github.com/max-models/tikzpics)
 - [Installation](installation.md)
-- [Tutorials](tutorials/tutorial_01_getting_started.ipynb)
+- [Tutorials](tutorials/tutorial_01_getting_started.md)
 - [API Reference](api.md)

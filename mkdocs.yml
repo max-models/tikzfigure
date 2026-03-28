@@ -65,7 +65,7 @@ nav:
     - Raw TikZ: tutorials/tutorial_08_raw_tikz.md
     - Space-Filling Curves: tutorials/tutorial_09_space_filling_curves.md
     - Calendar: tutorials/tutorial_10_calendar.md
-    - Jupyter Magic: tutorials/tutorial_11_jupyter_magic.md
+    - Jupyter Magic: tutorials/tutorial_11_jupyter_magic.ipynb
   - API Reference: api.md
 
 markdown_extensions:
