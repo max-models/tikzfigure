@@ -18,18 +18,12 @@ jobs:
   test:
     runs-on: ubuntu-latest
     container:
-      image: texlive/texlive:latest
+      image: ghcr.io/max-models/tikzpics/texlive-quarto:latest
 
     steps:
       # Checkout the repository
       - name: Checkout code
         uses: actions/checkout@v4
-
-      - name: Install jq
-        run:  apt-get update && apt-get install -y jq wget
-
-      - name: Install Quarto
-        uses: quarto-dev/quarto-actions/setup@v2
 
       # Set up Python
       - name: Set up Python
