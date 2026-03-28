@@ -3,6 +3,8 @@ from pathlib import Path
 
 
 def on_pre_build(config):
+    import shutil
+
     tutorials_src = Path("tutorials")
     tutorials_dst = Path("docs/tutorials")
     if tutorials_src.exists():
@@ -20,3 +22,5 @@ def on_pre_build(config):
                 ],
                 check=True,
             )
+        for nb in tutorials_src.glob("*.ipynb"):
+            shutil.copy(nb, tutorials_dst / nb.name)
