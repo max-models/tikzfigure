@@ -15,6 +15,7 @@ ASTRO_ROOT = Path(__file__).resolve().parent.parent
 TUTORIALS_SRC = ASTRO_ROOT.parent / "tutorials"
 CONTENT_DST = ASTRO_ROOT / "src" / "content" / "docs" / "tutorials"
 PUBLIC_DST = ASTRO_ROOT / "public" / "tutorials"
+BASE_PATH = "/tikzpics"
 
 
 def extract_title(content: str, fallback: str) -> str:
@@ -54,7 +55,7 @@ def fix_image_paths(content: str, tutorial_name: str) -> str:
             return m.group(0)
         if path.startswith(files_prefix):
             path = path[len(files_prefix) :]
-        return f"![{alt}](/tutorials/{tutorial_name}/{path})"
+        return f"![{alt}]({BASE_PATH}/tutorials/{tutorial_name}/{path})"
 
     return re.sub(r"!\[([^\]]*)\]\(([^)]+)\)", replace, content)
 
