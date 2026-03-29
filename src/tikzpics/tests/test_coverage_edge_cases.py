@@ -5,8 +5,7 @@ import tempfile
 from unittest.mock import MagicMock, patch
 
 import pytest
-
-from tikzpics import TikzFigure
+from tikzfigure import TikzFigure
 
 
 class TestFigureReprStr:
@@ -47,7 +46,7 @@ class TestShowWithoutIPython:
         # We mock the system command to avoid actually opening a viewer
         with patch("subprocess.run"):
             with patch("tempfile.NamedTemporaryFile"):
-                with patch("tikzpics.core.figure.TikzFigure.savefig"):
+                with patch("tikzfigure.core.figure.TikzFigure.savefig"):
                     try:
                         # In test environment, this will be suppressed anyway
                         fig.show(backend="system")
@@ -68,14 +67,14 @@ class TestShowWithoutIPython:
         # Mock get_ipython from IPython to raise AttributeError - this triggers the except block
         with patch("IPython.get_ipython", side_effect=AttributeError("test")):
             with patch(
-                "tikzpics.core.figure.TikzFigure._show_matplotlib"
+                "tikzfigure.core.figure.TikzFigure._show_matplotlib"
             ) as mock_matplotlib:
                 # Clear environment to avoid early return
                 original_env = dict(os.environ)
                 try:
                     # Remove test environment flags to let show() run
                     os.environ.pop("PYTEST_CURRENT_TEST", None)
-                    os.environ.pop("TIKZPICS_NO_SHOW", None)
+                    os.environ.pop("tikzfigure_NO_SHOW", None)
 
                     fig.show(backend="matplotlib")
                     # If we got here, the except handler was successfully executed
@@ -119,7 +118,7 @@ class TestIPythonMagicExceptionHandling:
         """Simulate the tikz_load magic command execution (covers ipython.py 115-119, 123-124)."""
         # This test simulates what the tikz_load magic command does
 
-        from tikzpics import TikzFigure
+        from tikzfigure import TikzFigure
 
         # Create a valid TikZ file
         with tempfile.NamedTemporaryFile(mode="w", suffix=".tikz", delete=False) as f:
@@ -163,8 +162,7 @@ class TestIPythonMagicExceptionHandling:
             import tempfile
 
             from IPython.core.interactiveshell import InteractiveShell
-
-            from tikzpics.core.ipython import TikzMagics
+            from tikzfigure.core.ipython import TikzMagics
 
             # Try to get or create an IPython shell
             shell = InteractiveShell.instance()
@@ -209,7 +207,7 @@ class TestShowBackends:
         # In test environment, show() returns early, so we can't directly test this
         # Instead, test that a valid figure can be created and shown
         with patch(
-            "os.environ", {"TIKZPICS_NO_SHOW": "0", "PYTEST_CURRENT_TEST": None}
+            "os.environ", {"tikzfigure_NO_SHOW": "0", "PYTEST_CURRENT_TEST": None}
         ):
             try:
                 fig.show(backend="invalid_backend")
@@ -223,7 +221,7 @@ class TestShowBackends:
 
         # The show() method should skip display when PYTEST_CURRENT_TEST is set
         # (which should be set during pytest execution)
-        with patch("tikzpics.core.figure.TikzFigure._show_matplotlib") as mock_show:
+        with patch("tikzfigure.core.figure.TikzFigure._show_matplotlib") as mock_show:
             print(f"Testing show() with test environment suppression... {mock_show}")
             fig.show(backend="matplotlib")
             # In test environment, it should return early without calling matplotlib
@@ -235,28 +233,28 @@ class TestIPythonExtensionModuleFunctions:
 
     def test_load_ipython_extension(self):
         """Test load_ipython_extension function (covers __init__.py lines 9-11)."""
-        from tikzpics import load_ipython_extension
+        from tikzfigure import load_ipython_extension
 
         # Create a mock IPython shell
         mock_ipython = MagicMock()
 
         # Call the extension loader
-        # This should internally call tikzpics.core.ipython.load_ipython_extension
-        with patch("tikzpics.core.ipython.load_ipython_extension") as mock_load:
+        # This should internally call tikzfigure.core.ipython.load_ipython_extension
+        with patch("tikzfigure.core.ipython.load_ipython_extension") as mock_load:
             load_ipython_extension(mock_ipython)
             # Verify the inner function was called
             mock_load.assert_called_once_with(mock_ipython)
 
     def test_unload_ipython_extension(self):
         """Test unload_ipython_extension function (covers __init__.py lines 16-18)."""
-        from tikzpics import unload_ipython_extension
+        from tikzfigure import unload_ipython_extension
 
         # Create a mock IPython shell
         mock_ipython = MagicMock()
 
         # Call the extension unloader
-        # This should internally call tikzpics.core.ipython.unload_ipython_extension
-        with patch("tikzpics.core.ipython.unload_ipython_extension") as mock_unload:
+        # This should internally call tikzfigure.core.ipython.unload_ipython_extension
+        with patch("tikzfigure.core.ipython.unload_ipython_extension") as mock_unload:
             unload_ipython_extension(mock_ipython)
             # Verify the inner function was called
             mock_unload.assert_called_once_with(mock_ipython)
@@ -359,7 +357,7 @@ class TestMidpoint:
         assert retrieved is mid
 
     def test_midpoint_missing_coordinates_raises(self):
-        from tikzpics.core.node import Node
+        from tikzfigure.core.node import Node
 
         fig = TikzFigure()
         fig.add_node(x=0, y=0, label="A")

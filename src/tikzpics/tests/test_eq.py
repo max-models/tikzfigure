@@ -1,14 +1,13 @@
 import pytest
-
-from tikzpics import TikzFigure
-from tikzpics.core.color import Color
-from tikzpics.core.coordinate import TikzCoordinate
-from tikzpics.core.loop import Loop
-from tikzpics.core.node import Node
-from tikzpics.core.path import TikzPath
-from tikzpics.core.plot import Plot3D
-from tikzpics.core.raw import RawTikz
-from tikzpics.core.variable import Variable
+from tikzfigure import TikzFigure
+from tikzfigure.core.color import Color
+from tikzfigure.core.coordinate import TikzCoordinate
+from tikzfigure.core.loop import Loop
+from tikzfigure.core.node import Node
+from tikzfigure.core.path import TikzPath
+from tikzfigure.core.plot import Plot3D
+from tikzfigure.core.raw import RawTikz
+from tikzfigure.core.variable import Variable
 
 
 class TestNodeEq:

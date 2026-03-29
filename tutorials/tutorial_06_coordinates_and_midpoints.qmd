@@ -3,7 +3,7 @@ title: "Coordinates and Midpoints"
 jupyter: python3
 ---
 
-tikzpics can compute new node positions geometrically from existing ones.
+tikzfigure can compute new node positions geometrically from existing ones.
 `fig.midpoint(node_a, node_b)` places a new node exactly halfway between two
 existing nodes. You may pass either `Node` objects or label strings.
 
@@ -15,7 +15,7 @@ This tutorial covers:
 - computing a triangle's centroid via iterated midpoints
 
 ```{python}
-from tikzpics import TikzFigure
+from tikzfigure import TikzFigure
 ```
 
 ## Basic midpoint

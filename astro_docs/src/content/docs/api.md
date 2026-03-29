@@ -7,7 +7,7 @@ title: API Reference
 The main entry point. Holds all nodes, paths, layers, and variables. Use this to build and render figures.
 
 ```python
-from tikzpics import TikzFigure
+from tikzfigure import TikzFigure
 
 fig = TikzFigure(
     ndim=2,               # 2 or 3 dimensions
@@ -87,7 +87,7 @@ Parse an existing TikZ code string and return a `TikzFigure`.
 Represents a TikZ node with a position, optional content, and styling options.
 
 ```python
-from tikzpics import Node
+from tikzfigure import Node
 
 node = Node(
     x=0, y=0,             # coordinates (float or int)

@@ -1,8 +1,8 @@
 from typing import Any
 
-from tikzpics.core.base import TikzObject
-from tikzpics.core.node import Node
-from tikzpics.core.path import TikzPath
+from tikzfigure.core.base import TikzObject
+from tikzfigure.core.node import Node
+from tikzfigure.core.path import TikzPath
 
 
 class Loop(TikzObject):

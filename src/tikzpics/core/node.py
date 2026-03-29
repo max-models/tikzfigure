@@ -1,7 +1,7 @@
 from typing import Any
 
-from tikzpics.core.base import TikzObject
-from tikzpics.core.types import _Align, _Anchor, _Pattern, _Shading, _Shape
+from tikzfigure.core.base import TikzObject
+from tikzfigure.core.types import _Align, _Anchor, _Pattern, _Shading, _Shape
 
 
 class Node(TikzObject):

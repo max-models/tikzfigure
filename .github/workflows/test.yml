@@ -18,7 +18,7 @@ jobs:
   test:
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/max-models/tikzpics/texlive-quarto:latest
+      image: ghcr.io/max-models/tikzfigure/texlive-quarto:latest
       credentials:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}

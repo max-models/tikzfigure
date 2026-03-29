@@ -1,8 +1,8 @@
 # Build and push:
 #   docker buildx build --platform linux/amd64 \
-#     -t ghcr.io/max-models/tikzpics/texlive-quarto:latest --push docker/
+#     -t ghcr.io/max-models/tikzfigure/texlive-quarto:latest --push docker/
 #
-# Run:  docker run --rm ghcr.io/max-models/tikzpics/texlive-quarto:latest
+# Run:  docker run --rm ghcr.io/max-models/tikzfigure/texlive-quarto:latest
 
 FROM texlive/texlive:latest
 
@@ -19,4 +19,4 @@ RUN QUARTO_VERSION=$(wget -qO- https://api.github.com/repos/quarto-dev/quarto-cl
     && gdebi --non-interactive "quarto-${QUARTO_VERSION}-linux-${ARCH}.deb" \
     && rm "quarto-${QUARTO_VERSION}-linux-${ARCH}.deb"
 
-LABEL org.opencontainers.image.source https://github.com/max-models/tikzpics
+LABEL org.opencontainers.image.source https://github.com/max-models/tikzfigure

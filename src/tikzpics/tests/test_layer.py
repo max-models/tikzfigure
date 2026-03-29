@@ -1,8 +1,7 @@
 import pytest
-
-from tikzpics.core.layer import LayerCollection, Tikzlayer
-from tikzpics.core.node import Node
-from tikzpics.core.path import TikzPath
+from tikzfigure.core.layer import LayerCollection, Tikzlayer
+from tikzfigure.core.node import Node
+from tikzfigure.core.path import TikzPath
 
 
 class TestTikzlayer:

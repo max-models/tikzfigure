@@ -18,7 +18,7 @@ ASTRO_ROOT = Path(__file__).resolve().parent.parent
 TUTORIALS_SRC = ASTRO_ROOT.parent / "tutorials"
 CONTENT_DST = ASTRO_ROOT / "src" / "content" / "docs" / "tutorials"
 PUBLIC_DST = ASTRO_ROOT / "public" / "tutorials"
-BASE_PATH = "/tikzpics"
+BASE_PATH = "/tikzfigure"
 
 
 def extract_title(content: str, fallback: str) -> str:

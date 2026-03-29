@@ -3,7 +3,7 @@ title: "Example: Space-Filling Curves"
 jupyter: python3
 ---
 
-This showcase tutorial demonstrates tikzpics' layer system and coordinate path drawing
+This showcase tutorial demonstrates tikzfigure' layer system and coordinate path drawing
 through two classic **space-filling curves**:
 
 - **Z-order curve** (Morton code) - visits grid cells in a Z-shaped pattern at each
@@ -20,7 +20,7 @@ Key techniques used:
 - `figure_setup` to configure the default arrow style
 
 ```{python}
-from tikzpics import TikzFigure
+from tikzfigure import TikzFigure
 ```
 
 ```{python}

@@ -1,7 +1,7 @@
-site_name: tikzpics
+site_name: tikzfigure
 site_description: A Python library to generate readable TikZ figures
-repo_url: https://github.com/max-models/tikzpics
-repo_name: max-models/tikzpics
+repo_url: https://github.com/max-models/tikzfigure
+repo_name: max-models/tikzfigure
 edit_uri: edit/devel/docs/
 
 theme:

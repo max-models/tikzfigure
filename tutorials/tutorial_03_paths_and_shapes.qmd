@@ -3,7 +3,7 @@ title: "Paths and Shapes"
 jupyter: python3
 ---
 
-Beyond simple node-to-node connections, tikzpics lets you draw arbitrary paths
+Beyond simple node-to-node connections, tikzfigure lets you draw arbitrary paths
 from lists of `(x, y)` coordinates. This tutorial covers:
 - drawing open and closed coordinate paths
 - `filldraw` for filled closed shapes
@@ -14,7 +14,7 @@ from lists of `(x, y)` coordinates. This tutorial covers:
 ```{python}
 import numpy as np
 
-from tikzpics import TikzFigure
+from tikzfigure import TikzFigure
 ```
 
 ## Open and closed coordinate paths

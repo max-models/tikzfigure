@@ -1,6 +1,6 @@
 from typing import Any
 
-from tikzpics.core.base import TikzObject
+from tikzfigure.core.base import TikzObject
 
 
 class TikzCoordinate(TikzObject):

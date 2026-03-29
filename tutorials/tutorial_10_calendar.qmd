@@ -13,7 +13,7 @@ This showcase tutorial builds a full A3-style **2026 calendar** combining:
   for Sundays, orange for public holidays
 - the LaTeX `worldflags` package for national flag icons
 
-It is a good example of how tikzpics can integrate with external data sources to
+It is a good example of how tikzfigure can integrate with external data sources to
 produce publication-quality figures.
 
 > **Note:** The cell that fetches holiday data requires an internet connection.
@@ -26,7 +26,7 @@ import datetime
 
 import requests
 
-from tikzpics import TikzFigure
+from tikzfigure import TikzFigure
 ```
 
 ## Calendar parameters

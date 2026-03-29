@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: pypi
-      url: https://pypi.org/project/tikzpics/
+      url: https://pypi.org/project/tikzfigure/
     permissions:
       id-token: write
       contents: read

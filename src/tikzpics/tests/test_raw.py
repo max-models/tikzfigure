@@ -1,4 +1,4 @@
-from tikzpics.core.raw import RawTikz
+from tikzfigure.core.raw import RawTikz
 
 
 def test_raw_tikz_to_tikz():
@@ -47,7 +47,7 @@ def test_raw_tikz_preserves_whitespace():
 
 def test_raw_tikz_integration_with_figure():
     """Test that RawTikz integrates properly with TikzFigure using add_raw()."""
-    from tikzpics import TikzFigure
+    from tikzfigure import TikzFigure
 
     fig = TikzFigure()
     fig.add_raw("\\draw (0,0) -- (1,1);")
@@ -60,7 +60,7 @@ def test_raw_tikz_integration_with_figure():
 
 def test_raw_tikz_with_comments():
     """Test adding comments through raw TikZ code."""
-    from tikzpics import TikzFigure
+    from tikzfigure import TikzFigure
 
     fig = TikzFigure()
     fig.add_raw("% This is a comment in the TikZ code")
@@ -73,7 +73,7 @@ def test_raw_tikz_with_comments():
 
 def test_raw_tikz_with_nodes_and_references():
     """Test using raw TikZ code to reference previously created nodes."""
-    from tikzpics import TikzFigure
+    from tikzfigure import TikzFigure
 
     fig = TikzFigure()
 
@@ -97,7 +97,7 @@ def test_raw_tikz_with_nodes_and_references():
 
 def test_raw_tikz_complex_integration():
     """Test complex integration with nodes and multiple raw TikZ additions."""
-    from tikzpics import TikzFigure
+    from tikzfigure import TikzFigure
 
     fig = TikzFigure()
 
@@ -122,7 +122,7 @@ def test_raw_tikz_complex_integration():
 
 def test_raw_tikz_with_layers():
     """Test adding raw TikZ code to different layers."""
-    from tikzpics import TikzFigure
+    from tikzfigure import TikzFigure
 
     fig = TikzFigure()
 
@@ -137,7 +137,7 @@ def test_raw_tikz_with_layers():
 
 def test_raw_tikz_with_mathematical_notation():
     """Test raw TikZ with mathematical notation and LaTeX commands."""
-    from tikzpics import TikzFigure
+    from tikzfigure import TikzFigure
 
     fig = TikzFigure()
 
@@ -154,7 +154,7 @@ def test_raw_tikz_with_mathematical_notation():
 
 def test_raw_tikz_multiple_additions_order():
     """Test that multiple raw TikZ additions maintain order."""
-    from tikzpics import TikzFigure
+    from tikzfigure import TikzFigure
 
     fig = TikzFigure()
 
