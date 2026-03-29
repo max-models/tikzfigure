@@ -1,5 +1,5 @@
 ---
-title: "Tutorial 5 — Loops"
+title: "Tutorial 5 - Loops"
 jupyter: python3
 ---
 

@@ -1,5 +1,5 @@
 ---
-title: "Tutorial 1 — Getting Started"
+title: "Tutorial 1 - Getting Started"
 jupyter: python3
 ---
 
@@ -70,7 +70,7 @@ fig2.show()
 ## A simple directed graph
 
 Here we place four nodes and connect them with arrows.
-`bend_left` curves the arrow — positive values bend it left relative to the direction of travel.
+`bend_left` curves the arrow - positive values bend it left relative to the direction of travel.
 
 ```{python}
 fig = TikzFigure()

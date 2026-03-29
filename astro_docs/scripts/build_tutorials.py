@@ -141,7 +141,8 @@ def main() -> None:
 
     for qmd in sorted(TUTORIALS_SRC.glob("*.qmd")):
         process_qmd(qmd)
-
+        break
+    return
     for nb in sorted(TUTORIALS_SRC.glob("*.ipynb")):
         if ".ipynb_checkpoints" not in nb.parts:
             process_notebook(nb)
