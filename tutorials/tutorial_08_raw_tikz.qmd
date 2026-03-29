@@ -1,11 +1,11 @@
 ---
-title: "Tutorial 8 — Raw TikZ"
+title: "Tutorial 8 - Raw TikZ"
 jupyter: python3
 ---
 
 tikzpics covers the most common TikZ operations through its Python API, but TikZ is
 a vast language. `fig.add_raw(string)` injects an arbitrary LaTeX/TikZ snippet
-directly into the generated code — giving you a full escape hatch.
+directly into the generated code - giving you a full escape hatch.
 
 A key pattern: create nodes with the Python API (to get auto-generated labels),
 then reference them in raw TikZ commands via `{node.label}`.
@@ -49,7 +49,7 @@ print(fig.generate_tikz())
 
 ## Flowchart
 
-Flowcharts need `diamond` decision nodes and labelled arrows — both easy with raw TikZ.
+Flowcharts need `diamond` decision nodes and labelled arrows - both easy with raw TikZ.
 
 ```{python}
 fig = TikzFigure()

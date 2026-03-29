@@ -15,6 +15,7 @@ ASTRO_ROOT = Path(__file__).resolve().parent.parent
 TUTORIALS_SRC = ASTRO_ROOT.parent / "tutorials"
 CONTENT_DST = ASTRO_ROOT / "src" / "content" / "docs" / "tutorials"
 PUBLIC_DST = ASTRO_ROOT / "public" / "tutorials"
+BASE_PATH = "/tikzpics"
 
 
 def extract_title(content: str, fallback: str) -> str:
@@ -33,8 +34,10 @@ def extract_title(content: str, fallback: str) -> str:
 
 
 def strip_frontmatter(content: str) -> str:
-    """Remove YAML frontmatter block."""
-    return re.sub(r"^---\n.*?\n---\n?", "", content, flags=re.DOTALL).lstrip()
+    """Remove YAML frontmatter block and the leading # heading (Starlight renders the title from frontmatter)."""
+    content = re.sub(r"^---\n.*?\n---\n?", "", content, flags=re.DOTALL).lstrip()
+    content = re.sub(r"^#[^\n]+\n+", "", content)
+    return content
 
 
 def fix_image_paths(content: str, tutorial_name: str) -> str:
@@ -44,19 +47,30 @@ def fix_image_paths(content: str, tutorial_name: str) -> str:
     copy_assets() copies the *contents* of ``<name>_files/`` directly into
     ``public/tutorials/<name>/``, so the ``<name>_files/`` prefix must be
     stripped before building the final URL.
+
+    Handles both markdown ``![alt](path)`` syntax and HTML ``<img src="path">``
+    tags, since Quarto emits the latter for figures with width attributes.
     """
 
     files_prefix = f"{tutorial_name}_files/"
 
-    def replace(m: re.Match) -> str:
-        alt, path = m.group(1), m.group(2)
+    def rewrite(path: str) -> str:
         if path.startswith(("http://", "https://", "/")):
-            return m.group(0)
+            return path
         if path.startswith(files_prefix):
             path = path[len(files_prefix) :]
-        return f"![{alt}](/tutorials/{tutorial_name}/{path})"
+        return f"{BASE_PATH}/tutorials/{tutorial_name}/{path}"
 
-    return re.sub(r"!\[([^\]]*)\]\(([^)]+)\)", replace, content)
+    def replace_md(m: re.Match) -> str:
+        alt, path = m.group(1), m.group(2)
+        return f"![{alt}]({rewrite(path)})"
+
+    def replace_img(m: re.Match) -> str:
+        return m.group(0).replace(m.group(1), rewrite(m.group(1)))
+
+    content = re.sub(r"!\[([^\]]*)\]\(([^)]+)\)", replace_md, content)
+    content = re.sub(r'<img\b[^>]*\bsrc="([^"]+)"', replace_img, content)
+    return content
 
 
 def write_content(title: str, body: str, out_path: Path) -> None:

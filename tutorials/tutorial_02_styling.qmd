@@ -1,5 +1,5 @@
 ---
-title: "Tutorial 2 — Styling: Colors, Shapes, and Line Styles"
+title: "Tutorial 2 - Styling: Colors, Shapes, and Line Styles"
 jupyter: python3
 ---
 
@@ -147,7 +147,7 @@ fig.show()
 
 ## Putting it together: Olympic rings
 
-Five thick circles in the classic Olympic layout — a good exercise in
+Five thick circles in the classic Olympic layout - a good exercise in
 combining coordinates, colors, and draw-only (no fill) paths.
 
 ```{python}

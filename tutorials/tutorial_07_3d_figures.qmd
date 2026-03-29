@@ -1,5 +1,5 @@
 ---
-title: "Tutorial 7 — 3D Figures"
+title: "Tutorial 7 - 3D Figures"
 jupyter: python3
 ---
 
@@ -13,11 +13,11 @@ Key facts:
 - `show_axes=True` adds labelled axis lines and a grid.
 
 This tutorial covers:
-- **Simple helix** — the minimal 3-D setup
-- **Torus knot** — a parametric knot wound on a torus surface
-- **Double helix** — two interleaved helices with connecting rungs
-- **Sphere wireframe** — a sphere assembled from many short `plot3d` curves
-- **Butterfly effect** — two nearby Lorenz trajectories diverging over time
+- **Simple helix** - the minimal 3-D setup
+- **Torus knot** - a parametric knot wound on a torus surface
+- **Double helix** - two interleaved helices with connecting rungs
+- **Sphere wireframe** - a sphere assembled from many short `plot3d` curves
+- **Butterfly effect** - two nearby Lorenz trajectories diverging over time
 
 ```{python}
 import numpy as np
@@ -66,10 +66,12 @@ fig.show(width=400)
 
 The Lorenz system is the ODE, based on [this example](https://github.com/ltrujello/Tikz-Python/blob/main/examples/lorenz/lorenz.py):
 
-$$\dot x = \sigma(y - x), \quad \dot y = x(\rho - z) - y, \quad \dot z = xy - \beta z$$
+$$
+\dot x = \sigma(y - x), \quad \dot y = x(\rho - z) - y, \quad \dot z = xy - \beta z
+$$
 
 with $\sigma = 10$, $\rho = 28$, $\beta = 8/3$. Small differences in initial
-conditions lead to wildly different trajectories — the butterfly effect.
+conditions lead to wildly different trajectories - the butterfly effect.
 
 We integrate for 20 time units, scale the result down, and plot the trajectory.
 The green dot marks the start; red marks the end.
@@ -117,11 +119,13 @@ fig.show(width=500)
 A $(p, q)$ torus knot winds $p$ times around the torus in the longitudinal direction
 and $q$ times in the meridional direction. The parametric equations are:
 
-$$x(t) = (R + r\cos(qt))\cos(pt), \quad
+$$
+  x(t) = (R + r\cos(qt))\cos(pt), \quad
   y(t) = (R + r\cos(qt))\sin(pt), \quad
-  z(t) = r\sin(qt)$$
+  z(t) = r\sin(qt)
+$$
 
-With $p=2, q=3$ we get the **trefoil knot** — the simplest non-trivial knot.
+With $p=2, q=3$ we get the **trefoil knot** - the simplest non-trivial knot.
 Increasing $p$ and $q$ produces more complex knots; try $(3, 5)$ or $(4, 7)$.
 
 ```{python}

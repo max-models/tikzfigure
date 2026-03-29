@@ -1,14 +1,14 @@
 ---
-title: "Tutorial 9 (Advanced) — Space-Filling Curves"
+title: "Tutorial 9 - Space-Filling Curves"
 jupyter: python3
 ---
 
 This showcase tutorial demonstrates tikzpics' layer system and coordinate path drawing
 through two classic **space-filling curves**:
 
-- **Z-order curve** (Morton code) — visits grid cells in a Z-shaped pattern at each
+- **Z-order curve** (Morton code) - visits grid cells in a Z-shaped pattern at each
   level of recursion.
-- **Hilbert curve** — visits every cell while preserving spatial locality.
+- **Hilbert curve** - visits every cell while preserving spatial locality.
 
 The background grid is rendered on low-numbered layers (yellow → blue → red for
 three recursive levels); the curve path is drawn on top on layer 5.
@@ -110,7 +110,7 @@ tikz.show()
 ## Hilbert curve
 
 The Hilbert curve visits every cell in the grid while ensuring that spatially
-adjacent cells are also adjacent in the traversal order — making it valuable
+adjacent cells are also adjacent in the traversal order - making it valuable
 for locality-preserving mappings.
 
 ```{python}
