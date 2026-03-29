@@ -75,6 +75,8 @@ docs/_build/
 
 # MkDocs generated tutorials copy
 docs/tutorials/
+docs/src/content/docs/tutorials/*.md
+docs/public/tutorials/
 
 # Quarto cache
 .quarto/
