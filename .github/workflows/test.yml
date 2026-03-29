@@ -70,19 +70,19 @@ jobs:
         env:
           CI: true
 
-      - name: Test tutorials
+      - name: Test Quarto tutorials
         run: |
           source env/bin/activate
           for qmd in tutorials/*.qmd; do
             quarto render "$qmd" --to gfm --output-dir /tmp/quarto-test
           done
 
-      - name: Test docs build
+      - name: Test Jupyter notebook tutorials
         run: |
           source env/bin/activate
-          pip install ".[docs]"
-          mkdocs build --strict
-          ls site/index.html
+          for ipynb in tutorials/*.ipynb; do
+            jupyter nbconvert --to notebook --execute "$ipynb" --output /tmp/nbconvert-test.ipynb
+          done
 
   test-build:
     runs-on: ubuntu-latest
