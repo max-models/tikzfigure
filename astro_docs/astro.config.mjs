@@ -4,6 +4,8 @@ import starlight from '@astrojs/starlight';
 
 // https://astro.build/config
 export default defineConfig({
+	site: 'https://max-models.github.io/tikzpics',
+	base: '/tikzpics',
 	integrations: [
 		starlight({
 			title: 'tikzpics',
