@@ -152,7 +152,7 @@ def main() -> None:
     CONTENT_DST.mkdir(parents=True, exist_ok=True)
     PUBLIC_DST.mkdir(parents=True, exist_ok=True)
 
-    for qmd in sorted(TUTORIALS_SRC.glob("tutorial_07*.qmd")):
+    for qmd in sorted(TUTORIALS_SRC.glob("*.qmd")):
         process_qmd(qmd)
 
     for nb in sorted(TUTORIALS_SRC.glob("*.ipynb")):
