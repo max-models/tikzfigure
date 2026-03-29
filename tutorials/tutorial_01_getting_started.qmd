@@ -1,0 +1,100 @@
+---
+title: "Tutorial 1 — Getting Started"
+jupyter: python3
+---
+
+**tikzpics** is a Python library for building TikZ (LaTeX) figures programmatically.
+You describe your drawing with Python objects and method calls; tikzpics turns them into
+LaTeX/TikZ code that can be compiled to PDF or rendered to PNG.
+
+This first tutorial covers the absolute basics:
+
+- creating a `TikzFigure`
+- adding nodes
+- drawing connections
+- displaying and saving the result
+- inspecting the generated TikZ code
+
+```{python}
+from tikzpics import Node, TikzFigure
+```
+
+## Your first figure
+
+A `TikzFigure` is the canvas. Nodes are placed on it with `add_node(x, y, ...)`,
+and connections are drawn with `draw([node_a, node_b], ...)`. Call `show()` to compile
+and display the result inline.
+
+```{python}
+fig = TikzFigure()
+
+n1 = fig.add_node(0, 0, shape="circle", color="white", fill="blue", content="Hello!")
+n2 = fig.add_node(5, 0, shape="circle", color="white", fill="red", content="Hi!")
+
+fig.draw([n1, n2], options=["->"], line_width=2, color="gray")
+
+fig.show()
+```
+
+## Inspecting the generated TikZ code
+
+`generate_tikz()` returns the raw LaTeX/TikZ string. This is useful for debugging
+or for pasting code directly into a `.tex` file.
+
+```{python}
+print(fig.generate_tikz())
+```
+
+## Alternative: create nodes independently
+
+You can also construct `Node` objects directly and then register them with `fig.add()`,
+which is handy when building nodes in a loop or helper function.
+
+Note that when drawing the arrow, we can either reference the node with the node instance (`n1`) or its label (`node1`).
+
+```{python}
+fig2 = TikzFigure()
+
+n1 = Node(
+    0, 0, label="node1", shape="circle", color="white", fill="blue", content="Hello!"
+)
+n2 = Node(5, 0, label="node2", shape="circle", color="white", fill="red", content="Hi!")
+
+fig2.add([n1, n2])
+# Note that we can use the node labels to refer to them when drawing edges
+fig2.draw(["node1", n2], options=["<-"], line_width=2, color="gray")
+
+fig2.show()
+```
+
+## A simple directed graph
+
+Here we place four nodes and connect them with arrows.
+`bend_left` curves the arrow — positive values bend it left relative to the direction of travel.
+
+```{python}
+fig = TikzFigure()
+
+A = fig.add_node(0, 2, label="A", content="A", shape="circle", fill="cyan!40")
+B = fig.add_node(3, 2, label="B", content="B", shape="circle", fill="cyan!40")
+C = fig.add_node(0, 0, label="C", content="C", shape="circle", fill="cyan!40")
+D = fig.add_node(3, 0, label="D", content="D", shape="circle", fill="cyan!40")
+
+fig.draw([A, B], options=["->"])
+fig.draw([A, C], options=["->"])
+fig.draw([B, D], options=["->"])
+fig.draw([C, D], options=["->"])
+fig.draw([A, D], options=["->", "dashed"], bend_left=20, color="gray")
+
+fig.show()
+```
+
+## Saving to disk
+
+`savefig()` compiles the figure and writes a PDF or rasterised image (PNG/JPG).
+The format is determined by the file extension.
+
+```{python}
+# fig.savefig("graph.pdf")
+# fig.savefig("graph.png")
+```

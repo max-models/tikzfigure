@@ -87,6 +87,8 @@ class TikzFigure:
 
             current_layer = 0
             for line in lines[1:-1]:
+                # Collapse multiple spaces to a single space for robust parsing
+                line = re.sub(r" +", " ", line)
                 # print(line)
 
                 # Match \begin{pgfonlayer}{layer}

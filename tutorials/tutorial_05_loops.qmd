@@ -1,0 +1,67 @@
+---
+title: "Tutorial 5 — Loops"
+jupyter: python3
+---
+
+Repetitive structures (grids, chains, matrices of nodes) can be created with Python
+loops that call `add_node` / `draw` many times. But tikzpics also supports
+**native TikZ `\\foreach` loops** via `fig.add_loop()`, which embeds the loop in the
+generated LaTeX instead of unrolling it in Python.
+
+Benefits of TikZ loops:
+- the generated `.tex` file is much shorter
+- loop variable values are available as TikZ expressions (e.g. `\\i`) at compile time
+- loops can be nested
+
+This tutorial covers:
+- a simple row of nodes
+- a nested loop to build a grid
+- combining loops with paths for a network diagram
+
+```{python}
+from tikzpics import TikzFigure
+```
+
+## Basic loop: a row of circles
+
+`fig.add_loop(var, iterable)` returns a context manager. Inside the `with` block,
+use `loop.add_node()` and `loop.add_path()`. The loop variable `\\i` (or whatever
+name you choose) is available in any string passed as a coordinate or option.
+
+```{python}
+fig = TikzFigure()
+
+with fig.add_loop("i", range(6), comment="Row of circles") as loop:
+    loop.add_node(
+        x=r"2*\i",
+        y=0,
+        shape="circle",
+        fill="blue!40",
+        content=r"\i",
+        minimum_size="0.8cm",
+    )
+
+fig.show()
+```
+
+## Nested loops: a grid of nodes
+
+Use a second `loop.add_loop()` inside the first to create a 2-D grid.
+The inner loop variable `\\j` is independent of the outer `\\i`.
+
+```{python}
+fig = TikzFigure()
+
+with fig.add_loop("i", range(5)) as loop_i:
+    with loop_i.add_loop("j", range(4)) as loop_j:
+        loop_j.add_node(
+            x=r"2*\i",
+            y=r"2*\j",
+            shape="rectangle",
+            fill="orange!30",
+            content=r"\i,\j",
+            minimum_size="0.9cm",
+        )
+
+fig.show()
+```
