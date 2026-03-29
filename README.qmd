@@ -30,8 +30,8 @@ from tikzpics import TikzFigure
 
 fig = TikzFigure()
 
-n1 = fig.add_node(0, 0, shape="circle", color="white", fill="blue", content="Tikz")
-n2 = fig.add_node(2, 0, shape="circle", color="white", fill="red", content="Pics")
+n1 = fig.add_node(0, 0, shape="circle", color="white", fill="blue!40!green", content="Tikz")
+n2 = fig.add_node(2, 0, shape="circle", color="white", fill="purple!40!orange", content="Pics")
 
 fig.draw([n1, n2], options=["->", "line width=2"], color="gray")
 

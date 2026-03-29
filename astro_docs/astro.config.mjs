@@ -15,6 +15,7 @@ export default defineConfig({
   integrations: [
     starlight({
       title: "tikzpics",
+      logo: { src: "./src/assets/logo.png", replacesTitle: true },
       customCss: ["katex/dist/katex.min.css"],
       social: [
         {

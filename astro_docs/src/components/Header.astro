@@ -1,0 +1,112 @@
+---
+// Custom Header — extends Starlight's default with a secondary tab nav.
+import config from 'virtual:starlight/user-config';
+import LanguageSelect from 'virtual:starlight/components/LanguageSelect';
+import Search from 'virtual:starlight/components/Search';
+import SiteTitle from 'virtual:starlight/components/SiteTitle';
+import SocialIcons from 'virtual:starlight/components/SocialIcons';
+import ThemeSelect from 'virtual:starlight/components/ThemeSelect';
+
+const shouldRenderSearch =
+  config.pagefind ||
+  config.components.Search !== '@astrojs/starlight/components/Search.astro';
+
+const tabs = [
+  { label: 'Home',         href: '/tikzpics/' },
+  { label: 'Installation', href: '/tikzpics/installation/' },
+  { label: 'Tutorials',    href: '/tikzpics/tutorials/tutorial_01_getting_started/' },
+  { label: 'API Reference',href: '/tikzpics/api/' },
+];
+
+const path = Astro.url.pathname;
+
+function isActive(href: string) {
+  if (href === '/tikzpics/' || href === '/tikzpics') {
+    return path === '/tikzpics/' || path === '/tikzpics';
+  }
+  return path.startsWith(href.replace(/\/$/, ''));
+}
+---
+
+<!-- ── Main bar (identical to Starlight's default Header.astro) ── -->
+<div class="title-wrapper sl-flex">
+  <SiteTitle />
+</div>
+<div class="sl-flex print:hidden">
+  {shouldRenderSearch && <Search />}
+</div>
+<div class="sl-hidden md:sl-flex print:hidden right-group">
+  <div class="sl-flex social-icons">
+    <SocialIcons />
+  </div>
+  <ThemeSelect />
+  <LanguageSelect />
+</div>
+
+<!-- ── Secondary tab nav (fixed below the main bar) ── -->
+<nav class="site-tabs print:hidden" aria-label="Site sections">
+  {tabs.map(({ label, href }) => (
+    <a
+      href={href}
+      class:list={['site-tab', { 'is-active': isActive(href) }]}
+      aria-current={isActive(href) ? 'page' : undefined}
+    >
+      {label}
+    </a>
+  ))}
+</nav>
+
+<style>
+  /* Styles from the default Header.astro that we now own */
+  .title-wrapper {
+    overflow: clip;
+    padding: 0.25rem;
+    margin: -0.25rem;
+    min-width: 0;
+  }
+  .right-group,
+  .social-icons {
+    gap: 1rem;
+    align-items: center;
+  }
+  .social-icons::after {
+    content: '';
+    height: 2rem;
+    border-inline-end: 1px solid var(--sl-color-gray-5);
+  }
+
+  /* Tab bar */
+  .site-tabs {
+    position: fixed;
+    top: 3.5rem; /* default --sl-nav-height */
+    inset-inline: 0;
+    z-index: calc(var(--sl-z-index-navbar) - 1);
+    display: flex;
+    padding-inline: var(--sl-nav-pad-x);
+    background: var(--sl-color-bg-nav);
+    border-bottom: 1px solid var(--sl-color-hairline-shade);
+    height: 2.25rem;
+  }
+
+  .site-tab {
+    display: flex;
+    align-items: center;
+    padding-inline: 1rem;
+    font-size: var(--sl-text-sm);
+    font-weight: 500;
+    color: var(--sl-color-gray-2);
+    text-decoration: none;
+    border-bottom: 2px solid transparent;
+    white-space: nowrap;
+    transition: color 150ms, border-color 150ms;
+  }
+
+  .site-tab:hover {
+    color: var(--sl-color-white);
+  }
+
+  .site-tab.is-active {
+    color: var(--sl-color-white);
+    border-bottom-color: var(--sl-color-accent);
+  }
+</style>

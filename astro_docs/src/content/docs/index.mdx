@@ -1,7 +1,6 @@
 ---
 title: tikzpics
 description: A Python library to generate readable TikZ figures
-template: splash
 hero:
   tagline: Build TikZ figures programmatically with Python
   actions:
@@ -14,25 +13,37 @@ hero:
       variant: minimal
 ---
 
-import { Card, CardGrid } from "@astrojs/starlight/components";
+import { Card, CardGrid, Tabs, TabItem } from "@astrojs/starlight/components";
 
-## Quick start
+# Quickstart
+
+**Requirements:** Python 3.9+, a LaTeX distribution with `pdflatex`
+
+```bash
+pip install tikzpics
+```
 
 ```python
-from tikzpics import TikzFigure, Node
+from tikzpics import TikzFigure
 
 fig = TikzFigure()
-a = fig.add_node(Node(0, 0, content="A"))
-b = fig.add_node(Node(2, 0, content="B"))
-fig.draw(a, b, arrow="->")
+a = fig.add_node(0,  0, content="A", shape="circle", fill="cyan!40", minimum_size="1cm")
+b = fig.add_node(3,  0, content="B", shape="circle", fill="cyan!40", minimum_size="1cm")
+c = fig.add_node(0, -2, content="C", shape="circle", fill="cyan!40", minimum_size="1cm")
+
+fig.draw([a, b], arrows="->")
+fig.draw([b, c], arrows="->")
+
 fig.show()
 ```
 
-## Features
+![Quickstart output](/tikzpics/quickstart/output.png)
+
+{/* ## Features
 
 <CardGrid stagger>
   <Card title="Python API" icon="pencil">
-    Build TikZ figures via a clean Python API - no LaTeX knowledge required.
+    Build TikZ figures via a clean Python API — no LaTeX knowledge required.
   </Card>
   <Card title="Multiple export formats" icon="document">
     Export to LaTeX source, PDF, PNG, or JPG.
@@ -49,4 +60,4 @@ fig.show()
   <Card title="Readable output" icon="open-book">
     Inspectable, human-readable LaTeX output.
   </Card>
-</CardGrid>
+</CardGrid> */}
