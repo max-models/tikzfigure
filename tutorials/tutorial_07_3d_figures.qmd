@@ -119,9 +119,11 @@ fig.show(width=500)
 A $(p, q)$ torus knot winds $p$ times around the torus in the longitudinal direction
 and $q$ times in the meridional direction. The parametric equations are:
 
-$$x(t) = (R + r\cos(qt))\cos(pt), \quad
+$$
+  x(t) = (R + r\cos(qt))\cos(pt), \quad
   y(t) = (R + r\cos(qt))\sin(pt), \quad
-  z(t) = r\sin(qt)$$
+  z(t) = r\sin(qt)
+$$
 
 With $p=2, q=3$ we get the **trefoil knot** - the simplest non-trivial knot.
 Increasing $p$ and $q$ produces more complex knots; try $(3, 5)$ or $(4, 7)$.
