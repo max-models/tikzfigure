@@ -27,44 +27,57 @@ fig = TikzFigure(
 ### Methods
 
 #### `add_node(node) → Node`
+
 Add a `Node` to the figure. Returns the node (for use in subsequent `draw()` calls).
 
 #### `draw(*nodes_or_coords, **options)`
+
 Draw a path between nodes or coordinates.
 
 Common options: `arrow` (`"->"`, `"<-"`, `"<->"`, etc.), `color`, `line_width`, `dashed`, `dotted`, `bend_left`, `bend_right`.
 
 #### `filldraw(*nodes_or_coords, **options)`
+
 Draw and fill a closed path.
 
 #### `add_loop(loop)`
+
 Add a `Loop` object to the figure.
 
 #### `add_raw(tikz_str, layer=0)`
+
 Insert a raw TikZ string directly.
 
 #### `add_variable(name, value)`
+
 Define a TikZ `\def` variable.
 
 #### `colorlet(name, color)`
+
 Define a named color via `\colorlet`.
 
 #### `generate_tikz() → str`
+
 Return the full TikZ/LaTeX source string.
 
 #### `compile_pdf(output_path)`
+
 Compile the figure to a PDF file using `pdflatex`.
 
 #### `savefig(path, dpi=150)`
+
 Save the figure as PNG or JPG (compiles to PDF first, then converts via `pymupdf`).
 
 #### `show(dpi=150)`
+
 Display the figure inline (Jupyter) or open it (terminal).
 
 #### `plot3d(x, y, z, **options)`
+
 Add a 3D surface or line plot via `pgfplots`.
 
-#### `from_tikz_code(tikz_code) → TikzFigure` *(class method)*
+#### `from_tikz_code(tikz_code) → TikzFigure` _(class method)_
+
 Parse an existing TikZ code string and return a `TikzFigure`.
 
 ---
@@ -118,4 +131,5 @@ node = Node(
 ```
 
 ### `to_tikz() → str`
+
 Return the TikZ `\node` string for this node.
