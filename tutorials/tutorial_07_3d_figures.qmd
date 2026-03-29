@@ -66,7 +66,9 @@ fig.show(width=400)
 
 The Lorenz system is the ODE, based on [this example](https://github.com/ltrujello/Tikz-Python/blob/main/examples/lorenz/lorenz.py):
 
-$$\dot x = \sigma(y - x), \quad \dot y = x(\rho - z) - y, \quad \dot z = xy - \beta z$$
+$$
+\dot x = \sigma(y - x), \quad \dot y = x(\rho - z) - y, \quad \dot z = xy - \beta z
+$$
 
 with $\sigma = 10$, $\rho = 28$, $\beta = 8/3$. Small differences in initial
 conditions lead to wildly different trajectories - the butterfly effect.
