@@ -1,5 +1,5 @@
 ---
-title: "Tutorial 10 (Advanced) - 2026 Calendar"
+title: "Tutorial 10 - 2026 Calendar"
 jupyter: python3
 ---
 

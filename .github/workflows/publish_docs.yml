@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - devel
-      - cleanup-of-docs
   workflow_dispatch:
 
 permissions:
