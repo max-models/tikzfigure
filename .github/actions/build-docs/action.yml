@@ -29,20 +29,10 @@ runs:
       shell: bash
       run: python astro_docs/scripts/build_tutorials.py
 
-    - name: Set up Node.js
-      uses: actions/setup-node@v4
+    - name: Build and upload site
+      uses: withastro/action@v5
       with:
-        node-version: "lts/*"
-
-    - name: Install Node.js dependencies
-      shell: bash
-      working-directory: astro_docs
-      run: npm ci
-
-    - name: Build Astro/Starlight site
-      shell: bash
-      working-directory: astro_docs
-      run: npm run build
+        path: astro_docs
 
     - name: Rebuild without base path for local artifact inspection
       shell: bash
