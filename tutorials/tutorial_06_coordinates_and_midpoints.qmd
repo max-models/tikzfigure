@@ -40,7 +40,6 @@ mid = fig.midpoint(
 fig.draw([n1, n2], options=["dashed", "gray"])
 
 fig.show()
-print(f"Midpoint: ({mid.x}, {mid.y})")
 ```
 
 ## Using label strings
