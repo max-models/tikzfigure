@@ -5,10 +5,12 @@ Run from anywhere:
     python astro_docs/scripts/build_tutorials.py
 """
 
+import os
 import re
 import shutil
 import subprocess
 import tempfile
+from multiprocessing import Pool
 from pathlib import Path
 
 ASTRO_ROOT = Path(__file__).resolve().parent.parent
@@ -92,19 +94,29 @@ def process_qmd(qmd_path: Path) -> None:
     print(f"Rendering {qmd_path.name} ...")
     with tempfile.TemporaryDirectory() as tmp:
         tmp_dir = Path(tmp)
+        # Copy the .qmd into its own isolated directory so concurrent Quarto
+        # instances don't collide on project-level temp files in the source dir.
+        work_dir = tmp_dir / "src"
+        work_dir.mkdir()
+        work_qmd = work_dir / qmd_path.name
+        shutil.copy2(qmd_path, work_qmd)
+        out_dir = tmp_dir / "out"
+        out_dir.mkdir()
+        env = {**os.environ, "TMPDIR": tmp}
         subprocess.run(
             [
                 "quarto",
                 "render",
-                str(qmd_path),
+                str(work_qmd),
                 "--to",
                 "gfm",
                 "--output-dir",
-                str(tmp_dir),
+                str(out_dir),
             ],
             check=True,
+            env=env,
         )
-        md_file = tmp_dir / f"{name}.md"
+        md_file = out_dir / f"{name}.md"
         if not md_file.exists():
             print(f"  Warning: expected {md_file.name}, skipping")
             return
@@ -112,7 +124,7 @@ def process_qmd(qmd_path: Path) -> None:
         content = md_file.read_text(encoding="utf-8")
         title = extract_title(content, name)
         body = fix_image_paths(strip_frontmatter(content), name)
-        copy_assets(tmp_dir / f"{name}_files", name)
+        copy_assets(out_dir / f"{name}_files", name)
 
     write_content(title, body, CONTENT_DST / f"{name}.md")
 
@@ -152,12 +164,16 @@ def main() -> None:
     CONTENT_DST.mkdir(parents=True, exist_ok=True)
     PUBLIC_DST.mkdir(parents=True, exist_ok=True)
 
-    for qmd in sorted(TUTORIALS_SRC.glob("*.qmd")):
-        process_qmd(qmd)
+    qmds = sorted(TUTORIALS_SRC.glob("*.qmd"))
+    nbs = sorted(
+        nb
+        for nb in TUTORIALS_SRC.glob("*.ipynb")
+        if ".ipynb_checkpoints" not in nb.parts
+    )
 
-    for nb in sorted(TUTORIALS_SRC.glob("*.ipynb")):
-        if ".ipynb_checkpoints" not in nb.parts:
-            process_notebook(nb)
+    with Pool() as pool:
+        pool.map(process_qmd, qmds)
+        pool.map(process_notebook, nbs)
 
     print("Done.")
 
