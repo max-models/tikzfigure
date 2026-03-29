@@ -1,5 +1,5 @@
 ---
-title: "Tutorial 7 - 3D Figures"
+title: "3D Figures"
 jupyter: python3
 ---
 

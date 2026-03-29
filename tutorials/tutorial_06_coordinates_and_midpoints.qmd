@@ -1,5 +1,5 @@
 ---
-title: "Tutorial 6 - Coordinates and Midpoints"
+title: "Coordinates and Midpoints"
 jupyter: python3
 ---
 

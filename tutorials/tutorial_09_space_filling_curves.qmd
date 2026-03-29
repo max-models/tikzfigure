@@ -1,5 +1,5 @@
 ---
-title: "Tutorial 9 - Space-Filling Curves"
+title: "Example: Space-Filling Curves"
 jupyter: python3
 ---
 
