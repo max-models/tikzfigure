@@ -1,5 +1,5 @@
 ---
-title: "Tutorial 6 - Coordinates and Midpoints"
+title: "Coordinates and Midpoints"
 jupyter: python3
 ---
 
@@ -40,7 +40,6 @@ mid = fig.midpoint(
 fig.draw([n1, n2], options=["dashed", "gray"])
 
 fig.show()
-print(f"Midpoint: ({mid.x}, {mid.y})")
 ```
 
 ## Using label strings
@@ -170,6 +169,4 @@ centroid = fig.midpoint(
 )
 
 fig.show()
-print(f"Centroid: ({centroid.x}, {centroid.y})")
-print(f"Expected: ({(0 + 6 + 2) / 3}, {(0 + 0 + 4) / 3})")
 ```

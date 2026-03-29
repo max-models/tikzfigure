@@ -1,0 +1,4 @@
+/* Expand the nav height to include the secondary tab bar (2.25rem) */
+:root {
+  --sl-nav-height: 5.75rem;
+}
