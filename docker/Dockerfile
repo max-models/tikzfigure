@@ -1,8 +1,8 @@
 # Build and push:
 #   docker buildx build --platform linux/amd64 \
-#     -t ghcr.io/max-models/tikzfigure/texlive-quarto:latest --push docker/
+#     -t ghcr.io/max-models/tikzpics/texlive-quarto:latest --push docker/
 #
-# Run:  docker run --rm ghcr.io/max-models/tikzfigure/texlive-quarto:latest
+# Run:  docker run --rm ghcr.io/max-models/tikzpics/texlive-quarto:latest
 
 FROM texlive/texlive:latest
 
