@@ -1,4 +1,5 @@
 from IPython.core.magic import Magics, cell_magic, line_magic, magics_class
+
 from tikzfigure.core.figure import TikzFigure
 
 

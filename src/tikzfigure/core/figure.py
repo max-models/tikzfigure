@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any
 
 import fitz
+
 from tikzfigure.core.base import TikzObject
 from tikzfigure.core.color import Color
 from tikzfigure.core.coordinate import TikzCoordinate

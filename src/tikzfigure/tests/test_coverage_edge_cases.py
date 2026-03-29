@@ -5,6 +5,7 @@ import tempfile
 from unittest.mock import MagicMock, patch
 
 import pytest
+
 from tikzfigure import TikzFigure
 
 
@@ -162,6 +163,7 @@ class TestIPythonMagicExceptionHandling:
             import tempfile
 
             from IPython.core.interactiveshell import InteractiveShell
+
             from tikzfigure.core.ipython import TikzMagics
 
             # Try to get or create an IPython shell

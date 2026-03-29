@@ -7,6 +7,7 @@ import sys
 from types import ModuleType
 
 import pytest
+
 from tikzfigure.core.base import TikzObject
 from tikzfigure.core.color import Color
 from tikzfigure.core.coordinate import TikzCoordinate
