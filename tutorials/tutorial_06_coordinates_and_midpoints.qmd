@@ -169,6 +169,4 @@ centroid = fig.midpoint(
 )
 
 fig.show()
-print(f"Centroid: ({centroid.x}, {centroid.y})")
-print(f"Expected: ({(0 + 6 + 2) / 3}, {(0 + 0 + 4) / 3})")
 ```
