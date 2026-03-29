@@ -1,7 +1,7 @@
 from typing import Any
 
-from tikzpics.core.coordinate import TikzCoordinate
-from tikzpics.core.path import TikzPath
+from tikzfigure.core.coordinate import TikzCoordinate
+from tikzfigure.core.path import TikzPath
 
 
 class Plot3D(TikzPath):

@@ -12,17 +12,17 @@ const shouldRenderSearch =
   config.components.Search !== '@astrojs/starlight/components/Search.astro';
 
 const tabs = [
-  { label: 'Home',         href: '/tikzpics/' },
-  { label: 'Installation', href: '/tikzpics/installation/' },
-  { label: 'Tutorials',    href: '/tikzpics/tutorials/tutorial_01_getting_started/' },
-  { label: 'API Reference',href: '/tikzpics/api/' },
+  { label: 'Home',         href: '/tikzfigure/' },
+  { label: 'Installation', href: '/tikzfigure/installation/' },
+  { label: 'Tutorials',    href: '/tikzfigure/tutorials/tutorial_01_getting_started/' },
+  { label: 'API Reference',href: '/tikzfigure/api/' },
 ];
 
 const path = Astro.url.pathname;
 
 function isActive(href: string) {
-  if (href === '/tikzpics/' || href === '/tikzpics') {
-    return path === '/tikzpics/' || path === '/tikzpics';
+  if (href === '/tikzfigure/' || href === '/tikzfigure') {
+    return path === '/tikzfigure/' || path === '/tikzfigure';
   }
   return path.startsWith(href.replace(/\/$/, ''));
 }

@@ -7,7 +7,7 @@ Run from anywhere:
 
 from pathlib import Path
 
-from tikzpics import TikzFigure
+from tikzfigure import TikzFigure
 
 OUT = Path(__file__).resolve().parent.parent / "public" / "quickstart" / "output.png"
 OUT.parent.mkdir(parents=True, exist_ok=True)

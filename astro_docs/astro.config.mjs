@@ -6,22 +6,22 @@ import rehypeKatex from "rehype-katex";
 
 // https://astro.build/config
 export default defineConfig({
-  site: "https://max-models.github.io/tikzpics",
-  base: "/tikzpics",
+  site: "https://max-models.github.io/tikzfigure",
+  base: "/tikzfigure",
   markdown: {
     remarkPlugins: [remarkMath],
     rehypePlugins: [rehypeKatex],
   },
   integrations: [
     starlight({
-      title: "tikzpics",
+      title: "tikzfigure",
       logo: { src: "./src/assets/logo.png", replacesTitle: true },
       customCss: ["katex/dist/katex.min.css"],
       social: [
         {
           icon: "github",
           label: "GitHub",
-          href: "https://github.com/max-models/tikzpics",
+          href: "https://github.com/max-models/tikzfigure",
         },
       ],
       sidebar: [

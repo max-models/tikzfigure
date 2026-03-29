@@ -3,7 +3,7 @@ title: "Raw TikZ"
 jupyter: python3
 ---
 
-tikzpics covers the most common TikZ operations through its Python API, but TikZ is
+tikzfigure covers the most common TikZ operations through its Python API, but TikZ is
 a vast language. `fig.add_raw(string)` injects an arbitrary LaTeX/TikZ snippet
 directly into the generated code - giving you a full escape hatch.
 
@@ -20,7 +20,7 @@ This tutorial covers:
 ```{python}
 import math
 
-from tikzpics import TikzFigure
+from tikzfigure import TikzFigure
 ```
 
 ## Basic raw insertion

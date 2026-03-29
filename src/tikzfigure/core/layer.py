@@ -1,5 +1,5 @@
-from tikzpics.core.node import Node
-from tikzpics.core.path import TikzPath
+from tikzfigure.core.node import Node
+from tikzfigure.core.path import TikzPath
 
 
 class Tikzlayer:

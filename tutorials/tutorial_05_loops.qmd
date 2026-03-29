@@ -4,7 +4,7 @@ jupyter: python3
 ---
 
 Repetitive structures (grids, chains, matrices of nodes) can be created with Python
-loops that call `add_node` / `draw` many times. But tikzpics also supports
+loops that call `add_node` / `draw` many times. But tikzfigure also supports
 **native TikZ `\\foreach` loops** via `fig.add_loop()`, which embeds the loop in the
 generated LaTeX instead of unrolling it in Python.
 
@@ -19,7 +19,7 @@ This tutorial covers:
 - combining loops with paths for a network diagram
 
 ```{python}
-from tikzpics import TikzFigure
+from tikzfigure import TikzFigure
 ```
 
 ## Basic loop: a row of circles

@@ -1,6 +1,6 @@
 from IPython.core.magic import Magics, cell_magic, line_magic, magics_class
 
-from tikzpics.core.figure import TikzFigure
+from tikzfigure.core.figure import TikzFigure
 
 
 @magics_class

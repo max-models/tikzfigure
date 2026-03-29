@@ -3,7 +3,7 @@ title: "Styling: Colors, Shapes, and Line Styles"
 jupyter: python3
 ---
 
-This tutorial explores the visual styling options available in tikzpics:
+This tutorial explores the visual styling options available in tikzfigure:
 - node shapes
 - colors and color mixing
 - line styles and widths
@@ -11,7 +11,7 @@ This tutorial explores the visual styling options available in tikzpics:
 - node anchors
 
 ```{python}
-from tikzpics import TikzFigure
+from tikzfigure import TikzFigure
 ```
 
 ## Node shapes

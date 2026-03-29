@@ -1,8 +1,8 @@
 from typing import Any
 
-from tikzpics.core.base import TikzObject
-from tikzpics.core.coordinate import TikzCoordinate
-from tikzpics.core.node import Node
+from tikzfigure.core.base import TikzObject
+from tikzfigure.core.coordinate import TikzCoordinate
+from tikzfigure.core.node import Node
 
 
 class TikzPath(TikzObject):

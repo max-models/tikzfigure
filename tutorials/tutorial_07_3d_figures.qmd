@@ -3,7 +3,7 @@ title: "3D Figures"
 jupyter: python3
 ---
 
-tikzpics supports 3-D plots via `fig.plot3d(xvec, yvec, zvec)`. Pass
+tikzfigure supports 3-D plots via `fig.plot3d(xvec, yvec, zvec)`. Pass
 `ndim=3` when creating the figure to switch to pgfplots' `\begin{axis}` environment
 with a default perspective of `view={20}{30}`.
 
@@ -23,7 +23,7 @@ This tutorial covers:
 import numpy as np
 from scipy.integrate import odeint
 
-from tikzpics import TikzFigure
+from tikzfigure import TikzFigure
 ```
 
 ## A simple 3-D helix

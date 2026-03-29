@@ -3,8 +3,8 @@ title: "Getting Started"
 jupyter: python3
 ---
 
-**tikzpics** is a Python library for building TikZ (LaTeX) figures programmatically.
-You describe your drawing with Python objects and method calls; tikzpics turns them into
+**tikzfigure** is a Python library for building TikZ (LaTeX) figures programmatically.
+You describe your drawing with Python objects and method calls; tikzfigure turns them into
 LaTeX/TikZ code that can be compiled to PDF or rendered to PNG.
 
 This first tutorial covers the absolute basics:
@@ -16,7 +16,7 @@ This first tutorial covers the absolute basics:
 - inspecting the generated TikZ code
 
 ```{python}
-from tikzpics import Node, TikzFigure
+from tikzfigure import Node, TikzFigure
 ```
 
 ## Your first figure

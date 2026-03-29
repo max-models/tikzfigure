@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate the tikzpics logo (simple node graph) using the library itself.
+"""Generate the tikzfigure logo (simple node graph) using the library itself.
 
 Run from root of the repository with:
     python astro_docs/scripts/generate_logo2.py
@@ -7,7 +7,7 @@ Run from root of the repository with:
 
 from pathlib import Path
 
-from tikzpics import TikzFigure
+from tikzfigure import TikzFigure
 
 OUT = Path(__file__).resolve().parent.parent / "src" / "assets" / "logo.png"
 

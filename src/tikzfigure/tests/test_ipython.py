@@ -33,14 +33,14 @@ def ip(session_ip):
     yield session_ip
     # Clean up any loaded extensions
     try:
-        session_ip.run_line_magic("unload_ext", "tikzpics")
+        session_ip.run_line_magic("unload_ext", "tikzfigure")
     except Exception:
         pass
 
 
 def test_load_extension(ip):
     """Test that the extension loads without errors."""
-    ip.run_line_magic("load_ext", "tikzpics")
+    ip.run_line_magic("load_ext", "tikzfigure")
 
     # Check that the magic commands are registered
     assert "tikz" in ip.magics_manager.magics["cell"]
@@ -49,7 +49,7 @@ def test_load_extension(ip):
 
 def test_tikz_magic_simple(ip):
     """Test basic tikz magic with simple figure."""
-    ip.run_line_magic("load_ext", "tikzpics")
+    ip.run_line_magic("load_ext", "tikzfigure")
 
     tikz_code = r"""
 \begin{tikzpicture}
@@ -66,7 +66,7 @@ def test_tikz_magic_simple(ip):
 
 def test_tikz_magic_with_save(ip, tmp_path):
     """Test tikz magic with save option."""
-    ip.run_line_magic("load_ext", "tikzpics")
+    ip.run_line_magic("load_ext", "tikzfigure")
 
     tikz_code = r"""
 \begin{tikzpicture}
@@ -86,7 +86,7 @@ def test_tikz_magic_with_save(ip, tmp_path):
 
 def test_tikz_magic_with_pdf_save(ip, tmp_path):
     """Test tikz magic saving to PDF."""
-    ip.run_line_magic("load_ext", "tikzpics")
+    ip.run_line_magic("load_ext", "tikzfigure")
 
     tikz_code = r"""
 \begin{tikzpicture}
@@ -106,7 +106,7 @@ def test_tikz_magic_with_pdf_save(ip, tmp_path):
 
 def test_tikz_load_magic(ip, tmp_path):
     """Test tikz_load magic command."""
-    ip.run_line_magic("load_ext", "tikzpics")
+    ip.run_line_magic("load_ext", "tikzfigure")
 
     # Create a test tikz file
     tikz_file = tmp_path / "test.tikz"
@@ -126,7 +126,7 @@ def test_tikz_load_magic(ip, tmp_path):
 
 def test_tikz_magic_error_handling(ip):
     """Test that invalid tikz code produces appropriate errors."""
-    ip.run_line_magic("load_ext", "tikzpics")
+    ip.run_line_magic("load_ext", "tikzfigure")
 
     # Invalid tikz code
     invalid_tikz = r"""
@@ -142,10 +142,10 @@ def test_tikz_magic_error_handling(ip):
 
 def test_unload_extension(ip):
     """Test that the extension unloads without errors."""
-    ip.run_line_magic("load_ext", "tikzpics")
+    ip.run_line_magic("load_ext", "tikzfigure")
 
     # Check that magics are loaded
     assert "tikz" in ip.magics_manager.magics["cell"]
     assert "tikz_load" in ip.magics_manager.magics["line"]
 
-    ip.run_line_magic("unload_ext", "tikzpics")
+    ip.run_line_magic("unload_ext", "tikzfigure")

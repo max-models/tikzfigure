@@ -19,4 +19,4 @@ RUN QUARTO_VERSION=$(wget -qO- https://api.github.com/repos/quarto-dev/quarto-cl
     && gdebi --non-interactive "quarto-${QUARTO_VERSION}-linux-${ARCH}.deb" \
     && rm "quarto-${QUARTO_VERSION}-linux-${ARCH}.deb"
 
-LABEL org.opencontainers.image.source https://github.com/max-models/tikzpics
+LABEL org.opencontainers.image.source https://github.com/max-models/tikzfigure

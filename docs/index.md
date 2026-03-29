@@ -1,11 +1,11 @@
-# tikzpics
+# tikzfigure
 
-**tikzpics** is a Python library that provides a programmatic interface to generate readable [TikZ](https://tikz.dev/) (LaTeX) figures. Build figures through a clean Python API, then export to LaTeX, PDF, or PNG/JPG.
+**tikzfigure** is a Python library that provides a programmatic interface to generate readable [TikZ](https://tikz.dev/) (LaTeX) figures. Build figures through a clean Python API, then export to LaTeX, PDF, or PNG/JPG.
 
 ## Quick start
 
 ```python
-from tikzpics import TikzFigure, Node
+from tikzfigure import TikzFigure, Node
 
 fig = TikzFigure()
 a = fig.add_node(Node(0, 0, content="A"))
@@ -25,7 +25,7 @@ fig.show()
 
 ## Links
 
-- [Source code](https://github.com/max-models/tikzpics)
+- [Source code](https://github.com/max-models/tikzfigure)
 - [Installation](installation.md)
 - [Tutorials](tutorials/tutorial_01_getting_started.md)
 - [API Reference](api.md)

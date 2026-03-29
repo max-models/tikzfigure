@@ -1,7 +1,7 @@
 def test_import_app():
-    import tikzpics
+    import tikzfigure
 
-    print(f"app {tikzpics} imported")
+    print(f"app {tikzfigure} imported")
 
 
 if __name__ == "__main__":

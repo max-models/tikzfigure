@@ -8,14 +8,14 @@
 ## Install from PyPI
 
 ```bash
-pip install tikzpics
+pip install tikzfigure
 ```
 
 ## Install for development
 
 ```bash
-git clone https://github.com/max-models/tikzpics.git
-cd tikzpics
+git clone https://github.com/max-models/tikzfigure.git
+cd tikzfigure
 python -m venv env
 source env/bin/activate
 pip install -e ".[dev]"
@@ -25,13 +25,13 @@ pip install -e ".[dev]"
 
 | Extra            | Contents                            |
 | ---------------- | ----------------------------------- |
-| `tikzpics[vis]`  | `matplotlib`, `jupyterlab`          |
-| `tikzpics[docs]` | Documentation build dependencies    |
-| `tikzpics[test]` | `pytest`, `coverage`                |
-| `tikzpics[dev]`  | All of the above plus linting tools |
+| `tikzfigure[vis]`  | `matplotlib`, `jupyterlab`          |
+| `tikzfigure[docs]` | Documentation build dependencies    |
+| `tikzfigure[test]` | `pytest`, `coverage`                |
+| `tikzfigure[dev]`  | All of the above plus linting tools |
 
 ```bash
-pip install "tikzpics[vis]"
+pip install "tikzfigure[vis]"
 ```
 
 ## Jupyter magic
@@ -39,5 +39,5 @@ pip install "tikzpics[vis]"
 To enable the `%%tikz` magic in Jupyter:
 
 ```python
-%load_ext tikzpics.ipython
+%load_ext tikzfigure.ipython
 ```

@@ -8,15 +8,15 @@ from types import ModuleType
 
 import pytest
 
-from tikzpics.core.base import TikzObject
-from tikzpics.core.color import Color
-from tikzpics.core.coordinate import TikzCoordinate
-from tikzpics.core.figure import TikzFigure
-from tikzpics.core.loop import Loop
-from tikzpics.core.node import Node
-from tikzpics.core.path import TikzPath
-from tikzpics.core.plot import Plot3D
-from tikzpics.core.variable import Variable
+from tikzfigure.core.base import TikzObject
+from tikzfigure.core.color import Color
+from tikzfigure.core.coordinate import TikzCoordinate
+from tikzfigure.core.figure import TikzFigure
+from tikzfigure.core.loop import Loop
+from tikzfigure.core.node import Node
+from tikzfigure.core.path import TikzPath
+from tikzfigure.core.plot import Plot3D
+from tikzfigure.core.variable import Variable
 
 
 def test_tikzobject_options_and_comments():
@@ -344,7 +344,7 @@ def test_savefig_tikz_pdf_png_and_invalid(tmp_path, monkeypatch):
     def dummy_open(path):
         return DummyDoc()
 
-    import tikzpics.core.figure as figure_module
+    import tikzfigure.core.figure as figure_module
 
     monkeypatch.setattr(figure_module.fitz, "open", dummy_open)
     fig.savefig(filename=str(png_path), verbose=True)
@@ -356,7 +356,7 @@ def test_savefig_tikz_pdf_png_and_invalid(tmp_path, monkeypatch):
 
 def test_show_suppressed(monkeypatch, capsys):
     fig = TikzFigure()
-    monkeypatch.setenv("TIKZPICS_NO_SHOW", "1")
+    monkeypatch.setenv("tikzfigure_NO_SHOW", "1")
     fig.show(verbose=True)
     captured = capsys.readouterr()
     assert "Display suppressed" in captured.out
@@ -364,7 +364,7 @@ def test_show_suppressed(monkeypatch, capsys):
 
 def test_show_jupyter_branch(monkeypatch):
     fig = TikzFigure()
-    monkeypatch.delenv("TIKZPICS_NO_SHOW", raising=False)
+    monkeypatch.delenv("tikzfigure_NO_SHOW", raising=False)
     monkeypatch.delenv("PYTEST_CURRENT_TEST", raising=False)
 
     class DummyShell:
@@ -397,7 +397,7 @@ def test_show_jupyter_branch(monkeypatch):
 
 def test_show_backends_and_errors(monkeypatch, capsys):
     fig = TikzFigure()
-    monkeypatch.delenv("TIKZPICS_NO_SHOW", raising=False)
+    monkeypatch.delenv("tikzfigure_NO_SHOW", raising=False)
     monkeypatch.delenv("PYTEST_CURRENT_TEST", raising=False)
 
     ipy_module = ModuleType("IPython")
@@ -529,7 +529,7 @@ end \\foreach
 
 def test_ipython_magic_error_paths(monkeypatch, capsys):
     pytest.importorskip("IPython")
-    from tikzpics.core.ipython import TikzMagics
+    from tikzfigure.core.ipython import TikzMagics
 
     magics = TikzMagics(shell=object())
     magics.tikz("--bad", "\\begin{tikzpicture}\\end{tikzpicture}")
@@ -543,7 +543,7 @@ def test_ipython_magic_error_paths(monkeypatch, capsys):
             return None
 
     monkeypatch.setattr(
-        "tikzpics.core.ipython.TikzFigure.from_tikz_code",
+        "tikzfigure.core.ipython.TikzFigure.from_tikz_code",
         lambda _cell: DummyFig(),
     )
     magics.tikz("-s out.pdf -v", "\\begin{tikzpicture}\\end{tikzpicture}")
@@ -553,7 +553,7 @@ def test_ipython_magic_error_paths(monkeypatch, capsys):
         raise ValueError("bad")
 
     monkeypatch.setattr(
-        "tikzpics.core.ipython.TikzFigure.from_tikz_code", raise_from_code
+        "tikzfigure.core.ipython.TikzFigure.from_tikz_code", raise_from_code
     )
     magics.tikz("-v", "bad")
     captured = capsys.readouterr().out
@@ -568,7 +568,7 @@ def test_ipython_magic_error_paths(monkeypatch, capsys):
 
 def test_ipython_extension_hooks():
     pytest.importorskip("IPython")
-    from tikzpics.core.ipython import load_ipython_extension, unload_ipython_extension
+    from tikzfigure.core.ipython import load_ipython_extension, unload_ipython_extension
 
     class DummyIP:
         def __init__(self):
