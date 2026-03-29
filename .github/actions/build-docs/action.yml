@@ -43,3 +43,8 @@ runs:
       shell: bash
       working-directory: astro_docs
       run: npm run build
+
+    - name: Rebuild without base path for local artifact inspection
+      shell: bash
+      working-directory: astro_docs
+      run: npx astro build --base /
