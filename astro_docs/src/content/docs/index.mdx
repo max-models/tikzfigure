@@ -1,7 +1,6 @@
 ---
 title: tikzpics
 description: A Python library to generate readable TikZ figures
-template: splash
 hero:
   tagline: Build TikZ figures programmatically with Python
   actions:
@@ -16,7 +15,11 @@ hero:
 
 import { Card, CardGrid, Tabs, TabItem } from "@astrojs/starlight/components";
 
-## Quick start
+**Requirements:** Python 3.9+, a LaTeX distribution with `pdflatex`
+
+```bash
+pip install tikzpics
+```
 
 ```python
 from tikzpics import TikzFigure
@@ -25,84 +28,14 @@ fig = TikzFigure()
 a = fig.add_node(0,  0, content="A", shape="circle", fill="cyan!40", minimum_size="1cm")
 b = fig.add_node(3,  0, content="B", shape="circle", fill="cyan!40", minimum_size="1cm")
 c = fig.add_node(0, -2, content="C", shape="circle", fill="cyan!40", minimum_size="1cm")
-d = fig.add_node(3, -2, content="D", shape="circle", fill="cyan!40", minimum_size="1cm")
 
 fig.draw([a, b], arrows="->")
-fig.draw([a, c], arrows="->")
-fig.draw([c, d], arrows="->")
-fig.draw([a, d], arrows="->", color="gray", options=["dashed"])
+fig.draw([b, c], arrows="->")
 
 fig.show()
 ```
 
 ![Quickstart output](/tikzpics/quickstart/output.png)
-
----
-
-<Tabs>
-  <TabItem label="Installation">
-    **Requirements:** Python 3.9+, a LaTeX distribution with `pdflatex`
-
-    ```bash
-    pip install tikzpics
-    ```
-
-    [Full installation guide →](/tikzpics/installation/)
-  </TabItem>
-  <TabItem label="Tutorials">
-    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-top: 1rem;">
-      <div>
-        <a href="/tikzpics/tutorials/tutorial_01_getting_started/">
-          <img src="/tikzpics/tutorials/tutorial_01_getting_started/figure-commonmark/cell-6-output-2.png" alt="Connected node graph" />
-        </a>
-        <p style="text-align:center; font-size: 0.85rem;">Nodes &amp; graphs</p>
-      </div>
-      <div>
-        <a href="/tikzpics/tutorials/tutorial_07_3d_figures/">
-          <img src="/tikzpics/tutorials/tutorial_07_3d_figures/figure-commonmark/cell-3-output-1.png" alt="3D helix" />
-        </a>
-        <p style="text-align:center; font-size: 0.85rem;">3D figures</p>
-      </div>
-      <div>
-        <a href="/tikzpics/tutorials/tutorial_09_space_filling_curves/">
-          <img src="/tikzpics/tutorials/tutorial_09_space_filling_curves/figure-commonmark/cell-5-output-1.png" alt="Space-filling curve" />
-        </a>
-        <p style="text-align:center; font-size: 0.85rem;">Space-filling curves</p>
-      </div>
-      <div>
-        <a href="/tikzpics/tutorials/tutorial_10_calendar/">
-          <img src="/tikzpics/tutorials/tutorial_10_calendar/figure-commonmark/cell-7-output-1.png" alt="2026 calendar" />
-        </a>
-        <p style="text-align:center; font-size: 0.85rem;">Complex layouts</p>
-      </div>
-    </div>
-
-    [Browse all tutorials →](/tikzpics/tutorials/tutorial_01_getting_started/)
-  </TabItem>
-  <TabItem label="API Reference">
-    The main entry point is `TikzFigure`:
-
-    ```python
-    from tikzpics import TikzFigure
-
-    fig = TikzFigure()
-
-    # Add nodes
-    n = fig.add_node(x, y, content="...", shape="circle", fill="blue!40")
-
-    # Connect nodes
-    fig.draw([n1, n2], arrows="->", color="gray")
-
-    # Export
-    fig.savefig("output.pdf")   # or .png, .tikz
-    fig.show()                  # display inline (Jupyter)
-    ```
-
-    [Full API reference →](/tikzpics/api/)
-  </TabItem>
-</Tabs>
-
----
 
 ## Features
 
