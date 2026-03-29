@@ -188,3 +188,6 @@ junit/
 *.tikz
 # *.png
 *.jpg
+
+# Outputs
+tutorials/*_files/
