@@ -5,6 +5,7 @@ Run from anywhere:
     python astro_docs/scripts/build_tutorials.py
 """
 
+import argparse
 import os
 import re
 import shutil
@@ -161,6 +162,12 @@ def process_notebook(nb_path: Path) -> None:
 
 
 def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--serial", action="store_true", help="Process tutorials one at a time"
+    )
+    args = parser.parse_args()
+
     CONTENT_DST.mkdir(parents=True, exist_ok=True)
     PUBLIC_DST.mkdir(parents=True, exist_ok=True)
 
@@ -171,9 +178,15 @@ def main() -> None:
         if ".ipynb_checkpoints" not in nb.parts
     )
 
-    with Pool() as pool:
-        pool.map(process_qmd, qmds)
-        pool.map(process_notebook, nbs)
+    if args.serial:
+        for qmd in qmds:
+            process_qmd(qmd)
+        for nb in nbs:
+            process_notebook(nb)
+    else:
+        with Pool() as pool:
+            pool.map(process_qmd, qmds)
+            pool.map(process_notebook, nbs)
 
     print("Done.")
 
