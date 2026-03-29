@@ -15,10 +15,13 @@ defaults:
     shell: bash
 
 jobs:
-  build:
+  test:
     runs-on: ubuntu-latest
     container:
-      image: texlive/texlive:latest
+      image: ghcr.io/max-models/tikzpics/texlive-quarto:latest
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
 
     steps:
       # Checkout the repository
@@ -67,10 +70,12 @@ jobs:
         env:
           CI: true
 
-      - name: Test tutorial notebooks
+      - name: Test tutorials
         run: |
           source env/bin/activate
-          jupyter nbconvert --to notebook --execute tutorials/*.ipynb --output-dir=/tmp --ExecutePreprocessor.timeout=300
+          for qmd in tutorials/*.qmd; do
+            quarto render "$qmd" --to gfm --output-dir /tmp/quarto-test
+          done
 
       - name: Test docs build
         run: |

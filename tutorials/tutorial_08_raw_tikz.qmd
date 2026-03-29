@@ -1,0 +1,184 @@
+---
+title: "Tutorial 8 — Raw TikZ"
+jupyter: python3
+---
+
+tikzpics covers the most common TikZ operations through its Python API, but TikZ is
+a vast language. `fig.add_raw(string)` injects an arbitrary LaTeX/TikZ snippet
+directly into the generated code — giving you a full escape hatch.
+
+A key pattern: create nodes with the Python API (to get auto-generated labels),
+then reference them in raw TikZ commands via `{node.label}`.
+
+This tutorial covers:
+- basic raw insertion
+- flowcharts with decision diamonds
+- mathematical annotations and axis drawing
+- network graphs with curved edges
+- timeline visualizations
+
+```{python}
+import math
+
+from tikzpics import TikzFigure
+```
+
+## Basic raw insertion
+
+Pass any TikZ string to `add_raw`. Node labels created by `add_node` can be
+interpolated into the string.
+
+```{python}
+fig = TikzFigure()
+
+n1 = fig.add_node(0, 0, shape="circle", color="white", fill="blue", content="Hello!")
+n2 = fig.add_node(5, 0, shape="circle", color="white", fill="red", content="Hi!")
+
+# A raw comment
+fig.add_raw("% --- raw TikZ below ---")
+
+# A plain text node at a fixed coordinate
+fig.add_raw("\\node at (2.5, 1.2) {raw TikZ node};")
+
+# A dashed arrow referencing the Python-created node labels
+fig.add_raw(f"\\draw[->, thick, dashed] ({n2.label}) -- ({n1.label});")
+
+fig.show()
+print(fig.generate_tikz())
+```
+
+## Flowchart
+
+Flowcharts need `diamond` decision nodes and labelled arrows — both easy with raw TikZ.
+
+```{python}
+fig = TikzFigure()
+
+start = fig.add_node(2, 4, shape="ellipse", fill="green!30", content="Start")
+process = fig.add_node(2, 2, shape="rectangle", fill="blue!20", content="Process")
+decision = fig.add_node(2, 0, shape="diamond", fill="orange!30", content="Decision?")
+yes_node = fig.add_node(0, -2, shape="rectangle", fill="red!20", content="Action A")
+no_node = fig.add_node(4, -2, shape="rectangle", fill="green!20", content="Action B")
+end = fig.add_node(2, -4, shape="ellipse", fill="red!30", content="End")
+
+fig.add_raw(f"\\draw[->, thick] ({start.label})    -- ({process.label});")
+fig.add_raw(f"\\draw[->, thick] ({process.label})  -- ({decision.label});")
+fig.add_raw(
+    f"\\draw[->, thick] ({decision.label}) -- node[left]  {{Yes}} ({yes_node.label});"
+)
+fig.add_raw(
+    f"\\draw[->, thick] ({decision.label}) -- node[right] {{No}}  ({no_node.label});"
+)
+fig.add_raw(f"\\draw[->, thick] ({yes_node.label}) -- ({end.label});")
+fig.add_raw(f"\\draw[->, thick] ({no_node.label})  -- ({end.label});")
+
+fig.show()
+```
+
+## Mathematical annotations and coordinate axes
+
+Raw TikZ handles axis arrows, tick marks, parabolas, and LaTeX math
+(`$...$`) naturally.
+
+```{python}
+fig = TikzFigure()
+
+p1 = fig.add_node(0, 0, content="")
+p2 = fig.add_node(3, 2, content="")
+p3 = fig.add_node(6, 0, content="")
+
+fig.add_raw(
+    f"\\draw[thick, blue] ({p1.label}) parabola bend ({p2.label}) ({p3.label});"
+)
+fig.add_raw(
+    f"\\draw[->, dashed, red] ({p1.label}) -- ({p2.label}) node[midway, left=40pt] {{$\\Delta y$}};"
+)
+fig.add_raw(
+    f"\\draw[->, dashed, green!50!black] ({p1.label}) -- ({p3.label}) node[midway, below=10pt] {{$\\Delta x$}};"
+)
+fig.add_raw("\\node at (3, 3) {$y = ax^2 + bx + c$};")
+
+fig.add_raw("\\draw[->, thick] (-1, 0) -- (7, 0) node[right] {$x$};")
+fig.add_raw("\\draw[->, thick] (0, -1) -- (0, 3.5) node[above] {$y$};")
+
+for i in range(1, 7):
+    fig.add_raw(f"\\draw ({i}, -0.1) -- ({i}, 0.1) node[below=3pt] {{\\small {i}}};")
+
+fig.show()
+```
+
+## Network graph with curved edges
+
+Nodes placed in a ring with `bend left` edges and some cross-connections.
+
+```{python}
+fig = TikzFigure()
+
+n = 6
+R = 3
+nodes = []
+for i in range(n):
+    angle = 360 / n * i
+    x = R * math.cos(math.radians(angle))
+    y = R * math.sin(math.radians(angle))
+    nodes.append(fig.add_node(x, y, shape="circle", fill="cyan!40", content=f"N{i}"))
+
+# Ring
+for i in range(n):
+    j = (i + 1) % n
+    fig.add_raw(
+        f"\\draw[->, thick, bend left=15] ({nodes[i].label}) edge ({nodes[j].label});"
+    )
+
+# Cross-connections
+fig.add_raw(
+    f"\\draw[->, red,              thick, dashed, bend right=30] ({nodes[0].label}) edge ({nodes[3].label});"
+)
+fig.add_raw(
+    f"\\draw[->, blue,             thick, dotted, bend left=30]  ({nodes[1].label}) edge ({nodes[4].label});"
+)
+fig.add_raw(
+    f"\\draw[->, green!60!black,   thick,         bend right=30] ({nodes[2].label}) edge ({nodes[5].label});"
+)
+
+fig.add_raw("\\node[font=\\Large\\bfseries] at (0, 4.5) {Network Graph};")
+
+fig.show()
+```
+
+## Timeline
+
+A horizontal timeline with event markers, year labels, and bracket annotations.
+
+```{python}
+fig = TikzFigure()
+
+events = [
+    (0, "2020", "Project Start", "blue!30"),
+    (2, "2021", "Alpha Release", "green!30"),
+    (4, "2022", "Beta Release", "yellow!40"),
+    (6, "2023", "v1.0", "orange!40"),
+    (8, "2024", "v2.0", "red!30"),
+]
+
+fig.add_raw("\\draw[->, ultra thick, gray] (-0.5, 0) -- (8.5, 0) node[right] {Time};")
+
+for x, year, label, color in events:
+    event_node = fig.add_node(
+        x,
+        1.2,
+        shape="rectangle",
+        fill=color,
+        content=label,
+        options=["rounded corners=3pt"],
+    )
+    fig.add_raw(f"\\draw[thick] ({x}, 0) -- ({x}, 0.7);")
+    fig.add_raw(f"\\fill ({x}, 0) circle (0.1);")
+    fig.add_raw(f"\\node[below] at ({x}, -0.3) {{\\textbf{{{year}}}}};")
+    fig.add_raw(f"\\draw[->, dashed] ({x}, 0.7) -- ({event_node.label});")
+
+fig.add_raw("\\node[font=\\Large\\bfseries] at (4, 2.5) {Project Timeline};")
+fig.add_raw("\\draw[<->, red, thick] (0, -1) -- node[below] {4 years} (8, -1);")
+
+fig.show()
+```

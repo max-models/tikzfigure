@@ -1,0 +1,124 @@
+---
+title: "Tutorial 4 — Layers"
+jupyter: python3
+---
+
+By default TikZ draws objects in the order they appear in the source, so later objects
+appear on top of earlier ones. tikzpics exposes a **layer** system (backed by
+`pgfonlayer`) that lets you control the stacking order independently of code order.
+
+This tutorial shows:
+- why layers matter
+- how to assign elements to numbered layers
+- a practical example combining filled shapes and curves
+
+```{python}
+import numpy as np
+
+from tikzpics import TikzFigure
+```
+
+## Why layers matter
+
+Without explicit layers, the last drawn element always sits on top. Consider two
+overlapping filled circles: whichever is drawn second covers the first.
+
+```{python}
+theta = np.linspace(0, 2 * np.pi, 80)
+
+# Without layers — drawing order determines visibility
+fig = TikzFigure()
+
+blue_circle = list(zip(np.cos(theta) * 1.5 + 2, np.sin(theta) * 1.5 + 2))
+red_circle = list(zip(np.cos(theta) * 1.5 + 3, np.sin(theta) * 1.5 + 2))
+
+# Blue drawn first → red on top
+fig.draw(blue_circle, cycle=True, fill="blue!40", color="blue", line_width=2)
+fig.draw(red_circle, cycle=True, fill="red!40", color="red", line_width=2)
+
+fig.add_node(2.5, -0.3, content="red on top (default)", draw="none")
+fig.show()
+```
+
+```{python}
+# With layers — blue on layer 2 even though it is drawn first in code
+fig = TikzFigure()
+
+fig.draw(blue_circle, cycle=True, fill="blue!40", color="blue", line_width=2, layer=2)
+fig.draw(red_circle, cycle=True, fill="red!40", color="red", line_width=2, layer=1)
+
+fig.add_node(2.5, -0.3, content="blue on top (layer=2)", draw="none")
+fig.show()
+```
+
+## Letters and a sine wave
+
+A more elaborate example: the letters **M**, **T**, and **L** are filled polygons
+drawn on different layers, with a sine wave winding between them.
+
+- **M** and **T** on layer 0 (background)
+- sine wave on layer 1 (middle)
+- **L** on layer 2 (foreground) — it visually overlaps the wave
+
+```{python}
+fig = TikzFigure()
+
+style = ["draw", "rounded corners=8pt", "line width=6"]
+
+nodes_M = [
+    [0, 0],
+    [0, 3.5],
+    [1, 3.5],
+    [1.25, 2.75],
+    [1.5, 3.5],
+    [2.5, 3.5],
+    [2.5, 0],
+    [2, 0],
+    [2, 2.75],
+    [1.25, 2.0],
+    [0.5, 2.75],
+    [0.5, 0],
+]
+fig.draw(
+    nodes_M, options=style, layer=0, cycle=True, color="purple", fill="purple!50!white"
+)
+
+nodes_T = [
+    [3.125, 0],
+    [3.125, 4],
+    [0, 4],
+    [0, 4.75],
+    [7, 4.75],
+    [7, 4],
+    [3.875, 4],
+    [3.875, 0],
+]
+fig.draw(
+    nodes_T, options=style, layer=0, cycle=True, color="blue", fill="blue!50!white"
+)
+
+nodes_L = [
+    [4.5, 0],
+    [4.5, 3.5],
+    [5.25, 3.5],
+    [5.25, 0.75],
+    [7, 0.75],
+    [7, 0],
+]
+fig.draw(
+    nodes_L, options=style, layer=2, cycle=True, color="purple", fill="purple!50!white"
+)
+
+xvec = np.arange(0, 7, 0.05)
+wave = [(x, np.sin(x) * 0.25 + 1.25) for x in xvec]
+fig.draw(wave, options=style, layer=1, color="black")
+
+fig.show()
+```
+
+Try changing the `layer` values to see how the stacking order changes.
+
+```{python}
+# Inspect generated TikZ to see pgfonlayer declarations
+print(fig.generate_tikz())
+```

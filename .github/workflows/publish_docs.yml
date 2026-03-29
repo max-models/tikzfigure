@@ -18,7 +18,10 @@ jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
     container:
-      image: texlive/texlive:latest
+      image: ghcr.io/max-models/tikzpics/texlive-quarto:latest
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}

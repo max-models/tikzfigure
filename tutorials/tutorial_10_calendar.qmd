@@ -1,0 +1,231 @@
+---
+title: "Tutorial 10 (Advanced) — 2026 Calendar"
+jupyter: python3
+---
+
+This showcase tutorial builds a full A3-style **2026 calendar** combining:
+
+- Python's `calendar` / `datetime` modules for date arithmetic
+- an external REST API ([openholidaysapi.org](https://openholidaysapi.org)) for
+  public-holiday data across multiple countries (Sweden, Germany, France, Lebanon)
+- a nested Python loop that lays out months × days as a grid of filled rectangles
+- conditional cell coloring: white for weekdays, light red for Saturdays, darker red
+  for Sundays, orange for public holidays
+- the LaTeX `worldflags` package for national flag icons
+
+It is a good example of how tikzpics can integrate with external data sources to
+produce publication-quality figures.
+
+> **Note:** The cell that fetches holiday data requires an internet connection.
+> If you are offline, you can skip it and the calendar will still render with
+> weekend highlighting only.
+
+```{python}
+import calendar
+import datetime
+
+import requests
+
+from tikzpics import TikzFigure
+```
+
+## Calendar parameters
+
+All sizing lives in a small set of variables so the layout scales consistently.
+
+```{python}
+calendar_year = 2026
+calendar_width = 100
+calendar_height = 60
+num_months = 12
+month_width = calendar_width / num_months
+day_height = calendar_height / 31
+padding = 0.05
+```
+
+## Fetch public holidays
+
+The [Open Holidays API](https://openholidaysapi.org) provides public holiday data
+for many countries in a simple REST format.
+
+```{python}
+def fetch_holidays(country_code, year):
+    url = (
+        f"https://openholidaysapi.org/PublicHolidays"
+        f"?countryIsoCode={country_code}"
+        f"&validFrom={year}-01-01&validTo={year}-12-31"
+    )
+    return requests.get(url).json()
+
+
+holidays_dict = {
+    "SE": fetch_holidays("SE", calendar_year),
+    "DE": fetch_holidays("DE", calendar_year),
+    "FR": fetch_holidays("FR", calendar_year),
+    "LB": [],  # filled in below from a static list
+}
+
+# Lebanon 2026 public holidays (static fallback)
+lebanon_2026 = {
+    "2026-01-01": "New Year's Day",
+    "2026-02-09": "Saint Maroun's Day",
+    "2026-02-14": "Rafik Hariri Memorial Day",
+    "2026-03-20": "Eid al-Fitr",
+    "2026-03-22": "Arab League Day",
+    "2026-03-25": "Annunciation Day",
+    "2026-04-03": "Good Friday",
+    "2026-04-05": "Easter Sunday",
+    "2026-04-06": "Easter Monday",
+    "2026-05-01": "Labour Day",
+    "2026-05-03": "Martyrs' Day",
+    "2026-05-25": "Resistance and Liberation Day",
+    "2026-05-27": "Eid al-Adha",
+    "2026-06-16": "Islamic New Year",
+    "2026-08-15": "Assumption of Mary",
+    "2026-08-25": "Prophet Muhammad's Birthday",
+    "2026-11-22": "Independence Day",
+    "2026-12-25": "Christmas Day",
+}
+for date, name in sorted(lebanon_2026.items()):
+    holidays_dict["LB"].append({"startDate": date, "name": [{"text": name}]})
+
+print("Holiday counts:", {k: len(v) for k, v in holidays_dict.items()})
+```
+
+## Build the date lookup table
+
+We pre-compute, for every calendar day, whether it is a Saturday / Sunday and
+which countries observe a public holiday on that day.
+
+```{python}
+def date_to_index(year, month, day):
+    return datetime.date(year, month, day).timetuple().tm_yday - 1
+
+
+dates = []
+for month in range(1, num_months + 1):
+    num_days = calendar.monthrange(calendar_year, month)[1]
+    for day in range(1, num_days + 1):
+        d = datetime.date(calendar_year, month, day)
+        dates.append(
+            {
+                "date": d,
+                "is_sunday": d.weekday() == 6,
+                "is_saturday": d.weekday() == 5,
+                "holiday_se": None,
+                "holiday_de": None,
+                "holiday_fr": None,
+                "holiday_lb": None,
+            }
+        )
+
+for country, holidays in holidays_dict.items():
+    for h in holidays:
+        y, mo, d = map(int, h["startDate"].split("-"))
+        idx = date_to_index(y, mo, d)
+        dates[idx][f"holiday_{country.lower()}"] = h["name"][0]["text"]
+```
+
+## Helper functions
+
+Two small functions encapsulate the cell-color and holiday-flag logic.
+
+```{python}
+def get_color(month: int, day: int) -> str:
+    """Return cell background color for the given (0-based) month and day."""
+    info = dates[date_to_index(calendar_year, month + 1, day + 1)]
+    if any(info[f"holiday_{c}"] for c in ["se", "de", "fr", "lb"]):
+        return "orange!95!white"
+    if info["is_sunday"]:
+        return "red!20!white"
+    if info["is_saturday"]:
+        return "red!10!white"
+    return "white"
+
+
+def get_flag_content(month: int, day: int) -> str:
+    """Return LaTeX flag icons for countries with a holiday on this day."""
+    info = dates[date_to_index(calendar_year, month + 1, day + 1)]
+    flags = [
+        f"\\worldflag[width=6mm,length=9mm]{{{c.upper()}}}"
+        for c in ["se", "de", "fr", "lb"]
+        if info[f"holiday_{c}"]
+    ]
+    return "\n".join(flags)
+```
+
+## Render the calendar
+
+We iterate over months (columns) and days (rows), drawing a colored rectangle for
+each cell plus a day-number label and optional flag icons.
+
+```{python}
+document_setup = r"""
+\usepackage{lmodern}
+\renewcommand*\familydefault{\sfdefault}
+"""
+fig = TikzFigure(extra_packages=["worldflags"], document_setup=document_setup)
+
+# Outer border
+border = [
+    (0, 0),
+    (calendar_width, 0),
+    (calendar_width, calendar_height),
+    (0, calendar_height),
+]
+fig.draw(nodes=border, fill="gray!10!white", draw="black", cycle=True)
+
+# Year label
+fig.add_node(
+    x=calendar_width / 2,
+    y=calendar_height * 1.1,
+    anchor="center",
+    scale=10,
+    content=str(calendar_year),
+)
+
+for month in range(num_months):
+    x_center = month * month_width + month_width / 2
+    month_name = calendar.month_name[month + 1]
+
+    # Month header
+    fig.add_node(
+        x=x_center,
+        y=calendar_height * 1.02,
+        anchor="center",
+        scale=4.0,
+        content=month_name,
+    )
+
+    num_days = calendar.monthrange(calendar_year, month + 1)[1]
+    for day in range(num_days):
+        y_center = calendar_height - (day * day_height + day_height / 2)
+        x0 = x_center - month_width / 2 + padding
+        y0 = y_center - day_height / 2 + padding
+
+        cell = [
+            (x0, y0),
+            (x0 + month_width - 2 * padding, y0),
+            (x0 + month_width - 2 * padding, y0 + day_height - 2 * padding),
+            (x0, y0 + day_height - 2 * padding),
+        ]
+        col = get_color(month, day)
+        fig.draw(nodes=cell, fill=col, draw=col, cycle=True)
+
+        # Day number
+        fig.add_node(x=x0, y=y_center, anchor="west", scale=2.0, content=str(day + 1))
+
+        # Flag icons for holidays
+        flags = get_flag_content(month, day)
+        if flags:
+            fig.add_node(
+                x=x0 + month_width - 2 * padding,
+                y=y_center - day_height / 2,
+                anchor="south east",
+                scale=1,
+                content=flags,
+            )
+
+fig.show()
+# fig.savefig("calendar_2026.pdf")
+```
