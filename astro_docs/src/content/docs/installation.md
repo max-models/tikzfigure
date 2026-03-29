@@ -25,12 +25,12 @@ pip install -e ".[dev]"
 
 ## Optional extras
 
-| Extra | Contents |
-|-------|----------|
-| `tikzpics[vis]` | `matplotlib`, `jupyterlab` |
-| `tikzpics[docs]` | Documentation build dependencies |
-| `tikzpics[test]` | `pytest`, `coverage` |
-| `tikzpics[dev]` | All of the above plus linting tools |
+| Extra            | Contents                            |
+| ---------------- | ----------------------------------- |
+| `tikzpics[vis]`  | `matplotlib`, `jupyterlab`          |
+| `tikzpics[docs]` | Documentation build dependencies    |
+| `tikzpics[test]` | `pytest`, `coverage`                |
+| `tikzpics[dev]`  | All of the above plus linting tools |
 
 ```bash
 pip install "tikzpics[vis]"

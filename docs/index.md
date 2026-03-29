@@ -16,7 +16,7 @@ fig.show()
 
 ## Features
 
-- Build TikZ figures via a Python API — no LaTeX knowledge required
+- Build TikZ figures via a Python API - no LaTeX knowledge required
 - Export to LaTeX source, PDF, PNG, or JPG
 - Layer support for z-ordering
 - 3D figure support via `pgfplots`

@@ -1,5 +1,5 @@
 ---
-title: "Tutorial 3 — Paths and Shapes"
+title: "Tutorial 3 - Paths and Shapes"
 jupyter: python3
 ---
 
@@ -25,11 +25,11 @@ Set `cycle=True` to close the path back to the starting point.
 ```{python}
 fig = TikzFigure()
 
-# Open path — a zigzag
+# Open path - a zigzag
 zigzag = [[0, 0], [1, 1], [2, 0], [3, 1], [4, 0]]
 fig.draw(zigzag, line_width=2, color="blue")
 
-# Closed path — a triangle
+# Closed path - a triangle
 triangle = [[6, 0], [8, 0], [7, 1.5]]
 fig.draw(triangle, cycle=True, line_width=2, color="red")
 

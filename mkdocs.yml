@@ -55,17 +55,17 @@ nav:
   - Home: index.md
   - Installation: installation.md
   - Tutorials:
-    - Getting Started: tutorials/tutorial_01_getting_started.md
-    - Styling: tutorials/tutorial_02_styling.md
-    - Paths and Shapes: tutorials/tutorial_03_paths_and_shapes.md
-    - Layers: tutorials/tutorial_04_layers.md
-    - Loops: tutorials/tutorial_05_loops.md
-    - Coordinates and Midpoints: tutorials/tutorial_06_coordinates_and_midpoints.md
-    - 3D Figures: tutorials/tutorial_07_3d_figures.md
-    - Raw TikZ: tutorials/tutorial_08_raw_tikz.md
-    - Space-Filling Curves: tutorials/tutorial_09_space_filling_curves.md
-    - Calendar: tutorials/tutorial_10_calendar.md
-    - Jupyter Magic: tutorials/tutorial_11_jupyter_magic.ipynb
+      - Getting Started: tutorials/tutorial_01_getting_started.md
+      - Styling: tutorials/tutorial_02_styling.md
+      - Paths and Shapes: tutorials/tutorial_03_paths_and_shapes.md
+      - Layers: tutorials/tutorial_04_layers.md
+      - Loops: tutorials/tutorial_05_loops.md
+      - Coordinates and Midpoints: tutorials/tutorial_06_coordinates_and_midpoints.md
+      - 3D Figures: tutorials/tutorial_07_3d_figures.md
+      - Raw TikZ: tutorials/tutorial_08_raw_tikz.md
+      - Space-Filling Curves: tutorials/tutorial_09_space_filling_curves.md
+      - Calendar: tutorials/tutorial_10_calendar.md
+      - Jupyter Magic: tutorials/tutorial_11_jupyter_magic.ipynb
   - API Reference: api.md
 
 markdown_extensions:

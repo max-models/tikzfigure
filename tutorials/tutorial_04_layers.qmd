@@ -1,5 +1,5 @@
 ---
-title: "Tutorial 4 — Layers"
+title: "Tutorial 4 - Layers"
 jupyter: python3
 ---
 
@@ -26,7 +26,7 @@ overlapping filled circles: whichever is drawn second covers the first.
 ```{python}
 theta = np.linspace(0, 2 * np.pi, 80)
 
-# Without layers — drawing order determines visibility
+# Without layers - drawing order determines visibility
 fig = TikzFigure()
 
 blue_circle = list(zip(np.cos(theta) * 1.5 + 2, np.sin(theta) * 1.5 + 2))
@@ -41,7 +41,7 @@ fig.show()
 ```
 
 ```{python}
-# With layers — blue on layer 2 even though it is drawn first in code
+# With layers - blue on layer 2 even though it is drawn first in code
 fig = TikzFigure()
 
 fig.draw(blue_circle, cycle=True, fill="blue!40", color="blue", line_width=2, layer=2)
@@ -58,7 +58,7 @@ drawn on different layers, with a sine wave winding between them.
 
 - **M** and **T** on layer 0 (background)
 - sine wave on layer 1 (middle)
-- **L** on layer 2 (foreground) — it visually overlaps the wave
+- **L** on layer 2 (foreground) - it visually overlaps the wave
 
 ```{python}
 fig = TikzFigure()

@@ -1,5 +1,5 @@
 ---
-title: "Tutorial 6 — Coordinates and Midpoints"
+title: "Tutorial 6 - Coordinates and Midpoints"
 jupyter: python3
 ---
 
@@ -144,7 +144,7 @@ C = fig.add_node(
 
 fig.draw([A, B, C], cycle=True, color="blue")
 
-# Midpoint of BC — used to draw the median from A
+# Midpoint of BC - used to draw the median from A
 mid_BC = fig.midpoint(
     B,
     C,
