@@ -1290,7 +1290,7 @@ class TikzFigure:
         for line in tikz_script.split("\n"):
             if "\\end" in line or "end \\foreach" in line:
                 num_tabs = max(num_tabs - 1, 0)
-            tikz_script_new += f"{tab_str * num_tabs}{line}\n"
+            tikz_script_new += f"{tab_str * num_tabs}{line}".rstrip() + "\n"
             if "\\begin" in line or "start \\foreach" in line:
                 num_tabs += 1
         return tikz_script_new
