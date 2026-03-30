@@ -21,10 +21,10 @@ from tikzfigure import TikzFigure
 
 fig = TikzFigure()
 
-n1 = fig.add_node(0, 0, shape="circle", color="white", fill="blue!40!green", content="Tikz")
-n2 = fig.add_node(2, 0, shape="circle", color="white", fill="purple!40!orange", content="Figure")
+n1 = fig.add_node(0, 0, shape="circle", fill="blue!40!green", content="Tikz")
+n2 = fig.add_node(2, 0, shape="circle", fill="purple!40!orange", content="Figure")
 
-fig.draw([n1, n2], options=["->", "line width=2"], color="gray")
+fig.draw([n1, n2], line_width=2, arrows="->", color="gray")
 
 fig.show()
 ```
@@ -44,9 +44,9 @@ print(fig)
     % https://github.com/max-models/tikzfigure      %
     % --------------------------------------------- %
     \begin{tikzpicture}
-        \node[shape=circle, color=white, fill=blue!40!green] (node0) at (0, 0) {Tikz};
-        \node[shape=circle, color=white, fill=purple!40!orange] (node1) at (2, 0) {Figure};
-        \draw[->, line width=2, color=gray] (node0) to (node1);
+        \node[shape=circle, fill=blue!40!green] (node0) at (0, 0) {Tikz};
+        \node[shape=circle, fill=purple!40!orange] (node1) at (2, 0) {Figure};
+        \draw[color=gray, line width=2, arrows=->] (node0) to (node1);
     \end{tikzpicture}
 
 Note that to visualize the plots in a popup or in jupyterlab, install
