@@ -1,44 +1,50 @@
+from typing import Any
+
 from tikzfigure.core.node import Node
 from tikzfigure.core.path import TikzPath
 
 
 class Tikzlayer:
-    """Represents a single layer in a TikZ figure.
+    """A single named drawing layer inside a TikZ figure.
 
-    Layers allow organizing TikZ elements in different drawing levels,
-    useful for controlling z-order and managing complex figures.
+    Layers allow controlling the z-order of elements by wrapping them
+    inside ``\\begin{pgfonlayer}{label}`` … ``\\end{pgfonlayer}`` blocks.
 
     Attributes:
-        label: Unique identifier for the layer.
-        items: List of TikZ items (nodes, paths, etc.) in this layer.
+        label: Unique identifier for this layer (typically an integer).
+        items: Ordered list of TikZ objects (nodes, paths, loops, …)
+            belonging to this layer.
     """
 
-    def __init__(self, label, comment=None):
-        """Initialize a TikZ layer.
+    def __init__(self, label: int | str, comment: str | None = None) -> None:
+        """Initialize a Tikzlayer.
 
         Args:
-            label: Unique identifier for the layer (typically an integer).
-            comment: Optional comment for documentation purposes.
+            label: Unique identifier for this layer (typically an integer).
+            comment: Optional comment for documentation purposes. Currently
+                unused in output generation.
         """
-        self.label = label
-        self.items = []
+        self.label: int | str = label
+        self.items: list[Any] = []
 
-    def add(self, item):
-        """Add an item (node, path, etc.) to this layer.
+    def add(self, item: Any) -> None:
+        """Append a TikZ object to this layer.
 
         Args:
-            item: A TikZ object (Node, Path, etc.) to add to the layer.
+            item: A TikZ object (e.g. :class:`Node`, :class:`TikzPath`)
+                to add to this layer.
         """
         self.items.append(item)
 
-    def get_reqs(self):
-        """Get layer requirements (dependencies on other layers).
+    def get_reqs(self) -> set[int | str]:
+        """Return the set of layer labels this layer depends on.
 
-        Analyzes paths in this layer to find nodes from other layers,
-        which establishes layer dependencies for proper rendering order.
+        Inspects every :class:`TikzPath` in this layer and collects the
+        layer labels of any nodes that live on a *different* layer. This
+        information is used to determine a valid rendering order.
 
         Returns:
-            Set of layer labels that this layer depends on.
+            A set of layer labels that must be rendered before this layer.
         """
         reqs = set()
         for item in self.items:
@@ -49,12 +55,16 @@ class Tikzlayer:
         return reqs
 
     def generate_tikz(self, use_layers: bool = True, verbose: bool = False) -> str:
-        """Generate TikZ code for this layer.
+        """Generate the TikZ code for this layer.
 
-        Creates the pgfonlayer environment and includes all items in the layer.
+        Args:
+            use_layers: If ``True``, wrap the output in a
+                ``pgfonlayer`` environment. Defaults to ``True``.
+            verbose: Unused; reserved for future debug output.
 
         Returns:
-            String containing the complete TikZ code for this layer.
+            The complete TikZ code string for this layer, including the
+            ``pgfonlayer`` wrapper when *use_layers* is ``True``.
         """
         tikz_script = ""
         if use_layers:
@@ -66,54 +76,55 @@ class Tikzlayer:
             tikz_script += f"\\end{{pgfonlayer}}{{{self.label}}}\n"
         return tikz_script
 
-    def _get_items_by_type(self, item_type) -> list:
-        """Get all items of a specific type from this layer.
+    def _get_items_by_type(self, item_type: type) -> list[Any]:
+        """Return all items in this layer that are instances of *item_type*.
 
         Args:
-            item_type: The type to filter by (e.g., Node, Path).
+            item_type: The type to filter by (e.g. :class:`Node`).
 
         Returns:
-            List of items matching the specified type.
+            A list of items whose type matches *item_type*.
         """
         return [item for item in self.items if isinstance(item, item_type)]
 
     def get_nodes(self) -> list[Node]:
-        """Get all nodes in this layer.
+        """Return all nodes in this layer.
 
         Returns:
-            List of Node objects in this layer.
+            A list of :class:`Node` objects belonging to this layer.
         """
         return self._get_items_by_type(Node)
 
     def get_paths(self) -> list[TikzPath]:
-        """Get all paths in this layer.
+        """Return all paths in this layer.
 
         Returns:
-            List of Path objects in this layer.
+            A list of :class:`TikzPath` objects belonging to this layer.
         """
         return self._get_items_by_type(TikzPath)
 
 
 class LayerCollection:
-    """Manages a collection of TikZ layers.
+    """An ordered collection of :class:`Tikzlayer` objects.
 
-    Provides methods to create layers, add items to layers, and retrieve
-    items across all layers. Handles layer creation automatically when
-    items are added to non-existent layers.
+    Manages layer creation, item insertion, and cross-layer node lookup.
+    Layers are created automatically when items are added to a layer label
+    that does not yet exist.
 
     Attributes:
-        _layers: Dictionary mapping layer labels to Tikzlayer objects.
+        layers: Dictionary mapping layer labels to :class:`Tikzlayer`
+            objects.
+        num_layers: Number of layers currently in the collection.
     """
 
     def __init__(self) -> None:
-        """Initialize an empty layer collection."""
-        # self._layers = []
-        self._layers = {}
+        """Initialize an empty LayerCollection."""
+        self._layers: dict[int | str, Tikzlayer] = {}
 
-    def add_layer(self, layer):
+    def add_layer(self, layer: int | str) -> None:
         """Add a new layer to the collection.
 
-        If the layer already exists, this method does nothing.
+        If a layer with the given label already exists, this is a no-op.
 
         Args:
             layer: Label for the new layer (typically an integer).
@@ -121,19 +132,23 @@ class LayerCollection:
         if layer not in self.layers:
             self._layers[layer] = Tikzlayer(layer)
 
-    def add_item(self, item, layer: int | None = 0, verbose: bool = False):
-        """Add an item to a specific layer.
-
-        Creates the layer automatically if it doesn't exist.
+    def add_item(
+        self, item: Any, layer: int | str | None = 0, verbose: bool = False
+    ) -> Any:
+        """Add an item to a specific layer, creating the layer if needed.
 
         Args:
-            item: A TikZ object (Node, Path, etc.) to add.
-            layer: Layer label to add the item to. Defaults to 0.
-            verbose: If True, print debug information.
+            item: A TikZ object to add (e.g. :class:`Node`,
+                :class:`TikzPath`).
+            layer: Label of the target layer. ``None`` is treated as ``0``.
+                Defaults to ``0``.
+            verbose: If ``True``, print a debug message after insertion.
 
         Returns:
-            The item that was added.
+            The *item* that was added.
         """
+        if layer is None:
+            layer = 0
 
         if layer in self.layers:
             self._layers[layer].add(item)
@@ -146,14 +161,14 @@ class LayerCollection:
 
         return item
 
-    def get_node(self, node_label) -> Node:
-        """Retrieve a node by its label from any layer.
+    def get_node(self, node_label: str) -> Node:
+        """Retrieve a node by its label, searching all layers.
 
         Args:
             node_label: The label of the node to find.
 
         Returns:
-            The Node object with the specified label.
+            The :class:`Node` with the specified label.
 
         Raises:
             ValueError: If no node with the given label exists in any layer.
@@ -164,14 +179,14 @@ class LayerCollection:
                     return item
         raise ValueError(f"Node with label {node_label} not found in any layer!")
 
-    def _get_items_by_type(self, item_type) -> list:
-        """Get all items of a specific type across all layers.
+    def _get_items_by_type(self, item_type: type) -> list[Any]:
+        """Return all items of *item_type* across all layers.
 
         Args:
-            item_type: The type to filter by (e.g., Node, Path).
+            item_type: The type to filter by (e.g. :class:`Node`).
 
         Returns:
-            List of items matching the specified type from all layers.
+            A flat list of items matching *item_type* from every layer.
         """
         items = []
         for layer in self.layers.values():
@@ -179,22 +194,22 @@ class LayerCollection:
         return items
 
     def get_nodes(self) -> list[Node]:
-        """Get all nodes across all layers.
+        """Return all nodes across all layers.
 
         Returns:
-            List of all Node objects in the collection.
+            A flat list of all :class:`Node` objects in the collection.
         """
         return self._get_items_by_type(Node)
 
     def get_paths(self) -> list[TikzPath]:
-        """Get all paths across all layers.
+        """Return all paths across all layers.
 
         Returns:
-            List of all Path objects in the collection.
+            A flat list of all :class:`TikzPath` objects in the collection.
         """
         return self._get_items_by_type(TikzPath)
 
-    def get_layer_by_item(self, item) -> int:
+    def get_layer_by_item(self, item: str) -> int | str:
         """Find which layer contains an item with the given label.
 
         Args:
@@ -212,19 +227,11 @@ class LayerCollection:
         raise ValueError(f"Item {item} not found in any layer!")
 
     @property
-    def layers(self) -> dict:
-        """Get the dictionary of all layers.
-
-        Returns:
-            Dictionary mapping layer labels to Tikzlayer objects.
-        """
+    def layers(self) -> dict[int | str, Tikzlayer]:
+        """Dictionary mapping layer labels to :class:`Tikzlayer` objects."""
         return self._layers
 
     @property
     def num_layers(self) -> int:
-        """Get the number of layers in the collection.
-
-        Returns:
-            The total number of layers.
-        """
+        """Number of layers currently in the collection."""
         return len(self._layers)

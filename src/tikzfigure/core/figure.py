@@ -40,6 +40,24 @@ TIKZFIGURE_HEADER = line_separator + version_string + link_string + line_separat
 
 
 class TikzFigure:
+    """Main entry point for building TikZ figures programmatically.
+
+    Holds layers, variables, colors, and all TikZ primitives.  Call
+    :meth:`generate_tikz` to obtain the LaTeX source, :meth:`compile_pdf`
+    to compile it, and :meth:`savefig` / :meth:`show` to export or display
+    the result.
+
+    Attributes:
+        layers: The :class:`LayerCollection` holding all drawing layers.
+        variables: List of :class:`Variable` objects defined in this figure.
+        colors: List of ``(name, Color)`` pairs defined with
+            :meth:`colorlet`.
+        ndim: Number of spatial dimensions (``2`` or ``3``).
+        document_setup: Custom LaTeX preamble inserted before
+            ``\\begin{document}``.
+        extra_packages: Extra LaTeX packages to include in the preamble.
+    """
+
     def __init__(
         self,
         ndim: int = 2,
@@ -53,28 +71,55 @@ class TikzFigure:
         caption: str | None = None,
         description: str | None = None,
         show_axes: bool = False,
-    ):
-        """Initialize the TikzFigure class for creating TikZ figures."""
+    ) -> None:
+        """Initialize a TikzFigure.
 
-        self._figsize = figsize
-        self._caption = caption
-        self._description = description
-        self._label = label
-        self._grid = grid
-        self._show_axes = show_axes
-        self._tikz_code = tikz_code
-        self._figure_setup = figure_setup
-        self._extra_packages = extra_packages
-        self._document_setup = document_setup
+        Args:
+            ndim: Number of spatial dimensions. Use ``2`` for standard
+                figures and ``3`` for pgfplots 3-D axis figures.
+                Defaults to ``2``.
+            label: LaTeX ``\\label`` for the surrounding ``figure``
+                environment. When set, the figure is wrapped in a
+                ``figure`` environment.
+            grid: If ``True``, draw a background grid. Defaults to
+                ``False``.
+            tikz_code: Existing TikZ code to parse and import. When
+                provided, nodes and paths are reconstructed from the
+                source. Defaults to ``None``.
+            extra_packages: Additional LaTeX packages to include in the
+                standalone preamble (e.g. ``["amsmath"]``).
+            document_setup: Raw LaTeX to insert in the preamble after
+                the standard packages.
+            figure_setup: TikZ options string placed inside the opening
+                ``\\begin{tikzpicture}[…]`` bracket.
+            figsize: ``(width, height)`` in centimetres used as a hint
+                for display backends. Defaults to ``(10, 6)``.
+            caption: ``\\caption`` text for the ``figure`` environment.
+            description: Long description stored for documentation
+                purposes (not emitted in TikZ output).
+            show_axes: For 3-D figures, if ``True`` render the pgfplots
+                axis lines and labels. Defaults to ``False``.
+        """
+
+        self._figsize: tuple[float, float] = figsize
+        self._caption: str | None = caption
+        self._description: str | None = description
+        self._label: str | None = label
+        self._grid: bool = grid
+        self._show_axes: bool = show_axes
+        self._tikz_code: str | None = tikz_code
+        self._figure_setup: str | None = figure_setup
+        self._extra_packages: list | None = extra_packages
+        self._document_setup: str | None = document_setup
         # Initialize lists to hold Node and Path objects
         # TODO: nodes, paths, layers should have @property and @setter methods
-        self._layers = LayerCollection()
-        self._variables = []
-        self._colors = []
-        self._ndim = ndim
+        self._layers: LayerCollection = LayerCollection()
+        self._variables: list[Variable] = []
+        self._colors: list[tuple[str, Color]] = []
+        self._ndim: int = ndim
 
         # Counter for unnamed nodes
-        self._node_counter = 0
+        self._node_counter: int = 0
 
         if self._tikz_code:
             lines = self._tikz_code.split("\n")
@@ -189,12 +234,27 @@ class TikzFigure:
     # Class methods
 
     @classmethod
-    def from_tikz_code(cls, tikz_code: str, **kwargs):
-        """Create a TikzFigure instance from existing TikZ code."""
+    def from_tikz_code(cls, tikz_code: str, **kwargs: Any) -> "TikzFigure":
+        """Create a TikzFigure by parsing existing TikZ source code.
+
+        Args:
+            tikz_code: A string containing a ``tikzpicture`` environment.
+            **kwargs: Additional keyword arguments forwarded to
+                :meth:`__init__`.
+
+        Returns:
+            A new :class:`TikzFigure` with nodes and paths reconstructed
+            from *tikz_code*.
+        """
         return cls(tikz_code=tikz_code, **kwargs)
 
     def to_dict(self) -> dict[str, Any]:
-        """Serialize the figure to a dictionary."""
+        """Serialize this figure to a plain dictionary.
+
+        Returns:
+            A dictionary capturing all figure settings, layers, variables,
+            and colors, suitable for round-tripping via :meth:`from_dict`.
+        """
         layers_dict: dict[Any, list[dict[str, Any]]] = {}
         for layer_label, layer in self._layers.layers.items():
             layers_dict[layer_label] = [item.to_dict() for item in layer.items]
@@ -221,7 +281,14 @@ class TikzFigure:
 
     @classmethod
     def from_dict(cls, d: dict[str, Any]) -> "TikzFigure":
-        """Reconstruct a TikzFigure from a dictionary produced by :meth:`to_dict`."""
+        """Reconstruct a TikzFigure from a dictionary.
+
+        Args:
+            d: Dictionary as produced by :meth:`to_dict`.
+
+        Returns:
+            A fully restored :class:`TikzFigure` instance.
+        """
         fig = cls(
             ndim=d.get("ndim", 2),
             label=d.get("label"),
@@ -248,7 +315,8 @@ class TikzFigure:
             for item_data in items_data:
                 if item_data.get("type") == "Node":
                     node = Node.from_dict(item_data)
-                    node_lookup[node.label] = node
+                    if node.label is not None:
+                        node_lookup[node.label] = node
 
         # Reconstruct layers in order
         for layer_label, items_data in layers_data.items():
@@ -286,8 +354,16 @@ class TikzFigure:
     # ------------------------------------------------------------- #
     # Public methods
 
-    def add(self, items: list | tuple | Node, layer=0, verbose: bool = False):
-        """Add an item to the figure."""
+    def add(
+        self, items: list | tuple | Node, layer: int = 0, verbose: bool = False
+    ) -> None:
+        """Add one or more pre-built items to the figure.
+
+        Args:
+            items: A single :class:`Node` or a list/tuple of items to add.
+            layer: Target layer index. Defaults to ``0``.
+            verbose: If ``True``, print a debug message for each insertion.
+        """
         if not isinstance(items, list | tuple):
             items = [items]
 
@@ -300,11 +376,20 @@ class TikzFigure:
 
     def colorlet(
         self,
-        name,
+        name: str,
         color_spec: str,
         layer: int = 0,
     ) -> Color:
-        """Add a colorlet to the figure."""
+        """Define a named color with ``\\colorlet``.
+
+        Args:
+            name: The name to assign to the color in LaTeX.
+            color_spec: A TikZ color specification (e.g. ``"blue!20"``).
+            layer: Layer index (currently unused). Defaults to ``0``.
+
+        Returns:
+            The :class:`Color` object that was registered.
+        """
         color = Color(color_spec=color_spec)
 
         self._colors.append((name, color))
@@ -409,186 +494,103 @@ class TikzFigure:
         # Pin / label on node
         pin: str | None = None,
         # Catch-all for unlisted TikZ options
-        **kwargs,
+        **kwargs: Any,
     ) -> Node:
         """Add a node to the TikZ figure.
 
-        Parameters
-        ----------
-        x : float, int, or str, optional
-            X-coordinate of the node.
-        y : float, int, or str, optional
-            Y-coordinate of the node.
-        z : float, int, or str, optional
-            Z-coordinate (for 3-D figures).
-        label : str, optional
-            Internal name of the node. Auto-assigned if *None*.
-        content : str
-            Text displayed inside the node.
-        layer : int
-            Layer to place the node on.
-        comment : str, optional
-            Comment placed before the node in the TikZ source.
-        options : list or str, optional
-            TikZ option strings for flags without values
-            (e.g., ``["draw", "thick"]``).
-        verbose : bool
-            Print debug information.
-        shape : str, optional
-            Node shape (e.g., ``"circle"``, ``"rectangle"``,
-            ``"diamond"``, ``"ellipse"``, ``"star"``,
-            ``"regular polygon"``).
-        color : str, optional
-            Text color (e.g., ``"red"``, ``"blue!50"``).
-        fill : str, optional
-            Fill color.
-        draw : str, optional
-            Border / stroke color. Use ``"none"`` to hide the border.
-        text : str, optional
-            Alias for text color.
-        opacity : float, optional
-            Overall opacity (0 to 1).
-        fill_opacity : float, optional
-            Fill opacity.
-        draw_opacity : float, optional
-            Border opacity.
-        text_opacity : float, optional
-            Text opacity.
-        minimum_width : str, optional
-            Minimum node width (e.g., ``"2cm"``).
-        minimum_height : str, optional
-            Minimum node height.
-        minimum_size : str, optional
-            Minimum size in both dimensions.
-        inner_sep : str, optional
-            Inner separation between content and border (e.g., ``"3pt"``).
-        inner_xsep : str, optional
-            Horizontal inner separation.
-        inner_ysep : str, optional
-            Vertical inner separation.
-        outer_sep : str, optional
-            Outer separation between border and anchors.
-        outer_xsep : str, optional
-            Horizontal outer separation.
-        outer_ysep : str, optional
-            Vertical outer separation.
-        line_width : str, optional
-            Border line width (e.g., ``"1pt"``).
-        font : str, optional
-            Font specification (e.g., ``"\\\\tiny"``, ``"\\\\bfseries"``).
-        text_width : str, optional
-            Text width for automatic line wrapping.
-        text_height : str, optional
-            Explicit text height.
-        text_depth : str, optional
-            Explicit text depth.
-        align : str, optional
-            Text alignment: ``"left"``, ``"center"``, or ``"right"``.
-        anchor : str, optional
-            Anchor point (e.g., ``"center"``, ``"north"``, ``"south west"``).
-        above : str, optional
-            Place above, with optional offset (e.g., ``"5pt"``).
-        below : str, optional
-            Place below.
-        left : str, optional
-            Place left.
-        right : str, optional
-            Place right.
-        above_left : str, optional
-            Place above-left.
-        above_right : str, optional
-            Place above-right.
-        below_left : str, optional
-            Place below-left.
-        below_right : str, optional
-            Place below-right.
-        above_of : str, optional
-            Place above a named node (e.g., ``"nodeA"``).
-        below_of : str, optional
-            Place below a named node.
-        left_of : str, optional
-            Place left of a named node.
-        right_of : str, optional
-            Place right of a named node.
-        node_distance : str, optional
-            Distance for relative positioning (e.g., ``"1cm"``).
-        rotate : float, optional
-            Rotation angle in degrees.
-        xshift : str, optional
-            Horizontal shift (e.g., ``"1cm"``).
-        yshift : str, optional
-            Vertical shift.
-        scale : float, optional
-            Uniform scaling factor.
-        xscale : float, optional
-            Horizontal scaling factor.
-        yscale : float, optional
-            Vertical scaling factor.
-        xslant : float, optional
-            Horizontal slant factor.
-        yslant : float, optional
-            Vertical slant factor.
-        rounded_corners : str, optional
-            Corner rounding radius (e.g., ``"3pt"``).
-        double : str, optional
-            Inner color for double borders.
-        double_distance : str, optional
-            Distance between double borders.
-        dash_pattern : str, optional
-            Custom dash pattern (e.g., ``"on 2pt off 3pt"``).
-        dash_phase : str, optional
-            Dash pattern starting offset.
-        pattern : str, optional
-            Fill pattern (e.g., ``"north east lines"``).
-        pattern_color : str, optional
-            Color for the fill pattern.
-        shading : str, optional
-            Shading type (e.g., ``"axis"``, ``"radial"``, ``"ball"``).
-        shading_angle : float, optional
-            Angle for axis shading.
-        left_color : str, optional
-            Left color for axis shading.
-        right_color : str, optional
-            Right color for axis shading.
-        top_color : str, optional
-            Top color for axis shading.
-        bottom_color : str, optional
-            Bottom color for axis shading.
-        inner_color : str, optional
-            Inner color for radial shading.
-        outer_color : str, optional
-            Outer color for radial shading.
-        ball_color : str, optional
-            Ball color for ball shading.
-        regular_polygon_sides : int, optional
-            Number of sides for ``shape="regular polygon"``.
-        star_points : int, optional
-            Number of points for ``shape="star"``.
-        star_point_ratio : float, optional
-            Ratio of inner to outer radius for stars.
-        star_point_height : str, optional
-            Height of star points.
-        shadow_xshift : str, optional
-            Horizontal shadow shift.
-        shadow_yshift : str, optional
-            Vertical shadow shift.
-        shadow_color : str, optional
-            Shadow color.
-        shadow_opacity : float, optional
-            Shadow opacity.
-        shadow_scale : float, optional
-            Shadow scale factor.
-        pin : str, optional
-            Pin label specification (e.g., ``"above:text"``).
-        **kwargs
-            Additional TikZ options not listed above.
-            Underscores in keys become spaces (e.g., ``signal_from`` →
-            ``signal from``).
+        Args:
+            x: X-coordinate. Use ``None`` for relatively positioned nodes.
+            y: Y-coordinate. Use ``None`` for relatively positioned nodes.
+            z: Z-coordinate for 3-D figures.
+            label: Internal TikZ name. Auto-assigned when ``None``.
+            content: Text or LaTeX content displayed inside the node.
+            layer: Target layer index. Defaults to ``0``.
+            comment: Optional comment prepended in the TikZ output.
+            options: Flag-style TikZ options
+                (e.g. ``["draw", "thick"]``).
+            verbose: If ``True``, print a debug message.
+            shape: Node shape
+                (e.g. ``"circle"``, ``"rectangle"``, ``"diamond"``).
+            color: Text color (e.g. ``"red"``, ``"blue!50"``).
+            fill: Fill color.
+            draw: Border/stroke color. Use ``"none"`` to hide the border.
+            text: Alias for text color.
+            opacity: Overall opacity (0–1).
+            fill_opacity: Fill opacity (0–1).
+            draw_opacity: Border opacity (0–1).
+            text_opacity: Text opacity (0–1).
+            minimum_width: Minimum node width (e.g. ``"2cm"``).
+            minimum_height: Minimum node height.
+            minimum_size: Minimum size in both dimensions.
+            inner_sep: Inner separation between content and border.
+            inner_xsep: Horizontal inner separation.
+            inner_ysep: Vertical inner separation.
+            outer_sep: Outer separation between border and anchors.
+            outer_xsep: Horizontal outer separation.
+            outer_ysep: Vertical outer separation.
+            line_width: Border line width (e.g. ``"1pt"``).
+            font: Font specification (e.g. ``"\\\\tiny"``).
+            text_width: Text width for automatic line wrapping.
+            text_height: Explicit text height.
+            text_depth: Explicit text depth.
+            align: Text alignment (``"left"``, ``"center"``, ``"right"``).
+            anchor: Anchor point
+                (e.g. ``"center"``, ``"north"``, ``"south west"``).
+            above: Place above, with optional offset (e.g. ``"5pt"``).
+            below: Place below.
+            left: Place left.
+            right: Place right.
+            above_left: Place above-left.
+            above_right: Place above-right.
+            below_left: Place below-left.
+            below_right: Place below-right.
+            above_of: Place above a named node.
+            below_of: Place below a named node.
+            left_of: Place left of a named node.
+            right_of: Place right of a named node.
+            node_distance: Distance for relative positioning
+                (e.g. ``"1cm"``).
+            rotate: Rotation angle in degrees.
+            xshift: Horizontal shift (e.g. ``"1cm"``).
+            yshift: Vertical shift.
+            scale: Uniform scaling factor.
+            xscale: Horizontal scaling factor.
+            yscale: Vertical scaling factor.
+            xslant: Horizontal slant factor.
+            yslant: Vertical slant factor.
+            rounded_corners: Corner rounding radius (e.g. ``"3pt"``).
+            double: Inner color for double borders.
+            double_distance: Distance between double borders.
+            dash_pattern: Custom dash pattern (e.g. ``"on 2pt off 3pt"``).
+            dash_phase: Dash pattern starting offset.
+            pattern: Fill pattern (e.g. ``"north east lines"``).
+            pattern_color: Color for the fill pattern.
+            shading: Shading type
+                (``"axis"``, ``"radial"``, or ``"ball"``).
+            shading_angle: Angle for axis shading.
+            left_color: Left color for axis shading.
+            right_color: Right color for axis shading.
+            top_color: Top color for axis shading.
+            bottom_color: Bottom color for axis shading.
+            inner_color: Inner color for radial shading.
+            outer_color: Outer color for radial shading.
+            ball_color: Ball color for ball shading.
+            regular_polygon_sides: Number of sides for
+                ``shape="regular polygon"``.
+            star_points: Number of points for ``shape="star"``.
+            star_point_ratio: Inner-to-outer radius ratio for stars.
+            star_point_height: Height of star points.
+            shadow_xshift: Horizontal shadow shift.
+            shadow_yshift: Vertical shadow shift.
+            shadow_color: Shadow color.
+            shadow_opacity: Shadow opacity (0–1).
+            shadow_scale: Shadow scale factor.
+            pin: Pin label specification (e.g. ``"above:text"``).
+            **kwargs: Additional TikZ options. Underscores in keys become
+                spaces (e.g. ``signal_from`` → ``signal from``).
 
-        Returns
-        -------
-        Node
-            The Node object that was added.
+        Returns:
+            The :class:`Node` object that was added.
         """
         _params = locals().copy()
         _non_tikz = {
@@ -641,20 +643,21 @@ class TikzFigure:
         label: str | None = None,
         layer: int = 0,
         content: str = "",
-        **kwargs,
+        **kwargs: Any,
     ) -> Node:
-        """Add a node at the midpoint between two nodes.
+        """Add a node at the midpoint between two existing nodes.
 
         Args:
-            node1: First node or node label string.
-            node2: Second node or node label string.
-            label: Label for the new midpoint node.
-            layer: Layer for the new midpoint node.
-            content: Content for the new midpoint node.
+            node1: First node object or its label string.
+            node2: Second node object or its label string.
+            label: Label for the new midpoint node. Auto-assigned when
+                ``None``.
+            layer: Target layer index. Defaults to ``0``.
+            content: Text content for the midpoint node.
             **kwargs: Additional options forwarded to :meth:`add_node`.
 
         Returns:
-            The new Node placed at the midpoint.
+            The new :class:`Node` placed at the computed midpoint.
 
         Raises:
             ValueError: If either node lacks explicit numeric coordinates.
@@ -673,11 +676,11 @@ class TikzFigure:
                 f"Node '{node2.label}' does not have explicit coordinates."
             )
 
-        mid_x = (node1.x + node2.x) / 2
-        mid_y = (node1.y + node2.y) / 2
+        mid_x = (node1.x + node2.x) / 2  # type: ignore[operator]
+        mid_y = (node1.y + node2.y) / 2  # type: ignore[operator]
 
         if node1.ndim == 3 and node2.ndim == 3:
-            mid_z = (node1.z + node2.z) / 2
+            mid_z = (node1.z + node2.z) / 2  # type: ignore[operator]
         else:
             mid_z = None
 
@@ -698,8 +701,22 @@ class TikzFigure:
         layer: int | None = 0,
         comment: str | None = None,
         verbose: bool = False,
-    ):
-        """Add a variable to the figure."""
+    ) -> Variable:
+        """Add a pgfmath variable (``\\pgfmathsetmacro``) to the figure.
+
+        Variables are emitted at the top of the ``tikzpicture`` environment
+        so they can be referenced anywhere in the figure.
+
+        Args:
+            label: Variable name (without the leading backslash).
+            value: Numeric value to assign.
+            layer: Layer index (currently unused). Defaults to ``0``.
+            comment: Optional comment prepended in the TikZ output.
+            verbose: Unused; reserved for future debug output.
+
+        Returns:
+            The :class:`Variable` object that was added.
+        """
         variable = Variable(
             label=label,
             value=value,
@@ -717,8 +734,17 @@ class TikzFigure:
         tikz_code: str,
         layer: int = 0,
         verbose: bool = False,
-    ):
-        """Add raw TikZ code to the figure."""
+    ) -> RawTikz:
+        """Insert a verbatim TikZ code block into the figure.
+
+        Args:
+            tikz_code: Raw TikZ source to include verbatim.
+            layer: Target layer index. Defaults to ``0``.
+            verbose: If ``True``, print a debug message after insertion.
+
+        Returns:
+            The :class:`RawTikz` object that was added.
+        """
         raw_tikz = RawTikz(tikz_code=tikz_code)
 
         self.layers.add_item(
@@ -818,11 +844,26 @@ class TikzFigure:
         mark: _Mark = None,
         mark_size: str | None = None,
         # Catch-all for unlisted TikZ options
-        **kwargs,
-    ):
-        """Add a filled line or path connecting multiple nodes.
+        **kwargs: Any,
+    ) -> TikzPath:
+        """Add a filled path connecting multiple nodes with ``\\filldraw``.
 
-        Accepts the same TikZ options as :meth:`draw`.
+        Accepts the same options as :meth:`draw`. See that method for the
+        full parameter reference.
+
+        Args:
+            nodes: List of nodes, node label strings, or coordinate tuples
+                to connect.
+            layer: Target layer index. Defaults to ``0``.
+            comment: Optional comment prepended in the TikZ output.
+            center: If ``True``, connect through ``.center`` anchors.
+            verbose: If ``True``, print a debug message.
+            options: Flag-style TikZ options (e.g. ``["thick"]``).
+            cycle: If ``True``, close the path with ``-- cycle``.
+            **kwargs: Any keyword option accepted by :meth:`draw`.
+
+        Returns:
+            The :class:`TikzPath` object that was added.
         """
         _params = locals().copy()
         _non_tikz = {
@@ -951,154 +992,91 @@ class TikzFigure:
         mark: _Mark = None,
         mark_size: str | None = None,
         # Catch-all for unlisted TikZ options
-        **kwargs,
-    ):
-        """Add a line or path connecting multiple nodes.
+        **kwargs: Any,
+    ) -> TikzPath:
+        """Add a path connecting multiple nodes with ``\\draw``.
 
-        Parameters
-        ----------
-        nodes : list
-            List of nodes, node labels, or coordinate tuples to connect.
-        layer : int
-            Layer to add the path to.
-        comment : str, optional
-            Comment to add before the path in the TikZ code.
-        center : bool
-            If True, connect through node centers.
-        verbose : bool
-            Print debug information.
-        options : list or str, optional
-            TikZ option strings for flags without values
-            (e.g., ``["->", "thick", "dashed"]``).
-        cycle : bool
-            If True, close the path with ``-- cycle``.
-        color : str, optional
-            Line color (e.g., ``"red"``, ``"blue!50"``).
-        fill : str, optional
-            Fill color for the path.
-        draw : str, optional
-            Stroke color (when different from *color*).
-        text : str, optional
-            Text color for labels on the path.
-        opacity : float, optional
-            Overall opacity (0 to 1).
-        draw_opacity : float, optional
-            Stroke opacity.
-        fill_opacity : float, optional
-            Fill opacity.
-        text_opacity : float, optional
-            Text opacity.
-        line_width : str, optional
-            Line width (e.g., ``"1pt"``, ``"0.5mm"``).
-            For predefined widths use *options* (``"thin"``, ``"thick"``, …).
-        line_cap : str, optional
-            Line cap style: ``"butt"``, ``"rect"``, or ``"round"``.
-        line_join : str, optional
-            Line join style: ``"miter"``, ``"bevel"``, or ``"round"``.
-        miter_limit : float, optional
-            Miter limit factor for miter joins.
-        dash_pattern : str, optional
-            Custom dash pattern (e.g., ``"on 2pt off 3pt"``).
-        dash_phase : str, optional
-            Dash pattern starting offset (e.g., ``"2pt"``).
-        double : str, optional
-            Inner line color for double lines (e.g., ``"white"``).
-        double_distance : str, optional
-            Distance between double lines (e.g., ``"2pt"``).
-        rounded_corners : str, optional
-            Corner rounding radius (e.g., ``"5pt"``).
-        rotate : float, optional
-            Rotation angle in degrees.
-        xshift : str, optional
-            Horizontal shift (e.g., ``"1cm"``).
-        yshift : str, optional
-            Vertical shift (e.g., ``"1cm"``).
-        scale : float, optional
-            Uniform scaling factor.
-        xscale : float, optional
-            Horizontal scaling factor.
-        yscale : float, optional
-            Vertical scaling factor.
-        xslant : float, optional
-            Horizontal slant factor.
-        yslant : float, optional
-            Vertical slant factor.
-        bend_left : float, optional
-            Bend the path left by the given angle.
-        bend_right : float, optional
-            Bend the path right by the given angle.
-        in_angle : float, optional
-            Incoming angle for curved paths (TikZ ``in`` key).
-        out_angle : float, optional
-            Outgoing angle for curved paths (TikZ ``out`` key).
-        looseness : float, optional
-            Looseness of curved paths (default 1).
-        in_looseness : float, optional
-            Incoming looseness for curved paths.
-        out_looseness : float, optional
-            Outgoing looseness for curved paths.
-        min_distance : str, optional
-            Minimum distance for curved paths.
-        max_distance : str, optional
-            Maximum distance for curved paths.
-        tension : float, optional
-            Tension for smooth curves.
-        pattern : str, optional
-            Fill pattern name (e.g., ``"north east lines"``, ``"dots"``).
-        pattern_color : str, optional
-            Color for the fill pattern.
-        shading : str, optional
-            Shading type (e.g., ``"axis"``, ``"radial"``, ``"ball"``).
-        shading_angle : float, optional
-            Angle for axis shading.
-        left_color : str, optional
-            Left color for axis shading.
-        right_color : str, optional
-            Right color for axis shading.
-        top_color : str, optional
-            Top color for axis shading.
-        bottom_color : str, optional
-            Bottom color for axis shading.
-        middle_color : str, optional
-            Middle color for axis shading.
-        inner_color : str, optional
-            Inner color for radial shading.
-        outer_color : str, optional
-            Outer color for radial shading.
-        ball_color : str, optional
-            Ball color for ball shading.
-        decoration : str, optional
-            Decoration specification (e.g., ``"zigzag"``, ``"snake"``).
-            Use with ``options=["decorate"]``.
-        step : str, optional
-            Step size for grid patterns (e.g., ``"1cm"``).
-        pos : float, optional
-            Position along the path for labels (0 to 1).
-        arrows : str, optional
-            Arrow tip specification (e.g., ``"-Stealth"``, ``"Latex-Latex"``).
-        font : str, optional
-            Font specification (e.g., ``"\\\\tiny"``, ``"\\\\bfseries"``).
-        name_path : str, optional
-            Name for path intersection calculations.
-        to_path : str, optional
-            Custom to-path specification.
-        domain : str, optional
-            Domain for plot paths (e.g., ``"0:360"``).
-        samples : int, optional
-            Number of samples for plot paths.
-        mark : str, optional
-            Mark type for plot paths (e.g., ``"*"``, ``"o"``, ``"x"``).
-        mark_size : str, optional
-            Size of plot marks (e.g., ``"2pt"``).
-        **kwargs
-            Additional TikZ options not listed above.
-            Underscores in keys become spaces (e.g., ``near_start`` →
-            ``near start``).
+        Args:
+            nodes: List of :class:`Node` objects, node label strings, or
+                ``(x, y)`` / ``(x, y, z)`` coordinate tuples to connect.
+            layer: Target layer index. Defaults to ``0``.
+            comment: Optional comment prepended in the TikZ output.
+            center: If ``True``, connect through ``.center`` anchors.
+            verbose: If ``True``, print a debug message.
+            options: Flag-style TikZ options without values
+                (e.g. ``["->", "thick", "dashed"]``).
+            cycle: If ``True``, close the path with ``-- cycle``.
+            color: Line color (e.g. ``"red"``, ``"blue!50"``).
+            fill: Fill color for the enclosed area.
+            draw: Stroke color when different from *color*.
+            text: Text color for path labels.
+            opacity: Overall opacity (0–1).
+            draw_opacity: Stroke opacity (0–1).
+            fill_opacity: Fill opacity (0–1).
+            text_opacity: Text opacity (0–1).
+            line_width: Line width (e.g. ``"1pt"``). For named widths use
+                *options* (``"thin"``, ``"thick"``, …).
+            line_cap: Line cap style: ``"butt"``, ``"rect"``, or
+                ``"round"``.
+            line_join: Line join style: ``"miter"``, ``"bevel"``, or
+                ``"round"``.
+            miter_limit: Miter limit factor for miter joins.
+            dash_pattern: Custom dash pattern (e.g. ``"on 2pt off 3pt"``).
+            dash_phase: Dash pattern starting offset (e.g. ``"2pt"``).
+            double: Inner line color for double lines (e.g. ``"white"``).
+            double_distance: Distance between double lines (e.g. ``"2pt"``).
+            rounded_corners: Corner rounding radius (e.g. ``"5pt"``).
+            rotate: Rotation angle in degrees.
+            xshift: Horizontal shift (e.g. ``"1cm"``).
+            yshift: Vertical shift (e.g. ``"1cm"``).
+            scale: Uniform scaling factor.
+            xscale: Horizontal scaling factor.
+            yscale: Vertical scaling factor.
+            xslant: Horizontal slant factor.
+            yslant: Vertical slant factor.
+            bend_left: Bend the path left by the given angle.
+            bend_right: Bend the path right by the given angle.
+            in_angle: Incoming angle for curved paths (TikZ ``in`` key).
+            out_angle: Outgoing angle for curved paths (TikZ ``out`` key).
+            looseness: Looseness of curved paths. Defaults to 1.
+            in_looseness: Incoming looseness for curved paths.
+            out_looseness: Outgoing looseness for curved paths.
+            min_distance: Minimum distance for curved paths.
+            max_distance: Maximum distance for curved paths.
+            tension: Tension for smooth curves.
+            pattern: Fill pattern name
+                (e.g. ``"north east lines"``, ``"dots"``).
+            pattern_color: Color for the fill pattern.
+            shading: Shading type
+                (``"axis"``, ``"radial"``, or ``"ball"``).
+            shading_angle: Angle for axis shading.
+            left_color: Left color for axis shading.
+            right_color: Right color for axis shading.
+            top_color: Top color for axis shading.
+            bottom_color: Bottom color for axis shading.
+            middle_color: Middle color for axis shading.
+            inner_color: Inner color for radial shading.
+            outer_color: Outer color for radial shading.
+            ball_color: Ball color for ball shading.
+            decoration: Decoration name
+                (e.g. ``"zigzag"``). Use with ``options=["decorate"]``.
+            step: Step size for grid patterns (e.g. ``"1cm"``).
+            pos: Position along the path for labels (0–1).
+            arrows: Arrow tip specification
+                (e.g. ``"-Stealth"``, ``"Latex-Latex"``).
+            font: Font specification (e.g. ``"\\\\tiny"``).
+            name_path: Name for path intersection calculations.
+            to_path: Custom to-path specification.
+            domain: Domain for plot paths (e.g. ``"0:360"``).
+            samples: Number of samples for plot paths.
+            mark: Mark type for plot paths
+                (e.g. ``"*"``, ``"o"``, ``"x"``).
+            mark_size: Size of plot marks (e.g. ``"2pt"``).
+            **kwargs: Additional TikZ options. Underscores in keys become
+                spaces (e.g. ``near_start`` → ``near start``).
 
-        Returns
-        -------
-        Path
-            The Path object that was added.
+        Returns:
+            The :class:`TikzPath` object that was added.
         """
         # Snapshot explicit params before creating any locals
         _params = locals().copy()
@@ -1146,16 +1124,30 @@ class TikzFigure:
 
     def plot3d(
         self,
-        x: list,
-        y: list,
-        z: list,
+        x: list[float],
+        y: list[float],
+        z: list[float],
         layer: int = 0,
         comment: str | None = None,
-        center=False,
+        center: bool = False,
         verbose: bool = False,
-        **kwargs,
-    ):
-        """Add a 3D plot to the figure."""
+        **kwargs: Any,
+    ) -> Plot3D:
+        """Add a 3-D data plot with ``\\addplot3``.
+
+        Args:
+            x: List of x-coordinate values.
+            y: List of y-coordinate values.
+            z: List of z-coordinate values.
+            layer: Target layer index. Defaults to ``0``.
+            comment: Optional comment prepended in the TikZ output.
+            center: If ``True``, connect through ``.center`` anchors.
+            verbose: If ``True``, print a debug message.
+            **kwargs: Additional pgfplots options (e.g. ``mark="*"``).
+
+        Returns:
+            The :class:`Plot3D` object that was added.
+        """
         plot = Plot3D(
             x=x,
             y=y,
@@ -1170,13 +1162,26 @@ class TikzFigure:
 
     def add_loop(
         self,
-        variable,
-        values,
-        layer=0,
-        comment=None,
+        variable: str,
+        values: list[Any],
+        layer: int = 0,
+        comment: str | None = None,
         verbose: bool = False,
-    ):
-        """Add a loop to the figure."""
+    ) -> Loop:
+        """Add a ``\\foreach`` loop to the figure.
+
+        Args:
+            variable: Loop variable name (without the leading backslash),
+                e.g. ``"i"`` produces ``\\foreach \\i in {...}``.
+            values: Sequence of values to iterate over.
+            layer: Target layer index. Defaults to ``0``.
+            comment: Optional comment prepended in the TikZ output.
+            verbose: If ``True``, print a debug message.
+
+        Returns:
+            The :class:`Loop` context manager. Add nodes and paths inside a
+            ``with`` block or by calling methods on the returned object.
+        """
         loop_obj = Loop(
             variable=variable,
             values=values,
@@ -1188,11 +1193,19 @@ class TikzFigure:
         return loop_obj
 
     def generate_tikz(self, use_layers: bool = True, verbose: bool = False) -> str:
-        """
-        Generate the TikZ script for the figure.
+        """Generate the complete TikZ source for this figure.
+
+        Args:
+            use_layers: If ``True`` and the figure has more than one layer,
+                wrap each layer in a ``pgfonlayer`` environment. Defaults
+                to ``True``.
+            verbose: If ``True``, print debug information during generation.
 
         Returns:
-        - tikz_script (str): The TikZ script as a string.
+            A string containing the full TikZ source, starting with
+            ``\\begin{tikzpicture}`` and ending with
+            ``\\end{tikzpicture}``. Wrapped in a ``figure`` environment
+            when a caption or label is set.
         """
         tikz_script = TIKZFIGURE_HEADER
         tikz_script += "\\begin{tikzpicture}\n"
@@ -1229,11 +1242,11 @@ class TikzFigure:
             use_layers = False
 
         # TODO: self.layers.layers is a bit clunky
-        layers = sorted([str(layer) for layer in self.layers.layers.keys()])
+        layers = sorted([str(lyr) for lyr in self.layers.layers.keys()])
         if use_layers:
             tikz_script += "% Define the layers library\n"
-            for layer in layers:
-                tikz_script += f"\\pgfdeclarelayer{{{layer}}}\n"
+            for lyr_str in layers:
+                tikz_script += f"\\pgfdeclarelayer{{{lyr_str}}}\n"
             if len(layers) > 0:
                 tikz_script += f"\\pgfsetlayers{{{','.join(layers)}}}\n"
 
@@ -1288,7 +1301,15 @@ class TikzFigure:
         return tikz_script
 
     def generate_standalone(self, verbose: bool = False) -> str:
-        """Generate a standalone LaTeX document containing the TikZ figure."""
+        """Generate a complete standalone LaTeX document for this figure.
+
+        Args:
+            verbose: Passed through to :meth:`generate_tikz`.
+
+        Returns:
+            A full LaTeX document string (``documentclass`` … ``document``)
+            that can be compiled directly with ``pdflatex``.
+        """
         tikz_code = self.generate_tikz(verbose=verbose)
 
         # Create a minimal LaTeX document
@@ -1310,15 +1331,18 @@ class TikzFigure:
         latex_document += f"\\begin{{document}}\n{tikz_code}\n\\end{{document}}"
         return latex_document
 
-    def compile_pdf(self, filename: TikzPath | str = Path("output.pdf"), verbose=False):
-        """
-        Compile the TikZ script into a PDF using pdflatex.
+    def compile_pdf(
+        self, filename: Path | str = Path("output.pdf"), verbose: bool = False
+    ) -> None:
+        """Compile the figure to a PDF file using ``pdflatex``.
 
-        Parameters:
-        - filename (Path | str): The name of the output PDF file (default is 'output.pdf').
+        Requires ``pdflatex`` to be installed and accessible from the
+        command line.
 
-        Notes:
-        - Requires 'pdflatex' to be installed and accessible from the command line.
+        Args:
+            filename: Output PDF path. Defaults to ``"output.pdf"``.
+            verbose: If ``True``, print the LaTeX source and the
+                ``pdflatex`` command before running.
         """
         if isinstance(filename, str):
             filename = Path(filename)
@@ -1348,7 +1372,7 @@ class TikzFigure:
                     f"{jobname}",
                     "-output-directory",
                     f"{output_directory}",
-                    tex_file,
+                    str(tex_file),
                 ]
                 if verbose:
                     print(f"{cmd =}")
@@ -1372,9 +1396,21 @@ class TikzFigure:
         filename: Path | str,
         dpi: int = 300,
         verbose: bool = False,
-    ):
-        """
-        Save the TikZ figure to a file (PDF, PNG, JPG) using pure Python tools.
+    ) -> None:
+        """Save the figure to a file.
+
+        Supported formats: ``.pdf``, ``.tikz``, ``.png``, ``.jpg``,
+        ``.jpeg``.  PNG/JPG output first compiles to a temporary PDF and
+        then converts via *pymupdf*.
+
+        Args:
+            filename: Destination path, including extension.
+            dpi: Resolution for raster output (PNG/JPG).
+                Defaults to ``300``.
+            verbose: If ``True``, print progress messages.
+
+        Raises:
+            ValueError: If the file extension is not supported.
         """
         if isinstance(filename, str):
             filename = Path(filename)
@@ -1419,27 +1455,31 @@ class TikzFigure:
         dpi: int = 300,
         verbose: bool = False,
         backend: str = "matplotlib",
-    ):
-        """
-        Display the TikZ figure.
+    ) -> None:
+        """Display the figure interactively.
 
-        In Jupyter notebooks, displays inline.
-        In regular Python, opens according to the backend parameter.
+        In Jupyter notebooks the figure is shown inline via IPython's
+        ``display``.  In regular Python sessions it is opened using the
+        selected *backend*.  Display is suppressed automatically when
+        running under pytest or when the ``tikzfigure_NO_SHOW=1``
+        environment variable is set.
 
-        Parameters:
-        -----------
-        width : int, optional
-            Display width in pixels (Jupyter only)
-        height : int, optional
-            Display height in pixels (Jupyter only)
-        verbose : bool
-            Print compilation details
-        backend : str
-            Display backend for non-Jupyter environments.
-            Options: "matplotlib" (default), "system", "pillow"
-            - "matplotlib": Opens in matplotlib window
-            - "system": Opens with system default image viewer
-            - "pillow": Opens with PIL/Pillow viewer
+        Args:
+            width: Display width in pixels (Jupyter only).
+            height: Display height in pixels (Jupyter only).
+            dpi: Resolution used when rendering to a raster image.
+                Defaults to ``300``.
+            verbose: If ``True``, print compilation details.
+            backend: Display backend for non-Jupyter environments.
+                One of:
+
+                - ``"matplotlib"`` *(default)* – open in a Matplotlib
+                  window.
+                - ``"system"`` – open with the OS default image viewer.
+                - ``"pillow"`` – open with PIL/Pillow.
+
+        Raises:
+            ValueError: If *backend* is not one of the supported values.
         """
         # Skip display in test/headless environments
         if os.environ.get("tikzfigure_NO_SHOW") == "1" or os.environ.get(
@@ -1478,8 +1518,16 @@ class TikzFigure:
                 "Options: 'matplotlib', 'system', 'pillow'"
             )
 
-    def _show_matplotlib(self, dpi: int = 300, verbose: bool = False):
-        """Show figure using matplotlib."""
+    def _show_matplotlib(self, dpi: int = 300, verbose: bool = False) -> None:
+        """Display the figure in a Matplotlib window.
+
+        Args:
+            dpi: Resolution for the intermediate PNG. Defaults to ``300``.
+            verbose: If ``True``, print a status message.
+
+        Raises:
+            ImportError: If ``matplotlib`` is not installed.
+        """
         try:
             import matplotlib.image as mpimg
             import matplotlib.pyplot as plt
@@ -1508,8 +1556,13 @@ class TikzFigure:
             plt.tight_layout(pad=0)
             plt.show()
 
-    def _show_system(self, dpi: int = 300, verbose: bool = False):
-        """Show figure using system default image viewer."""
+    def _show_system(self, dpi: int = 300, verbose: bool = False) -> None:
+        """Display the figure using the OS default image viewer.
+
+        Args:
+            dpi: Resolution for the intermediate PNG. Defaults to ``300``.
+            verbose: Unused; reserved for future debug output.
+        """
         with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp:
             temp_path = tmp.name
 
@@ -1526,7 +1579,7 @@ class TikzFigure:
             elif system == "Linux":
                 subprocess.run(["xdg-open", temp_path], check=True)
             elif system == "Windows":
-                os.startfile(temp_path)
+                os.startfile(temp_path)  # type: ignore[attr-defined]
             else:
                 print(f"Saved figure to: {temp_path}")
                 print("Please open manually (unsupported platform for auto-display)")
@@ -1534,8 +1587,16 @@ class TikzFigure:
             print(f"Could not open figure automatically: {e}")
             print(f"Figure saved to: {temp_path}")
 
-    def _show_pillow(self, dpi: int = 300, verbose: bool = False):
-        """Show figure using PIL/Pillow."""
+    def _show_pillow(self, dpi: int = 300, verbose: bool = False) -> None:
+        """Display the figure using PIL/Pillow's built-in image viewer.
+
+        Args:
+            dpi: Resolution for the intermediate PNG. Defaults to ``300``.
+            verbose: Unused; reserved for future debug output.
+
+        Raises:
+            ImportError: If ``Pillow`` is not installed.
+        """
         try:
             from PIL import Image
         except ImportError:
@@ -1557,31 +1618,47 @@ class TikzFigure:
 
     def _add_path(
         self,
-        nodes: list,
+        nodes: list[Any],
         layer: int = 0,
         comment: str | None = None,
-        center=False,
-        tikz_command="draw",
-        verbose=False,
+        center: bool = False,
+        tikz_command: str = "draw",
+        verbose: bool = False,
         options: list | str | None = None,
         cycle: bool = False,
-        **kwargs,
-    ):
-        """
-        Add a line or path connecting multiple nodes.
+        **kwargs: Any,
+    ) -> TikzPath:
+        """Internal helper that creates and registers a :class:`TikzPath`.
 
-        Parameters:
-        - nodes (list of str): List of node names to connect OR list of coordinates
-        - **kwargs: Additional TikZ path options (e.g., style, color).
+        Resolves node labels to :class:`Node` objects and coordinate tuples
+        to :class:`TikzCoordinate` objects before constructing the path.
 
-        Examples:
-        - add_path(['A', 'B', 'C'], color='blue')
-          Connects nodes A -> B -> C with a blue line.
+        Args:
+            nodes: Items to connect. Each element may be a :class:`Node`,
+                a node label string, or an ``(x, y)`` / ``(x, y, z)``
+                coordinate tuple.
+            layer: Target layer index. Defaults to ``0``.
+            comment: Optional comment prepended in the TikZ output.
+            center: If ``True``, connect through ``.center`` anchors.
+            tikz_command: TikZ drawing command (``"draw"`` or
+                ``"filldraw"``). Defaults to ``"draw"``.
+            verbose: If ``True``, print the resolved node list.
+            options: Flag-style TikZ options (string or list).
+            cycle: If ``True``, close the path with ``-- cycle``.
+            **kwargs: Keyword-style TikZ path options.
+
+        Returns:
+            The newly created :class:`TikzPath`.
+
+        Raises:
+            ValueError: If *nodes* is not a list.
+            NotImplementedError: If an element of *nodes* has an
+                unrecognised type.
         """
         if not isinstance(nodes, list):
             raise ValueError("nodes parameter must be a list of node names.")
 
-        nodes_cleaned = []
+        nodes_cleaned: list[Node | TikzCoordinate] = []
 
         for node in nodes:
             if isinstance(node, Node):
@@ -1590,8 +1667,8 @@ class TikzFigure:
                 # Find the node by its label
                 nodes_cleaned.append(self.layers.get_node(node))
             elif isinstance(node, tuple) or isinstance(node, list):
-                node = tuple(node)
-                nodes_cleaned.append(TikzCoordinate(*node, layer=layer))
+                coords = tuple(node)
+                nodes_cleaned.append(TikzCoordinate(*coords, layer=layer))  # type: ignore[misc]
             else:
                 raise NotImplementedError(
                     f"{node =}, {type(node) =} is not a valid node type!",
@@ -1599,6 +1676,9 @@ class TikzFigure:
 
         if verbose:
             print(f"Creating a path with the following nodes {nodes_cleaned}")
+
+        if isinstance(options, str):
+            options = [options]
 
         path = TikzPath(
             nodes=nodes_cleaned,
@@ -1612,8 +1692,19 @@ class TikzFigure:
         self.layers.add_item(item=path, layer=layer, verbose=verbose)
         return path
 
-    def _add_tabs(self, tikz_script):
-        """Add tabs to the TikZ script for better readability."""
+    def _add_tabs(self, tikz_script: str) -> str:
+        """Indent a TikZ script for improved readability.
+
+        Increases indentation after ``\\begin`` commands and decreases it
+        before ``\\end`` commands.
+
+        Args:
+            tikz_script: Raw TikZ source string.
+
+        Returns:
+            The same source with each line indented by four spaces per
+            nesting level.
+        """
         tikz_script_new = ""
         tab_str = "    "
         num_tabs = 0
@@ -1626,12 +1717,12 @@ class TikzFigure:
         return tikz_script_new
 
     # ------------------------------------------------------------- #
-    def __repr__(self):
-        """Representation of the TikzFigure. Returns the TikZ code."""
+    def __repr__(self) -> str:
+        """Return the generated TikZ source as the object representation."""
         return self.generate_tikz()
 
-    def __str__(self):
-        """String representation of the TikzFigure. Returns the TikZ code."""
+    def __str__(self) -> str:
+        """Return the generated TikZ source as a string."""
         return self.generate_tikz()
 
     # ---------------------------------------------------------------- #
@@ -1639,32 +1730,32 @@ class TikzFigure:
 
     @property
     def document_setup(self) -> str | None:
-        """Custom LaTeX document setup to be included in the preamble of the standalone document."""
+        """Raw LaTeX inserted in the preamble before ``\\begin{document}``."""
         return self._document_setup
 
     @property
     def extra_packages(self) -> list | None:
-        """List of extra LaTeX packages to be included in the preamble of the standalone document."""
+        """Extra LaTeX packages included in the standalone preamble."""
         return self._extra_packages
 
     @property
-    def ndim(self):
-        """Number of dimensions of the figure."""
+    def ndim(self) -> int:
+        """Number of spatial dimensions (``2`` or ``3``)."""
         return self._ndim
 
     @property
     def layers(self) -> LayerCollection:
-        """The layers of the figure, stored as a LayerCollection object."""
+        """The :class:`LayerCollection` holding all drawing layers."""
         return self._layers
 
     @property
-    def colors(self):
-        """The colors used in the figure."""
+    def colors(self) -> list[tuple[str, Color]]:
+        """List of ``(name, Color)`` pairs defined with :meth:`colorlet`."""
         return self._colors
 
     @property
     def variables(self) -> list:
-        """The variables used in the figure."""
+        """List of :class:`Variable` objects defined in this figure."""
         return self._variables
 
     def __eq__(self, other: object) -> bool:
