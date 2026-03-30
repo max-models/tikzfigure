@@ -1297,13 +1297,19 @@ class TikzFigure:
             #     num_tabs -= 1
         return tikz_script_new
 
-    def generate_tikz(self, use_layers: bool = True, verbose: bool = False) -> str:
+    def generate_tikz(
+        self,
+        use_layers: bool = True,
+        skip_header: bool = False,
+        verbose: bool = False,
+    ) -> str:
         """Generate the complete TikZ source for this figure.
 
         Args:
             use_layers: If ``True`` and the figure has more than one layer,
                 wrap each layer in a ``pgfonlayer`` environment. Defaults
                 to ``True``.
+            skip_header: If ``True``, omit the TikZ header. Defaults to ``False``.
             verbose: If ``True``, print debug information during generation.
 
         Returns:
@@ -1312,7 +1318,9 @@ class TikzFigure:
             ``\\end{tikzpicture}``. Wrapped in a ``figure`` environment
             when a caption or label is set.
         """
-        tikz_script = TIKZFIGURE_HEADER
+        tikz_script = ""
+        if not skip_header:
+            tikz_script += TIKZFIGURE_HEADER
         tikz_script += "\\begin{tikzpicture}\n"
         if self._figure_setup:
             tikz_script += f"[{self._figure_setup}]\n"
@@ -1408,17 +1416,20 @@ class TikzFigure:
         tikz_script = tikz_script.replace(r"% {\end foreach}", "")
         return tikz_script
 
-    def generate_standalone(self, verbose: bool = False) -> str:
+    def generate_standalone(
+        self, skip_header: bool = False, verbose: bool = False
+    ) -> str:
         """Generate a complete standalone LaTeX document for this figure.
 
         Args:
+            skip_header: If ``True``, omit the TikZ header. Defaults to ``False``.
             verbose: Passed through to :meth:`generate_tikz`.
 
         Returns:
             A full LaTeX document string (``documentclass`` … ``document``)
             that can be compiled directly with ``pdflatex``.
         """
-        tikz_code = self.generate_tikz(verbose=verbose)
+        tikz_code = self.generate_tikz(skip_header=skip_header, verbose=verbose)
 
         # Create a minimal LaTeX document
         latex_document = (
