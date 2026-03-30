@@ -44,7 +44,6 @@ jobs:
 
   mypy:
     runs-on: ubuntu-latest
-    continue-on-error: true
     steps:
       - name: Checkout the code
         uses: actions/checkout@v4
@@ -56,5 +55,5 @@ jobs:
 
       - name: Type checking with mypy
         run: |
-          pip install mypy
-          mypy src/ || true
+          pip install -e ".[test]" mypy
+          mypy src/
