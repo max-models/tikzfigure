@@ -41,19 +41,6 @@ class Loop(TikzObject):
 
         super().__init__(layer=layer, comment=comment)
 
-    def __enter__(self) -> "Loop":
-        """Enter the context manager, returning this loop."""
-        return self
-
-    def __exit__(
-        self,
-        exc_type: type[BaseException] | None,
-        exc_value: BaseException | None,
-        traceback: types.TracebackType | None,
-    ) -> None:
-        """Exit the context manager (no-op; content is already collected)."""
-        pass
-
     @property
     def variable(self) -> str:
         """Loop variable name (without the leading backslash)."""
@@ -181,3 +168,16 @@ class Loop(TikzObject):
             elif item_type == "Loop":
                 loop._items.append(Loop.from_dict(item_data))
         return loop
+
+    def __enter__(self) -> "Loop":
+        """Enter the context manager, returning this loop."""
+        return self
+
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_value: BaseException | None,
+        traceback: types.TracebackType | None,
+    ) -> None:
+        """Exit the context manager (no-op; content is already collected)."""
+        pass

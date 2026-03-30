@@ -23,11 +23,6 @@ class Color:
         """The raw TikZ color specification string."""
         return self._color_spec
 
-    def __eq__(self, other: object) -> bool:
-        if not isinstance(other, Color):
-            return NotImplemented
-        return self.to_dict() == other.to_dict()
-
     def to_dict(self) -> dict[str, Any]:
         """Serialize this color to a plain dictionary.
 
@@ -47,3 +42,8 @@ class Color:
             A new :class:`Color` instance.
         """
         return cls(color_spec=d["color_spec"])
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, Color):
+            return NotImplemented
+        return self.to_dict() == other.to_dict()
