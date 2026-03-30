@@ -58,6 +58,85 @@ class TikzFigure:
         extra_packages: Extra LaTeX packages to include in the preamble.
     """
 
+    # ------------------------------------------------------------- #
+    # Private methods
+
+    def _add_path(
+        self,
+        nodes: list[Any],
+        layer: int = 0,
+        comment: str | None = None,
+        center: bool = False,
+        tikz_command: str = "draw",
+        verbose: bool = False,
+        options: list | str | None = None,
+        cycle: bool = False,
+        **kwargs: Any,
+    ) -> TikzPath:
+        """Internal helper that creates and registers a :class:`TikzPath`.
+
+        Resolves node labels to :class:`Node` objects and coordinate tuples
+        to :class:`TikzCoordinate` objects before constructing the path.
+
+        Args:
+            nodes: Items to connect. Each element may be a :class:`Node`,
+                a node label string, or an ``(x, y)`` / ``(x, y, z)``
+                coordinate tuple.
+            layer: Target layer index. Defaults to ``0``.
+            comment: Optional comment prepended in the TikZ output.
+            center: If ``True``, connect through ``.center`` anchors.
+            tikz_command: TikZ drawing command (``"draw"`` or
+                ``"filldraw"``). Defaults to ``"draw"``.
+            verbose: If ``True``, print the resolved node list.
+            options: Flag-style TikZ options (string or list).
+            cycle: If ``True``, close the path with ``-- cycle``.
+            **kwargs: Keyword-style TikZ path options.
+
+        Returns:
+            The newly created :class:`TikzPath`.
+
+        Raises:
+            ValueError: If *nodes* is not a list.
+            NotImplementedError: If an element of *nodes* has an
+                unrecognised type.
+        """
+        if not isinstance(nodes, list):
+            raise ValueError("nodes parameter must be a list of node names.")
+
+        nodes_cleaned: list[Node | TikzCoordinate] = []
+
+        for node in nodes:
+            if isinstance(node, Node):
+                nodes_cleaned.append(node)
+            elif isinstance(node, str):
+                # Find the node by its label
+                nodes_cleaned.append(self.layers.get_node(node))
+            elif isinstance(node, tuple) or isinstance(node, list):
+                coords = tuple(node)
+                nodes_cleaned.append(TikzCoordinate(*coords, layer=layer))  # type: ignore[misc]
+            else:
+                raise NotImplementedError(
+                    f"{node =}, {type(node) =} is not a valid node type!",
+                )
+
+        if verbose:
+            print(f"Creating a path with the following nodes {nodes_cleaned}")
+
+        if isinstance(options, str):
+            options = [options]
+
+        path = TikzPath(
+            nodes=nodes_cleaned,
+            comment=comment,
+            center=center,
+            tikz_command=tikz_command,
+            options=options,
+            cycle=cycle,
+            **kwargs,
+        )
+        self.layers.add_item(item=path, layer=layer, verbose=verbose)
+        return path
+
     def __init__(
         self,
         ndim: int = 2,
@@ -1192,6 +1271,30 @@ class TikzFigure:
         self.layers.add_item(item=loop_obj, layer=layer, verbose=verbose)
         return loop_obj
 
+    def _add_tabs(self, tikz_script: str) -> str:
+        """Indent a TikZ script for improved readability.
+
+        Increases indentation after ``\\begin`` commands and decreases it
+        before ``\\end`` commands.
+
+        Args:
+            tikz_script: Raw TikZ source string.
+
+        Returns:
+            The same source with each line indented by four spaces per
+            nesting level.
+        """
+        tikz_script_new = ""
+        tab_str = "    "
+        num_tabs = 0
+        for line in tikz_script.split("\n"):
+            if "\\end" in line or "end \\foreach" in line:
+                num_tabs = max(num_tabs - 1, 0)
+            tikz_script_new += f"{tab_str * num_tabs}{line}\n"
+            if "\\begin" in line or "start \\foreach" in line:
+                num_tabs += 1
+        return tikz_script_new
+
     def generate_tikz(self, use_layers: bool = True, verbose: bool = False) -> str:
         """Generate the complete TikZ source for this figure.
 
@@ -1453,79 +1556,6 @@ class TikzFigure:
         else:
             raise ValueError(f"Unsupported file format: {ext}")
 
-    def show(
-        self,
-        width: int | None = None,
-        height: int | None = None,
-        dpi: int = 300,
-        verbose: bool = False,
-        backend: str = "matplotlib",
-        transparent: bool = True,
-    ) -> None:
-        """Display the figure interactively.
-
-        In Jupyter notebooks the figure is shown inline via IPython's
-        ``display``.  In regular Python sessions it is opened using the
-        selected *backend*.  Display is suppressed automatically when
-        running under pytest or when the ``tikzfigure_NO_SHOW=1``
-        environment variable is set.
-
-        Args:
-            width: Display width in pixels (Jupyter only).
-            height: Display height in pixels (Jupyter only).
-            dpi: Resolution used when rendering to a raster image.
-                Defaults to ``300``.
-            verbose: If ``True``, print compilation details.
-            backend: Display backend for non-Jupyter environments.
-                One of:
-
-                - ``"matplotlib"`` *(default)* – open in a Matplotlib
-                  window.
-                - ``"system"`` – open with the OS default image viewer.
-                - ``"pillow"`` – open with PIL/Pillow.
-
-        Raises:
-            ValueError: If *backend* is not one of the supported values.
-        """
-        # Skip display in test/headless environments
-        if os.environ.get("tikzfigure_NO_SHOW") == "1" or os.environ.get(
-            "PYTEST_CURRENT_TEST"
-        ):
-            if verbose:
-                print("Display suppressed (test/headless mode).")
-            return
-
-        # Check if we're in a Jupyter/IPython environment
-        try:
-            from IPython import get_ipython
-
-            if get_ipython() is not None and "IPKernelApp" in get_ipython().config:
-                # We're in Jupyter - use IPython display
-                from IPython.display import Image, display
-
-                with tempfile.TemporaryDirectory() as tempdir:
-                    temp_pdf = Path(tempdir) / "temp.png"
-                    self.savefig(
-                        filename=temp_pdf, transparent=transparent, verbose=verbose
-                    )
-                    display(Image(filename=temp_pdf, width=width, height=height))
-                return
-        except (ImportError, AttributeError):
-            pass
-
-        # Not in Jupyter - use specified backend
-        if backend == "matplotlib":
-            self._show_matplotlib(dpi=dpi, verbose=verbose, transparent=transparent)
-        elif backend == "system":
-            self._show_system(dpi=dpi, verbose=verbose, transparent=transparent)
-        elif backend == "pillow":
-            self._show_pillow(dpi=dpi, verbose=verbose, transparent=transparent)
-        else:
-            raise ValueError(
-                f"Unknown backend '{backend}'. "
-                "Options: 'matplotlib', 'system', 'pillow'"
-            )
-
     def _show_matplotlib(
         self, dpi: int = 300, verbose: bool = False, transparent: bool = True
     ) -> None:
@@ -1634,117 +1664,78 @@ class TikzFigure:
             img = Image.open(temp_png)
             img.show()
 
-    # ------------------------------------------------------------- #
-    # Private methods
-
-    def _add_path(
+    def show(
         self,
-        nodes: list[Any],
-        layer: int = 0,
-        comment: str | None = None,
-        center: bool = False,
-        tikz_command: str = "draw",
+        width: int | None = None,
+        height: int | None = None,
+        dpi: int = 300,
         verbose: bool = False,
-        options: list | str | None = None,
-        cycle: bool = False,
-        **kwargs: Any,
-    ) -> TikzPath:
-        """Internal helper that creates and registers a :class:`TikzPath`.
+        backend: str = "matplotlib",
+        transparent: bool = True,
+    ) -> None:
+        """Display the figure interactively.
 
-        Resolves node labels to :class:`Node` objects and coordinate tuples
-        to :class:`TikzCoordinate` objects before constructing the path.
+        In Jupyter notebooks the figure is shown inline via IPython's
+        ``display``.  In regular Python sessions it is opened using the
+        selected *backend*.  Display is suppressed automatically when
+        running under pytest or when the ``tikzfigure_NO_SHOW=1``
+        environment variable is set.
 
         Args:
-            nodes: Items to connect. Each element may be a :class:`Node`,
-                a node label string, or an ``(x, y)`` / ``(x, y, z)``
-                coordinate tuple.
-            layer: Target layer index. Defaults to ``0``.
-            comment: Optional comment prepended in the TikZ output.
-            center: If ``True``, connect through ``.center`` anchors.
-            tikz_command: TikZ drawing command (``"draw"`` or
-                ``"filldraw"``). Defaults to ``"draw"``.
-            verbose: If ``True``, print the resolved node list.
-            options: Flag-style TikZ options (string or list).
-            cycle: If ``True``, close the path with ``-- cycle``.
-            **kwargs: Keyword-style TikZ path options.
+            width: Display width in pixels (Jupyter only).
+            height: Display height in pixels (Jupyter only).
+            dpi: Resolution used when rendering to a raster image.
+                Defaults to ``300``.
+            verbose: If ``True``, print compilation details.
+            backend: Display backend for non-Jupyter environments.
+                One of:
 
-        Returns:
-            The newly created :class:`TikzPath`.
+                - ``"matplotlib"`` *(default)* – open in a Matplotlib
+                  window.
+                - ``"system"`` – open with the OS default image viewer.
+                - ``"pillow"`` – open with PIL/Pillow.
 
         Raises:
-            ValueError: If *nodes* is not a list.
-            NotImplementedError: If an element of *nodes* has an
-                unrecognised type.
+            ValueError: If *backend* is not one of the supported values.
         """
-        if not isinstance(nodes, list):
-            raise ValueError("nodes parameter must be a list of node names.")
+        # Skip display in test/headless environments
+        if os.environ.get("tikzfigure_NO_SHOW") == "1" or os.environ.get(
+            "PYTEST_CURRENT_TEST"
+        ):
+            if verbose:
+                print("Display suppressed (test/headless mode).")
+            return
 
-        nodes_cleaned: list[Node | TikzCoordinate] = []
+        # Check if we're in a Jupyter/IPython environment
+        try:
+            from IPython import get_ipython
 
-        for node in nodes:
-            if isinstance(node, Node):
-                nodes_cleaned.append(node)
-            elif isinstance(node, str):
-                # Find the node by its label
-                nodes_cleaned.append(self.layers.get_node(node))
-            elif isinstance(node, tuple) or isinstance(node, list):
-                coords = tuple(node)
-                nodes_cleaned.append(TikzCoordinate(*coords, layer=layer))  # type: ignore[misc]
-            else:
-                raise NotImplementedError(
-                    f"{node =}, {type(node) =} is not a valid node type!",
-                )
+            if get_ipython() is not None and "IPKernelApp" in get_ipython().config:
+                # We're in Jupyter - use IPython display
+                from IPython.display import Image, display
 
-        if verbose:
-            print(f"Creating a path with the following nodes {nodes_cleaned}")
+                with tempfile.TemporaryDirectory() as tempdir:
+                    temp_pdf = Path(tempdir) / "temp.png"
+                    self.savefig(
+                        filename=temp_pdf, transparent=transparent, verbose=verbose
+                    )
+                    display(Image(filename=temp_pdf, width=width, height=height))
+                return
+        except (ImportError, AttributeError):
+            pass
 
-        if isinstance(options, str):
-            options = [options]
-
-        path = TikzPath(
-            nodes=nodes_cleaned,
-            comment=comment,
-            center=center,
-            tikz_command=tikz_command,
-            options=options,
-            cycle=cycle,
-            **kwargs,
-        )
-        self.layers.add_item(item=path, layer=layer, verbose=verbose)
-        return path
-
-    def _add_tabs(self, tikz_script: str) -> str:
-        """Indent a TikZ script for improved readability.
-
-        Increases indentation after ``\\begin`` commands and decreases it
-        before ``\\end`` commands.
-
-        Args:
-            tikz_script: Raw TikZ source string.
-
-        Returns:
-            The same source with each line indented by four spaces per
-            nesting level.
-        """
-        tikz_script_new = ""
-        tab_str = "    "
-        num_tabs = 0
-        for line in tikz_script.split("\n"):
-            if "\\end" in line or "end \\foreach" in line:
-                num_tabs = max(num_tabs - 1, 0)
-            tikz_script_new += f"{tab_str * num_tabs}{line}\n"
-            if "\\begin" in line or "start \\foreach" in line:
-                num_tabs += 1
-        return tikz_script_new
-
-    # ------------------------------------------------------------- #
-    def __repr__(self) -> str:
-        """Return the generated TikZ source as the object representation."""
-        return self.generate_tikz()
-
-    def __str__(self) -> str:
-        """Return the generated TikZ source as a string."""
-        return self.generate_tikz()
+        # Not in Jupyter - use specified backend
+        if backend == "matplotlib":
+            self._show_matplotlib(dpi=dpi, verbose=verbose, transparent=transparent)
+        elif backend == "system":
+            self._show_system(dpi=dpi, verbose=verbose, transparent=transparent)
+        elif backend == "pillow":
+            self._show_pillow(dpi=dpi, verbose=verbose, transparent=transparent)
+        else:
+            raise ValueError(
+                f"Unknown backend '{backend}'. "
+                "Options: 'matplotlib', 'system', 'pillow'"
+            )
 
     # ---------------------------------------------------------------- #
     # Properties
@@ -1783,3 +1774,12 @@ class TikzFigure:
         if not isinstance(other, TikzFigure):
             return NotImplemented
         return self.to_dict() == other.to_dict()
+
+    # ------------------------------------------------------------- #
+    def __repr__(self) -> str:
+        """Return the generated TikZ source as the object representation."""
+        return self.generate_tikz()
+
+    def __str__(self) -> str:
+        """Return the generated TikZ source as a string."""
+        return self.generate_tikz()

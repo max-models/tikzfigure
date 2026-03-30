@@ -27,11 +27,6 @@ class RawTikz:
         """
         return self.tikz_code + "\n"
 
-    def __eq__(self, other: object) -> bool:
-        if not isinstance(other, RawTikz):
-            return NotImplemented
-        return self.to_dict() == other.to_dict()
-
     def to_dict(self) -> dict[str, Any]:
         """Serialize this block to a plain dictionary.
 
@@ -51,3 +46,8 @@ class RawTikz:
             A new :class:`RawTikz` instance.
         """
         return cls(tikz_code=d["tikz_code"])
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, RawTikz):
+            return NotImplemented
+        return self.to_dict() == other.to_dict()
