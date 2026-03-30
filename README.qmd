@@ -30,10 +30,10 @@ from tikzfigure import TikzFigure
 
 fig = TikzFigure()
 
-n1 = fig.add_node(0, 0, shape="circle", color="white", fill="blue!40!green", content="Tikz")
-n2 = fig.add_node(2, 0, shape="circle", color="white", fill="purple!40!orange", content="Pics")
+n1 = fig.add_node(0, 0, shape="circle", fill="blue!40!green", content="Tikz")
+n2 = fig.add_node(2, 0, shape="circle", fill="purple!40!orange", content="Figure")
 
-fig.draw([n1, n2], options=["->", "line width=2"], color="gray")
+fig.draw([n1, n2], line_width=2, arrows="->", color="gray")
 
 fig.show()
 ```
