@@ -23,8 +23,8 @@ pip install -e ".[dev]"
 
 ## Optional extras
 
-| Extra            | Contents                            |
-| ---------------- | ----------------------------------- |
+| Extra              | Contents                            |
+| ------------------ | ----------------------------------- |
 | `tikzfigure[vis]`  | `matplotlib`, `jupyterlab`          |
 | `tikzfigure[docs]` | Documentation build dependencies    |
 | `tikzfigure[test]` | `pytest`, `coverage`                |
