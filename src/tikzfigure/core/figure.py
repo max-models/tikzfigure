@@ -6,8 +6,6 @@ from importlib.metadata import version
 from pathlib import Path
 from typing import Any
 
-import fitz
-
 from tikzfigure.core.base import TikzObject
 from tikzfigure.core.color import Color
 from tikzfigure.core.coordinate import TikzCoordinate
@@ -1541,6 +1539,8 @@ class TikzFigure:
             with open(filename, "w") as f:
                 f.write(tikz_code)
         elif ext in [".png", ".jpg", ".jpeg"]:
+            import fitz  # PyMuPDF
+
             # Compile to a temporary PDF first
             with tempfile.TemporaryDirectory() as tempdir:
                 temp_pdf = Path(tempdir) / "temp.pdf"
