@@ -1,3 +1,5 @@
+from typing import Any
+
 from IPython.core.magic import Magics, cell_magic, line_magic, magics_class
 
 from tikzfigure.core.figure import TikzFigure
@@ -5,45 +7,39 @@ from tikzfigure.core.figure import TikzFigure
 
 @magics_class
 class TikzMagics(Magics):
-    """IPython magic commands for rendering TikZ figures."""
+    """IPython magic commands for rendering TikZ figures inline.
+
+    Load this extension in a Jupyter notebook with::
+
+        %load_ext tikzfigure.ipython
+
+    Then use ``%%tikz`` to render TikZ code cells or ``%tikz_load`` to
+    display a TikZ file from disk.
+    """
 
     @cell_magic
-    def tikz(self, line, cell):
+    def tikz(self, line: str, cell: str) -> None:
+        """Compile and display a TikZ figure from a cell.
+
+        Usage::
+
+            %%tikz [options]
+            \\begin{tikzpicture}
+            \\draw (0,0) -- (1,1);
+            \\end{tikzpicture}
+
+        Args:
+            line: Command-line options for this magic:
+
+                - ``-s`` / ``--save <path>`` – save output to *path*.
+                - ``-w`` / ``--width <px>`` – display width in pixels
+                  (Jupyter only).
+                - ``-H`` / ``--height <px>`` – display height in pixels
+                  (Jupyter only).
+                - ``-v`` / ``--verbose`` – show compilation details.
+
+            cell: The TikZ source code (the cell body).
         """
-        Cell magic to compile and display TikZ figures.
-
-        Usage:
-        ------
-        %%tikz [options]
-        \\begin{tikzpicture}
-        \\draw (0,0) -- (1,1);
-        \\end{tikzpicture}
-
-        Options:
-        --------
-        -s, --save : Save output to file
-        -w, --width : Display width in pixels
-        -H, --height : Display height in pixels
-        -v, --verbose : Show compilation details
-
-        Examples:
-        ---------
-        %%tikz
-        \\begin{tikzpicture}
-        \\draw (0,0) circle (1cm);
-        \\end{tikzpicture}
-
-        %%tikz --save output.pdf
-        \\begin{tikzpicture}
-        \\node {Hello TikZ!};
-        \\end{tikzpicture}
-
-        %%tikz --width 800
-        \\begin{tikzpicture}
-        \\draw[->] (0,0) -- (2,0);
-        \\end{tikzpicture}
-        """
-        # Parse options
         import argparse
 
         parser = argparse.ArgumentParser()
@@ -58,17 +54,14 @@ class TikzMagics(Magics):
             print("Error parsing arguments. Use %%tikz? for help.")
             return
 
-        # Create TikzFigure and display
         try:
             fig = TikzFigure.from_tikz_code(cell)
 
-            # Save if requested
             if args.save:
                 fig.savefig(filename=args.save, verbose=args.verbose)
                 if args.verbose:
                     print(f"Saved to {args.save}")
 
-            # Display the figure
             fig.show(width=args.width, height=args.height, verbose=args.verbose)
 
         except Exception as e:
@@ -79,22 +72,19 @@ class TikzMagics(Magics):
                 traceback.print_exc()
 
     @line_magic
-    def tikz_load(self, line):
-        """
-        Line magic to load and display a TikZ figure from file.
+    def tikz_load(self, line: str) -> None:
+        """Load and display a TikZ figure from a file on disk.
 
-        Usage:
-        ------
-        %tikz_load filename.tikz [options]
+        Usage::
 
-        Options:
-        --------
-        -w, --width : Display width in pixels
-        -H, --height : Display height in pixels
+            %tikz_load filename.tikz [options]
 
-        Example:
-        --------
-        %tikz_load my_figure.tikz --width 800
+        Args:
+            line: Space-separated arguments:
+
+                - ``filename`` – path to the ``.tikz`` file (required).
+                - ``-w`` / ``--width <px>`` – display width in pixels.
+                - ``-H`` / ``--height <px>`` – display height in pixels.
         """
         import argparse
 
@@ -109,12 +99,10 @@ class TikzMagics(Magics):
             print("Error parsing arguments. Use %tikz_load? for help.")
             return
 
-        # Read TikZ file and display
         try:
             with open(args.filename, "r") as f:
                 tikz_code = f.read()
 
-            # Create figure and display
             fig = TikzFigure.from_tikz_code(tikz_code)
             fig.show(width=args.width, height=args.height)
 
@@ -122,11 +110,20 @@ class TikzMagics(Magics):
             print(f"Error: File '{args.filename}' not found.")
 
 
-def load_ipython_extension(ipython):
-    """Load the extension in IPython."""
+def load_ipython_extension(ipython: Any) -> None:
+    """Register TikzMagics with the running IPython instance.
+
+    Args:
+        ipython: The active :class:`IPython.core.interactiveshell.InteractiveShell`
+            instance provided by IPython's extension machinery.
+    """
     ipython.register_magics(TikzMagics)
 
 
-def unload_ipython_extension(ipython):
-    """Unload the extension."""
+def unload_ipython_extension(ipython: Any) -> None:
+    """Unload the tikzfigure IPython extension.
+
+    Args:
+        ipython: The active IPython shell instance. Currently unused.
+    """
     pass
