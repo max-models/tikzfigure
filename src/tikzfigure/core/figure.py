@@ -1293,6 +1293,10 @@ class TikzFigure:
             tikz_script_new += f"{tab_str * num_tabs}{line}".rstrip() + "\n"
             if "\\begin" in line or "start \\foreach" in line:
                 num_tabs += 1
+            if "\\foreach" in line and "in" in line and "{" in line:
+                num_tabs += 1
+            # if "} % \\end foreach" in line and num_tabs > 0:
+            #     num_tabs -= 1
         return tikz_script_new
 
     def generate_tikz(self, use_layers: bool = True, verbose: bool = False) -> str:
@@ -1401,6 +1405,9 @@ class TikzFigure:
             figure_env += "\\end{figure}"
             tikz_script = figure_env
         tikz_script = self._add_tabs(tikz_script)
+
+        # Cleanup
+        tikz_script = tikz_script.replace(r"% {\end foreach}", "")
         return tikz_script
 
     def generate_standalone(self, verbose: bool = False) -> str:

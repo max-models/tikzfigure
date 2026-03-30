@@ -42,6 +42,7 @@ with fig.add_loop("i", range(6), comment="Row of circles") as loop:
     )
 
 fig.show()
+print(fig)
 ```
 
 ## Nested loops: a grid of nodes
@@ -52,8 +53,8 @@ The inner loop variable `\\j` is independent of the outer `\\i`.
 ```{python}
 fig = TikzFigure()
 
-with fig.add_loop("i", range(5)) as loop_i:
-    with loop_i.add_loop("j", range(4)) as loop_j:
+with fig.add_loop("i", range(5), comment="Outer loop") as loop_i:
+    with loop_i.add_loop("j", range(4), comment="Inner loop") as loop_j:
         loop_j.add_node(
             x=r"2*\i",
             y=r"2*\j",
@@ -64,4 +65,5 @@ with fig.add_loop("i", range(5)) as loop_i:
         )
 
 fig.show()
+print(fig)
 ```
