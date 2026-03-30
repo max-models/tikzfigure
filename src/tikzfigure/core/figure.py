@@ -1396,6 +1396,7 @@ class TikzFigure:
         filename: Path | str,
         dpi: int = 300,
         verbose: bool = False,
+        transparent: bool = True,
     ) -> None:
         """Save the figure to a file.
 
@@ -1408,6 +1409,9 @@ class TikzFigure:
             dpi: Resolution for raster output (PNG/JPG).
                 Defaults to ``300``.
             verbose: If ``True``, print progress messages.
+            transparent: If ``True``, render PNG output with a transparent
+                background instead of white.  Only supported for ``.png``;
+                ignored for other formats.
 
         Raises:
             ValueError: If the file extension is not supported.
@@ -1442,7 +1446,8 @@ class TikzFigure:
                 # Convert PDF → image
                 doc = fitz.open(temp_pdf)
                 page = doc[0]
-                pix = page.get_pixmap(dpi=dpi)
+                use_alpha = transparent and ext == ".png"
+                pix = page.get_pixmap(dpi=dpi, alpha=use_alpha)
                 pix.save(filename)
                 doc.close()
         else:
@@ -1455,6 +1460,7 @@ class TikzFigure:
         dpi: int = 300,
         verbose: bool = False,
         backend: str = "matplotlib",
+        transparent: bool = True,
     ) -> None:
         """Display the figure interactively.
 
@@ -1499,7 +1505,9 @@ class TikzFigure:
 
                 with tempfile.TemporaryDirectory() as tempdir:
                     temp_pdf = Path(tempdir) / "temp.png"
-                    self.savefig(filename=temp_pdf, verbose=verbose)
+                    self.savefig(
+                        filename=temp_pdf, transparent=transparent, verbose=verbose
+                    )
                     display(Image(filename=temp_pdf, width=width, height=height))
                 return
         except (ImportError, AttributeError):
@@ -1507,23 +1515,26 @@ class TikzFigure:
 
         # Not in Jupyter - use specified backend
         if backend == "matplotlib":
-            self._show_matplotlib(dpi=dpi, verbose=verbose)
+            self._show_matplotlib(dpi=dpi, verbose=verbose, transparent=transparent)
         elif backend == "system":
-            self._show_system(dpi=dpi, verbose=verbose)
+            self._show_system(dpi=dpi, verbose=verbose, transparent=transparent)
         elif backend == "pillow":
-            self._show_pillow(dpi=dpi, verbose=verbose)
+            self._show_pillow(dpi=dpi, verbose=verbose, transparent=transparent)
         else:
             raise ValueError(
                 f"Unknown backend '{backend}'. "
                 "Options: 'matplotlib', 'system', 'pillow'"
             )
 
-    def _show_matplotlib(self, dpi: int = 300, verbose: bool = False) -> None:
+    def _show_matplotlib(
+        self, dpi: int = 300, verbose: bool = False, transparent: bool = True
+    ) -> None:
         """Display the figure in a Matplotlib window.
 
         Args:
             dpi: Resolution for the intermediate PNG. Defaults to ``300``.
             verbose: If ``True``, print a status message.
+            transparent: If ``True``, make the background transparent.
 
         Raises:
             ImportError: If ``matplotlib`` is not installed.
@@ -1556,18 +1567,23 @@ class TikzFigure:
             plt.tight_layout(pad=0)
             plt.show()
 
-    def _show_system(self, dpi: int = 300, verbose: bool = False) -> None:
+    def _show_system(
+        self, dpi: int = 300, transparent: bool = True, verbose: bool = False
+    ) -> None:
         """Display the figure using the OS default image viewer.
 
         Args:
             dpi: Resolution for the intermediate PNG. Defaults to ``300``.
             verbose: Unused; reserved for future debug output.
+            transparent: If ``True``, make the background transparent.
         """
         with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp:
             temp_path = tmp.name
 
         try:
-            self.savefig(filename=temp_path, dpi=dpi, verbose=verbose)
+            self.savefig(
+                filename=temp_path, dpi=dpi, transparent=transparent, verbose=verbose
+            )
 
             # Open with system default viewer
             import platform
@@ -1587,12 +1603,15 @@ class TikzFigure:
             print(f"Could not open figure automatically: {e}")
             print(f"Figure saved to: {temp_path}")
 
-    def _show_pillow(self, dpi: int = 300, verbose: bool = False) -> None:
+    def _show_pillow(
+        self, dpi: int = 300, verbose: bool = False, transparent: bool = True
+    ) -> None:
         """Display the figure using PIL/Pillow's built-in image viewer.
 
         Args:
             dpi: Resolution for the intermediate PNG. Defaults to ``300``.
             verbose: Unused; reserved for future debug output.
+            transparent: If ``True``, make the background transparent.
 
         Raises:
             ImportError: If ``Pillow`` is not installed.
@@ -1608,7 +1627,9 @@ class TikzFigure:
 
         with tempfile.TemporaryDirectory() as tempdir:
             temp_png = Path(tempdir) / "temp.png"
-            self.savefig(filename=temp_png, dpi=dpi, verbose=verbose)
+            self.savefig(
+                filename=temp_png, dpi=dpi, transparent=transparent, verbose=verbose
+            )
 
             img = Image.open(temp_png)
             img.show()

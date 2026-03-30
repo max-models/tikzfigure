@@ -331,7 +331,7 @@ def test_savefig_tikz_pdf_png_and_invalid(tmp_path, monkeypatch):
                 f.write(b"png")
 
     class DummyPage:
-        def get_pixmap(self, dpi):
+        def get_pixmap(self, dpi, alpha=False):
             return DummyPix()
 
     class DummyDoc:
