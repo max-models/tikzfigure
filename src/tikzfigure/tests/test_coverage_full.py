@@ -331,7 +331,7 @@ def test_savefig_tikz_pdf_png_and_invalid(tmp_path, monkeypatch):
                 f.write(b"png")
 
     class DummyPage:
-        def get_pixmap(self, dpi):
+        def get_pixmap(self, dpi, alpha=False):
             return DummyPix()
 
     class DummyDoc:
@@ -390,7 +390,9 @@ def test_show_jupyter_branch(monkeypatch):
     ipy_module.display = display_module
     monkeypatch.setitem(sys.modules, "IPython", ipy_module)
     monkeypatch.setitem(sys.modules, "IPython.display", display_module)
-    monkeypatch.setattr(fig, "savefig", lambda filename, verbose=False: None)
+    monkeypatch.setattr(
+        fig, "savefig", lambda filename, verbose=False, transparent=False: None
+    )
 
     fig.show(width=100, height=200, verbose=False)
 
@@ -433,7 +435,9 @@ def test_show_backends_and_errors(monkeypatch, capsys):
     monkeypatch.setitem(sys.modules, "matplotlib", fake_matplotlib)
     monkeypatch.setitem(sys.modules, "matplotlib.image", fake_image)
     monkeypatch.setitem(sys.modules, "matplotlib.pyplot", fake_pyplot)
-    monkeypatch.setattr(fig, "savefig", lambda filename, dpi=300, verbose=False: None)
+    monkeypatch.setattr(
+        fig, "savefig", lambda filename, dpi=300, verbose=False, transparent=False: None
+    )
 
     fig._show_matplotlib(dpi=72, verbose=True)
 
@@ -471,7 +475,9 @@ def test_show_backends_and_errors(monkeypatch, capsys):
     fake_pil.Image = fake_pil_image
     monkeypatch.setitem(sys.modules, "PIL", fake_pil)
     monkeypatch.setitem(sys.modules, "PIL.Image", fake_pil_image)
-    monkeypatch.setattr(fig, "savefig", lambda filename, dpi=300, verbose=False: None)
+    monkeypatch.setattr(
+        fig, "savefig", lambda filename, dpi=300, verbose=False, transparent=False: None
+    )
 
     fig._show_pillow(dpi=72, verbose=False)
 
