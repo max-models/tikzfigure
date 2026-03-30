@@ -22,9 +22,7 @@ classifiers = [
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
 ]
-dependencies = [
-  "pymupdf",
-]
+# dependencies = []
 
 optional-dependencies.dev = [
   "pyyaml",
@@ -41,6 +39,7 @@ optional-dependencies.dev = [
 optional-dependencies.vis = [
   "matplotlib",
   "jupyterlab",
+  "pymupdf",
 ]
 
 optional-dependencies.docs = [
