@@ -14,19 +14,6 @@ class Linestyle:
             ``(offset, (on, off))``.
     """
 
-    def __init__(self, style_spec: str) -> None:
-        """Initialize a Linestyle.
-
-        Args:
-            style_spec: A TikZ line-style string such as ``"solid"``,
-                ``"dashed"``, ``"dotted"``, ``"dashdot"``, or a custom
-                dash pattern like ``"dash pattern=on 5pt off 2pt"``.
-        """
-        self.style_spec: str = style_spec
-        self.matplotlib_style: str | tuple[int, tuple[float, float]] = (
-            self._parse_style(style_spec)
-        )
-
     def _parse_style(self, style_spec: str) -> str | tuple[int, tuple[float, float]]:
         """Parse a TikZ style string into a Matplotlib linestyle.
 
@@ -57,6 +44,19 @@ class Linestyle:
             else:
                 print(f"Unknown line style: '{style_spec}', defaulting to 'solid'")
                 return "solid"
+
+    def __init__(self, style_spec: str) -> None:
+        """Initialize a Linestyle.
+
+        Args:
+            style_spec: A TikZ line-style string such as ``"solid"``,
+                ``"dashed"``, ``"dotted"``, ``"dashdot"``, or a custom
+                dash pattern like ``"dash pattern=on 5pt off 2pt"``.
+        """
+        self.style_spec: str = style_spec
+        self.matplotlib_style: str | tuple[int, tuple[float, float]] = (
+            self._parse_style(style_spec)
+        )
 
     def to_matplotlib(self) -> str | tuple[int, tuple[float, float]]:
         """Return the line style in Matplotlib format.
