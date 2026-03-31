@@ -43,6 +43,8 @@ fig.draw(
 fig.show()
 ```
 
+{{< include includes/tikz_code_callout.qmd >}}
+
 ## `decoration="snake"`
 
 A snake decoration produces a smooth sinusoidal wave — like a zigzag but with
@@ -61,6 +63,8 @@ fig.draw(
 
 fig.show()
 ```
+
+{{< include includes/tikz_code_callout.qmd >}}
 
 ## `decoration="coil"`
 
@@ -81,6 +85,8 @@ fig.draw(
 fig.show()
 ```
 
+{{< include includes/tikz_code_callout.qmd >}}
+
 ## `decoration="bumps"`
 
 Bumps produce smooth humps along the path — similar to a snake but with the
@@ -99,6 +105,8 @@ fig.draw(
 
 fig.show()
 ```
+
+{{< include includes/tikz_code_callout.qmd >}}
 
 ## Side-by-side gallery of morphing decorations
 
@@ -133,8 +141,9 @@ for i, (dec, color) in enumerate(decorations):
     )
 
 fig.show()
-print(fig.generate_tikz())
 ```
+
+{{< include includes/tikz_code_callout.qmd >}}
 
 ## `decoration="brace"`: bracket annotations
 
@@ -188,6 +197,8 @@ fig.add_node(5.0, 1.0, content="1.5 cm", draw="none",
 fig.show()
 ```
 
+{{< include includes/tikz_code_callout.qmd >}}
+
 ## Combining decorations with colors and line widths
 
 Decorations become more expressive when combined with thick lines and vivid colors.
@@ -228,3 +239,5 @@ for x in [1, 7]:
 
 fig.show()
 ```
+
+{{< include includes/tikz_code_callout.qmd >}}

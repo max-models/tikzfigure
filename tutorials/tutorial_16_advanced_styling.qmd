@@ -82,6 +82,8 @@ fig.add_node(4, -2.3, content="railway track (double path)",
 fig.show()
 ```
 
+{{< include includes/tikz_code_callout.qmd >}}
+
 ## `dash_pattern` and `dash_phase`: custom dash sequences
 
 `dash_pattern` accepts a TikZ dash specification string such as `"on 5pt off 3pt"`.
@@ -113,6 +115,8 @@ for i, (dp, phase, label) in enumerate(patterns):
 fig.show()
 ```
 
+{{< include includes/tikz_code_callout.qmd >}}
+
 ## `line_cap`: end-cap styles
 
 `line_cap` controls how the ends of thick open paths are rendered.
@@ -141,6 +145,8 @@ for i, cap in enumerate(caps):
 fig.show()
 ```
 
+{{< include includes/tikz_code_callout.qmd >}}
+
 ## `line_join`: corner join styles
 
 `line_join` controls how two path segments meet at a corner. `"miter"` extends
@@ -160,6 +166,8 @@ for i, join in enumerate(joins):
 
 fig.show()
 ```
+
+{{< include includes/tikz_code_callout.qmd >}}
 
 ## Shadow effects
 
@@ -197,6 +205,8 @@ for i, (sc, sx, sy, label) in enumerate(shadow_specs):
 fig.show()
 ```
 
+{{< include includes/tikz_code_callout.qmd >}}
+
 ## `pin` annotations
 
 The `pin` option attaches a small labeled pin to a node. The value is a TikZ pin
@@ -220,8 +230,9 @@ fig.draw([nA, nC], options=["->"])
 fig.draw([nB, nC], options=["->"])
 
 fig.show()
-print(fig.generate_tikz())
 ```
+
+{{< include includes/tikz_code_callout.qmd >}}
 
 ## Special shapes: star, regular polygon, cylinder
 
@@ -300,3 +311,5 @@ fig.add_node(
 
 fig.show()
 ```
+
+{{< include includes/tikz_code_callout.qmd >}}

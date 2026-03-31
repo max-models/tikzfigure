@@ -53,14 +53,16 @@ def draw_background(tikz):
     add_grid(tikz, 5, 3, 1, 2, ["draw", "line width=2", "color=red"], layer=5)
 ```
 
+{{< include includes/tikz_code_callout.qmd >}}
+
 ## Z-order curve
 
 At each recursion level the four quadrants are visited in a Z pattern:
 top-left → top-right → bottom-left → bottom-right.
 
 ```{python}
-tikz = TikzFigure(figure_setup=">={Triangle[scale=1]}")
-draw_background(tikz)
+fig = TikzFigure(figure_setup=">={Triangle[scale=1]}")
+draw_background(fig)
 
 z_path = [
     [1, 7],
@@ -97,15 +99,17 @@ z_path = [
 ]
 
 for i in range(len(z_path) - 1):
-    tikz.draw(
+    fig.draw(
         [z_path[i], z_path[i + 1]],
         options=["->", "draw", "line width=1", "color=black"],
         layer=6,
         center=True,
     )
 
-tikz.show()
+fig.show()
 ```
+
+{{< include includes/tikz_code_callout.qmd >}}
 
 ## Hilbert curve
 
@@ -114,8 +118,8 @@ adjacent cells are also adjacent in the traversal order - making it valuable
 for locality-preserving mappings.
 
 ```{python}
-tikz = TikzFigure(figure_setup=">={Triangle[scale=1]}")
-draw_background(tikz)
+fig = TikzFigure(figure_setup=">={Triangle[scale=1]}")
+draw_background(fig)
 
 hilbert_path = [
     [1, 1],
@@ -150,12 +154,14 @@ hilbert_path = [
 ]
 
 for i in range(len(hilbert_path) - 1):
-    tikz.draw(
+    fig.draw(
         [hilbert_path[i], hilbert_path[i + 1]],
         options=["->", "draw", "line width=1", "color=black"],
         layer=6,
         center=True,
     )
 
-tikz.show()
+fig.show()
 ```
+
+{{< include includes/tikz_code_callout.qmd >}}

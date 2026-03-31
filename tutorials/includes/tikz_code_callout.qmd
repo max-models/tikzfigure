@@ -1,0 +1,14 @@
+:::: {.callout-note collapse="true"}
+## Click to view generated TikZ code
+:::: {.panel-tabset collapsed="true"}
+## TikZ Figure Code Output
+```{python}
+print(fig)
+```
+
+## Standalone LaTeX Document
+```{python}
+print(fig.generate_standalone())
+```
+::::
+::::

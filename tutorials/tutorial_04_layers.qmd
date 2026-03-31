@@ -35,9 +35,7 @@ fig.add_node(0.05, -0.3, content="red on top (default)", draw="none")
 fig.show()
 ```
 
-```{python}
-print(fig)
-```
+{{< include includes/tikz_code_callout.qmd >}}
 
 ```{python}
 # With layers - blue on layer 2 even though it is drawn first in code
@@ -46,13 +44,11 @@ fig = TikzFigure()
 fig.add_node(0.25, 1, minimum_size="2cm", shape="circle", fill="blue", layer = 2)
 fig.add_node(-0.25, 1, minimum_size="2cm", shape="circle", fill="red", layer = 1)
 
-fig.add_node(0.05, -0.3, content="blue on top (layer=2)", draw="none")
+fig.add_node(0.0, -0.3, content="blue on top (layer=2)", draw="none")
 fig.show()
 ```
 
-```{python}
-print(fig)
-```
+{{< include includes/tikz_code_callout.qmd >}}
 
 ## Letters and a sine wave
 
@@ -119,9 +115,6 @@ fig.draw(wave, options=style, layer=1, color="black")
 fig.show()
 ```
 
-Try changing the `layer` values to see how the stacking order changes.
+{{< include includes/tikz_code_callout.qmd >}}
 
-```{python}
-# Inspect generated TikZ to see pgfonlayer declarations
-print(fig.generate_tikz())
-```
+Try changing the `layer` values to see how the stacking order changes.

@@ -36,6 +36,8 @@ fig.draw(triangle, cycle=True, line_width=2, color="red")
 fig.show()
 ```
 
+{{< include includes/tikz_code_callout.qmd >}}
+
 ## Filled shapes with `filldraw`
 
 `fig.filldraw()` is shorthand for a closed path that is both drawn (outline) and filled.
@@ -56,6 +58,8 @@ fig.draw(hexagon, cycle=True, line_width=2, color="teal", fill="teal!20")
 
 fig.show()
 ```
+
+{{< include includes/tikz_code_callout.qmd >}}
 
 ## Rounded corners
 
@@ -81,6 +85,8 @@ for i, radius in enumerate([0, 5, 15, 30]):
 fig.show()
 ```
 
+{{< include includes/tikz_code_callout.qmd >}}
+
 ## Heart shape
 
 A heart drawn from seven control points with rounded corners.
@@ -104,6 +110,8 @@ fig.draw(
 fig.show()
 ```
 
+{{< include includes/tikz_code_callout.qmd >}}
+
 ## Star shape
 
 A five-pointed star drawn from six points (the last one closes back to the first).
@@ -117,6 +125,8 @@ fig.draw(star, line_width=3, cycle=True, color="gold", fill="yellow!50!white")
 
 fig.show()
 ```
+
+{{< include includes/tikz_code_callout.qmd >}}
 
 ## Parametric curves with NumPy
 
@@ -135,6 +145,8 @@ fig.draw(spiral, line_width=2, color="teal")
 
 fig.show()
 ```
+
+{{< include includes/tikz_code_callout.qmd >}}
 
 ## Sun: circle core + radial rays
 
@@ -160,6 +172,8 @@ for angle in np.linspace(0, 2 * np.pi, 12, endpoint=False):
 
 fig.show()
 ```
+
+{{< include includes/tikz_code_callout.qmd >}}
 
 ## Circle of nodes
 
@@ -188,3 +202,5 @@ for i in range(N):
 
 fig.show()
 ```
+
+{{< include includes/tikz_code_callout.qmd >}}

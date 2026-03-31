@@ -62,6 +62,8 @@ fig.add_node(
 fig.show(width=400)
 ```
 
+{{< include includes/tikz_code_callout.qmd >}}
+
 ## Lorenz attractor
 
 The Lorenz system is the ODE, based on [this example](https://github.com/ltrujello/Tikz-Python/blob/main/examples/lorenz/lorenz.py):
@@ -114,6 +116,8 @@ fig.add_node(
 fig.show(width=500)
 ```
 
+{{< include includes/tikz_code_callout.qmd >}}
+
 ## Torus knot
 
 A $(p, q)$ torus knot winds $p$ times around the torus in the longitudinal direction
@@ -143,3 +147,5 @@ fig.plot3d(x, y, z, options=["color=purple", "thick"], layer=0)
 
 fig.show(width=450)
 ```
+
+{{< include includes/tikz_code_callout.qmd >}}

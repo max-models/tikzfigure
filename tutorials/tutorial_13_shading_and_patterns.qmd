@@ -76,6 +76,8 @@ for i, (tc, bc) in enumerate(vert_pairs):
 fig.show()
 ```
 
+{{< include includes/tikz_code_callout.qmd >}}
+
 ## Radial shading: glowing circles
 
 `shading="radial"` paints from `inner_color` at the center outward to `outer_color`.
@@ -107,6 +109,8 @@ for i, (ic, oc) in enumerate(glows):
 fig.show()
 ```
 
+{{< include includes/tikz_code_callout.qmd >}}
+
 ## Ball shading: three-dimensional spheres
 
 `shading="ball"` with `ball_color` produces a highlight-shaded sphere that looks
@@ -130,6 +134,8 @@ for i, color in enumerate(colors):
 
 fig.show()
 ```
+
+{{< include includes/tikz_code_callout.qmd >}}
 
 ## Axis shading on a closed path
 
@@ -172,6 +178,8 @@ fig.draw(
 fig.show()
 ```
 
+{{< include includes/tikz_code_callout.qmd >}}
+
 ## Fill patterns on nodes
 
 Patterns are repeating geometric fills. Common patterns include `"north east lines"`,
@@ -213,8 +221,9 @@ for i, (pat, pc) in enumerate(patterns):
     )
 
 fig.show()
-print(fig.generate_tikz())
 ```
+
+{{< include includes/tikz_code_callout.qmd >}}
 
 ## Combining shadings and patterns in one figure
 
@@ -273,3 +282,5 @@ for i, (pat, fc) in enumerate([
 
 fig.show()
 ```
+
+{{< include includes/tikz_code_callout.qmd >}}

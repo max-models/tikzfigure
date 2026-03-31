@@ -36,13 +36,15 @@ fig.draw([n1, n2], options=["->"], line_width=2, color="gray")
 fig.show()
 ```
 
+{{< include includes/tikz_code_callout.qmd >}}
+
 ## Inspecting the generated TikZ code
 
 `generate_tikz()` returns the raw LaTeX/TikZ string. This is useful for debugging
 or for pasting code directly into a `.tex` file.
 
 ```{python}
-print(fig.generate_tikz())
+print(fig)
 ```
 
 ## Alternative: create nodes independently
@@ -67,6 +69,8 @@ fig2.draw(["node1", n2], options=["<-"], line_width=2, color="gray")
 fig2.show()
 ```
 
+{{< include includes/tikz_code_callout.qmd >}}
+
 ## A simple directed graph
 
 Here we place four nodes and connect them with arrows.
@@ -88,6 +92,8 @@ fig.draw([A, D], options=["->", "dashed"], bend_left=20, color="gray")
 
 fig.show()
 ```
+
+{{< include includes/tikz_code_callout.qmd >}}
 
 ## Saving to disk
 

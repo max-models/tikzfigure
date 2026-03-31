@@ -27,7 +27,7 @@ from tikzfigure import TikzFigure
 Before tackling the Lorenz system, here is a simple parametric helix to
 illustrate the 3-D setup.
 
-```python
+```{python}
 fig = TikzFigure(ndim=3)
 
 t = np.linspace(0, 4 * np.pi, 200)
