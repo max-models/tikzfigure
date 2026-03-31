@@ -101,6 +101,11 @@ def process_qmd(qmd_path: Path) -> None:
         work_dir.mkdir()
         work_qmd = work_dir / qmd_path.name
         shutil.copy2(qmd_path, work_qmd)
+        # Copy includes directory if it exists
+        includes_src = TUTORIALS_SRC / "includes"
+        includes_dst = work_dir / "includes"
+        if includes_src.exists() and includes_src.is_dir():
+            shutil.copytree(includes_src, includes_dst, dirs_exist_ok=True)
         out_dir = tmp_dir / "out"
         out_dir.mkdir()
         env = {**os.environ, "TMPDIR": tmp}
