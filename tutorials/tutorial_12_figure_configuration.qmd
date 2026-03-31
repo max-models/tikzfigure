@@ -1,0 +1,222 @@
+---
+title: "Figure Configuration"
+jupyter: python3
+---
+
+`TikzFigure` accepts several constructor parameters that control how the figure is
+set up in LaTeX. This tutorial covers:
+
+- `figure_setup`: global TikZ options applied to the entire `tikzpicture` environment
+- `grid`: debug grid overlay
+- `document_setup`: raw LaTeX preamble additions (for `\usetikzlibrary` etc.)
+- `extra_packages`: additional LaTeX packages
+- `generate_standalone()`: inspecting the full compilable document
+- `caption` and `label`: wrapping the figure in a `\begin{figure}` environment
+- `figsize`: display-size hint for Jupyter
+
+```{python}
+from tikzfigure import TikzFigure
+```
+
+## `figure_setup`: global TikZ options
+
+The `figure_setup` string is placed inside `\begin{tikzpicture}[HERE]`. Anything
+you would normally write in the `tikzpicture` options block goes here.
+
+A particularly useful technique is `every node/.append style={...}` — it applies
+a style to every node in the figure without repeating the options on each individual
+`add_node` call.
+
+```{python}
+fig = TikzFigure(
+    figure_setup="every node/.append style={draw, fill=blue!10, minimum size=1.2cm}"
+)
+
+A = fig.add_node(0, 0, label="A", content="A")
+B = fig.add_node(2, 0, label="B", content="B")
+C = fig.add_node(4, 0, label="C", content="C")
+D = fig.add_node(1, 2, label="D", content="D")
+E = fig.add_node(3, 2, label="E", content="E")
+
+fig.draw([A, B], options=["->"])
+fig.draw([D, E], options=["->"])
+
+fig.show()
+```
+
+Every node gets a border and blue tint automatically — no per-node `draw=` or `fill=`
+needed.
+
+```{python}
+# A more elaborate example: uniform rounded rectangles in a flow diagram
+fig = TikzFigure(
+    figure_setup=(
+        "every node/.append style={"
+        "draw=gray!70, fill=gray!10, "
+        "minimum width=2cm, minimum height=0.8cm, "
+        "rounded corners=4pt, font=\\small"
+        "}"
+    )
+)
+
+nodes = ["Input", "Process", "Output"]
+for i, label in enumerate(nodes):
+    fig.add_node(i * 3, 0, content=label)
+
+for i in range(len(nodes) - 1):
+    fig.draw([(i * 3 + 1.0, 0), (i * 3 + 2.0, 0)], options=["->"], color="gray!70")
+
+fig.show()
+print(fig.generate_tikz())
+```
+
+## `grid`: debug grid overlay
+
+Pass `grid=True` to draw a background grid over the figure. This is a handy
+positioning aid when you are still working out coordinates.
+
+```{python}
+fig = TikzFigure(grid=True)
+
+n1 = fig.add_node(0, 0, shape="circle", fill="red!40", content="A", minimum_size="0.8cm")
+n2 = fig.add_node(3, 2, shape="circle", fill="blue!40", content="B", minimum_size="0.8cm")
+n3 = fig.add_node(5, 0, shape="circle", fill="green!40", content="C", minimum_size="0.8cm")
+fig.draw([n1, n2], options=["->"])
+fig.draw([n2, n3], options=["->"])
+
+fig.show()
+```
+
+The grid makes it easy to read off exact coordinates and spot misalignments before
+removing `grid=True` for the final figure.
+
+## `document_setup`: raw LaTeX preamble additions
+
+`document_setup` is a raw LaTeX string inserted into the standalone document preamble.
+It is the correct place for `\usetikzlibrary{...}` calls and any other preamble
+additions that the figure needs.
+
+A common use is loading the `positioning` library, which enables relative placement
+keywords such as `above_of`, `below_of`, `left_of`, `right_of`, and the
+`node_distance` parameter.
+
+```{python}
+fig = TikzFigure(
+    document_setup=r"\usetikzlibrary{positioning}"
+)
+
+root = fig.add_node(0, 0, label="root", content="Root", shape="rectangle",
+                    fill="purple!30", minimum_size="1cm")
+
+# Relative positioning: omit x/y so no 'at (...)' is emitted
+fig.add_node(label="above_node", content="Above",
+             shape="rectangle", fill="cyan!30", minimum_size="1cm",
+             above_of="root", node_distance="1.8cm")
+
+fig.add_node(label="below_node", content="Below",
+             shape="rectangle", fill="cyan!30", minimum_size="1cm",
+             below_of="root", node_distance="1.8cm")
+
+fig.add_node(label="left_node", content="Left",
+             shape="rectangle", fill="orange!30", minimum_size="1cm",
+             left_of="root", node_distance="2.5cm")
+
+fig.add_node(label="right_node", content="Right",
+             shape="rectangle", fill="orange!30", minimum_size="1cm",
+             right_of="root", node_distance="2.5cm")
+
+for label in ["above_node", "below_node", "left_node", "right_node"]:
+    fig.draw(["root", label], options=["->"], color="gray")
+
+fig.show()
+```
+
+## `extra_packages`: additional LaTeX packages
+
+Pass a list of package names to `extra_packages`. Each name becomes a
+`\usepackage{name}` line in the standalone preamble. This is useful when your
+figure content uses macros from packages like `amsmath` or `xcolor`.
+
+```{python}
+fig = TikzFigure(extra_packages=["amsmath", "xcolor"])
+
+# amsmath lets us use \dfrac inside node content
+fig.add_node(0, 2, content=r"$\dfrac{a}{b} + \sqrt{c}$",
+             shape="rectangle", fill="yellow!20", draw="orange",
+             minimum_width="3cm", minimum_height="1.2cm")
+
+fig.add_node(0, 0, content=r"$\sum_{k=1}^{n} k = \dfrac{n(n+1)}{2}$",
+             shape="rectangle", fill="green!20", draw="teal",
+             minimum_width="4cm", minimum_height="1.2cm")
+
+fig.show()
+```
+
+## `generate_standalone()`: inspecting the full document
+
+`generate_standalone()` returns a complete compilable LaTeX document including the
+preamble. This shows exactly how `document_setup` and `extra_packages` are woven
+into the output.
+
+```{python}
+fig = TikzFigure(
+    document_setup=r"\usetikzlibrary{positioning}",
+    extra_packages=["amsmath"],
+)
+
+fig.add_node(0, 0, content="Hello", shape="circle", fill="blue!30")
+
+print(fig.generate_standalone())
+```
+
+## `caption` and `label`: wrapping in a figure environment
+
+When `caption` is set, tikzfigure wraps the `tikzpicture` in a
+`\begin{figure}...\end{figure}` environment and adds `\caption{...}`.
+`label` adds a `\label{...}` for cross-referencing.
+
+```{python}
+fig = TikzFigure(
+    caption="A simple directed graph.",
+    label="fig:simple-graph",
+)
+
+A = fig.add_node(0, 1, label="A", content="A", shape="circle", fill="cyan!40")
+B = fig.add_node(3, 1, label="B", content="B", shape="circle", fill="cyan!40")
+C = fig.add_node(1.5, -1, label="C", content="C", shape="circle", fill="cyan!40")
+
+fig.draw([A, B], options=["->"])
+fig.draw([A, C], options=["->"])
+fig.draw([B, C], options=["->"])
+
+print(fig.generate_tikz())
+```
+
+Notice that `generate_tikz()` now includes the `\begin{figure}` wrapper.
+
+## `figsize`: Jupyter display-size hint
+
+`figsize=(width, height)` controls how large the compiled image appears in Jupyter.
+It is purely a display hint — it does not affect the LaTeX output or the saved file.
+
+```{python}
+fig = TikzFigure(figsize=(4, 2))
+
+fig.add_node(0, 0, shape="circle", fill="red!40", content="Small", minimum_size="1.5cm")
+fig.add_node(3, 0, shape="circle", fill="blue!40", content="display", minimum_size="1.5cm")
+
+fig.show()
+```
+
+```{python}
+# Same figure, larger display size
+fig2 = TikzFigure(figsize=(8, 4))
+
+fig2.add_node(0, 0, shape="circle", fill="red!40", content="Large", minimum_size="1.5cm")
+fig2.add_node(3, 0, shape="circle", fill="blue!40", content="display", minimum_size="1.5cm")
+
+fig2.show()
+```
+
+The LaTeX code for both figures is identical — only the rendered size in the
+notebook differs.
