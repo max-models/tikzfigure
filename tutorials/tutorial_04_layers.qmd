@@ -24,31 +24,34 @@ Without explicit layers, the last drawn element always sits on top. Consider two
 overlapping filled circles: whichever is drawn second covers the first.
 
 ```{python}
-theta = np.linspace(0, 2 * np.pi, 80)
-
 # Without layers - drawing order determines visibility
 fig = TikzFigure()
 
-blue_circle = list(zip(np.cos(theta) * 1.5 + 2, np.sin(theta) * 1.5 + 2))
-red_circle = list(zip(np.cos(theta) * 1.5 + 3, np.sin(theta) * 1.5 + 2))
-
 # Blue drawn first → red on top
-fig.draw(blue_circle, cycle=True, fill="blue!40", color="blue", line_width=2)
-fig.draw(red_circle, cycle=True, fill="red!40", color="red", line_width=2)
+fig.add_node(0.25, 1, minimum_size="2cm", shape="circle", fill="blue")
+fig.add_node(-0.25, 1, minimum_size="2cm", shape="circle", fill="red")
 
-fig.add_node(2.5, -0.3, content="red on top (default)", draw="none")
+fig.add_node(0.05, -0.3, content="red on top (default)", draw="none")
 fig.show()
+```
+
+```{python}
+print(fig)
 ```
 
 ```{python}
 # With layers - blue on layer 2 even though it is drawn first in code
 fig = TikzFigure()
 
-fig.draw(blue_circle, cycle=True, fill="blue!40", color="blue", line_width=2, layer=2)
-fig.draw(red_circle, cycle=True, fill="red!40", color="red", line_width=2, layer=1)
+fig.add_node(0.25, 1, minimum_size="2cm", shape="circle", fill="blue", layer = 2)
+fig.add_node(-0.25, 1, minimum_size="2cm", shape="circle", fill="red", layer = 1)
 
-fig.add_node(2.5, -0.3, content="blue on top (layer=2)", draw="none")
+fig.add_node(0.05, -0.3, content="blue on top (layer=2)", draw="none")
 fig.show()
+```
+
+```{python}
+print(fig)
 ```
 
 ## Letters and a sine wave
