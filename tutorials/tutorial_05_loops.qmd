@@ -3,29 +3,78 @@ title: "Loops"
 jupyter: python3
 ---
 
-Repetitive structures (grids, chains, matrices of nodes) can be created with Python
-loops that call `add_node` / `draw` many times. But tikzfigure also supports
-**native TikZ `\\foreach` loops** via `fig.add_loop()`, which embeds the loop in the
-generated LaTeX instead of unrolling it in Python.
+Repetitive structures — grids, chains, matrices of nodes — can be created in two ways:
+with **Python loops** that call `add_node` / `draw` many times, or with **native TikZ
+`\foreach` loops** via `fig.add_loop()`, which embeds the loop directly in the generated
+LaTeX instead of unrolling it in Python.
 
-Benefits of TikZ loops:
-- the generated `.tex` file is much shorter
-- loop variable values are available as TikZ expressions (e.g. `\\i`) at compile time
+Benefits of TikZ `\foreach` loops:
+- the generated `.tex` file is much shorter and more readable
+- loop variable values are available as TikZ expressions (e.g. `\i`) at compile time
 - loops can be nested
 
 This tutorial covers:
-- a simple row of nodes
-- a nested loop to build a grid
-- combining loops with paths for a network diagram
+- Python loop vs TikZ `\foreach` — side-by-side comparison
+- basic `add_loop` usage
+- loop variable in colour expressions
+- nested loops for a grid
+- `add_variable` for reusable TikZ constants
+- a practical chain-of-boxes diagram
 
 ```{python}
 from tikzfigure import TikzFigure
 ```
 
+## Python loop vs TikZ `\foreach` — a side-by-side comparison
+
+Both approaches produce the same visual output: a row of five circles. The key
+difference is in the generated LaTeX. The Python loop unrolls every node into a
+separate `\node` command, while `add_loop` emits a single compact `\foreach` block.
+
+**Python loop version:**
+
+```{python}
+fig_py = TikzFigure()
+
+for i in range(5):
+    fig_py.add_node(
+        x=i * 2,
+        y=0,
+        shape="circle",
+        fill="blue!40",
+        content=str(i),
+        minimum_size="0.8cm",
+    )
+
+fig_py.show()
+print(fig_py.generate_tikz())
+```
+
+**TikZ `\foreach` version — same output, much shorter LaTeX:**
+
+```{python}
+fig_tikz = TikzFigure()
+
+with fig_tikz.add_loop("i", range(5), comment="Row of circles") as loop:
+    loop.add_node(
+        x=r"2*\i",
+        y=0,
+        shape="circle",
+        fill="blue!40",
+        content=r"\i",
+        minimum_size="0.8cm",
+    )
+
+fig_tikz.show()
+print(fig_tikz.generate_tikz())
+```
+
+Notice how `\foreach \i in {0,1,2,3,4}` replaces five separate `\node` commands.
+
 ## Basic loop: a row of circles
 
 `fig.add_loop(var, iterable)` returns a context manager. Inside the `with` block,
-use `loop.add_node()` and `loop.add_path()`. The loop variable `\\i` (or whatever
+use `loop.add_node()` and `loop.draw()`. The loop variable `\i` (or whatever
 name you choose) is available in any string passed as a coordinate or option.
 
 ```{python}
@@ -42,28 +91,136 @@ with fig.add_loop("i", range(6), comment="Row of circles") as loop:
     )
 
 fig.show()
-print(fig)
 ```
 
-## Nested loops: a grid of nodes
+## Loop variable in colour expressions
 
-Use a second `loop.add_loop()` inside the first to create a 2-D grid.
-The inner loop variable `\\j` is independent of the outer `\\i`.
+TikZ colour mixing expressions like `blue!\i0!red` interpolate between two colours.
+Here `\i` ranges from 1 to 9, so `\i0` gives 10, 20, … 90 — a smooth gradient from
+blue to red.
 
 ```{python}
 fig = TikzFigure()
 
-with fig.add_loop("i", range(5), comment="Outer loop") as loop_i:
-    with loop_i.add_loop("j", range(4), comment="Inner loop") as loop_j:
+with fig.add_loop("i", range(1, 10), comment="Colour gradient") as loop:
+    loop.add_node(
+        x=r"2*\i",
+        y=0,
+        shape="circle",
+        fill=r"blue!\i0!red",
+        content=r"\i",
+        minimum_size="1cm",
+        color="white",
+        font=r"\bfseries",
+    )
+
+fig.show()
+```
+
+## Nested loops: a 5x4 grid of nodes
+
+Use a second `loop.add_loop()` inside the first to create a 2-D grid.
+The inner loop variable `\j` is independent of the outer `\i`.
+
+```{python}
+fig = TikzFigure()
+
+with fig.add_loop("i", range(5), comment="Outer loop (columns)") as loop_i:
+    with loop_i.add_loop("j", range(4), comment="Inner loop (rows)") as loop_j:
         loop_j.add_node(
             x=r"2*\i",
             y=r"2*\j",
             shape="rectangle",
             fill="orange!30",
-            content=r"\i,\j",
+            content=r"(\i,\j)",
             minimum_size="0.9cm",
         )
 
 fig.show()
-print(fig)
+print(fig.generate_tikz())
+```
+
+The generated TikZ is a compact nested `\foreach` — compare that with what 20
+separate `\node` commands would look like.
+
+## `add_variable`: reusable TikZ constants
+
+`fig.add_variable(name, value)` emits a `\pgfmathsetmacro` declaration at the top
+of the picture. Use it to store a radius, spacing, or any numeric constant that
+you want to be able to change in one place.
+
+Here 12 nodes are placed on a circle of radius `\radius`. Python computes the
+trigonometric coefficients; TikZ multiplies them by `\radius` at compile time.
+
+```{python}
+import math
+
+fig = TikzFigure()
+fig.add_variable("radius", 3)
+
+N = 12
+for i in range(N):
+    frac = round(i / N, 4)
+    angle = frac * 2 * math.pi
+    fig.add_node(
+        x=f"{{\\radius*{math.cos(angle):.4f}}}",
+        y=f"{{\\radius*{math.sin(angle):.4f}}}",
+        shape="circle",
+        fill="teal!50",
+        content=str(i + 1),
+        minimum_size="0.7cm",
+        color="white",
+        font=r"\small",
+    )
+
+fig.show()
+```
+
+Changing `fig.add_variable("radius", 5)` would scale the entire circle without
+touching any node code.
+
+## Practical example: a chain of labelled boxes
+
+A common diagram pattern is a horizontal chain of labelled boxes connected by arrows.
+Using a `\foreach` loop keeps the LaTeX concise even for long chains.
+
+```{python}
+steps = ["Load", "Clean", "Transform", "Model", "Evaluate"]
+
+fig = TikzFigure()
+
+# Draw boxes via a TikZ foreach over a comma-separated list of indices
+with fig.add_loop("i", range(len(steps)), comment="Pipeline steps") as loop:
+    loop.add_node(
+        x=r"3*\i",
+        y=0,
+        shape="rectangle",
+        fill="blue!20",
+        draw="blue!60",
+        minimum_width="2.2cm",
+        minimum_height="0.8cm",
+        rounded_corners="4pt",
+        line_width=1.5,
+    )
+
+# Add step labels in Python (strings can't live inside \foreach easily)
+for i, step in enumerate(steps):
+    fig.add_node(
+        x=i * 3,
+        y=0,
+        content=step,
+        draw="none",
+        font=r"\small\bfseries",
+    )
+
+# Draw arrows between boxes
+for i in range(len(steps) - 1):
+    fig.draw(
+        [(i * 3 + 1.1, 0), (i * 3 + 1.9, 0)],
+        options=["->"],
+        line_width=1.5,
+        color="blue!60",
+    )
+
+fig.show()
 ```
