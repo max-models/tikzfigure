@@ -1,0 +1,275 @@
+---
+title: "Shading and Patterns"
+jupyter: python3
+---
+
+TikZ supports rich fill styles beyond solid colors: smooth color gradients (shadings)
+and repeating geometric fill patterns. This tutorial covers:
+
+- axis shading on nodes: horizontal and vertical gradients
+- radial shading: glowing circles
+- ball shading: three-dimensional-looking spheres
+- axis shading on closed paths
+- fill patterns: hatching, dots, crosshatch, checkerboard
+- combining shadings and patterns in one figure
+
+All shading examples require `\usetikzlibrary{shadings}` and all pattern examples
+require `\usetikzlibrary{patterns}`, both passed via `document_setup`.
+
+```{python}
+from tikzfigure import TikzFigure
+```
+
+## Axis shading: horizontal and vertical gradients
+
+`shading="axis"` produces a linear gradient. Use `left_color`/`right_color` for a
+horizontal gradient, or `top_color`/`bottom_color` for a vertical one.
+
+```{python}
+fig = TikzFigure(document_setup=r"\usetikzlibrary{shadings}")
+
+# Horizontal gradients
+pairs = [
+    ("red", "yellow"),
+    ("blue", "cyan"),
+    ("purple", "orange"),
+    ("green!60!black", "lime"),
+]
+
+for i, (lc, rc) in enumerate(pairs):
+    fig.add_node(
+        x=i * 3,
+        y=1.5,
+        shape="rectangle",
+        shading="axis",
+        left_color=lc,
+        right_color=rc,
+        minimum_width="2.2cm",
+        minimum_height="1.2cm",
+        draw="gray!50",
+    )
+    fig.add_node(i * 3, 0.5, content=f"{lc} → {rc}",
+                 draw="none", font=r"\tiny", anchor="center")
+
+# Vertical gradients
+vert_pairs = [
+    ("blue!80", "white"),
+    ("orange", "yellow!50"),
+    ("teal", "green!30"),
+]
+
+for i, (tc, bc) in enumerate(vert_pairs):
+    fig.add_node(
+        x=i * 3,
+        y=-1,
+        shape="rectangle",
+        shading="axis",
+        top_color=tc,
+        bottom_color=bc,
+        minimum_width="2.2cm",
+        minimum_height="1.2cm",
+        draw="gray!50",
+    )
+    fig.add_node(i * 3, -2, content=f"{tc} ↕ {bc}",
+                 draw="none", font=r"\tiny", anchor="center")
+
+fig.show()
+```
+
+## Radial shading: glowing circles
+
+`shading="radial"` paints from `inner_color` at the center outward to `outer_color`.
+This gives a convincing glow effect.
+
+```{python}
+fig = TikzFigure(document_setup=r"\usetikzlibrary{shadings}")
+
+glows = [
+    ("white", "red"),
+    ("white", "blue"),
+    ("yellow", "orange"),
+    ("cyan!20", "teal"),
+    ("white", "purple"),
+]
+
+for i, (ic, oc) in enumerate(glows):
+    fig.add_node(
+        x=i * 2.5,
+        y=0,
+        shape="circle",
+        shading="radial",
+        inner_color=ic,
+        outer_color=oc,
+        minimum_size="1.8cm",
+        draw="none",
+    )
+
+fig.show()
+```
+
+## Ball shading: three-dimensional spheres
+
+`shading="ball"` with `ball_color` produces a highlight-shaded sphere that looks
+three-dimensional.
+
+```{python}
+fig = TikzFigure(document_setup=r"\usetikzlibrary{shadings}")
+
+colors = ["red", "blue", "green!60!black", "orange", "purple", "teal"]
+
+for i, color in enumerate(colors):
+    fig.add_node(
+        x=i * 2.2,
+        y=0,
+        shape="circle",
+        shading="ball",
+        ball_color=color,
+        minimum_size="1.6cm",
+        draw="none",
+    )
+
+fig.show()
+```
+
+## Axis shading on a closed path
+
+Shading is not limited to nodes — you can apply it to any filled closed path using
+`fig.draw(pts, cycle=True, shading="axis", ...)`.
+
+```{python}
+import math
+
+fig = TikzFigure(document_setup=r"\usetikzlibrary{shadings}")
+
+# A gradient-filled pentagon
+N = 5
+angles = [math.pi / 2 + 2 * math.pi * k / N for k in range(N)]
+pentagon = [(2 * math.cos(a), 2 * math.sin(a)) for a in angles]
+
+fig.draw(
+    pentagon,
+    cycle=True,
+    shading="axis",
+    left_color="blue!60",
+    right_color="cyan!30",
+    draw="blue!80",
+    line_width=1.5,
+)
+
+# A gradient-filled star (six-point crossing)
+star = [(0, 0), (1, 2.5), (2, 0), (-0.5, 1.5), (2.5, 1.5), (0, 0)]
+shifted = [(x + 5, y - 1) for x, y in star]
+fig.draw(
+    shifted,
+    cycle=True,
+    shading="axis",
+    left_color="orange",
+    right_color="yellow!60",
+    draw="orange!80",
+    line_width=1.5,
+)
+
+fig.show()
+```
+
+## Fill patterns on nodes
+
+Patterns are repeating geometric fills. Common patterns include `"north east lines"`,
+`"dots"`, `"crosshatch"`, `"grid"`, and `"checkerboard"`. Use `pattern_color` to
+set the pattern ink color.
+
+```{python}
+fig = TikzFigure(document_setup=r"\usetikzlibrary{patterns}")
+
+patterns = [
+    ("north east lines", "blue!60"),
+    ("north west lines", "red!60"),
+    ("dots",             "black"),
+    ("crosshatch",       "teal"),
+    ("grid",             "orange!80"),
+    ("checkerboard",     "purple!60"),
+]
+
+for i, (pat, pc) in enumerate(patterns):
+    col = i % 3
+    row = i // 3
+    fig.add_node(
+        x=col * 3.5,
+        y=row * (-2.5),
+        shape="rectangle",
+        pattern=pat,
+        pattern_color=pc,
+        minimum_width="2.5cm",
+        minimum_height="1.8cm",
+        draw="gray!70",
+        fill="white",
+    )
+    fig.add_node(
+        col * 3.5,
+        row * (-2.5) - 1.2,
+        content=f"\\texttt{{{pat}}}",
+        draw="none",
+        font=r"\tiny",
+    )
+
+fig.show()
+print(fig.generate_tikz())
+```
+
+## Combining shadings and patterns in one figure
+
+Here a shaded background rectangle sits on a lower layer, while patterned nodes
+sit on top, demonstrating how shadings and patterns can coexist in one figure.
+
+```{python}
+fig = TikzFigure(
+    document_setup=(
+        r"\usetikzlibrary{shadings}" "\n"
+        r"\usetikzlibrary{patterns}"
+    )
+)
+
+# Shaded background panel
+fig.add_node(
+    x=3,
+    y=1,
+    shape="rectangle",
+    shading="axis",
+    top_color="blue!20",
+    bottom_color="white",
+    minimum_width="8cm",
+    minimum_height="4cm",
+    draw="blue!30",
+)
+
+# Ball-shaded decorative sphere
+fig.add_node(
+    x=0.5,
+    y=2,
+    shape="circle",
+    shading="ball",
+    ball_color="cyan",
+    minimum_size="1.2cm",
+    draw="none",
+)
+
+# Patterned foreground nodes
+for i, (pat, fc) in enumerate([
+    ("north east lines", "red!40"),
+    ("dots",             "green!40"),
+    ("crosshatch",       "orange!40"),
+]):
+    fig.add_node(
+        x=2 + i * 2,
+        y=1,
+        shape="rectangle",
+        pattern=pat,
+        pattern_color=fc,
+        fill="white",
+        draw="gray!60",
+        minimum_width="1.4cm",
+        minimum_height="1.4cm",
+    )
+
+fig.show()
+```

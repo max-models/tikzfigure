@@ -1,0 +1,193 @@
+---
+title: "Opacity and Transparency"
+jupyter: python3
+---
+
+tikzfigure provides fine-grained control over transparency at every level: whole
+nodes, just the fill, just the stroke, paths, and the final PNG background. This
+tutorial covers:
+
+- `opacity` on nodes
+- `fill_opacity` vs `draw_opacity` independently
+- `opacity` and `fill_opacity` on paths
+- transparent vs white backgrounds with `show()` and `savefig()`
+- a practical Venn diagram
+
+```{python}
+from tikzfigure import TikzFigure
+```
+
+## `opacity` on nodes
+
+`opacity` controls the overall transparency of a node (both fill and stroke together).
+A value of `1.0` is fully opaque; `0.0` is invisible.
+
+The circles below overlap so you can see how lower opacity lets underlying content
+show through.
+
+```{python}
+fig = TikzFigure()
+
+opacities = [1.0, 0.8, 0.6, 0.4, 0.2]
+
+for i, op in enumerate(opacities):
+    fig.add_node(
+        x=i * 1.5,
+        y=0,
+        shape="circle",
+        fill="blue!60",
+        draw="blue!80",
+        minimum_size="2.5cm",
+        opacity=op,
+    )
+    fig.add_node(
+        x=i * 1.5,
+        y=-1.8,
+        content=f"opacity={op}",
+        draw="none",
+        font=r"\tiny",
+    )
+
+fig.show()
+```
+
+## `fill_opacity` vs `draw_opacity`
+
+`fill_opacity` and `draw_opacity` let you control the fill and stroke independently.
+Here every node has an opaque border but a translucent fill — a common styling
+choice for overlapping regions.
+
+```{python}
+fig = TikzFigure()
+
+colors = ["red", "blue", "green!60!black", "orange"]
+
+for i, color in enumerate(colors):
+    fig.add_node(
+        x=i * 2,
+        y=0,
+        shape="circle",
+        fill=color,
+        draw=color,
+        minimum_size="2cm",
+        fill_opacity=0.3,
+        draw_opacity=1.0,
+        line_width=2,
+    )
+
+fig.show()
+print(fig.generate_tikz())
+```
+
+## `opacity` on paths
+
+Paths support the same `opacity` parameter. Below, three filled triangles overlap
+with decreasing opacity.
+
+```{python}
+fig = TikzFigure()
+
+triangles = [
+    ([(0, 0), (3, 0), (1.5, 2.5)], "red",   0.9),
+    ([(1, 0), (4, 0), (2.5, 2.5)], "blue",  0.7),
+    ([(2, 0), (5, 0), (3.5, 2.5)], "green!60!black", 0.5),
+]
+
+for pts, color, op in triangles:
+    fig.draw(pts, cycle=True, fill=color, draw=color, opacity=op, line_width=1.5)
+
+fig.show()
+```
+
+## `fill_opacity` on path fills
+
+Use `fill_opacity` on a path to make the fill semi-transparent while keeping the
+outline fully visible.
+
+```{python}
+fig = TikzFigure()
+
+import math
+
+# A set of overlapping circles rendered as paths
+for i in range(4):
+    angle = i * math.pi / 2
+    cx = 2 + math.cos(angle) * 1.2
+    cy = 2 + math.sin(angle) * 1.2
+    theta = [2 * math.pi * k / 40 for k in range(40)]
+    pts = [(cx + math.cos(t), cy + math.sin(t)) for t in theta]
+    colors = ["red", "blue", "green!70!black", "orange"]
+    fig.draw(
+        pts,
+        cycle=True,
+        fill=colors[i],
+        draw=colors[i],
+        fill_opacity=0.35,
+        draw_opacity=1.0,
+        line_width=2,
+    )
+
+fig.show()
+```
+
+## Transparent vs white backgrounds
+
+By default `show()` and `savefig()` produce a **transparent** PNG background
+(`transparent=True`). This is ideal for embedding the figure in slides or
+documents where the background color matters.
+
+Passing `transparent=False` gives a **white** background — useful when the
+rendering environment does not support transparency.
+
+```{python}
+fig = TikzFigure()
+
+fig.add_node(0, 0, shape="circle", fill="orange!60", content="Hello!", minimum_size="2cm")
+fig.add_node(3, 0, shape="rectangle", fill="teal!40", content="World!", minimum_width="2.5cm", minimum_height="1.2cm")
+
+# Default: transparent PNG background (default transparent=True)
+fig.show()
+```
+
+```{python}
+# White background
+fig.show(transparent=False)
+```
+
+```{python}
+# Saving examples (commented out — uncomment to run)
+# fig.savefig("figure_transparent.png")          # transparent background (default)
+# fig.savefig("figure_white.png", transparent=False)  # white background
+```
+
+The `transparent` flag only affects PNG output. PDF output is always vector and
+the background transparency is determined by the viewer.
+
+## Practical example: Venn diagram
+
+A classic Venn diagram uses `fill_opacity` so the overlapping region inherits both
+colors visually.
+
+```{python}
+import math
+
+fig = TikzFigure()
+
+R = 1.5   # circle radius
+d = 1.2   # distance between centers
+
+# Left circle
+theta = [2 * math.pi * k / 80 for k in range(80)]
+left  = [(-d / 2 + R * math.cos(t), R * math.sin(t)) for t in theta]
+right = [( d / 2 + R * math.cos(t), R * math.sin(t)) for t in theta]
+
+fig.draw(left,  cycle=True, fill="blue",  draw="blue!80",  fill_opacity=0.4, line_width=2)
+fig.draw(right, cycle=True, fill="red",   draw="red!80",   fill_opacity=0.4, line_width=2)
+
+# Labels
+fig.add_node(-d / 2 - 0.6, 0, content="Set A", draw="none", font=r"\bfseries", color="blue!80")
+fig.add_node( d / 2 + 0.6, 0, content="Set B", draw="none", font=r"\bfseries", color="red!80")
+fig.add_node(0, 0, content=r"$A \cap B$", draw="none", font=r"\small")
+
+fig.show()
+```
