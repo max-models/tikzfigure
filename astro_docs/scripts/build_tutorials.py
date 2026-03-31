@@ -171,6 +171,11 @@ def main() -> None:
     parser.add_argument(
         "--serial", action="store_true", help="Process tutorials one at a time"
     )
+    parser.add_argument(
+        "--name",
+        type=str,
+        help="Process a specific tutorial by name (without extension)",
+    )
     args = parser.parse_args()
 
     CONTENT_DST.mkdir(parents=True, exist_ok=True)
@@ -182,6 +187,10 @@ def main() -> None:
         for nb in TUTORIALS_SRC.glob("*.ipynb")
         if ".ipynb_checkpoints" not in nb.parts
     )
+
+    if args.name:
+        qmds = [qmd for qmd in qmds if args.name in qmd.stem]
+        nbs = [nb for nb in nbs if args.name in nb.stem]
 
     if args.serial:
         for qmd in qmds:
