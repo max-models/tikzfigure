@@ -9,8 +9,8 @@ class TikzCoordinate(TikzObject):
     Used to define path waypoints without producing visible nodes.
 
     Attributes:
-        x: X-coordinate value.
-        y: Y-coordinate value.
+        x: X-coordinate value (numeric or PGF expression string).
+        y: Y-coordinate value (numeric or PGF expression string).
         z: Z-coordinate value, or ``None`` for 2-D figures.
         ndim: Number of dimensions (``2`` or ``3``).
         coordinate: Coordinate as a tuple ready for TikZ output.
@@ -18,18 +18,19 @@ class TikzCoordinate(TikzObject):
 
     def __init__(
         self,
-        x: float,
-        y: float,
-        z: float | None = None,
+        x: float | str,
+        y: float | str,
+        z: float | str | None = None,
         layer: int = 0,
     ) -> None:
         """Initialize a TikzCoordinate.
 
         Args:
-            x: X-coordinate value.
-            y: Y-coordinate value.
-            z: Z-coordinate value. When provided, the coordinate is treated
-                as 3-D. Defaults to ``None`` (2-D).
+            x: X-coordinate value (numeric or PGF expression string).
+            y: Y-coordinate value (numeric or PGF expression string).
+            z: Z-coordinate value (numeric or PGF expression string).
+                When provided, the coordinate is treated as 3-D.
+                Defaults to ``None`` (2-D).
             layer: Layer index this coordinate belongs to. Defaults to ``0``.
         """
         super().__init__(layer=layer, comment=None)
@@ -43,22 +44,22 @@ class TikzCoordinate(TikzObject):
             self._ndim = 3
 
     @property
-    def x(self) -> float:
-        """X-coordinate value."""
+    def x(self) -> float | str:
+        """X-coordinate value (numeric or PGF expression string)."""
         return self._x
 
     @property
-    def y(self) -> float:
-        """Y-coordinate value."""
+    def y(self) -> float | str:
+        """Y-coordinate value (numeric or PGF expression string)."""
         return self._y
 
     @property
-    def z(self) -> float | None:
-        """Z-coordinate value, or ``None`` for 2-D coordinates."""
+    def z(self) -> float | str | None:
+        """Z-coordinate value (numeric or PGF expression string), or ``None`` for 2-D coordinates."""
         return self._z
 
     @property
-    def coordinate(self) -> tuple[float, ...]:
+    def coordinate(self) -> tuple[float | str, ...]:
         """Coordinate as a tuple, either ``(x, y)`` or ``(x, y, z)``."""
         if self.ndim == 2:
             return ((self.x), self.y)

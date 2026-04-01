@@ -287,9 +287,46 @@ class Node(TikzObject):
         if self.x is None and self.y is None:
             node_string = f"\\node{options} ({self.label}) {{{self.content}}};\n"
         elif self.ndim == 2:
-            node_string = f"\\node{options} ({self.label}) at ({self.x}, {self.y}) {{{self.content}}};\n"
+            # Wrap coordinates in braces for loop variable expansion (e.g., \i, \j)
+            # If the coordinate already has outer parens from expression, unwrap them first
+            x_str = str(self.x)
+            y_str = str(self.y)
+            if (
+                x_str.startswith("(")
+                and x_str.endswith(")")
+                and not x_str.startswith("((")
+            ):
+                x_str = x_str[1:-1]
+            if (
+                y_str.startswith("(")
+                and y_str.endswith(")")
+                and not y_str.startswith("((")
+            ):
+                y_str = y_str[1:-1]
+            node_string = f"\\node{options} ({self.label}) at ({{{x_str}}}, {{{y_str}}}) {{{self.content}}};\n"
         else:
-            node_string = f"\\node{options} ({self.label}) at (axis cs:{self.x}, {self.y}, {self.z}) {{{self.content}}};\n"
+            z_str = str(self.z)
+            x_str = str(self.x)
+            y_str = str(self.y)
+            if (
+                x_str.startswith("(")
+                and x_str.endswith(")")
+                and not x_str.startswith("((")
+            ):
+                x_str = x_str[1:-1]
+            if (
+                y_str.startswith("(")
+                and y_str.endswith(")")
+                and not y_str.startswith("((")
+            ):
+                y_str = y_str[1:-1]
+            if (
+                z_str.startswith("(")
+                and z_str.endswith(")")
+                and not z_str.startswith("((")
+            ):
+                z_str = z_str[1:-1]
+            node_string = f"\\node{options} ({self.label}) at (axis cs:{{{x_str}}}, {{{y_str}}}, {{{z_str}}}) {{{self.content}}};\n"
 
         node_string = self.add_comment(node_string)
         return node_string

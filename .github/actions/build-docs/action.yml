@@ -27,7 +27,7 @@ runs:
 
     - name: Build tutorials (Quarto + Jupyter → Markdown)
       shell: bash
-      run: python astro_docs/scripts/build_tutorials.py
+      run: python astro_docs/scripts/build_tutorials.py --serial
 
     - name: Build and upload site
       uses: withastro/action@v5

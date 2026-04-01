@@ -65,11 +65,11 @@ def fix_image_paths(content: str, tutorial_name: str) -> str:
         return f"{BASE_PATH}/tutorials/{tutorial_name}/{path}"
         # return f"./{path}"
 
-    def replace_md(m: re.Match) -> str:
+    def replace_md(m: re.Match[str]) -> str:
         alt, path = m.group(1), m.group(2)
         return f"![{alt}]({rewrite(path)})"
 
-    def replace_img(m: re.Match) -> str:
+    def replace_img(m: re.Match[str]) -> str:
         return m.group(0).replace(m.group(1), rewrite(m.group(1)))
 
     content = re.sub(r"!\[([^\]]*)\]\(([^)]+)\)", replace_md, content)
@@ -107,12 +107,22 @@ def fence_indented_output_blocks(content: str) -> str:
     lines = content.splitlines()
     out: list[str] = []
     i = 0
+    in_fence = False
 
     while i < len(lines):
         line = lines[i]
+
+        # Track whether we're inside a fenced code block
+        if line.startswith("```"):
+            in_fence = not in_fence
+            out.append(line)
+            i += 1
+            continue
+
         prev_blank = i == 0 or lines[i - 1].strip() == ""
 
-        if line.startswith("    ") and prev_blank:
+        # Only process indented blocks if we're NOT in a fence
+        if line.startswith("    ") and prev_blank and not in_fence:
             block: list[str] = []
             j = i
             while j < len(lines):

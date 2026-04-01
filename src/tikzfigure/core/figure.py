@@ -236,8 +236,9 @@ class TikzFigure:
                     # print(f'Current layer: {current_layer}')
 
                 # Match \node[attributes] at (x,y) {content};
+                # Handles both (x, y) and ({x}, {y}) formats
                 match_node = re.search(
-                    r"\\node(?:\[([^\]]+)\])? \((\w+)\) at \(([^,]+, [^)]+)\) \{(.*)\};",
+                    r"\\node(?:\[([^\]]+)\])? \((\w+)\) at \(([^)]+)\) \{(.*)\};",
                     line,
                 )
                 if match_node:
@@ -251,11 +252,24 @@ class TikzFigure:
                     ]
                     attributes_dict = dict(attr.split("=") for attr in attributes)
                     node_name = match_node.group(2)
-                    coordinates = match_node.group(3)
-                    coordinates = [c.strip() for c in coordinates.split(",")]
-                    coordinates = [
-                        int(c) if "." not in c else float(c) for c in coordinates
-                    ]
+                    coordinates_str = match_node.group(3)
+                    # Split on comma, handling braces: {expr}, {expr}
+                    coordinates = [c.strip() for c in coordinates_str.split(",")]
+                    # Remove braces if present, and try to parse as numeric
+                    parsed_coords: list[int | float | str] = []
+                    for c in coordinates:
+                        if c.startswith("{") and c.endswith("}"):
+                            c = c[1:-1]
+                        # Try to parse as number; if it fails, keep as string
+                        parsed: int | float | str
+                        try:
+                            parsed = int(c) if "." not in c else float(c)
+                        except ValueError:
+                            parsed = (
+                                c  # Keep as string (variable reference or expression)
+                            )
+                        parsed_coords.append(parsed)
+                    coordinates = parsed_coords
                     content = match_node.group(4)
                     # print(f"Attributes: {attributes_dict}")
                     # print(f"Node name: {node_name}")
@@ -774,7 +788,7 @@ class TikzFigure:
     def add_variable(
         self,
         label: str,
-        value: int | float,
+        value: int | float | str,
         layer: int | None = 0,
         comment: str | None = None,
         verbose: bool = False,
@@ -786,7 +800,8 @@ class TikzFigure:
 
         Args:
             label: Variable name (without the leading backslash).
-            value: Numeric value to assign.
+            value: Numeric value or PGF math expression string to assign
+                (e.g. ``5``, ``"sqrt(2)"``, ``"sin(60)"``).
             layer: Layer index (currently unused). Defaults to ``0``.
             comment: Optional comment prepended in the TikZ output.
             verbose: Unused; reserved for future debug output.

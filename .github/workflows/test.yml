@@ -15,7 +15,7 @@ defaults:
     shell: bash
 
 jobs:
-  test:
+  test-code:
     runs-on: ubuntu-latest
     container:
       image: ghcr.io/max-models/tikzpics/texlive-quarto:latest
@@ -70,19 +70,19 @@ jobs:
         env:
           CI: true
 
-      - name: Test Quarto tutorials
-        run: |
-          source env/bin/activate
-          for qmd in tutorials/*.qmd; do
-            quarto render "$qmd" --to gfm --output-dir /tmp/quarto-test
-          done
+      # - name: Test Quarto tutorials
+      #   run: |
+      #     source env/bin/activate
+      #     for qmd in tutorials/*.qmd; do
+      #       quarto render "$qmd" --to gfm --output-dir /tmp/quarto-test
+      #     done
 
-      - name: Test Jupyter notebook tutorials
-        run: |
-          source env/bin/activate
-          for ipynb in tutorials/*.ipynb; do
-            jupyter nbconvert --to notebook --execute "$ipynb" --output /tmp/nbconvert-test.ipynb
-          done
+      # - name: Test Jupyter notebook tutorials
+      #   run: |
+      #     source env/bin/activate
+      #     for ipynb in tutorials/*.ipynb; do
+      #       jupyter nbconvert --to notebook --execute "$ipynb" --output /tmp/nbconvert-test.ipynb
+      #     done
 
   test-build:
     runs-on: ubuntu-latest

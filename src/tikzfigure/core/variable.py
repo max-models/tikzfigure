@@ -10,13 +10,14 @@ class Variable(TikzObject):
     they can be referenced throughout the figure.
 
     Attributes:
-        value: The numeric value assigned to this variable.
+        value: A numeric value or PGF math expression string assigned to
+            this variable (e.g. ``5``, ``2.5``, or ``"sqrt(2)"``).
     """
 
     def __init__(
         self,
         label: str,
-        value: int | float,
+        value: int | float | str,
         layer: int | None = 0,
         comment: str | None = None,
     ) -> None:
@@ -25,7 +26,8 @@ class Variable(TikzObject):
         Args:
             label: Name of the pgfmath variable (without the leading
                 backslash), e.g. ``"radius"``.
-            value: Numeric value to assign to the variable.
+            value: Numeric value or PGF math expression string to assign
+                to the variable (e.g. ``5``, ``"sqrt(2)"``, ``"sin(60)"``).
             layer: Layer index this variable belongs to. Defaults to ``0``.
             comment: Optional comment prepended in the TikZ output.
         """
@@ -42,8 +44,8 @@ class Variable(TikzObject):
         return "% Hi\n"
 
     @property
-    def value(self) -> int | float:
-        """The numeric value assigned to this variable."""
+    def value(self) -> int | float | str:
+        """A numeric value or PGF math expression string assigned to this variable."""
         return self._value
 
     def to_dict(self) -> dict[str, Any]:
