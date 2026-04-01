@@ -29,6 +29,8 @@ def main() -> None:
     fig.draw([b, c], arrows="->")
 
     fig.savefig(str(OUT))
+
+    print(fig)
     print(f"Saved → {OUT}")
 
 

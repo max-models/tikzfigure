@@ -1,0 +1,20 @@
+
+`TABS_START`
+
+`TAB_START label="Tikz Code"`
+
+```{python}
+print(fig)
+```
+
+`TAB_END`
+
+`TAB_START label="Standalone LaTeX Document"`
+
+```{python}
+print(fig.generate_standalone())
+```
+
+`TAB_END`
+
+`TABS_END`

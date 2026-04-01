@@ -34,10 +34,10 @@ separate `\node` command, while `add_loop` emits a single compact `\foreach` blo
 **Python loop version:**
 
 ```{python}
-fig_py = TikzFigure()
+fig = TikzFigure()
 
 for i in range(5):
-    fig_py.add_node(
+    fig.add_node(
         x=i * 2,
         y=0,
         shape="circle",
@@ -46,16 +46,17 @@ for i in range(5):
         minimum_size="0.8cm",
     )
 
-fig_py.show()
-print(fig_py.generate_tikz())
+fig.show()
 ```
+
+{{< include includes/tikz_code_callout.qmd >}}
 
 **TikZ `\foreach` version — same output, much shorter LaTeX:**
 
 ```{python}
-fig_tikz = TikzFigure()
+fig = TikzFigure()
 
-with fig_tikz.add_loop("i", range(5), comment="Row of circles") as loop:
+with fig.add_loop("i", range(5), comment="Row of circles") as loop:
     loop.add_node(
         x=r"2*\i",
         y=0,
@@ -65,9 +66,10 @@ with fig_tikz.add_loop("i", range(5), comment="Row of circles") as loop:
         minimum_size="0.8cm",
     )
 
-fig_tikz.show()
-print(fig_tikz.generate_tikz())
+fig.show()
 ```
+
+{{< include includes/tikz_code_callout.qmd >}}
 
 Notice how `\foreach \i in {0,1,2,3,4}` replaces five separate `\node` commands.
 
@@ -93,6 +95,8 @@ with fig.add_loop("i", range(6), comment="Row of circles") as loop:
 fig.show()
 ```
 
+{{< include includes/tikz_code_callout.qmd >}}
+
 ## Loop variable in colour expressions
 
 TikZ colour mixing expressions like `blue!\i0!red` interpolate between two colours.
@@ -117,6 +121,8 @@ with fig.add_loop("i", range(1, 10), comment="Colour gradient") as loop:
 fig.show()
 ```
 
+{{< include includes/tikz_code_callout.qmd >}}
+
 ## Nested loops: a 5x4 grid of nodes
 
 Use a second `loop.add_loop()` inside the first to create a 2-D grid.
@@ -137,8 +143,9 @@ with fig.add_loop("i", range(5), comment="Outer loop (columns)") as loop_i:
         )
 
 fig.show()
-print(fig.generate_tikz())
 ```
+
+{{< include includes/tikz_code_callout.qmd >}}
 
 The generated TikZ is a compact nested `\foreach` — compare that with what 20
 separate `\node` commands would look like.
@@ -175,6 +182,8 @@ for i in range(N):
 
 fig.show()
 ```
+
+{{< include includes/tikz_code_callout.qmd >}}
 
 Changing `fig.add_variable("radius", 5)` would scale the entire circle without
 touching any node code.
@@ -224,3 +233,5 @@ for i in range(len(steps) - 1):
 
 fig.show()
 ```
+
+{{< include includes/tikz_code_callout.qmd >}}

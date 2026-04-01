@@ -42,6 +42,8 @@ fig.draw([n1, n2], options=["dashed", "gray"])
 fig.show()
 ```
 
+{{< include includes/tikz_code_callout.qmd >}}
+
 ## Using label strings
 
 You can refer to any node by its label string instead of keeping the Python object.
@@ -65,6 +67,8 @@ fig.draw(["P", "Q"], options=["dashed", "gray"])
 fig.show()
 ```
 
+{{< include includes/tikz_code_callout.qmd >}}
+
 ## Edge labels on a triangle
 
 A classic use case: place a label at the midpoint of each edge.
@@ -86,6 +90,8 @@ fig.midpoint("A", "C", label="AC", content="$b$", draw="none", fill="yellow!60")
 
 fig.show()
 ```
+
+{{< include includes/tikz_code_callout.qmd >}}
 
 ## Recursive bisection
 
@@ -119,6 +125,8 @@ fig.midpoint(m2b, right, label="M3d", **dot)
 
 fig.show()
 ```
+
+{{< include includes/tikz_code_callout.qmd >}}
 
 ## Triangle centroid via iterated midpoints
 
@@ -170,3 +178,5 @@ centroid = fig.midpoint(
 
 fig.show()
 ```
+
+{{< include includes/tikz_code_callout.qmd >}}

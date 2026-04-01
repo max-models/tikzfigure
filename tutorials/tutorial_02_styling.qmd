@@ -31,6 +31,8 @@ fig.add_node(9, 0, shape="diamond", fill="orange!30", content="diamond")
 fig.show()
 ```
 
+{{< include includes/tikz_code_callout.qmd >}}
+
 ## Colors and color mixing
 
 TikZ supports named colors (`red`, `blue`, `green`, …) and mix expressions like
@@ -62,6 +64,8 @@ for i, (color, label) in enumerate(colors):
 fig.show()
 ```
 
+{{< include includes/tikz_code_callout.qmd >}}
+
 ## Line styles
 
 Paths accept TikZ style keywords as `options`: `dashed`, `dotted`, `thick`, `ultra thick`, etc.
@@ -85,6 +89,8 @@ for i, (opts, lw, label) in enumerate(styles):
     fig.add_node(5.1, y, content=f"\\texttt{{{label}}}", draw="none", anchor="west")
 fig.show()
 ```
+
+{{< include includes/tikz_code_callout.qmd >}}
 
 ## Arrow types
 
@@ -110,6 +116,8 @@ for i, (arrow, label) in enumerate(arrows):
 
 fig.show()
 ```
+
+{{< include includes/tikz_code_callout.qmd >}}
 
 ## Node anchors
 
@@ -145,6 +153,8 @@ fig.add_node(6, 0, anchor="south west", content="sw")
 fig.show()
 ```
 
+{{< include includes/tikz_code_callout.qmd >}}
+
 ## Putting it together: Olympic rings
 
 Five thick circles in the classic Olympic layout - a good exercise in
@@ -172,3 +182,5 @@ for (cx, cy), color in ring_specs:
 
 fig.show()
 ```
+
+{{< include includes/tikz_code_callout.qmd >}}

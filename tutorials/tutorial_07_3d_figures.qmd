@@ -62,6 +62,8 @@ fig.add_node(
 fig.show(width=400)
 ```
 
+
+
 ## Lorenz attractor
 
 The Lorenz system is the ODE, based on [this example](https://github.com/ltrujello/Tikz-Python/blob/main/examples/lorenz/lorenz.py):
@@ -113,6 +115,8 @@ fig.add_node(
 
 fig.show(width=500)
 ```
+
+
 
 ## Torus knot
 

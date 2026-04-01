@@ -44,8 +44,9 @@ fig.add_raw("\\node at (2.5, 1.2) {raw TikZ node};")
 fig.add_raw(f"\\draw[->, thick, dashed] ({n2.label}) -- ({n1.label});")
 
 fig.show()
-print(fig.generate_tikz())
 ```
+
+{{< include includes/tikz_code_callout.qmd >}}
 
 ## Flowchart
 
@@ -74,6 +75,8 @@ fig.add_raw(f"\\draw[->, thick] ({no_node.label})  -- ({end.label});")
 
 fig.show()
 ```
+
+{{< include includes/tikz_code_callout.qmd >}}
 
 ## Mathematical annotations and coordinate axes
 
@@ -106,6 +109,8 @@ for i in range(1, 7):
 
 fig.show()
 ```
+
+{{< include includes/tikz_code_callout.qmd >}}
 
 ## Network graph with curved edges
 
@@ -146,6 +151,8 @@ fig.add_raw("\\node[font=\\Large\\bfseries] at (0, 4.5) {Network Graph};")
 fig.show()
 ```
 
+{{< include includes/tikz_code_callout.qmd >}}
+
 ## Timeline
 
 A horizontal timeline with event markers, year labels, and bracket annotations.
@@ -182,3 +189,5 @@ fig.add_raw("\\draw[<->, red, thick] (0, -1) -- node[below] {4 years} (8, -1);")
 
 fig.show()
 ```
+
+{{< include includes/tikz_code_callout.qmd >}}

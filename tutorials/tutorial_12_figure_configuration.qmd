@@ -44,6 +44,8 @@ fig.draw([D, E], options=["->"])
 fig.show()
 ```
 
+{{< include includes/tikz_code_callout.qmd >}}
+
 Every node gets a border and blue tint automatically — no per-node `draw=` or `fill=`
 needed.
 
@@ -67,8 +69,9 @@ for i in range(len(nodes) - 1):
     fig.draw([(i * 3 + 1.0, 0), (i * 3 + 2.0, 0)], options=["->"], color="gray!70")
 
 fig.show()
-print(fig.generate_tikz())
 ```
+
+{{< include includes/tikz_code_callout.qmd >}}
 
 ## `grid`: debug grid overlay
 
@@ -86,6 +89,8 @@ fig.draw([n2, n3], options=["->"])
 
 fig.show()
 ```
+
+{{< include includes/tikz_code_callout.qmd >}}
 
 The grid makes it easy to read off exact coordinates and spot misalignments before
 removing `grid=True` for the final figure.
@@ -131,6 +136,8 @@ for label in ["above_node", "below_node", "left_node", "right_node"]:
 fig.show()
 ```
 
+{{< include includes/tikz_code_callout.qmd >}}
+
 ## `extra_packages`: additional LaTeX packages
 
 Pass a list of package names to `extra_packages`. Each name becomes a
@@ -152,6 +159,8 @@ fig.add_node(0, 0, content=r"$\sum_{k=1}^{n} k = \dfrac{n(n+1)}{2}$",
 fig.show()
 ```
 
+{{< include includes/tikz_code_callout.qmd >}}
+
 ## `generate_standalone()`: inspecting the full document
 
 `generate_standalone()` returns a complete compilable LaTeX document including the
@@ -168,6 +177,8 @@ fig.add_node(0, 0, content="Hello", shape="circle", fill="blue!30")
 
 print(fig.generate_standalone())
 ```
+
+{{< include includes/tikz_code_callout.qmd >}}
 
 ## `caption` and `label`: wrapping in a figure environment
 
@@ -192,6 +203,8 @@ fig.draw([B, C], options=["->"])
 print(fig.generate_tikz())
 ```
 
+{{< include includes/tikz_code_callout.qmd >}}
+
 Notice that `generate_tikz()` now includes the `\begin{figure}` wrapper.
 
 ## `figsize`: Jupyter display-size hint
@@ -208,15 +221,19 @@ fig.add_node(3, 0, shape="circle", fill="blue!40", content="display", minimum_si
 fig.show()
 ```
 
+{{< include includes/tikz_code_callout.qmd >}}
+
 ```{python}
 # Same figure, larger display size
-fig2 = TikzFigure(figsize=(8, 4))
+fig = TikzFigure(figsize=(8, 4))
 
-fig2.add_node(0, 0, shape="circle", fill="red!40", content="Large", minimum_size="1.5cm")
-fig2.add_node(3, 0, shape="circle", fill="blue!40", content="display", minimum_size="1.5cm")
+fig.add_node(0, 0, shape="circle", fill="red!40", content="Large", minimum_size="1.5cm")
+fig.add_node(3, 0, shape="circle", fill="blue!40", content="display", minimum_size="1.5cm")
 
-fig2.show()
+fig.show()
 ```
+
+{{< include includes/tikz_code_callout.qmd >}}
 
 The LaTeX code for both figures is identical — only the rendered size in the
 notebook differs.

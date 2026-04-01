@@ -63,6 +63,7 @@ def fix_image_paths(content: str, tutorial_name: str) -> str:
         if path.startswith(files_prefix):
             path = path[len(files_prefix) :]
         return f"{BASE_PATH}/tutorials/{tutorial_name}/{path}"
+        # return f"./{path}"
 
     def replace_md(m: re.Match) -> str:
         alt, path = m.group(1), m.group(2)
@@ -76,8 +77,85 @@ def fix_image_paths(content: str, tutorial_name: str) -> str:
     return content
 
 
+def fix_tikzcode_callouts(content: str) -> str:
+    """Convert [[CALLOUT-*]] and [[TAB]] markers to JSX Astro components.
+
+    Transforms:
+        [[CALLOUT-NOTE START]] ... [[CALLOUT-NOTE END]]
+            → <Callout type="note"> ... </Callout>
+
+        ## heading markers within callouts become TabItem components
+        Multiple ## sections create a <Tabs> wrapper
+    """
+    # Wrap tab groups in a collapsible section so code panes are hidden by default.
+    content = content.replace(
+        "`TABS_START`", "<details>\n<summary>Show Tikz code</summary>\n\n<Tabs>"
+    )
+    content = content.replace("`TABS_END`", "</Tabs>\n</details>")
+
+    # Replace `TAB_START` and `TAB_END` with <Tab> and </Tab>
+    # Get the label from the `TAB_START` marker, e.g. `TAB_START label="Section"`
+    tab_start_pattern = r"`TAB_START\s+label=\"([^\"]+)\"`"
+    content = re.sub(tab_start_pattern, r'<TabItem label="\1">', content)
+    content = content.replace("`TAB_END`", "</TabItem>")
+
+    return content
+
+
+def fence_indented_output_blocks(content: str) -> str:
+    """Convert top-level 4-space-indented blocks into fenced text code blocks."""
+    lines = content.splitlines()
+    out: list[str] = []
+    i = 0
+
+    while i < len(lines):
+        line = lines[i]
+        prev_blank = i == 0 or lines[i - 1].strip() == ""
+
+        if line.startswith("    ") and prev_blank:
+            block: list[str] = []
+            j = i
+            while j < len(lines):
+                current = lines[j]
+                if current.startswith("    "):
+                    block.append(current[4:])
+                    j += 1
+                    continue
+                # Keep blank lines inside the block if followed by another
+                # indented line, so one output becomes one fenced block.
+                if (
+                    current.strip() == ""
+                    and j + 1 < len(lines)
+                    and lines[j + 1].startswith("    ")
+                ):
+                    block.append("")
+                    j += 1
+                    continue
+                break
+
+            out.append("```tex")
+            out.extend(block)
+            out.append("```")
+            i = j
+            continue
+
+        out.append(line)
+        i += 1
+
+    rewritten = "\n".join(out)
+    if content.endswith("\n"):
+        rewritten += "\n"
+    return rewritten
+
+
 def write_content(title: str, body: str, out_path: Path) -> None:
-    out_path.write_text(f'---\ntitle: "{title}"\n---\n\n{body}', encoding="utf-8")
+    """Write MDX content with component imports if needed."""
+    imports = ""
+    if "<Callout" in body or "<TabItem" in body:
+        imports = "import { Callout } from '@astrojs/starlight/components'\nimport { Tabs, TabItem } from '@astrojs/starlight/components'\n\n"
+
+    content = f'---\ntitle: "{title}"\n---\n\n{imports}{body}'
+    out_path.write_text(content, encoding="utf-8")
     print(f"  Written: {out_path.relative_to(ASTRO_ROOT)}")
 
 
@@ -101,6 +179,11 @@ def process_qmd(qmd_path: Path) -> None:
         work_dir.mkdir()
         work_qmd = work_dir / qmd_path.name
         shutil.copy2(qmd_path, work_qmd)
+        # Copy includes directory if it exists
+        includes_src = TUTORIALS_SRC / "includes"
+        includes_dst = work_dir / "includes"
+        if includes_src.exists() and includes_src.is_dir():
+            shutil.copytree(includes_src, includes_dst, dirs_exist_ok=True)
         out_dir = tmp_dir / "out"
         out_dir.mkdir()
         env = {**os.environ, "TMPDIR": tmp}
@@ -125,9 +208,11 @@ def process_qmd(qmd_path: Path) -> None:
         content = md_file.read_text(encoding="utf-8")
         title = extract_title(content, name)
         body = fix_image_paths(strip_frontmatter(content), name)
+        body = fix_tikzcode_callouts(body)
+        body = fence_indented_output_blocks(body)
         copy_assets(out_dir / f"{name}_files", name)
 
-    write_content(title, body, CONTENT_DST / f"{name}.md")
+    write_content(title, body, CONTENT_DST / f"{name}.mdx")
 
 
 def process_notebook(nb_path: Path) -> None:
@@ -156,15 +241,21 @@ def process_notebook(nb_path: Path) -> None:
         content = md_file.read_text(encoding="utf-8")
         title = extract_title(content, name)
         body = fix_image_paths(strip_frontmatter(content), name)
+        body = fence_indented_output_blocks(body)
         copy_assets(tmp_dir / f"{name}_files", name)
 
-    write_content(title, body, CONTENT_DST / f"{name}.md")
+    write_content(title, body, CONTENT_DST / f"{name}.mdx")
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--serial", action="store_true", help="Process tutorials one at a time"
+    )
+    parser.add_argument(
+        "--name",
+        type=str,
+        help="Process a specific tutorial by name (without extension)",
     )
     args = parser.parse_args()
 
@@ -177,6 +268,10 @@ def main() -> None:
         for nb in TUTORIALS_SRC.glob("*.ipynb")
         if ".ipynb_checkpoints" not in nb.parts
     )
+
+    if args.name:
+        qmds = [qmd for qmd in qmds if args.name in qmd.stem]
+        nbs = [nb for nb in nbs if args.name in nb.stem]
 
     if args.serial:
         for qmd in qmds:

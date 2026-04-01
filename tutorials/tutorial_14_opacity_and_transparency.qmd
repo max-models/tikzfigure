@@ -51,6 +51,8 @@ for i, op in enumerate(opacities):
 fig.show()
 ```
 
+{{< include includes/tikz_code_callout.qmd >}}
+
 ## `fill_opacity` vs `draw_opacity`
 
 `fill_opacity` and `draw_opacity` let you control the fill and stroke independently.
@@ -76,8 +78,9 @@ for i, color in enumerate(colors):
     )
 
 fig.show()
-print(fig.generate_tikz())
 ```
+
+{{< include includes/tikz_code_callout.qmd >}}
 
 ## `opacity` on paths
 
@@ -98,6 +101,8 @@ for pts, color, op in triangles:
 
 fig.show()
 ```
+
+{{< include includes/tikz_code_callout.qmd >}}
 
 ## `fill_opacity` on path fills
 
@@ -130,6 +135,8 @@ for i in range(4):
 fig.show()
 ```
 
+{{< include includes/tikz_code_callout.qmd >}}
+
 ## Transparent vs white backgrounds
 
 By default `show()` and `savefig()` produce a **transparent** PNG background
@@ -137,7 +144,9 @@ By default `show()` and `savefig()` produce a **transparent** PNG background
 documents where the background color matters.
 
 Passing `transparent=False` gives a **white** background — useful when the
-rendering environment does not support transparency.
+rendering environment does not support transparency. Note that setting `transparent=False`
+does not affect PDF output, which is always vector and relies on the viewer for background rendering.
+It also does not affect the Tikz code itself, which does not include any background rectangle by default.
 
 ```{python}
 fig = TikzFigure()
@@ -153,6 +162,8 @@ fig.show()
 # White background
 fig.show(transparent=False)
 ```
+
+{{< include includes/tikz_code_callout.qmd >}}
 
 ```{python}
 # Saving examples (commented out — uncomment to run)
@@ -191,3 +202,5 @@ fig.add_node(0, 0, content=r"$A \cap B$", draw="none", font=r"\small")
 
 fig.show()
 ```
+
+{{< include includes/tikz_code_callout.qmd >}}
