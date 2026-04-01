@@ -263,51 +263,6 @@ fig.show()
 
 {{< include includes/tikz_code_callout.qmd >}}
 
-### Pie chart
-
-A pie chart using arcs for each segment.
-
-```{python}
-fig = TikzFigure()
-
-# Data
-values = [30, 20, 25, 15, 10]
-colors = ["red!70", "blue!70", "green!70", "yellow!70", "purple!70"]
-
-# Draw pie slices
-current_angle = 0
-for value, color in zip(values, colors):
-    end_angle = current_angle + (value / sum(values)) * 360
-
-    # Arc for the slice
-    fig.arc(
-        start=(0, 0),
-        start_angle=current_angle,
-        end_angle=end_angle,
-        radius="2cm",
-        color=color,
-        fill=color,
-        line_width="1.5pt",
-    )
-
-    # Line back to center
-    mid_angle = (current_angle + end_angle) / 2
-    rad = math.radians(mid_angle)
-    fig.draw([(2 * math.cos(rad), 2 * math.sin(rad)), (0, 0)], color=color, line_width="1.5pt")
-
-    # Label
-    label_rad = math.radians(mid_angle)
-    label_x = 1.2 * math.cos(label_rad)
-    label_y = 1.2 * math.sin(label_rad)
-    fig.add_node(label_x, label_y, content=f"{value}%", draw="none", font="\\small")
-
-    current_angle = end_angle
-
-fig.show()
-```
-
-{{< include includes/tikz_code_callout.qmd >}}
-
 ## Circle of nodes
 
 Placing many nodes evenly around a circle using a Python loop together with TikZ
