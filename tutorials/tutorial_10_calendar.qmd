@@ -230,4 +230,4 @@ fig.show()
 # fig.savefig("calendar_2026.pdf")
 ```
 
-{{< include includes/tikz_code_callout.qmd >}}
+<!-- {{< include includes/tikz_code_callout.qmd >}} -->

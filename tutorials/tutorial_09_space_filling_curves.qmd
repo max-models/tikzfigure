@@ -53,8 +53,6 @@ def draw_background(tikz):
     add_grid(tikz, 5, 3, 1, 2, ["draw", "line width=2", "color=red"], layer=5)
 ```
 
-{{< include includes/tikz_code_callout.qmd >}}
-
 ## Z-order curve
 
 At each recursion level the four quadrants are visited in a Z pattern:
