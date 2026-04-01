@@ -65,11 +65,11 @@ def fix_image_paths(content: str, tutorial_name: str) -> str:
         return f"{BASE_PATH}/tutorials/{tutorial_name}/{path}"
         # return f"./{path}"
 
-    def replace_md(m: re.Match) -> str:
+    def replace_md(m: re.Match[str]) -> str:
         alt, path = m.group(1), m.group(2)
         return f"![{alt}]({rewrite(path)})"
 
-    def replace_img(m: re.Match) -> str:
+    def replace_img(m: re.Match[str]) -> str:
         return m.group(0).replace(m.group(1), rewrite(m.group(1)))
 
     content = re.sub(r"!\[([^\]]*)\]\(([^)]+)\)", replace_md, content)

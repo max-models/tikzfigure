@@ -256,11 +256,12 @@ class TikzFigure:
                     # Split on comma, handling braces: {expr}, {expr}
                     coordinates = [c.strip() for c in coordinates_str.split(",")]
                     # Remove braces if present, and try to parse as numeric
-                    parsed_coords = []
+                    parsed_coords: list[int | float | str] = []
                     for c in coordinates:
                         if c.startswith("{") and c.endswith("}"):
                             c = c[1:-1]
                         # Try to parse as number; if it fails, keep as string
+                        parsed: int | float | str
                         try:
                             parsed = int(c) if "." not in c else float(c)
                         except ValueError:
