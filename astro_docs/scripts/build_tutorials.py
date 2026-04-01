@@ -86,9 +86,11 @@ def fix_tikzcode_callouts(content: str) -> str:
         ## heading markers within callouts become TabItem components
         Multiple ## sections create a <Tabs> wrapper
     """
-    # Replace `TABS_START` with <Tabs> and `TABS_END` with </Tabs>
-    content = content.replace("`TABS_START`", "<Tabs>")
-    content = content.replace("`TABS_END`", "</Tabs>")
+    # Wrap tab groups in a collapsible section so code panes are hidden by default.
+    content = content.replace(
+        "`TABS_START`", "<details>\n<summary>Show Tikz code</summary>\n\n<Tabs>"
+    )
+    content = content.replace("`TABS_END`", "</Tabs>\n</details>")
 
     # Replace `TAB_START` and `TAB_END` with <Tab> and </Tab>
     # Get the label from the `TAB_START` marker, e.g. `TAB_START label="Section"`
