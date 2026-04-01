@@ -62,7 +62,7 @@ fig.add_node(
 fig.show(width=400)
 ```
 
-<!-- {{< include includes/tikz_code_callout.qmd >}} -->
+
 
 ## Lorenz attractor
 
@@ -116,7 +116,7 @@ fig.add_node(
 fig.show(width=500)
 ```
 
-<!-- {{< include includes/tikz_code_callout.qmd >}} -->
+
 
 ## Torus knot
 
@@ -147,5 +147,3 @@ fig.plot3d(x, y, z, options=["color=purple", "thick"], layer=0)
 
 fig.show(width=450)
 ```
-
-<!-- {{< include includes/tikz_code_callout.qmd >}} -->
