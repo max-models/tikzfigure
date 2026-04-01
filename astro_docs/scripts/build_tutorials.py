@@ -63,6 +63,7 @@ def fix_image_paths(content: str, tutorial_name: str) -> str:
         if path.startswith(files_prefix):
             path = path[len(files_prefix) :]
         return f"{BASE_PATH}/tutorials/{tutorial_name}/{path}"
+        # return f"./{path}"
 
     def replace_md(m: re.Match) -> str:
         alt, path = m.group(1), m.group(2)

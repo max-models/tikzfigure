@@ -49,6 +49,7 @@ for i in range(5):
 fig.show()
 ```
 
+{{< include includes/tikz_code_callout.qmd >}}
 
 **TikZ `\foreach` version — same output, much shorter LaTeX:**
 
