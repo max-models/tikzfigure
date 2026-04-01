@@ -135,12 +135,12 @@ def test_node_to_tikz_branches():
 
     node2d = Node(1, 2, label="n2", content="Y", options=["draw"], color="red")
     tikz2d = node2d.to_tikz()
-    assert "at (1, 2)" in tikz2d
+    assert "at ({1}, {2})" in tikz2d
     assert "draw" in tikz2d
     assert "color=red" in tikz2d
 
     node3d = Node(1, 2, 3, label="n3", content="Z")
-    assert "axis cs:1, 2, 3" in node3d.to_tikz()
+    assert "axis cs:{1}, {2}, {3}" in node3d.to_tikz()
 
 
 def test_path_label_list_and_options():
@@ -152,7 +152,7 @@ def test_path_label_list_and_options():
     label_list = path.label_list
     assert "(a)" in label_list[0]
     assert "(b)" in label_list[1]
-    assert "2.0" in label_list[2]
+    assert "(2, 2)" == label_list[2]
 
     tikz = path.to_tikz()
     assert "thick" in tikz

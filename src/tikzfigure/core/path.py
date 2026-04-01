@@ -114,7 +114,8 @@ class TikzPath(TikzObject):
                     print()
                     label_list.append(f"({node.label})")
             elif isinstance(node, TikzCoordinate):
-                label_list.append(f"{tuple(float(x) for x in node.coordinate)}")
+                parts = ", ".join(str(x) for x in node.coordinate)
+                label_list.append(f"({parts})")
         return label_list
 
     @property
