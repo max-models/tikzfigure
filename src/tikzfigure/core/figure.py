@@ -774,7 +774,7 @@ class TikzFigure:
     def add_variable(
         self,
         label: str,
-        value: int | float,
+        value: int | float | str,
         layer: int | None = 0,
         comment: str | None = None,
         verbose: bool = False,
@@ -786,7 +786,8 @@ class TikzFigure:
 
         Args:
             label: Variable name (without the leading backslash).
-            value: Numeric value to assign.
+            value: Numeric value or PGF math expression string to assign
+                (e.g. ``5``, ``"sqrt(2)"``, ``"sin(60)"``).
             layer: Layer index (currently unused). Defaults to ``0``.
             comment: Optional comment prepended in the TikZ output.
             verbose: Unused; reserved for future debug output.
