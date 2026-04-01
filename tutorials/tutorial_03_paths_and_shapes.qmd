@@ -236,7 +236,7 @@ fig.circle(center=(0, 0), radius="3cm", color="black", line_width="2pt")
 
 # Hour markers (12 arcs around the circle)
 for hour in range(12):
-    angle = (hour * 30) % 360  # 30 degrees apart
+    angle = ((hour + 3) * 30) % 360  # 30 degrees apart
     rad = math.radians(angle)
 
     # Inner radius for start
