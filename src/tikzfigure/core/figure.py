@@ -11,12 +11,16 @@ from tikzfigure.core.base import TikzObject
 from tikzfigure.core.circle import Circle
 from tikzfigure.core.color import Color
 from tikzfigure.core.coordinate import TikzCoordinate
+from tikzfigure.core.ellipse import Ellipse
+from tikzfigure.core.grid import Grid
 from tikzfigure.core.layer import LayerCollection
 from tikzfigure.core.loop import Loop
 from tikzfigure.core.node import Node
+from tikzfigure.core.parabola import Parabola
 from tikzfigure.core.path import TikzPath
 from tikzfigure.core.plot import Plot3D
 from tikzfigure.core.raw import RawTikz
+from tikzfigure.core.rectangle import Rectangle
 from tikzfigure.core.types import (
     _Align,
     _Anchor,
@@ -434,6 +438,18 @@ class TikzFigure:
                     fig.layers.add_item(Arc.from_dict(item_data), layer=layer_label)
                 elif item_type == "Circle":
                     fig.layers.add_item(Circle.from_dict(item_data), layer=layer_label)
+                elif item_type == "Rectangle":
+                    fig.layers.add_item(
+                        Rectangle.from_dict(item_data), layer=layer_label
+                    )
+                elif item_type == "Ellipse":
+                    fig.layers.add_item(Ellipse.from_dict(item_data), layer=layer_label)
+                elif item_type == "Grid":
+                    fig.layers.add_item(Grid.from_dict(item_data), layer=layer_label)
+                elif item_type == "Parabola":
+                    fig.layers.add_item(
+                        Parabola.from_dict(item_data), layer=layer_label
+                    )
 
         # Keep node counter consistent with restored nodes
         max_auto = -1
@@ -1118,6 +1134,506 @@ class TikzFigure:
 
         self.layers.add_item(item=circle, layer=layer, verbose=verbose)
         return circle
+
+    def rectangle(
+        self,
+        corner1: tuple[float | str, float | str],
+        corner2: tuple[float | str, float | str],
+        layer: int = 0,
+        comment: str | None = None,
+        verbose: bool = False,
+        # Color
+        color: str | None = None,
+        fill: str | None = None,
+        draw: str | None = None,
+        text: str | None = None,
+        # Opacity
+        opacity: float | None = None,
+        draw_opacity: float | None = None,
+        fill_opacity: float | None = None,
+        text_opacity: float | None = None,
+        # Line width
+        line_width: str | None = None,
+        # Line style
+        line_cap: _LineCap = None,
+        line_join: _LineJoin = None,
+        miter_limit: float | None = None,
+        # Dash
+        dash_pattern: str | None = None,
+        dash_phase: str | None = None,
+        # Rounded corners
+        rounded_corners: str | None = None,
+        # Transformations
+        rotate: float | None = None,
+        xshift: str | None = None,
+        yshift: str | None = None,
+        scale: float | None = None,
+        xscale: float | None = None,
+        yscale: float | None = None,
+        # Catch-all for unlisted TikZ options
+        **kwargs: Any,
+    ) -> Rectangle:
+        """Add a rectangle to the figure.
+
+        Args:
+            corner1: First corner as (x, y) tuple.
+            corner2: Opposite corner as (x, y) tuple.
+            layer: Target layer index. Defaults to ``0``.
+            comment: Optional comment prepended in the TikZ output.
+            verbose: If ``True``, print a debug message.
+            color: Line color (e.g. ``"red"``, ``"blue!50"``).
+            fill: Fill color for the rectangle.
+            draw: Stroke color when different from *color*.
+            text: Text color.
+            opacity: Overall opacity (0–1).
+            draw_opacity: Stroke opacity (0–1).
+            fill_opacity: Fill opacity (0–1).
+            text_opacity: Text opacity (0–1).
+            line_width: Line width (e.g. ``"1pt"``).
+            line_cap: Line cap style: ``"butt"``, ``"rect"``, or ``"round"``.
+            line_join: Line join style: ``"miter"``, ``"bevel"``, or ``"round"``.
+            miter_limit: Miter limit factor for miter joins.
+            dash_pattern: Custom dash pattern (e.g. ``"on 2pt off 3pt"``).
+            dash_phase: Dash pattern starting offset (e.g. ``"2pt"``).
+            rounded_corners: Corner rounding radius (e.g. ``"5pt"``).
+            rotate: Rotation angle in degrees.
+            xshift: Horizontal shift (e.g. ``"1cm"``).
+            yshift: Vertical shift (e.g. ``"1cm"``).
+            scale: Uniform scaling factor.
+            xscale: Horizontal scaling factor.
+            yscale: Vertical scaling factor.
+            **kwargs: Catch-all for unlisted TikZ options.
+
+        Returns:
+            The :class:`Rectangle` object that was added.
+        """
+        rect_kwargs: dict[str, Any] = {}
+        if color is not None:
+            rect_kwargs["color"] = color
+        if fill is not None:
+            rect_kwargs["fill"] = fill
+        if draw is not None:
+            rect_kwargs["draw"] = draw
+        if text is not None:
+            rect_kwargs["text"] = text
+        if opacity is not None:
+            rect_kwargs["opacity"] = opacity
+        if draw_opacity is not None:
+            rect_kwargs["draw_opacity"] = draw_opacity
+        if fill_opacity is not None:
+            rect_kwargs["fill_opacity"] = fill_opacity
+        if text_opacity is not None:
+            rect_kwargs["text_opacity"] = text_opacity
+        if line_width is not None:
+            rect_kwargs["line_width"] = line_width
+        if line_cap is not None:
+            rect_kwargs["line_cap"] = line_cap
+        if line_join is not None:
+            rect_kwargs["line_join"] = line_join
+        if miter_limit is not None:
+            rect_kwargs["miter_limit"] = miter_limit
+        if dash_pattern is not None:
+            rect_kwargs["dash_pattern"] = dash_pattern
+        if dash_phase is not None:
+            rect_kwargs["dash_phase"] = dash_phase
+        if rounded_corners is not None:
+            rect_kwargs["rounded_corners"] = rounded_corners
+        if rotate is not None:
+            rect_kwargs["rotate"] = rotate
+        if xshift is not None:
+            rect_kwargs["xshift"] = xshift
+        if yshift is not None:
+            rect_kwargs["yshift"] = yshift
+        if scale is not None:
+            rect_kwargs["scale"] = scale
+        if xscale is not None:
+            rect_kwargs["xscale"] = xscale
+        if yscale is not None:
+            rect_kwargs["yscale"] = yscale
+
+        rect_kwargs.update(kwargs)
+
+        rectangle = Rectangle(
+            corner1=corner1,
+            corner2=corner2,
+            comment=comment,
+            layer=layer,
+            options=[],
+            **rect_kwargs,
+        )
+
+        self.layers.add_item(item=rectangle, layer=layer, verbose=verbose)
+        return rectangle
+
+    def ellipse(
+        self,
+        center: tuple[float | str, float | str],
+        x_radius: float | str,
+        y_radius: float | str,
+        layer: int = 0,
+        comment: str | None = None,
+        verbose: bool = False,
+        # Color
+        color: str | None = None,
+        fill: str | None = None,
+        draw: str | None = None,
+        text: str | None = None,
+        # Opacity
+        opacity: float | None = None,
+        draw_opacity: float | None = None,
+        fill_opacity: float | None = None,
+        text_opacity: float | None = None,
+        # Line width
+        line_width: str | None = None,
+        # Line style
+        line_cap: _LineCap = None,
+        line_join: _LineJoin = None,
+        miter_limit: float | None = None,
+        # Dash
+        dash_pattern: str | None = None,
+        dash_phase: str | None = None,
+        # Transformations
+        rotate: float | None = None,
+        xshift: str | None = None,
+        yshift: str | None = None,
+        scale: float | None = None,
+        xscale: float | None = None,
+        yscale: float | None = None,
+        # Catch-all for unlisted TikZ options
+        **kwargs: Any,
+    ) -> Ellipse:
+        """Add an ellipse to the figure.
+
+        Args:
+            center: Center coordinate as (x, y) tuple.
+            x_radius: Horizontal radius (e.g. ``"2cm"``, ``1.5``).
+            y_radius: Vertical radius (e.g. ``"1cm"``, ``0.75``).
+            layer: Target layer index. Defaults to ``0``.
+            comment: Optional comment prepended in the TikZ output.
+            verbose: If ``True``, print a debug message.
+            color: Line color (e.g. ``"red"``, ``"blue!50"``).
+            fill: Fill color for the ellipse.
+            draw: Stroke color when different from *color*.
+            text: Text color.
+            opacity: Overall opacity (0–1).
+            draw_opacity: Stroke opacity (0–1).
+            fill_opacity: Fill opacity (0–1).
+            text_opacity: Text opacity (0–1).
+            line_width: Line width (e.g. ``"1pt"``).
+            line_cap: Line cap style: ``"butt"``, ``"rect"``, or ``"round"``.
+            line_join: Line join style: ``"miter"``, ``"bevel"``, or ``"round"``.
+            miter_limit: Miter limit factor for miter joins.
+            dash_pattern: Custom dash pattern (e.g. ``"on 2pt off 3pt"``).
+            dash_phase: Dash pattern starting offset (e.g. ``"2pt"``).
+            rotate: Rotation angle in degrees.
+            xshift: Horizontal shift (e.g. ``"1cm"``).
+            yshift: Vertical shift (e.g. ``"1cm"``).
+            scale: Uniform scaling factor.
+            xscale: Horizontal scaling factor.
+            yscale: Vertical scaling factor.
+            **kwargs: Catch-all for unlisted TikZ options.
+
+        Returns:
+            The :class:`Ellipse` object that was added.
+        """
+        ellipse_kwargs: dict[str, Any] = {}
+        if color is not None:
+            ellipse_kwargs["color"] = color
+        if fill is not None:
+            ellipse_kwargs["fill"] = fill
+        if draw is not None:
+            ellipse_kwargs["draw"] = draw
+        if text is not None:
+            ellipse_kwargs["text"] = text
+        if opacity is not None:
+            ellipse_kwargs["opacity"] = opacity
+        if draw_opacity is not None:
+            ellipse_kwargs["draw_opacity"] = draw_opacity
+        if fill_opacity is not None:
+            ellipse_kwargs["fill_opacity"] = fill_opacity
+        if text_opacity is not None:
+            ellipse_kwargs["text_opacity"] = text_opacity
+        if line_width is not None:
+            ellipse_kwargs["line_width"] = line_width
+        if line_cap is not None:
+            ellipse_kwargs["line_cap"] = line_cap
+        if line_join is not None:
+            ellipse_kwargs["line_join"] = line_join
+        if miter_limit is not None:
+            ellipse_kwargs["miter_limit"] = miter_limit
+        if dash_pattern is not None:
+            ellipse_kwargs["dash_pattern"] = dash_pattern
+        if dash_phase is not None:
+            ellipse_kwargs["dash_phase"] = dash_phase
+        if rotate is not None:
+            ellipse_kwargs["rotate"] = rotate
+        if xshift is not None:
+            ellipse_kwargs["xshift"] = xshift
+        if yshift is not None:
+            ellipse_kwargs["yshift"] = yshift
+        if scale is not None:
+            ellipse_kwargs["scale"] = scale
+        if xscale is not None:
+            ellipse_kwargs["xscale"] = xscale
+        if yscale is not None:
+            ellipse_kwargs["yscale"] = yscale
+
+        ellipse_kwargs.update(kwargs)
+
+        ellipse = Ellipse(
+            center=center,
+            x_radius=x_radius,
+            y_radius=y_radius,
+            comment=comment,
+            layer=layer,
+            options=[],
+            **ellipse_kwargs,
+        )
+
+        self.layers.add_item(item=ellipse, layer=layer, verbose=verbose)
+        return ellipse
+
+    def grid(
+        self,
+        corner1: tuple[float | str, float | str],
+        corner2: tuple[float | str, float | str],
+        step: str | None = None,
+        layer: int = 0,
+        comment: str | None = None,
+        verbose: bool = False,
+        # Color
+        color: str | None = None,
+        # Opacity
+        opacity: float | None = None,
+        draw_opacity: float | None = None,
+        # Line width
+        line_width: str | None = None,
+        # Line style
+        line_cap: _LineCap = None,
+        line_join: _LineJoin = None,
+        # Dash
+        dash_pattern: str | None = None,
+        dash_phase: str | None = None,
+        # Transformations
+        rotate: float | None = None,
+        xshift: str | None = None,
+        yshift: str | None = None,
+        scale: float | None = None,
+        xscale: float | None = None,
+        yscale: float | None = None,
+        # Catch-all for unlisted TikZ options
+        **kwargs: Any,
+    ) -> Grid:
+        """Add a grid to the figure.
+
+        Args:
+            corner1: First corner as (x, y) tuple.
+            corner2: Opposite corner as (x, y) tuple.
+            step: Grid step size (e.g. ``"1cm"`` for uniform, or
+                ``"0.5cm,1cm"`` for different x/y steps). Defaults to ``None``
+                (TikZ default of 1cm).
+            layer: Target layer index. Defaults to ``0``.
+            comment: Optional comment prepended in the TikZ output.
+            verbose: If ``True``, print a debug message.
+            color: Line color (e.g. ``"red"``, ``"gray!30"``).
+            opacity: Overall opacity (0–1).
+            draw_opacity: Stroke opacity (0–1).
+            line_width: Line width (e.g. ``"0.5pt"``).
+            line_cap: Line cap style: ``"butt"``, ``"rect"``, or ``"round"``.
+            line_join: Line join style: ``"miter"``, ``"bevel"``, or ``"round"``.
+            dash_pattern: Custom dash pattern (e.g. ``"on 1pt off 1pt"``).
+            dash_phase: Dash pattern starting offset (e.g. ``"1pt"``).
+            rotate: Rotation angle in degrees.
+            xshift: Horizontal shift (e.g. ``"1cm"``).
+            yshift: Vertical shift (e.g. ``"1cm"``).
+            scale: Uniform scaling factor.
+            xscale: Horizontal scaling factor.
+            yscale: Vertical scaling factor.
+            **kwargs: Catch-all for unlisted TikZ options.
+
+        Returns:
+            The :class:`Grid` object that was added.
+        """
+        grid_kwargs: dict[str, Any] = {}
+        if color is not None:
+            grid_kwargs["color"] = color
+        if opacity is not None:
+            grid_kwargs["opacity"] = opacity
+        if draw_opacity is not None:
+            grid_kwargs["draw_opacity"] = draw_opacity
+        if line_width is not None:
+            grid_kwargs["line_width"] = line_width
+        if line_cap is not None:
+            grid_kwargs["line_cap"] = line_cap
+        if line_join is not None:
+            grid_kwargs["line_join"] = line_join
+        if dash_pattern is not None:
+            grid_kwargs["dash_pattern"] = dash_pattern
+        if dash_phase is not None:
+            grid_kwargs["dash_phase"] = dash_phase
+        if rotate is not None:
+            grid_kwargs["rotate"] = rotate
+        if xshift is not None:
+            grid_kwargs["xshift"] = xshift
+        if yshift is not None:
+            grid_kwargs["yshift"] = yshift
+        if scale is not None:
+            grid_kwargs["scale"] = scale
+        if xscale is not None:
+            grid_kwargs["xscale"] = xscale
+        if yscale is not None:
+            grid_kwargs["yscale"] = yscale
+
+        grid_kwargs.update(kwargs)
+
+        grid_obj = Grid(
+            corner1=corner1,
+            corner2=corner2,
+            step=step,
+            comment=comment,
+            layer=layer,
+            options=[],
+            **grid_kwargs,
+        )
+
+        self.layers.add_item(item=grid_obj, layer=layer, verbose=verbose)
+        return grid_obj
+
+    def parabola(
+        self,
+        start: tuple[float | str, float | str],
+        end: tuple[float | str, float | str],
+        bend: tuple[float | str, float | str] | None = None,
+        layer: int = 0,
+        comment: str | None = None,
+        verbose: bool = False,
+        # Color
+        color: str | None = None,
+        fill: str | None = None,
+        draw: str | None = None,
+        text: str | None = None,
+        # Opacity
+        opacity: float | None = None,
+        draw_opacity: float | None = None,
+        fill_opacity: float | None = None,
+        text_opacity: float | None = None,
+        # Line width
+        line_width: str | None = None,
+        # Line style
+        line_cap: _LineCap = None,
+        line_join: _LineJoin = None,
+        miter_limit: float | None = None,
+        # Dash
+        dash_pattern: str | None = None,
+        dash_phase: str | None = None,
+        # Arrow specification
+        arrows: str | None = None,
+        # Transformations
+        rotate: float | None = None,
+        xshift: str | None = None,
+        yshift: str | None = None,
+        scale: float | None = None,
+        xscale: float | None = None,
+        yscale: float | None = None,
+        # Catch-all for unlisted TikZ options
+        **kwargs: Any,
+    ) -> Parabola:
+        """Add a parabola to the figure.
+
+        Args:
+            start: Starting coordinate as (x, y) tuple.
+            end: Ending coordinate as (x, y) tuple.
+            bend: Bend (control) point as (x, y) tuple. If None, uses TikZ
+                default. Defaults to ``None``.
+            layer: Target layer index. Defaults to ``0``.
+            comment: Optional comment prepended in the TikZ output.
+            verbose: If ``True``, print a debug message.
+            color: Line color (e.g. ``"red"``, ``"blue!50"``).
+            fill: Fill color for the parabola.
+            draw: Stroke color when different from *color*.
+            text: Text color.
+            opacity: Overall opacity (0–1).
+            draw_opacity: Stroke opacity (0–1).
+            fill_opacity: Fill opacity (0–1).
+            text_opacity: Text opacity (0–1).
+            line_width: Line width (e.g. ``"1pt"``).
+            line_cap: Line cap style: ``"butt"``, ``"rect"``, or ``"round"``.
+            line_join: Line join style: ``"miter"``, ``"bevel"``, or ``"round"``.
+            miter_limit: Miter limit factor for miter joins.
+            dash_pattern: Custom dash pattern (e.g. ``"on 2pt off 3pt"``).
+            dash_phase: Dash pattern starting offset (e.g. ``"2pt"``).
+            arrows: Arrow specification (e.g. ``"->"``, ``"<->"``, ``"*-*"``).
+            rotate: Rotation angle in degrees.
+            xshift: Horizontal shift (e.g. ``"1cm"``).
+            yshift: Vertical shift (e.g. ``"1cm"``).
+            scale: Uniform scaling factor.
+            xscale: Horizontal scaling factor.
+            yscale: Vertical scaling factor.
+            **kwargs: Catch-all for unlisted TikZ options.
+
+        Returns:
+            The :class:`Parabola` object that was added.
+        """
+        options: list[str] = []
+        if arrows:
+            options.append(arrows)
+
+        parabola_kwargs: dict[str, Any] = {}
+        if color is not None:
+            parabola_kwargs["color"] = color
+        if fill is not None:
+            parabola_kwargs["fill"] = fill
+        if draw is not None:
+            parabola_kwargs["draw"] = draw
+        if text is not None:
+            parabola_kwargs["text"] = text
+        if opacity is not None:
+            parabola_kwargs["opacity"] = opacity
+        if draw_opacity is not None:
+            parabola_kwargs["draw_opacity"] = draw_opacity
+        if fill_opacity is not None:
+            parabola_kwargs["fill_opacity"] = fill_opacity
+        if text_opacity is not None:
+            parabola_kwargs["text_opacity"] = text_opacity
+        if line_width is not None:
+            parabola_kwargs["line_width"] = line_width
+        if line_cap is not None:
+            parabola_kwargs["line_cap"] = line_cap
+        if line_join is not None:
+            parabola_kwargs["line_join"] = line_join
+        if miter_limit is not None:
+            parabola_kwargs["miter_limit"] = miter_limit
+        if dash_pattern is not None:
+            parabola_kwargs["dash_pattern"] = dash_pattern
+        if dash_phase is not None:
+            parabola_kwargs["dash_phase"] = dash_phase
+        if rotate is not None:
+            parabola_kwargs["rotate"] = rotate
+        if xshift is not None:
+            parabola_kwargs["xshift"] = xshift
+        if yshift is not None:
+            parabola_kwargs["yshift"] = yshift
+        if scale is not None:
+            parabola_kwargs["scale"] = scale
+        if xscale is not None:
+            parabola_kwargs["xscale"] = xscale
+        if yscale is not None:
+            parabola_kwargs["yscale"] = yscale
+
+        parabola_kwargs.update(kwargs)
+
+        parabola = Parabola(
+            start=start,
+            end=end,
+            bend=bend,
+            comment=comment,
+            layer=layer,
+            options=options,
+            **parabola_kwargs,
+        )
+
+        self.layers.add_item(item=parabola, layer=layer, verbose=verbose)
+        return parabola
 
     def filldraw(
         self,

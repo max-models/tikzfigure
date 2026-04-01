@@ -10,9 +10,11 @@ from lists of `(x, y)` coordinates. This tutorial covers:
 - rounded corners
 - custom shapes (heart, star)
 - parametric curves with NumPy (spiral, circle, sun)
+- TikZ primitives: arcs, circles, rectangles, ellipses, grids, parabolas
 
 ```{python}
 import numpy as np
+import math
 
 from tikzfigure import TikzFigure
 ```
@@ -175,12 +177,9 @@ fig.show()
 
 {{< include includes/tikz_code_callout.qmd >}}
 
-## Arcs and circles
+## TikZ Primitives
 
-TikZ provides two additional primitives for drawing circular shapes: arcs (portions of circles)
-and full circles.
-
-### Basic arcs
+### Arcs
 
 An arc is defined by a starting point, start and end angles (in degrees), and a radius.
 
@@ -201,7 +200,7 @@ fig.show()
 
 {{< include includes/tikz_code_callout.qmd >}}
 
-### Basic circles
+### Circles
 
 A circle is defined by a center point and a radius.
 
@@ -227,8 +226,6 @@ fig.show()
 A practical example: a clock face using a circle and arcs for hour markers.
 
 ```{python}
-import math
-
 fig = TikzFigure()
 
 # Outer circle
@@ -263,6 +260,90 @@ fig.show()
 
 {{< include includes/tikz_code_callout.qmd >}}
 
+### Rectangles
+
+Rectangles are defined by two opposite corners.
+
+```{python}
+fig = TikzFigure()
+
+# Unfilled rectangle
+fig.rectangle((0, 0), (2, 1), color="blue", line_width="2pt")
+
+# Filled rectangle
+fig.rectangle((3, 0), (5, 1), fill="yellow", color="orange", line_width="2pt")
+
+# Rectangle with rounded corners
+fig.rectangle((6, 0), (8, 1), fill="green!30", color="green", rounded_corners="5pt", line_width="2pt")
+
+fig.show()
+```
+
+{{< include includes/tikz_code_callout.qmd >}}
+
+### Ellipses
+
+Ellipses are defined by a center point and two radii.
+
+```{python}
+fig = TikzFigure()
+
+# Circle (equal radii)
+fig.ellipse((0, 0), x_radius="1cm", y_radius="1cm", color="red", line_width="2pt")
+
+# Horizontal ellipse
+fig.ellipse((4, 0), x_radius="1.5cm", y_radius="0.75cm", color="blue", line_width="2pt")
+
+# Filled ellipse
+fig.ellipse((8, 0), x_radius="1.2cm", y_radius="0.8cm", fill="purple!40", color="purple", line_width="2pt")
+
+fig.show()
+```
+
+{{< include includes/tikz_code_callout.qmd >}}
+
+### Grids
+
+A grid spans between two opposite corners with a specified step size.
+
+```{python}
+fig = TikzFigure()
+
+# Uniform grid
+fig.grid((0, 0), (3, 3), step="0.5cm", color="gray!30")
+
+# Grid with different x and y steps
+fig.grid((4, 0), (7, 3), step="0.5cm, 1cm", color="blue!20")
+
+# Grid with larger step
+fig.grid((8, 0), (10, 3), step="1cm", color="red!20", line_width="1pt")
+
+fig.show()
+```
+
+{{< include includes/tikz_code_callout.qmd >}}
+
+### Parabolas
+
+Parabolas connect two points, optionally with a bend (control) point.
+
+```{python}
+fig = TikzFigure()
+
+# Simple parabola
+fig.parabola((0, 0), (3, 0), color="red", line_width="2pt")
+
+# Parabola with bend point (creates a specific curve shape)
+fig.parabola((5, 0), (8, 0), bend=(6.5, 2), color="blue", line_width="2pt")
+
+# Parabola with arrow
+fig.parabola((0, 3), (3, 4), color="green", arrows="->", line_width="2pt")
+
+fig.show()
+```
+
+{{< include includes/tikz_code_callout.qmd >}}
+
 ## Circle of nodes
 
 Placing many nodes evenly around a circle using a Python loop together with TikZ
@@ -270,8 +351,6 @@ variables (defined via `add_variable`). The coordinates use the stored `\\radius
 value so that changing the variable re-scales the figure without touching the node code.
 
 ```{python}
-import math
-
 fig = TikzFigure()
 
 fig.add_variable("radius", 3)
