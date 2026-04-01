@@ -76,8 +76,37 @@ def fix_image_paths(content: str, tutorial_name: str) -> str:
     return content
 
 
+def fix_tikzcode_callouts(content: str) -> str:
+    """Convert [[CALLOUT-*]] and [[TAB]] markers to JSX Astro components.
+
+    Transforms:
+        [[CALLOUT-NOTE START]] ... [[CALLOUT-NOTE END]]
+            → <Callout type="note"> ... </Callout>
+
+        ## heading markers within callouts become TabItem components
+        Multiple ## sections create a <Tabs> wrapper
+    """
+    # Replace `TABS_START` with <Tabs> and `TABS_END` with </Tabs>
+    content = content.replace("`TABS_START`", "<Tabs>")
+    content = content.replace("`TABS_END`", "</Tabs>")
+
+    # Replace `TAB_START` and `TAB_END` with <Tab> and </Tab>
+    # Get the label from the `TAB_START` marker, e.g. `TAB_START label="Section"`
+    tab_start_pattern = r"`TAB_START\s+label=\"([^\"]+)\"`"
+    content = re.sub(tab_start_pattern, r'<TabItem label="\1">', content)
+    content = content.replace("`TAB_END`", "</TabItem>")
+
+    return content
+
+
 def write_content(title: str, body: str, out_path: Path) -> None:
-    out_path.write_text(f'---\ntitle: "{title}"\n---\n\n{body}', encoding="utf-8")
+    """Write MDX content with component imports if needed."""
+    imports = ""
+    if "<Callout" in body or "<TabItem" in body:
+        imports = "import { Callout } from '@astrojs/starlight/components'\nimport { Tabs, TabItem } from '@astrojs/starlight/components'\n\n"
+
+    content = f'---\ntitle: "{title}"\n---\n\n{imports}{body}'
+    out_path.write_text(content, encoding="utf-8")
     print(f"  Written: {out_path.relative_to(ASTRO_ROOT)}")
 
 
@@ -130,9 +159,10 @@ def process_qmd(qmd_path: Path) -> None:
         content = md_file.read_text(encoding="utf-8")
         title = extract_title(content, name)
         body = fix_image_paths(strip_frontmatter(content), name)
+        body = fix_tikzcode_callouts(body)
         copy_assets(out_dir / f"{name}_files", name)
 
-    write_content(title, body, CONTENT_DST / f"{name}.md")
+    write_content(title, body, CONTENT_DST / f"{name}.mdx")
 
 
 def process_notebook(nb_path: Path) -> None:
@@ -163,7 +193,7 @@ def process_notebook(nb_path: Path) -> None:
         body = fix_image_paths(strip_frontmatter(content), name)
         copy_assets(tmp_dir / f"{name}_files", name)
 
-    write_content(title, body, CONTENT_DST / f"{name}.md")
+    write_content(title, body, CONTENT_DST / f"{name}.mdx")
 
 
 def main() -> None:
