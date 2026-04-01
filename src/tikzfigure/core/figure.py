@@ -6,7 +6,9 @@ from importlib.metadata import version
 from pathlib import Path
 from typing import Any
 
+from tikzfigure.core.arc import Arc
 from tikzfigure.core.base import TikzObject
+from tikzfigure.core.circle import Circle
 from tikzfigure.core.color import Color
 from tikzfigure.core.coordinate import TikzCoordinate
 from tikzfigure.core.layer import LayerCollection
@@ -428,6 +430,10 @@ class TikzFigure:
                     fig.layers.add_item(Loop.from_dict(item_data), layer=layer_label)
                 elif item_type == "RawTikz":
                     fig.layers.add_item(RawTikz.from_dict(item_data), layer=layer_label)
+                elif item_type == "Arc":
+                    fig.layers.add_item(Arc.from_dict(item_data), layer=layer_label)
+                elif item_type == "Circle":
+                    fig.layers.add_item(Circle.from_dict(item_data), layer=layer_label)
 
         # Keep node counter consistent with restored nodes
         max_auto = -1
@@ -845,6 +851,272 @@ class TikzFigure:
             verbose=verbose,
         )
         return raw_tikz
+
+    def arc(
+        self,
+        start: tuple[float | str, float | str],
+        start_angle: float,
+        end_angle: float,
+        radius: float | str,
+        layer: int = 0,
+        comment: str | None = None,
+        verbose: bool = False,
+        # Color
+        color: str | None = None,
+        fill: str | None = None,
+        draw: str | None = None,
+        text: str | None = None,
+        # Opacity
+        opacity: float | None = None,
+        draw_opacity: float | None = None,
+        fill_opacity: float | None = None,
+        text_opacity: float | None = None,
+        # Line width
+        line_width: str | None = None,
+        # Line style
+        line_cap: _LineCap = None,
+        line_join: _LineJoin = None,
+        miter_limit: float | None = None,
+        # Dash
+        dash_pattern: str | None = None,
+        dash_phase: str | None = None,
+        # Arrow specification
+        arrows: str | None = None,
+        # Transformations
+        rotate: float | None = None,
+        xshift: str | None = None,
+        yshift: str | None = None,
+        scale: float | None = None,
+        xscale: float | None = None,
+        yscale: float | None = None,
+        # Catch-all for unlisted TikZ options
+        **kwargs: Any,
+    ) -> Arc:
+        """Add an arc to the figure.
+
+        Args:
+            start: Starting coordinate as (x, y) tuple.
+            start_angle: Start angle in degrees.
+            end_angle: End angle in degrees.
+            radius: Radius of the arc (e.g. ``"3mm"``, ``0.5``).
+            layer: Target layer index. Defaults to ``0``.
+            comment: Optional comment prepended in the TikZ output.
+            verbose: If ``True``, print a debug message.
+            color: Line color (e.g. ``"red"``, ``"blue!50"``).
+            fill: Fill color for the enclosed area.
+            draw: Stroke color when different from *color*.
+            text: Text color.
+            opacity: Overall opacity (0–1).
+            draw_opacity: Stroke opacity (0–1).
+            fill_opacity: Fill opacity (0–1).
+            text_opacity: Text opacity (0–1).
+            line_width: Line width (e.g. ``"1pt"``).
+            line_cap: Line cap style: ``"butt"``, ``"rect"``, or
+                ``"round"``.
+            line_join: Line join style: ``"miter"``, ``"bevel"``, or
+                ``"round"``.
+            miter_limit: Miter limit factor for miter joins.
+            dash_pattern: Custom dash pattern (e.g. ``"on 2pt off 3pt"``).
+            dash_phase: Dash pattern starting offset (e.g. ``"2pt"``).
+            arrows: Arrow specification (e.g. ``"->"``, ``"<->"``, ``"*-*"``).
+            rotate: Rotation angle in degrees.
+            xshift: Horizontal shift (e.g. ``"1cm"``).
+            yshift: Vertical shift (e.g. ``"1cm"``).
+            scale: Uniform scaling factor.
+            xscale: Horizontal scaling factor.
+            yscale: Vertical scaling factor.
+            **kwargs: Catch-all for unlisted TikZ options.
+
+        Returns:
+            The :class:`Arc` object that was added.
+        """
+        options = []
+        if arrows:
+            options.append(arrows)
+
+        arc_kwargs = {}
+        if color is not None:
+            arc_kwargs["color"] = color
+        if fill is not None:
+            arc_kwargs["fill"] = fill
+        if draw is not None:
+            arc_kwargs["draw"] = draw
+        if text is not None:
+            arc_kwargs["text"] = text
+        if opacity is not None:
+            arc_kwargs["opacity"] = opacity
+        if draw_opacity is not None:
+            arc_kwargs["draw_opacity"] = draw_opacity
+        if fill_opacity is not None:
+            arc_kwargs["fill_opacity"] = fill_opacity
+        if text_opacity is not None:
+            arc_kwargs["text_opacity"] = text_opacity
+        if line_width is not None:
+            arc_kwargs["line_width"] = line_width
+        if line_cap is not None:
+            arc_kwargs["line_cap"] = line_cap
+        if line_join is not None:
+            arc_kwargs["line_join"] = line_join
+        if miter_limit is not None:
+            arc_kwargs["miter_limit"] = miter_limit
+        if dash_pattern is not None:
+            arc_kwargs["dash_pattern"] = dash_pattern
+        if dash_phase is not None:
+            arc_kwargs["dash_phase"] = dash_phase
+        if rotate is not None:
+            arc_kwargs["rotate"] = rotate
+        if xshift is not None:
+            arc_kwargs["xshift"] = xshift
+        if yshift is not None:
+            arc_kwargs["yshift"] = yshift
+        if scale is not None:
+            arc_kwargs["scale"] = scale
+        if xscale is not None:
+            arc_kwargs["xscale"] = xscale
+        if yscale is not None:
+            arc_kwargs["yscale"] = yscale
+
+        arc_kwargs.update(kwargs)
+
+        arc = Arc(
+            start=start,
+            start_angle=start_angle,
+            end_angle=end_angle,
+            radius=radius,
+            comment=comment,
+            layer=layer,
+            options=options,
+            **arc_kwargs,
+        )
+
+        self.layers.add_item(item=arc, layer=layer, verbose=verbose)
+        return arc
+
+    def circle(
+        self,
+        center: tuple[float | str, float | str],
+        radius: float | str,
+        layer: int = 0,
+        comment: str | None = None,
+        verbose: bool = False,
+        # Color
+        color: str | None = None,
+        fill: str | None = None,
+        draw: str | None = None,
+        text: str | None = None,
+        # Opacity
+        opacity: float | None = None,
+        draw_opacity: float | None = None,
+        fill_opacity: float | None = None,
+        text_opacity: float | None = None,
+        # Line width
+        line_width: str | None = None,
+        # Line style
+        line_cap: _LineCap = None,
+        line_join: _LineJoin = None,
+        miter_limit: float | None = None,
+        # Dash
+        dash_pattern: str | None = None,
+        dash_phase: str | None = None,
+        # Transformations
+        rotate: float | None = None,
+        xshift: str | None = None,
+        yshift: str | None = None,
+        scale: float | None = None,
+        xscale: float | None = None,
+        yscale: float | None = None,
+        # Catch-all for unlisted TikZ options
+        **kwargs: Any,
+    ) -> Circle:
+        """Add a circle to the figure.
+
+        Args:
+            center: Center coordinate as (x, y) tuple.
+            radius: Radius of the circle (e.g. ``"5mm"``, ``1.0``).
+            layer: Target layer index. Defaults to ``0``.
+            comment: Optional comment prepended in the TikZ output.
+            verbose: If ``True``, print a debug message.
+            color: Line color (e.g. ``"red"``, ``"blue!50"``).
+            fill: Fill color for the circle.
+            draw: Stroke color when different from *color*.
+            text: Text color.
+            opacity: Overall opacity (0–1).
+            draw_opacity: Stroke opacity (0–1).
+            fill_opacity: Fill opacity (0–1).
+            text_opacity: Text opacity (0–1).
+            line_width: Line width (e.g. ``"1pt"``).
+            line_cap: Line cap style: ``"butt"``, ``"rect"``, or
+                ``"round"``.
+            line_join: Line join style: ``"miter"``, ``"bevel"``, or
+                ``"round"``.
+            miter_limit: Miter limit factor for miter joins.
+            dash_pattern: Custom dash pattern (e.g. ``"on 2pt off 3pt"``).
+            dash_phase: Dash pattern starting offset (e.g. ``"2pt"``).
+            rotate: Rotation angle in degrees.
+            xshift: Horizontal shift (e.g. ``"1cm"``).
+            yshift: Vertical shift (e.g. ``"1cm"``).
+            scale: Uniform scaling factor.
+            xscale: Horizontal scaling factor.
+            yscale: Vertical scaling factor.
+            **kwargs: Catch-all for unlisted TikZ options.
+
+        Returns:
+            The :class:`Circle` object that was added.
+        """
+        circle_kwargs = {}
+        if color is not None:
+            circle_kwargs["color"] = color
+        if fill is not None:
+            circle_kwargs["fill"] = fill
+        if draw is not None:
+            circle_kwargs["draw"] = draw
+        if text is not None:
+            circle_kwargs["text"] = text
+        if opacity is not None:
+            circle_kwargs["opacity"] = opacity
+        if draw_opacity is not None:
+            circle_kwargs["draw_opacity"] = draw_opacity
+        if fill_opacity is not None:
+            circle_kwargs["fill_opacity"] = fill_opacity
+        if text_opacity is not None:
+            circle_kwargs["text_opacity"] = text_opacity
+        if line_width is not None:
+            circle_kwargs["line_width"] = line_width
+        if line_cap is not None:
+            circle_kwargs["line_cap"] = line_cap
+        if line_join is not None:
+            circle_kwargs["line_join"] = line_join
+        if miter_limit is not None:
+            circle_kwargs["miter_limit"] = miter_limit
+        if dash_pattern is not None:
+            circle_kwargs["dash_pattern"] = dash_pattern
+        if dash_phase is not None:
+            circle_kwargs["dash_phase"] = dash_phase
+        if rotate is not None:
+            circle_kwargs["rotate"] = rotate
+        if xshift is not None:
+            circle_kwargs["xshift"] = xshift
+        if yshift is not None:
+            circle_kwargs["yshift"] = yshift
+        if scale is not None:
+            circle_kwargs["scale"] = scale
+        if xscale is not None:
+            circle_kwargs["xscale"] = xscale
+        if yscale is not None:
+            circle_kwargs["yscale"] = yscale
+
+        circle_kwargs.update(kwargs)
+
+        circle = Circle(
+            center=center,
+            radius=radius,
+            comment=comment,
+            layer=layer,
+            **circle_kwargs,
+        )
+
+        self.layers.add_item(item=circle, layer=layer, verbose=verbose)
+        return circle
 
     def filldraw(
         self,

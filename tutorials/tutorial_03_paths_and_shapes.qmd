@@ -175,6 +175,139 @@ fig.show()
 
 {{< include includes/tikz_code_callout.qmd >}}
 
+## Arcs and circles
+
+TikZ provides two additional primitives for drawing circular shapes: arcs (portions of circles)
+and full circles.
+
+### Basic arcs
+
+An arc is defined by a starting point, start and end angles (in degrees), and a radius.
+
+```{python}
+fig = TikzFigure()
+
+# Quarter circle arc
+fig.arc(start=(0, 0), start_angle=0, end_angle=90, radius="2cm", color="red", line_width="2pt")
+
+# Three-quarter circle arc
+fig.arc(start=(4, 0), start_angle=90, end_angle=360, radius="1.5cm", color="blue", line_width="2pt")
+
+# Arc with arrow
+fig.arc(start=(8, 0), start_angle=0, end_angle=180, radius="2cm", arrows="->", color="green", line_width="2pt")
+
+fig.show()
+```
+
+{{< include includes/tikz_code_callout.qmd >}}
+
+### Basic circles
+
+A circle is defined by a center point and a radius.
+
+```{python}
+fig = TikzFigure()
+
+# Unfilled circle
+fig.circle(center=(0, 0), radius="1cm", color="blue", line_width="2pt")
+
+# Filled circle
+fig.circle(center=(3, 0), radius="1cm", fill="yellow", color="orange", line_width="2pt")
+
+# Dashed circle
+fig.circle(center=(6, 0), radius="1cm", color="purple", dash_pattern="on 2pt off 2pt", line_width="2pt")
+
+fig.show()
+```
+
+{{< include includes/tikz_code_callout.qmd >}}
+
+### Clock face
+
+A practical example: a clock face using a circle and arcs for hour markers.
+
+```{python}
+import math
+
+fig = TikzFigure()
+
+# Outer circle
+fig.circle(center=(0, 0), radius="3cm", color="black", line_width="2pt")
+
+# Hour markers (12 arcs around the circle)
+for hour in range(12):
+    angle = (hour * 30) % 360  # 30 degrees apart
+    rad = math.radians(angle)
+
+    # Inner radius for start
+    x_inner = 2.7 * math.cos(rad)
+    y_inner = 2.7 * math.sin(rad)
+
+    # Small line segment from inner to outer
+    fig.draw(
+        [(x_inner, y_inner), (x_inner * 1.1, y_inner * 1.1)],
+        line_width="1.5pt",
+        color="black"
+    )
+
+    # Hour numbers
+    x_text = 2.4 * math.cos(rad)
+    y_text = 2.4 * math.sin(rad)
+    fig.add_node(x_text, y_text, content=str(hour if hour > 0 else 12), draw="none")
+
+# Center dot
+fig.circle(center=(0, 0), radius="0.15cm", fill="black")
+
+fig.show()
+```
+
+{{< include includes/tikz_code_callout.qmd >}}
+
+### Pie chart
+
+A pie chart using arcs for each segment.
+
+```{python}
+fig = TikzFigure()
+
+# Data
+values = [30, 20, 25, 15, 10]
+colors = ["red!70", "blue!70", "green!70", "yellow!70", "purple!70"]
+
+# Draw pie slices
+current_angle = 0
+for value, color in zip(values, colors):
+    end_angle = current_angle + (value / sum(values)) * 360
+
+    # Arc for the slice
+    fig.arc(
+        start=(0, 0),
+        start_angle=current_angle,
+        end_angle=end_angle,
+        radius="2cm",
+        color=color,
+        fill=color,
+        line_width="1.5pt",
+    )
+
+    # Line back to center
+    mid_angle = (current_angle + end_angle) / 2
+    rad = math.radians(mid_angle)
+    fig.draw([(2 * math.cos(rad), 2 * math.sin(rad)), (0, 0)], color=color, line_width="1.5pt")
+
+    # Label
+    label_rad = math.radians(mid_angle)
+    label_x = 1.2 * math.cos(label_rad)
+    label_y = 1.2 * math.sin(label_rad)
+    fig.add_node(label_x, label_y, content=f"{value}%", draw="none", font="\\small")
+
+    current_angle = end_angle
+
+fig.show()
+```
+
+{{< include includes/tikz_code_callout.qmd >}}
+
 ## Circle of nodes
 
 Placing many nodes evenly around a circle using a Python loop together with TikZ
