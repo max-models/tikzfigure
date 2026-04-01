@@ -99,6 +99,52 @@ def fix_tikzcode_callouts(content: str) -> str:
     return content
 
 
+def fence_indented_output_blocks(content: str) -> str:
+    """Convert top-level 4-space-indented blocks into fenced text code blocks."""
+    lines = content.splitlines()
+    out: list[str] = []
+    i = 0
+
+    while i < len(lines):
+        line = lines[i]
+        prev_blank = i == 0 or lines[i - 1].strip() == ""
+
+        if line.startswith("    ") and prev_blank:
+            block: list[str] = []
+            j = i
+            while j < len(lines):
+                current = lines[j]
+                if current.startswith("    "):
+                    block.append(current[4:])
+                    j += 1
+                    continue
+                # Keep blank lines inside the block if followed by another
+                # indented line, so one output becomes one fenced block.
+                if (
+                    current.strip() == ""
+                    and j + 1 < len(lines)
+                    and lines[j + 1].startswith("    ")
+                ):
+                    block.append("")
+                    j += 1
+                    continue
+                break
+
+            out.append("```tex")
+            out.extend(block)
+            out.append("```")
+            i = j
+            continue
+
+        out.append(line)
+        i += 1
+
+    rewritten = "\n".join(out)
+    if content.endswith("\n"):
+        rewritten += "\n"
+    return rewritten
+
+
 def write_content(title: str, body: str, out_path: Path) -> None:
     """Write MDX content with component imports if needed."""
     imports = ""
@@ -160,6 +206,7 @@ def process_qmd(qmd_path: Path) -> None:
         title = extract_title(content, name)
         body = fix_image_paths(strip_frontmatter(content), name)
         body = fix_tikzcode_callouts(body)
+        body = fence_indented_output_blocks(body)
         copy_assets(out_dir / f"{name}_files", name)
 
     write_content(title, body, CONTENT_DST / f"{name}.mdx")
@@ -191,6 +238,7 @@ def process_notebook(nb_path: Path) -> None:
         content = md_file.read_text(encoding="utf-8")
         title = extract_title(content, name)
         body = fix_image_paths(strip_frontmatter(content), name)
+        body = fence_indented_output_blocks(body)
         copy_assets(tmp_dir / f"{name}_files", name)
 
     write_content(title, body, CONTENT_DST / f"{name}.mdx")
