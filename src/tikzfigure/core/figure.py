@@ -930,11 +930,11 @@ class TikzFigure:
         Returns:
             The :class:`Arc` object that was added.
         """
-        options = []
+        options: list[str] = []
         if arrows:
             options.append(arrows)
 
-        arc_kwargs = {}
+        arc_kwargs: dict[str, Any] = {}
         if color is not None:
             arc_kwargs["color"] = color
         if fill is not None:
@@ -1063,7 +1063,7 @@ class TikzFigure:
         Returns:
             The :class:`Circle` object that was added.
         """
-        circle_kwargs = {}
+        circle_kwargs: dict[str, Any] = {}
         if color is not None:
             circle_kwargs["color"] = color
         if fill is not None:
@@ -1112,6 +1112,7 @@ class TikzFigure:
             radius=radius,
             comment=comment,
             layer=layer,
+            options=[],
             **circle_kwargs,
         )
 
