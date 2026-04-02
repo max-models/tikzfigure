@@ -344,6 +344,104 @@ fig.show()
 
 {{< include includes/tikz_code_callout.qmd >}}
 
+## Lines and Polygons
+
+### Basic lines
+
+A line connects two points. Lines support arrows and all standard styling.
+
+```{python}
+fig = TikzFigure()
+
+# Simple line
+fig.line((0, 0), (2, 0), color="red", line_width="2pt")
+
+# Line with arrow
+fig.line((3, 0), (5, 2), color="blue", arrows="->", line_width="2pt")
+
+# Dashed line
+fig.line((6, 0), (8, 1), color="green", dash_pattern="on 2pt off 2pt", line_width="2pt")
+
+fig.show()
+```
+
+{{< include includes/tikz_code_callout.qmd >}}
+
+### Line intersections
+
+Find where two lines intersect using the `intersection()` method.
+
+```{python}
+fig = TikzFigure()
+
+from tikzfigure.core.line import Line
+
+# Create two lines
+line1 = fig.line((0, 0), (4, 4), color="red", line_width="2pt")
+line2 = fig.line((0, 4), (4, 0), color="blue", line_width="2pt")
+
+# Find intersection
+intersection = line1.intersection(line2)
+print(f"Lines intersect at: {intersection}")
+
+# Draw intersection point
+if intersection:
+    fig.add_node(intersection[0], intersection[1], shape="circle",
+                 fill="black", minimum_size="0.15cm", draw="none")
+
+fig.show()
+```
+
+{{< include includes/tikz_code_callout.qmd >}}
+
+### Regular polygons
+
+Draw regular polygons (triangle, square, pentagon, etc.) with specified center and radius.
+
+```{python}
+fig = TikzFigure()
+
+# Triangle (3 sides)
+fig.triangle((0, 1), radius=0.8, color="red", fill="red!20")
+
+# Square (4 sides)
+fig.square((3, 1), radius=0.8, color="blue", fill="blue!20")
+
+# Pentagon (5 sides)
+fig.polygon((6, 1), radius=0.8, sides=5, color="green", fill="green!20")
+
+# Hexagon (6 sides)
+fig.polygon((9, 1), radius=0.8, sides=6, color="orange", fill="orange!20")
+
+fig.show()
+```
+
+{{< include includes/tikz_code_callout.qmd >}}
+
+### Rotated polygons
+
+Polygons can be rotated by specifying a rotation angle in degrees.
+
+```{python}
+fig = TikzFigure()
+
+# Squares with different rotations
+rotations = [0, 22.5, 45]
+for i, rot in enumerate(rotations):
+    fig.square((i * 3, 1), radius=0.8, rotation=rot,
+               color="purple", fill="purple!30")
+    fig.add_node(i * 3, -0.3, content=f"{rot}°", draw="none")
+
+# Triangles pointing in different directions
+fig.triangle((0, 3.5), radius=0.8, rotation=0, color="blue", fill="blue!20")
+fig.triangle((3, 3.5), radius=0.8, rotation=120, color="blue", fill="blue!20")
+fig.triangle((6, 3.5), radius=0.8, rotation=240, color="blue", fill="blue!20")
+
+fig.show()
+```
+
+{{< include includes/tikz_code_callout.qmd >}}
+
 ## Circle of nodes
 
 Placing many nodes evenly around a circle using a Python loop together with TikZ
