@@ -14,11 +14,13 @@ from tikzfigure.core.coordinate import TikzCoordinate
 from tikzfigure.core.ellipse import Ellipse
 from tikzfigure.core.grid import Grid
 from tikzfigure.core.layer import LayerCollection
+from tikzfigure.core.line import Line
 from tikzfigure.core.loop import Loop
 from tikzfigure.core.node import Node
 from tikzfigure.core.parabola import Parabola
 from tikzfigure.core.path import TikzPath
 from tikzfigure.core.plot import Plot3D
+from tikzfigure.core.polygon import Polygon, Square, Triangle
 from tikzfigure.core.raw import RawTikz
 from tikzfigure.core.rectangle import Rectangle
 from tikzfigure.core.types import (
@@ -450,6 +452,16 @@ class TikzFigure:
                     fig.layers.add_item(
                         Parabola.from_dict(item_data), layer=layer_label
                     )
+                elif item_type == "Line":
+                    fig.layers.add_item(Line.from_dict(item_data), layer=layer_label)
+                elif item_type == "Polygon":
+                    fig.layers.add_item(Polygon.from_dict(item_data), layer=layer_label)
+                elif item_type == "Triangle":
+                    fig.layers.add_item(
+                        Triangle.from_dict(item_data), layer=layer_label
+                    )
+                elif item_type == "Square":
+                    fig.layers.add_item(Square.from_dict(item_data), layer=layer_label)
 
         # Keep node counter consistent with restored nodes
         max_auto = -1
@@ -1634,6 +1646,418 @@ class TikzFigure:
 
         self.layers.add_item(item=parabola, layer=layer, verbose=verbose)
         return parabola
+
+    def line(
+        self,
+        start: tuple[float | str, float | str],
+        end: tuple[float | str, float | str],
+        layer: int = 0,
+        comment: str | None = None,
+        verbose: bool = False,
+        # Color
+        color: str | None = None,
+        text: str | None = None,
+        # Opacity
+        opacity: float | None = None,
+        draw_opacity: float | None = None,
+        # Line width
+        line_width: str | None = None,
+        # Line style
+        line_cap: _LineCap = None,
+        line_join: _LineJoin = None,
+        miter_limit: float | None = None,
+        # Dash
+        dash_pattern: str | None = None,
+        dash_phase: str | None = None,
+        # Arrow specification
+        arrows: str | None = None,
+        # Transformations
+        rotate: float | None = None,
+        xshift: str | None = None,
+        yshift: str | None = None,
+        scale: float | None = None,
+        xscale: float | None = None,
+        yscale: float | None = None,
+        # Catch-all for unlisted TikZ options
+        **kwargs: Any,
+    ) -> Line:
+        """Add a line segment to the figure.
+
+        Args:
+            start: Starting point as (x, y) tuple.
+            end: Ending point as (x, y) tuple.
+            layer: Target layer index. Defaults to ``0``.
+            comment: Optional comment prepended in the TikZ output.
+            verbose: If ``True``, print a debug message.
+            color: Line color (e.g. ``"red"``, ``"blue!50"``).
+            text: Text color.
+            opacity: Overall opacity (0–1).
+            draw_opacity: Stroke opacity (0–1).
+            line_width: Line width (e.g. ``"1pt"``).
+            line_cap: Line cap style: ``"butt"``, ``"rect"``, or ``"round"``.
+            line_join: Line join style: ``"miter"``, ``"bevel"``, or ``"round"``.
+            miter_limit: Miter limit factor for miter joins.
+            dash_pattern: Custom dash pattern (e.g. ``"on 2pt off 3pt"``).
+            dash_phase: Dash pattern starting offset (e.g. ``"2pt"``).
+            arrows: Arrow specification (e.g. ``"->"``, ``"<->"``, ``"*-*"``).
+            rotate: Rotation angle in degrees.
+            xshift: Horizontal shift (e.g. ``"1cm"``).
+            yshift: Vertical shift (e.g. ``"1cm"``).
+            scale: Uniform scaling factor.
+            xscale: Horizontal scaling factor.
+            yscale: Vertical scaling factor.
+            **kwargs: Catch-all for unlisted TikZ options.
+
+        Returns:
+            The :class:`Line` object that was added.
+        """
+        options: list[str] = []
+        if arrows:
+            options.append(arrows)
+
+        line_kwargs: dict[str, Any] = {}
+        if color is not None:
+            line_kwargs["color"] = color
+        if text is not None:
+            line_kwargs["text"] = text
+        if opacity is not None:
+            line_kwargs["opacity"] = opacity
+        if draw_opacity is not None:
+            line_kwargs["draw_opacity"] = draw_opacity
+        if line_width is not None:
+            line_kwargs["line_width"] = line_width
+        if line_cap is not None:
+            line_kwargs["line_cap"] = line_cap
+        if line_join is not None:
+            line_kwargs["line_join"] = line_join
+        if miter_limit is not None:
+            line_kwargs["miter_limit"] = miter_limit
+        if dash_pattern is not None:
+            line_kwargs["dash_pattern"] = dash_pattern
+        if dash_phase is not None:
+            line_kwargs["dash_phase"] = dash_phase
+        if rotate is not None:
+            line_kwargs["rotate"] = rotate
+        if xshift is not None:
+            line_kwargs["xshift"] = xshift
+        if yshift is not None:
+            line_kwargs["yshift"] = yshift
+        if scale is not None:
+            line_kwargs["scale"] = scale
+        if xscale is not None:
+            line_kwargs["xscale"] = xscale
+        if yscale is not None:
+            line_kwargs["yscale"] = yscale
+
+        line_kwargs.update(kwargs)
+
+        line = Line(
+            start=start,
+            end=end,
+            comment=comment,
+            layer=layer,
+            options=options,
+            **line_kwargs,
+        )
+
+        self.layers.add_item(item=line, layer=layer, verbose=verbose)
+        return line
+
+    def polygon(
+        self,
+        center: tuple[float | str, float | str],
+        radius: float | str,
+        sides: int,
+        rotation: float = 0,
+        layer: int = 0,
+        comment: str | None = None,
+        verbose: bool = False,
+        # Color
+        color: str | None = None,
+        fill: str | None = None,
+        draw: str | None = None,
+        text: str | None = None,
+        # Opacity
+        opacity: float | None = None,
+        draw_opacity: float | None = None,
+        fill_opacity: float | None = None,
+        text_opacity: float | None = None,
+        # Line width
+        line_width: str | None = None,
+        # Line style
+        line_cap: _LineCap = None,
+        line_join: _LineJoin = None,
+        miter_limit: float | None = None,
+        # Dash
+        dash_pattern: str | None = None,
+        dash_phase: str | None = None,
+        # Transformations
+        rotate: float | None = None,
+        xshift: str | None = None,
+        yshift: str | None = None,
+        scale: float | None = None,
+        xscale: float | None = None,
+        yscale: float | None = None,
+        # Catch-all for unlisted TikZ options
+        **kwargs: Any,
+    ) -> Polygon:
+        """Add a regular polygon to the figure.
+
+        Args:
+            center: Center coordinate as (x, y) tuple.
+            radius: Distance from center to vertices.
+            sides: Number of sides (must be >= 3).
+            rotation: Rotation angle in degrees. Defaults to ``0``.
+            layer: Target layer index. Defaults to ``0``.
+            comment: Optional comment prepended in the TikZ output.
+            verbose: If ``True``, print a debug message.
+            color: Line color (e.g. ``"red"``, ``"blue!50"``).
+            fill: Fill color for the polygon.
+            draw: Stroke color when different from *color*.
+            text: Text color.
+            opacity: Overall opacity (0–1).
+            draw_opacity: Stroke opacity (0–1).
+            fill_opacity: Fill opacity (0–1).
+            text_opacity: Text opacity (0–1).
+            line_width: Line width (e.g. ``"1pt"``).
+            line_cap: Line cap style: ``"butt"``, ``"rect"``, or ``"round"``.
+            line_join: Line join style: ``"miter"``, ``"bevel"``, or ``"round"``.
+            miter_limit: Miter limit factor for miter joins.
+            dash_pattern: Custom dash pattern (e.g. ``"on 2pt off 3pt"``).
+            dash_phase: Dash pattern starting offset (e.g. ``"2pt"``).
+            rotate: Rotation angle in degrees.
+            xshift: Horizontal shift (e.g. ``"1cm"``).
+            yshift: Vertical shift (e.g. ``"1cm"``).
+            scale: Uniform scaling factor.
+            xscale: Horizontal scaling factor.
+            yscale: Vertical scaling factor.
+            **kwargs: Catch-all for unlisted TikZ options.
+
+        Returns:
+            The :class:`Polygon` object that was added.
+        """
+        if sides < 3:
+            raise ValueError("Polygon must have at least 3 sides")
+
+        polygon_kwargs: dict[str, Any] = {}
+        if color is not None:
+            polygon_kwargs["color"] = color
+        if fill is not None:
+            polygon_kwargs["fill"] = fill
+        if draw is not None:
+            polygon_kwargs["draw"] = draw
+        if text is not None:
+            polygon_kwargs["text"] = text
+        if opacity is not None:
+            polygon_kwargs["opacity"] = opacity
+        if draw_opacity is not None:
+            polygon_kwargs["draw_opacity"] = draw_opacity
+        if fill_opacity is not None:
+            polygon_kwargs["fill_opacity"] = fill_opacity
+        if text_opacity is not None:
+            polygon_kwargs["text_opacity"] = text_opacity
+        if line_width is not None:
+            polygon_kwargs["line_width"] = line_width
+        if line_cap is not None:
+            polygon_kwargs["line_cap"] = line_cap
+        if line_join is not None:
+            polygon_kwargs["line_join"] = line_join
+        if miter_limit is not None:
+            polygon_kwargs["miter_limit"] = miter_limit
+        if dash_pattern is not None:
+            polygon_kwargs["dash_pattern"] = dash_pattern
+        if dash_phase is not None:
+            polygon_kwargs["dash_phase"] = dash_phase
+        if rotate is not None:
+            polygon_kwargs["rotate"] = rotate
+        if xshift is not None:
+            polygon_kwargs["xshift"] = xshift
+        if yshift is not None:
+            polygon_kwargs["yshift"] = yshift
+        if scale is not None:
+            polygon_kwargs["scale"] = scale
+        if xscale is not None:
+            polygon_kwargs["xscale"] = xscale
+        if yscale is not None:
+            polygon_kwargs["yscale"] = yscale
+
+        polygon_kwargs.update(kwargs)
+
+        polygon = Polygon(
+            center=center,
+            radius=radius,
+            sides=sides,
+            rotation=rotation,
+            comment=comment,
+            layer=layer,
+            options=[],
+            **polygon_kwargs,
+        )
+
+        self.layers.add_item(item=polygon, layer=layer, verbose=verbose)
+        return polygon
+
+    def triangle(
+        self,
+        center: tuple[float | str, float | str],
+        radius: float | str,
+        rotation: float = 0,
+        layer: int = 0,
+        comment: str | None = None,
+        verbose: bool = False,
+        # Color
+        color: str | None = None,
+        fill: str | None = None,
+        draw: str | None = None,
+        text: str | None = None,
+        # Opacity
+        opacity: float | None = None,
+        draw_opacity: float | None = None,
+        fill_opacity: float | None = None,
+        text_opacity: float | None = None,
+        # Line width
+        line_width: str | None = None,
+        # Catch-all for unlisted TikZ options
+        **kwargs: Any,
+    ) -> Triangle:
+        """Add an equilateral triangle to the figure.
+
+        Args:
+            center: Center coordinate as (x, y) tuple.
+            radius: Distance from center to vertices.
+            rotation: Rotation angle in degrees. Defaults to ``0``.
+            layer: Target layer index. Defaults to ``0``.
+            comment: Optional comment prepended in the TikZ output.
+            verbose: If ``True``, print a debug message.
+            color: Line color (e.g. ``"red"``, ``"blue!50"``).
+            fill: Fill color for the triangle.
+            draw: Stroke color when different from *color*.
+            text: Text color.
+            opacity: Overall opacity (0–1).
+            draw_opacity: Stroke opacity (0–1).
+            fill_opacity: Fill opacity (0–1).
+            text_opacity: Text opacity (0–1).
+            line_width: Line width (e.g. ``"1pt"``).
+            **kwargs: Catch-all for unlisted TikZ options.
+
+        Returns:
+            The :class:`Triangle` object that was added.
+        """
+        triangle_kwargs: dict[str, Any] = {}
+        if color is not None:
+            triangle_kwargs["color"] = color
+        if fill is not None:
+            triangle_kwargs["fill"] = fill
+        if draw is not None:
+            triangle_kwargs["draw"] = draw
+        if text is not None:
+            triangle_kwargs["text"] = text
+        if opacity is not None:
+            triangle_kwargs["opacity"] = opacity
+        if draw_opacity is not None:
+            triangle_kwargs["draw_opacity"] = draw_opacity
+        if fill_opacity is not None:
+            triangle_kwargs["fill_opacity"] = fill_opacity
+        if text_opacity is not None:
+            triangle_kwargs["text_opacity"] = text_opacity
+        if line_width is not None:
+            triangle_kwargs["line_width"] = line_width
+
+        triangle_kwargs.update(kwargs)
+
+        triangle = Triangle(
+            center=center,
+            radius=radius,
+            rotation=rotation,
+            comment=comment,
+            layer=layer,
+            options=[],
+            **triangle_kwargs,
+        )
+
+        self.layers.add_item(item=triangle, layer=layer, verbose=verbose)
+        return triangle
+
+    def square(
+        self,
+        center: tuple[float | str, float | str],
+        radius: float | str,
+        rotation: float = 45,
+        layer: int = 0,
+        comment: str | None = None,
+        verbose: bool = False,
+        # Color
+        color: str | None = None,
+        fill: str | None = None,
+        draw: str | None = None,
+        text: str | None = None,
+        # Opacity
+        opacity: float | None = None,
+        draw_opacity: float | None = None,
+        fill_opacity: float | None = None,
+        text_opacity: float | None = None,
+        # Line width
+        line_width: str | None = None,
+        # Catch-all for unlisted TikZ options
+        **kwargs: Any,
+    ) -> Square:
+        """Add a square to the figure.
+
+        Args:
+            center: Center coordinate as (x, y) tuple.
+            radius: Distance from center to vertices (corner-to-center distance).
+            rotation: Rotation angle in degrees. Defaults to ``45`` (axis-aligned).
+            layer: Target layer index. Defaults to ``0``.
+            comment: Optional comment prepended in the TikZ output.
+            verbose: If ``True``, print a debug message.
+            color: Line color (e.g. ``"red"``, ``"blue!50"``).
+            fill: Fill color for the square.
+            draw: Stroke color when different from *color*.
+            text: Text color.
+            opacity: Overall opacity (0–1).
+            draw_opacity: Stroke opacity (0–1).
+            fill_opacity: Fill opacity (0–1).
+            text_opacity: Text opacity (0–1).
+            line_width: Line width (e.g. ``"1pt"``).
+            **kwargs: Catch-all for unlisted TikZ options.
+
+        Returns:
+            The :class:`Square` object that was added.
+        """
+        square_kwargs: dict[str, Any] = {}
+        if color is not None:
+            square_kwargs["color"] = color
+        if fill is not None:
+            square_kwargs["fill"] = fill
+        if draw is not None:
+            square_kwargs["draw"] = draw
+        if text is not None:
+            square_kwargs["text"] = text
+        if opacity is not None:
+            square_kwargs["opacity"] = opacity
+        if draw_opacity is not None:
+            square_kwargs["draw_opacity"] = draw_opacity
+        if fill_opacity is not None:
+            square_kwargs["fill_opacity"] = fill_opacity
+        if text_opacity is not None:
+            square_kwargs["text_opacity"] = text_opacity
+        if line_width is not None:
+            square_kwargs["line_width"] = line_width
+
+        square_kwargs.update(kwargs)
+
+        square = Square(
+            center=center,
+            radius=radius,
+            rotation=rotation,
+            comment=comment,
+            layer=layer,
+            options=[],
+            **square_kwargs,
+        )
+
+        self.layers.add_item(item=square, layer=layer, verbose=verbose)
+        return square
 
     def filldraw(
         self,
