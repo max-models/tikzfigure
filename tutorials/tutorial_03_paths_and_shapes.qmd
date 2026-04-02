@@ -10,9 +10,11 @@ from lists of `(x, y)` coordinates. This tutorial covers:
 - rounded corners
 - custom shapes (heart, star)
 - parametric curves with NumPy (spiral, circle, sun)
+- TikZ primitives: arcs, circles, rectangles, ellipses, grids, parabolas
 
 ```{python}
 import numpy as np
+import math
 
 from tikzfigure import TikzFigure
 ```
@@ -175,6 +177,271 @@ fig.show()
 
 {{< include includes/tikz_code_callout.qmd >}}
 
+## TikZ Primitives
+
+### Arcs
+
+An arc is defined by a starting point, start and end angles (in degrees), and a radius.
+
+```{python}
+fig = TikzFigure()
+
+# Quarter circle arc
+fig.arc(start=(0, 0), start_angle=0, end_angle=90, radius="2cm", color="red", line_width="2pt")
+
+# Three-quarter circle arc
+fig.arc(start=(4, 0), start_angle=90, end_angle=360, radius="1.5cm", color="blue", line_width="2pt")
+
+# Arc with arrow
+fig.arc(start=(8, 0), start_angle=0, end_angle=180, radius="2cm", arrows="->", color="green", line_width="2pt")
+
+fig.show()
+```
+
+{{< include includes/tikz_code_callout.qmd >}}
+
+### Circles
+
+A circle is defined by a center point and a radius.
+
+```{python}
+fig = TikzFigure()
+
+# Unfilled circle
+fig.circle(center=(0, 0), radius="1cm", color="blue", line_width="2pt")
+
+# Filled circle
+fig.circle(center=(3, 0), radius="1cm", fill="yellow", color="orange", line_width="2pt")
+
+# Dashed circle
+fig.circle(center=(6, 0), radius="1cm", color="purple", dash_pattern="on 2pt off 2pt", line_width="2pt")
+
+fig.show()
+```
+
+{{< include includes/tikz_code_callout.qmd >}}
+
+### Clock face
+
+A practical example: a clock face using a circle and arcs for hour markers.
+
+```{python}
+fig = TikzFigure()
+
+# Outer circle
+fig.circle(center=(0, 0), radius="3cm", color="black", line_width="2pt")
+
+# Hour markers (12 arcs around the circle)
+for hour in range(12):
+    angle = ((hour + 3) * 30) % 360  # 30 degrees apart
+    rad = math.radians(angle)
+
+    # Inner radius for start
+    x_inner = 2.7 * math.cos(rad)
+    y_inner = 2.7 * math.sin(rad)
+
+    # Small line segment from inner to outer
+    fig.draw(
+        [(x_inner, y_inner), (x_inner * 1.1, y_inner * 1.1)],
+        line_width="1.5pt",
+        color="black"
+    )
+
+    # Hour numbers
+    x_text = 2.4 * math.cos(rad)
+    y_text = 2.4 * math.sin(rad)
+    fig.add_node(x_text, y_text, content=str(hour if hour > 0 else 12), draw="none")
+
+# Center dot
+fig.circle(center=(0, 0), radius="0.15cm", fill="black")
+
+fig.show()
+```
+
+{{< include includes/tikz_code_callout.qmd >}}
+
+### Rectangles
+
+Rectangles are defined by two opposite corners.
+
+```{python}
+fig = TikzFigure()
+
+# Unfilled rectangle
+fig.rectangle((0, 0), (2, 1), color="blue", line_width="2pt")
+
+# Filled rectangle
+fig.rectangle((3, 0), (5, 1), fill="yellow", color="orange", line_width="2pt")
+
+# Rectangle with rounded corners
+fig.rectangle((6, 0), (8, 1), fill="green!30", color="green", rounded_corners="5pt", line_width="2pt")
+
+fig.show()
+```
+
+{{< include includes/tikz_code_callout.qmd >}}
+
+### Ellipses
+
+Ellipses are defined by a center point and two radii.
+
+```{python}
+fig = TikzFigure()
+
+# Circle (equal radii)
+fig.ellipse((0, 0), x_radius="1cm", y_radius="1cm", color="red", line_width="2pt")
+
+# Horizontal ellipse
+fig.ellipse((4, 0), x_radius="1.5cm", y_radius="0.75cm", color="blue", line_width="2pt")
+
+# Filled ellipse
+fig.ellipse((8, 0), x_radius="1.2cm", y_radius="0.8cm", fill="purple!40", color="purple", line_width="2pt")
+
+fig.show()
+```
+
+{{< include includes/tikz_code_callout.qmd >}}
+
+### Grids
+
+A grid spans between two opposite corners with a specified step size.
+
+```{python}
+fig = TikzFigure()
+
+# Uniform grid
+fig.grid((0, 0), (3, 3), step="0.5cm", color="gray!30")
+
+# Grid with different x and y steps
+fig.grid((4, 0), (7, 3), step="0.5cm, 1cm", color="blue!20")
+
+# Grid with larger step
+fig.grid((8, 0), (10, 3), step="1cm", color="red!20", line_width="1pt")
+
+fig.show()
+```
+
+{{< include includes/tikz_code_callout.qmd >}}
+
+### Parabolas
+
+Parabolas connect two points, optionally with a bend (control) point.
+
+```{python}
+fig = TikzFigure()
+
+# Simple parabola
+fig.parabola((0, 0), (3, 0), color="red", line_width="2pt")
+
+# Parabola with bend point (creates a specific curve shape)
+fig.parabola((5, 0), (8, 0), bend=(6.5, 2), color="blue", line_width="2pt")
+
+# Parabola with arrow
+fig.parabola((0, 3), (3, 4), color="green", arrows="->", line_width="2pt")
+
+fig.show()
+```
+
+{{< include includes/tikz_code_callout.qmd >}}
+
+## Lines and Polygons
+
+### Basic lines
+
+A line connects two points. Lines support arrows and all standard styling.
+
+```{python}
+fig = TikzFigure()
+
+# Simple line
+fig.line((0, 0), (2, 0), color="red", line_width="2pt")
+
+# Line with arrow
+fig.line((3, 0), (5, 2), color="blue", arrows="->", line_width="2pt")
+
+# Dashed line
+fig.line((6, 0), (8, 1), color="green", dash_pattern="on 2pt off 2pt", line_width="2pt")
+
+fig.show()
+```
+
+{{< include includes/tikz_code_callout.qmd >}}
+
+### Line intersections
+
+Find where two lines intersect using the `intersection()` method.
+
+```{python}
+fig = TikzFigure()
+
+from tikzfigure.core.line import Line
+
+# Create two lines
+line1 = fig.line((0, 0), (4, 4), color="red", line_width="2pt")
+line2 = fig.line((0, 4), (4, 0), color="blue", line_width="2pt")
+
+# Find intersection
+intersection = line1.intersection(line2)
+print(f"Lines intersect at: {intersection}")
+
+# Draw intersection point
+if intersection:
+    fig.add_node(intersection[0], intersection[1], shape="circle",
+                 fill="black", minimum_size="0.15cm", draw="none")
+
+fig.show()
+```
+
+{{< include includes/tikz_code_callout.qmd >}}
+
+### Regular polygons
+
+Draw regular polygons (triangle, square, pentagon, etc.) with specified center and radius.
+
+```{python}
+fig = TikzFigure()
+
+# Triangle (3 sides)
+fig.triangle((0, 1), radius=0.8, color="red", fill="red!20")
+
+# Square (4 sides)
+fig.square((3, 1), radius=0.8, color="blue", fill="blue!20")
+
+# Pentagon (5 sides)
+fig.polygon((6, 1), radius=0.8, sides=5, color="green", fill="green!20")
+
+# Hexagon (6 sides)
+fig.polygon((9, 1), radius=0.8, sides=6, color="orange", fill="orange!20")
+
+fig.show()
+```
+
+{{< include includes/tikz_code_callout.qmd >}}
+
+### Rotated polygons
+
+Polygons can be rotated by specifying a rotation angle in degrees.
+
+```{python}
+fig = TikzFigure()
+
+# Squares with different rotations
+rotations = [0, 22.5, 45]
+for i, rot in enumerate(rotations):
+    fig.square((i * 3, 1), radius=0.8, rotation=rot,
+               color="purple", fill="purple!30")
+    fig.add_node(i * 3, -0.3, content=f"{rot}°", draw="none")
+
+# Triangles pointing in different directions
+fig.triangle((0, 3.5), radius=0.8, rotation=0, color="blue", fill="blue!20")
+fig.triangle((3, 3.5), radius=0.8, rotation=120, color="blue", fill="blue!20")
+fig.triangle((6, 3.5), radius=0.8, rotation=240, color="blue", fill="blue!20")
+
+fig.show()
+```
+
+{{< include includes/tikz_code_callout.qmd >}}
+
 ## Circle of nodes
 
 Placing many nodes evenly around a circle using a Python loop together with TikZ
@@ -182,8 +449,6 @@ variables (defined via `add_variable`). The coordinates use the stored `\\radius
 value so that changing the variable re-scales the figure without touching the node code.
 
 ```{python}
-import math
-
 fig = TikzFigure()
 
 fig.add_variable("radius", 3)
