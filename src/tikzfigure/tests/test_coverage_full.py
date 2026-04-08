@@ -276,6 +276,82 @@ def test_generate_standalone():
     assert "\\begin{document}" in latex
 
 
+def test_generate_standalone_colorlet_no_double_braces():
+    """Colorlet specs passed without outer braces must NOT produce double braces.
+
+    Double braces cause 'TeX capacity exceeded' on TeX Live 2026.
+    The fix is to omit the outer {…} from the color_spec when calling
+    fig.colorlet(), so the emitted line is:
+        \\colorlet{name}{rgb,255:red,59;green,130;blue,246}
+    and NOT:
+        \\colorlet{name}{{rgb,255:red,59;green,130;blue,246}}
+    """
+    fig = TikzFigure()
+    fig.colorlet("n1_fill", "rgb,255:red,59;green,130;blue,246")
+    fig.add_node(
+        x=0,
+        y=0,
+        label="n1",
+        content="Test",
+        fill="n1_fill",
+        minimum_width="2cm",
+        minimum_height="1cm",
+    )
+    standalone = fig.generate_standalone()
+    # Must have single-brace colorlet (correct xcolor syntax)
+    assert "\\colorlet{n1_fill}{rgb,255:red,59;green,130;blue,246}" in standalone
+    # Must NOT have double-brace colorlet (causes TeX capacity exceeded)
+    assert "\\colorlet{n1_fill}{{rgb,255:red,59;green,130;blue,246}}" not in standalone
+
+
+@pytest.mark.network
+def test_generate_standalone_compiles_via_latex_on_http():
+    """Integration test: verify standalone LaTeX compiles via latex.ytotech.com API.
+
+    Marked 'network' so it only runs when explicitly selected:
+        pytest -m network
+    """
+    import json as _json
+    import urllib.error
+    import urllib.request
+
+    fig = TikzFigure()
+    fig.colorlet("n1_fill", "rgb,255:red,59;green,130;blue,246")
+    fig.colorlet("n1_draw", "rgb,255:red,147;green,197;blue,253")
+    fig.add_node(
+        x=0,
+        y=0,
+        label="n1",
+        content="Hello",
+        fill="n1_fill",
+        draw="n1_draw",
+        minimum_width="2cm",
+        minimum_height="1cm",
+    )
+    latex = fig.generate_standalone()
+
+    payload = _json.dumps(
+        {
+            "compiler": "pdflatex",
+            "resources": [{"main": True, "content": latex}],
+        }
+    ).encode()
+    req = urllib.request.Request(
+        "https://latex.ytotech.com/builds/sync",
+        data=payload,
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=60) as resp:
+            assert resp.status == 201, f"Expected 201, got {resp.status}"
+            pdf = resp.read()
+            assert pdf[:4] == b"%PDF", "Response is not a valid PDF"
+    except urllib.error.HTTPError as e:
+        body = e.read().decode(errors="replace")
+        pytest.fail(f"HTTP {e.code}: {body[:500]}")
+
+
 def test_generate_tikz_single_layer_no_layers_block():
     fig = TikzFigure()
     fig.add_node(0, 0, label="n", content="N")

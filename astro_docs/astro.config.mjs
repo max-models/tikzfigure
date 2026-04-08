@@ -32,6 +32,7 @@ export default defineConfig({
           autogenerate: { directory: "tutorials" },
         },
         { label: "API Reference", slug: "api" },
+        { label: "Interactive Editor", slug: "editor" },
       ],
     }),
   ],
