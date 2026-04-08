@@ -1,0 +1,88 @@
+body {
+  font-family: 'Segoe UI', Arial, sans-serif;
+  background: #f4f6fa;
+  margin: 0;
+  padding: 0;
+}
+
+h2 {
+  text-align: center;
+  margin-top: 1.5em;
+  color: #2a3a4a;
+}
+
+.container {
+  display: flex;
+  gap: 2em;
+  align-items: flex-start;
+  max-width: 1100px;
+  margin: 2em auto 0 auto;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 16px rgba(0,0,0,0.07);
+  padding: 2em 2em 1em 2em;
+}
+
+.left, .right {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+label {
+  font-weight: 500;
+  margin-bottom: 0.5em;
+  color: #2a3a4a;
+}
+
+textarea {
+  width: 100%;
+  min-height: 18em;
+  font-family: 'Fira Mono', 'Consolas', monospace;
+  font-size: 1em;
+  border: 1px solid #bfc7d1;
+  border-radius: 6px;
+  padding: 1em;
+  background: #f8fafc;
+  resize: vertical;
+  margin-bottom: 1em;
+  transition: border 0.2s;
+}
+
+textarea:focus {
+  border: 1.5px solid #4a90e2;
+  outline: none;
+}
+
+pre#output {
+  min-height: 18em;
+  background: #f8f8f8;
+  border: 1px solid #bfc7d1;
+  border-radius: 6px;
+  padding: 1em;
+  overflow-x: auto;
+  font-family: 'Fira Mono', 'Consolas', monospace;
+  font-size: 1em;
+  color: #2a3a4a;
+  margin-bottom: 1em;
+}
+
+button#generate {
+  background: linear-gradient(90deg, #4a90e2 60%, #357ab8 100%);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 0.8em 2.2em;
+  font-size: 1.1em;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(74,144,226,0.08);
+  margin-top: 0.5em;
+  margin-bottom: 1.5em;
+  transition: background 0.2s, box-shadow 0.2s;
+}
+
+button#generate:hover {
+  background: linear-gradient(90deg, #357ab8 60%, #4a90e2 100%);
+  box-shadow: 0 4px 16px rgba(74,144,226,0.13);
+}
