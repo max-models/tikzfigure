@@ -67,3 +67,6 @@ check_untyped_defs = true
 warn_return_any = true
 warn_unused_ignores = true
 exclude = ["src/tikzfigure/tests"]
+
+[tool.isort]
+profile = "black"
