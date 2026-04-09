@@ -202,23 +202,28 @@ class Axis2D(TikzObject):
 
     def add_plot(
         self,
-        x: list[float],
-        y: list[float],
+        x: list[float] | None = None,
+        y: list[float] | None = None,
+        func: str | None = None,
         label: str = "",
         **kwargs: Any,
     ) -> Plot2D:
         """Add a plot to this axis.
 
         Args:
-            x: List of x values.
-            y: List of y values.
+            x: List of x values. Mutually exclusive with func.
+            y: List of y values. Mutually exclusive with func.
+            func: PGF function string (e.g., "sin(x)", "x^2"). Mutually exclusive with x/y.
             label: Plot label for legend. Defaults to "".
             **kwargs: Keyword-style pgfplots options (e.g., color="red").
 
         Returns:
             The newly created Plot2D object.
+
+        Raises:
+            ValueError: If neither (x, y) nor func is provided, or both are provided.
         """
-        plot = Plot2D(x=x, y=y, label=label, **kwargs)
+        plot = Plot2D(x=x, y=y, func=func, label=label, **kwargs)
         self._plots.append(plot)
         return plot
 
@@ -263,11 +268,15 @@ class Axis2D(TikzObject):
         plot_labels = []
 
         for plot in self._plots:
-            # Format coordinates
-            coords_str = " ".join(f"({x},{y})" for x, y in zip(plot.x, plot.y))
-            plot_tikz += (
-                f"\\addplot[{plot.tikz_options}] coordinates {{{coords_str}}};\n"
-            )
+            if plot.is_function:
+                # Function-based plot: use pgfplots function notation
+                plot_tikz += f"\\addplot[{plot.tikz_options}] {{{plot.func}}};\n"
+            else:
+                # Data-based plot: use coordinates
+                coords_str = " ".join(f"({x},{y})" for x, y in zip(plot.x, plot.y))
+                plot_tikz += (
+                    f"\\addplot[{plot.tikz_options}] coordinates {{{coords_str}}};\n"
+                )
             if plot.label:
                 plot_labels.append(plot.label)
 

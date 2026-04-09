@@ -243,6 +243,82 @@ fig.show(use_web_compilation=True)
 
 {{< include includes/tikz_code_callout.qmd >}}
 
+## Plotting functions directly
+
+pgfplots can evaluate functions directly without pre-computing data points. Pass a function expression as a string to plot smooth curves:
+
+```{python}
+fig = TikzFigure()
+
+ax = fig.axis2d(
+    xlabel="x",
+    ylabel="y",
+    xlim=(0, 360),
+    ylim=(-1.5, 1.5),
+    grid=True
+)
+
+# Plot trigonometric functions directly
+ax.add_plot(func="sin(x)", label="sin(x)", color="red", line_width="1.5pt")
+ax.add_plot(func="cos(x)", label="cos(x)", color="blue", line_width="1.5pt")
+
+ax.set_legend(position="south east")
+fig.show(use_web_compilation=True)
+```
+
+The `func` parameter accepts any valid pgfplots function expression: `sin(x)`, `cos(x)`, `x^2`, `sqrt(x)`, `abs(x)`, `exp(x)`, `ln(x)`, etc.
+
+## Using mathematical expressions with Python
+
+For more complex data generation, use the `math` module with Python's list comprehensions:
+
+```{python}
+import math
+
+fig = TikzFigure()
+
+ax = fig.axis2d(
+    xlabel="x",
+    ylabel="y",
+    xlim=(0, 10),
+    ylim=(0, 25),
+    grid=True
+)
+
+# Generate x values and compute y values using math expressions
+x = [i * 0.2 for i in range(50)]
+y_quad = [xi**2 for xi in x]
+y_sqrt = [2 * math.sqrt(xi) for xi in x]
+
+ax.add_plot(x, y_quad, label="x²", color="red")
+ax.add_plot(x, y_sqrt, label="2√x", color="blue")
+
+ax.set_legend(position="north west")
+fig.show(use_web_compilation=True)
+```
+
+Combining multiple function plots is especially useful for comparing different curves:
+
+```{python}
+fig = TikzFigure()
+
+ax = fig.axis2d(
+    xlabel="x",
+    ylabel="y",
+    xlim=(0, 10),
+    ylim=(0, 5),
+    grid=True
+)
+
+# Multiple function plots for comparison
+ax.add_plot(func="x", label="Linear: x", color="black")
+ax.add_plot(func="sqrt(x)", label="Square root", color="blue", line_width="2pt")
+ax.add_plot(func="x/2", label="Half: x/2", color="green")
+
+ax.set_legend(position="north west")
+fig.show(use_web_compilation=True)
+```
+
 ## Exponential growth
 
 Visualizing exponential functions:
@@ -415,6 +491,7 @@ ax = fig.axis2d(
     xlim=(min, max),  # X-axis limits (None for auto)
     ylim=(min, max),  # Y-axis limits (None for auto)
     grid=True,        # Show grid lines
+    layer=0,          # Layer index for z-ordering
     comment=None,     # Optional comment
     **kwargs          # Additional pgfplots options
 )
@@ -450,6 +527,60 @@ ax.set_legend(position="north east")    # Configure legend
 ```
 
 {{< include includes/tikz_code_callout.qmd >}}
+
+## Axes on different layers
+
+Like other TikZ elements, axes can be assigned to layers to control their stacking order. This is useful when you want axes to appear behind or in front of other drawn elements:
+
+```{python}
+fig = TikzFigure()
+
+# Add an axis on layer 1 (middle)
+ax = fig.axis2d(xlabel="X", ylabel="Y", xlim=(0, 5), ylim=(0, 5), layer=1)
+ax.add_plot([0, 1, 2, 3, 4, 5], [0, 1, 2, 3, 4, 5], label="data", color="red")
+ax.set_legend(position="north west")
+
+# Add background shapes on layer 0
+fig.add_node(2.5, 2.5, label="bg", content="Background",
+             shape="circle", minimum_size="4cm", fill="gray!20",
+             draw="none", layer=0)
+
+# Add foreground annotation on layer 2
+fig.add_node(4, 4, label="fg", content="Foreground!",
+             shape="rectangle", fill="yellow!30", layer=2)
+
+fig.show(use_web_compilation=True)
+```
+
+Multiple axes can be combined on different layers for complex visualizations:
+
+```{python}
+fig = TikzFigure(figsize=(12, 6))
+
+# Background axis with grid
+ax_bg = fig.axis2d(
+    xlabel="Time", ylabel="Temperature",
+    xlim=(0, 10), ylim=(0, 30),
+    grid=True, layer=0
+)
+ax_bg.add_plot([0, 2, 4, 6, 8, 10], [10, 15, 22, 25, 20, 12],
+               label="Temperature", color="orange!70")
+ax_bg.set_legend(position="north east")
+
+# Foreground axis with measurements
+ax_fg = fig.axis2d(
+    xlabel="Distance", ylabel="Height",
+    xlim=(0, 10), ylim=(0, 20),
+    layer=1
+)
+ax_fg.add_plot([1, 3, 5, 7, 9], [2, 8, 10, 6, 4],
+               label="Measurements", color="blue!70", mark="*")
+ax_fg.set_legend(position="south east")
+
+fig.show(use_web_compilation=True)
+```
+
+Layers ensure proper z-ordering: axes on layer 0 render first (background), then axes on layer 1 (foreground).
 
 ## Summary
 

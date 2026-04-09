@@ -8,14 +8,15 @@ from tikzfigure.core.path import TikzPath
 class Plot2D(TikzObject):
     """A 2-D data plot for use within a pgfplots axis.
 
-    Lightweight data holder for x/y coordinates and pgfplots options.
-    Rendering is delegated to the parent Axis2D.
+    Lightweight data holder for x/y coordinates (or a function expression)
+    and pgfplots options. Rendering is delegated to the parent Axis2D.
     """
 
     def __init__(
         self,
-        x: list[float],
-        y: list[float],
+        x: list[float] | None = None,
+        y: list[float] | None = None,
+        func: str | None = None,
         label: str = "",
         comment: str | None = None,
         options: list | None = None,
@@ -24,15 +25,25 @@ class Plot2D(TikzObject):
         """Initialize a Plot2D.
 
         Args:
-            x: List of x-coordinate values.
-            y: List of y-coordinate values.
+            x: List of x-coordinate values. Mutually exclusive with func.
+            y: List of y-coordinate values. Mutually exclusive with func.
+            func: PGF function string (e.g., "sin(x)", "x^2"). Mutually exclusive with x/y.
             label: Plot label (used in legend and serialization). Defaults to "".
             comment: Optional comment prepended in the TikZ output.
             options: Flag-style pgfplots options (e.g., ["thick"]).
             **kwargs: Keyword-style pgfplots options (e.g., color="red").
+
+        Raises:
+            ValueError: If neither (x, y) nor func is provided, or both are provided.
         """
         if options is None:
             options = []
+
+        # Validate that either (x, y) or func is provided, but not both
+        if func is not None and (x is not None or y is not None):
+            raise ValueError("Cannot specify both func and (x, y) data")
+        if func is None and (x is None or y is None):
+            raise ValueError("Must specify either func or both (x, y) data")
 
         super().__init__(
             label=label,
@@ -41,29 +52,41 @@ class Plot2D(TikzObject):
             options=options,
             **kwargs,
         )
-        self._x = x
-        self._y = y
+        self._x = x if x is not None else []
+        self._y = y if y is not None else []
+        self._func = func
 
     @property
     def x(self) -> list[float]:
-        """X-coordinate values."""
+        """X-coordinate values (empty list if using func)."""
         return self._x
 
     @property
     def y(self) -> list[float]:
-        """Y-coordinate values."""
+        """Y-coordinate values (empty list if using func)."""
         return self._y
+
+    @property
+    def func(self) -> str | None:
+        """PGF function string, or None if using explicit data."""
+        return self._func
+
+    @property
+    def is_function(self) -> bool:
+        """True if this plot uses a function expression, False if explicit data."""
+        return self._func is not None
 
     def to_dict(self) -> dict[str, Any]:
         """Serialize this plot to a plain dictionary.
 
         Returns:
-            A dictionary with type, x, y, label, comment, options, and kwargs.
+            A dictionary with type, x, y, func, label, comment, options, and kwargs.
         """
         return {
             "type": "Plot2D",
-            "x": self.x,
-            "y": self.y,
+            "x": self.x if not self.is_function else None,
+            "y": self.y if not self.is_function else None,
+            "func": self.func,
             "label": self.label,
             "comment": self.comment,
             "options": self.options,
@@ -80,14 +103,24 @@ class Plot2D(TikzObject):
         Returns:
             A new Plot2D instance.
         """
-        return cls(
-            x=d.get("x", []),
-            y=d.get("y", []),
-            label=d.get("label", ""),
-            comment=d.get("comment"),
-            options=d.get("options"),
-            **d.get("kwargs", {}),
-        )
+        func = d.get("func")
+        if func is not None:
+            return cls(
+                func=func,
+                label=d.get("label", ""),
+                comment=d.get("comment"),
+                options=d.get("options"),
+                **d.get("kwargs", {}),
+            )
+        else:
+            return cls(
+                x=d.get("x", []),
+                y=d.get("y", []),
+                label=d.get("label", ""),
+                comment=d.get("comment"),
+                options=d.get("options"),
+                **d.get("kwargs", {}),
+            )
 
 
 class Plot3D(TikzPath):

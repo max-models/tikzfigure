@@ -53,6 +53,51 @@ class TestPlot2D:
         assert plot2.label == plot1.label
         assert plot2.comment == plot1.comment
 
+    def test_plot2d_function_construction(self):
+        """Test Plot2D with function expression instead of data."""
+        plot = Plot2D(func="sin(x)", label="sine")
+
+        assert plot.is_function is True
+        assert plot.func == "sin(x)"
+        assert plot.x == []
+        assert plot.y == []
+        assert plot.label == "sine"
+
+    def test_plot2d_function_with_options(self):
+        """Test Plot2D function with styling options."""
+        plot = Plot2D(func="x^2", color="red", line_width="2pt")
+
+        assert plot.is_function is True
+        assert "color=red" in plot.tikz_options
+        assert "line width=2pt" in plot.tikz_options
+
+    def test_plot2d_function_serialization(self):
+        """Test function-based plot serialization."""
+        plot1 = Plot2D(func="cos(x)", label="cosine", color="blue")
+        d = plot1.to_dict()
+        plot2 = Plot2D.from_dict(d)
+
+        assert plot2.is_function is True
+        assert plot2.func == "cos(x)"
+        assert plot2.label == "cosine"
+        assert plot2.kwargs["color"] == "blue"
+
+    def test_plot2d_mutually_exclusive(self):
+        """Test that func and (x, y) are mutually exclusive."""
+        with pytest.raises(ValueError, match="Cannot specify both func and"):
+            Plot2D(x=[0, 1], y=[0, 1], func="sin(x)")
+
+    def test_plot2d_requires_data_or_func(self):
+        """Test that either func or (x, y) must be provided."""
+        with pytest.raises(ValueError, match="Must specify either func or both"):
+            Plot2D()
+
+        with pytest.raises(ValueError, match="Must specify either func or both"):
+            Plot2D(x=[0, 1])
+
+        with pytest.raises(ValueError, match="Must specify either func or both"):
+            Plot2D(y=[0, 1])
+
 
 class TestAxis2D:
     def test_axis2d_basic_construction(self):
@@ -196,6 +241,27 @@ class TestAxis2D:
         assert plot1.kwargs["color"] == "red"
         assert plot2.kwargs["color"] == "blue"
 
+    def test_axis2d_add_function_plot(self):
+        """Test adding a function-based plot to axis."""
+        axis = Axis2D()
+        plot = axis.add_plot(func="sin(x)", label="sine", color="red")
+
+        assert isinstance(plot, Plot2D)
+        assert plot.is_function is True
+        assert plot.func == "sin(x)"
+        assert plot.label == "sine"
+        assert len(axis.plots) == 1
+
+    def test_axis2d_add_mixed_plots(self):
+        """Test adding both data and function plots to same axis."""
+        axis = Axis2D()
+        plot1 = axis.add_plot([0, 1, 2], [0, 1, 4], label="data")
+        plot2 = axis.add_plot(func="x^2", label="function")
+
+        assert len(axis.plots) == 2
+        assert not plot1.is_function
+        assert plot2.is_function
+
     def test_axis2d_to_tikz_basic(self):
         """Test basic to_tikz output."""
         axis = Axis2D(xlabel="X", ylabel="Y")
@@ -262,6 +328,32 @@ class TestAxis2D:
 
         assert "legend pos=north east" in tikz
         assert "\\legend{A, B}" in tikz
+
+    def test_axis2d_to_tikz_function_plot(self):
+        """Test to_tikz with function-based plot."""
+        axis = Axis2D()
+        axis.add_plot(func="sin(x)", label="sine")
+
+        tikz = axis.to_tikz()
+
+        # Function plots use {func} notation instead of coordinates
+        assert "\\addplot[" in tikz
+        assert "{sin(x)}" in tikz
+        assert "coordinates" not in tikz
+
+    def test_axis2d_to_tikz_mixed_plots(self):
+        """Test to_tikz with both data and function plots."""
+        axis = Axis2D()
+        axis.add_plot([0, 1, 2], [0, 1, 4], label="data")
+        axis.add_plot(func="x^2", label="function")
+        axis.set_legend(position="north east")
+
+        tikz = axis.to_tikz()
+
+        # Should have both coordinate and function notations
+        assert "coordinates" in tikz
+        assert "{x^2}" in tikz
+        assert "\\legend{data, function}" in tikz
 
 
 class TestAxis2DSerialization:
@@ -365,6 +457,48 @@ class TestTikzFigureAxis2D:
         assert "xlabel=X" in tikz
         assert "ylabel=Y" in tikz
         assert "\\addplot" in tikz
+
+    def test_tikzfigure_axis_layers(self):
+        """Test that axes respect layer assignments."""
+        fig = TikzFigure()
+
+        # Add axes on different layers
+        axis1 = fig.axis2d(xlabel="A", layer=0)
+        axis1.add_plot([0, 1], [0, 1])
+
+        axis2 = fig.axis2d(xlabel="B", layer=2)
+        axis2.add_plot([0, 1], [0, 1])
+
+        axis3 = fig.axis2d(xlabel="C", layer=1)
+        axis3.add_plot([0, 1], [0, 1])
+
+        tikz = fig.generate_tikz()
+
+        # All axes should be rendered
+        assert "xlabel=A" in tikz
+        assert "xlabel=B" in tikz
+        assert "xlabel=C" in tikz
+
+        # pgfonlayer blocks should be created for axes-only layers
+        assert "pgfonlayer" in tikz or fig.layers.num_layers > 1
+
+    def test_tikzfigure_axis_with_drawing_elements_same_layer(self):
+        """Test axes rendering on same layer as drawing elements."""
+        fig = TikzFigure()
+
+        # Add a node on layer 1
+        fig.add_node(0, 0, label="n1", content="Node", layer=1)
+
+        # Add an axis on layer 1
+        axis = fig.axis2d(xlabel="X", layer=1)
+        axis.add_plot([0, 1], [0, 1])
+
+        tikz = fig.generate_tikz()
+
+        # Both should be present
+        assert "Node" in tikz
+        assert "\\begin{axis}" in tikz
+        assert "xlabel=X" in tikz
 
 
 class TestTikzFigureSerialization:

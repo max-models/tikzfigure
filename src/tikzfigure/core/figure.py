@@ -2642,11 +2642,17 @@ class TikzFigure:
                 tikz_script += "hide axis\n"
             tikz_script += "    ]\n"
 
-        if self.layers.num_layers <= 1:
+        # Collect all layer keys from both drawing elements and axes
+        all_layer_keys = set(self.layers.layers.keys())
+        for axis in self.axes:
+            axis_layer = axis.layer if axis.layer is not None else 0
+            all_layer_keys.add(axis_layer)
+
+        if len(all_layer_keys) <= 1:
             use_layers = False
 
         # TODO: self.layers.layers is a bit clunky
-        layers = sorted([str(lyr) for lyr in self.layers.layers.keys()])
+        layers = sorted([str(lyr) for lyr in all_layer_keys])
         if use_layers:
             tikz_script += "% Define the layers library\n"
             for lyr_str in layers:
@@ -2685,12 +2691,35 @@ class TikzFigure:
             "Layer order is impossible for layer"
             + f"{[layer.label for layer in buffered_layers]}"
         )
+        # Group axes by layer for proper ordering
+        axes_by_layer: dict[int, list[Axis2D]] = {}
+        for axis in self.axes:
+            layer_key = axis.layer if axis.layer is not None else 0
+            if layer_key not in axes_by_layer:
+                axes_by_layer[layer_key] = []
+            axes_by_layer[layer_key].append(axis)
+
+        # Render layers and axes together (axes for each layer after that layer)
         for layer in ordered_layers:
             tikz_script += layer.generate_tikz(use_layers=use_layers, verbose=verbose)
+            # Render axes for this layer immediately after the layer itself
+            if layer.label in axes_by_layer:
+                for axis in axes_by_layer[layer.label]:
+                    tikz_script += axis.to_tikz()
 
-        # Render axes (pgfplots requires them after all layer content)
-        for axis in self.axes:
-            tikz_script += axis.to_tikz()
+        # Render any axes on layers that weren't explicitly created (e.g., axes only on layer 5)
+        rendered_layers = {layer.label for layer in ordered_layers}
+        for layer_key in sorted(axes_by_layer.keys()):
+            if layer_key not in rendered_layers:
+                # Axes on a layer with no other content - wrap in pgfonlayer if needed
+                for axis in axes_by_layer[layer_key]:
+                    if use_layers:
+                        tikz_script += f"\n% Layer {layer_key}\n"
+                        tikz_script += f"\\begin{{pgfonlayer}}{{{layer_key}}}\n"
+                        tikz_script += axis.to_tikz()
+                        tikz_script += f"\\end{{pgfonlayer}}{{{layer_key}}}\n"
+                    else:
+                        tikz_script += axis.to_tikz()
 
         if self.ndim == 3:
             tikz_script += "\\end{axis}\n"
