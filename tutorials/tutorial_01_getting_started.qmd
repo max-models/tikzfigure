@@ -33,7 +33,7 @@ n2 = fig.add_node(5, 0, shape="circle", color="white", fill="red", content="Hi!"
 
 fig.draw([n1, n2], options=["->"], line_width=2, color="gray")
 
-fig.show()
+fig.show(use_web_compilation=True)
 ```
 
 {{< include includes/tikz_code_callout.qmd >}}

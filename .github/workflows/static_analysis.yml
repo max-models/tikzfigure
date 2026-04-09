@@ -55,5 +55,6 @@ jobs:
 
       - name: Type checking with mypy
         run: |
-          pip install -e ".[test]" mypy
+          pip install -e ".[test]"
+          pip install types-requests
           mypy src/

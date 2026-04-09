@@ -40,23 +40,59 @@ class Expr:
         """
         self.pgf = pgf
 
-    def __str__(self) -> str:
-        """Return the PGF expression string for f-string interpolation."""
-        return self.pgf
+    # Binary operators: left operand is Expr
 
-    def __repr__(self) -> str:
-        """Return a developer-friendly representation."""
-        return f"Expr({self.pgf!r})"
+    def __add__(self, other: Any) -> "Expr":
+        """Add: expr + other → (expr + other)."""
+        if isinstance(other, Expr):
+            return Expr(f"({self.pgf} + {other.pgf})")
+        return Expr(f"({self.pgf} + {other})")
 
-    def __eq__(self, other: object) -> bool:
-        """Check equality based on the PGF expression string."""
-        if not isinstance(other, Expr):
-            return NotImplemented
-        return self.pgf == other.pgf
+    # Reflected operators: other operand is left, Expr is right
 
-    def __hash__(self) -> int:
-        """Hash based on the PGF expression string."""
-        return hash(self.pgf)
+    def __radd__(self, other: Any) -> "Expr":
+        """Reflected add: other + expr → (other + expr)."""
+        return Expr(f"({other} + {self.pgf})")
+
+    def __sub__(self, other: Any) -> "Expr":
+        """Subtract: expr - other → (expr - other)."""
+        if isinstance(other, Expr):
+            return Expr(f"({self.pgf} - {other.pgf})")
+        return Expr(f"({self.pgf} - {other})")
+
+    def __rsub__(self, other: Any) -> "Expr":
+        """Reflected subtract: other - expr → (other - expr)."""
+        return Expr(f"({other} - {self.pgf})")
+
+    def __mul__(self, other: Any) -> "Expr":
+        """Multiply: expr * other → (expr * other)."""
+        if isinstance(other, Expr):
+            return Expr(f"({self.pgf} * {other.pgf})")
+        return Expr(f"({self.pgf} * {other})")
+
+    def __rmul__(self, other: Any) -> "Expr":
+        """Reflected multiply: other * expr → (other * expr)."""
+        return Expr(f"({other} * {self.pgf})")
+
+    def __truediv__(self, other: Any) -> "Expr":
+        """Divide: expr / other → (expr / other)."""
+        if isinstance(other, Expr):
+            return Expr(f"({self.pgf} / {other.pgf})")
+        return Expr(f"({self.pgf} / {other})")
+
+    def __rtruediv__(self, other: Any) -> "Expr":
+        """Reflected divide: other / expr → (other / expr)."""
+        return Expr(f"({other} / {self.pgf})")
+
+    def __pow__(self, other: Any) -> "Expr":
+        """Power: expr ** other → (expr ^ other) [PGF uses ^]."""
+        if isinstance(other, Expr):
+            return Expr(f"({self.pgf}^{other.pgf})")
+        return Expr(f"({self.pgf}^{other})")
+
+    def __rpow__(self, other: Any) -> "Expr":
+        """Reflected power: other ** expr → (other ^ expr)."""
+        return Expr(f"({other}^{self.pgf})")
 
     # Unary operators
 
@@ -68,59 +104,23 @@ class Expr:
         """Unary plus: +expr → (+expr)."""
         return Expr(f"(+{self.pgf})")
 
-    # Binary operators: left operand is Expr
+    def __eq__(self, other: object) -> bool:
+        """Check equality based on the PGF expression string."""
+        if not isinstance(other, Expr):
+            return NotImplemented
+        return self.pgf == other.pgf
 
-    def __add__(self, other: Any) -> "Expr":
-        """Add: expr + other → (expr + other)."""
-        if isinstance(other, Expr):
-            return Expr(f"({self.pgf} + {other.pgf})")
-        return Expr(f"({self.pgf} + {other})")
+    def __hash__(self) -> int:
+        """Hash based on the PGF expression string."""
+        return hash(self.pgf)
 
-    def __sub__(self, other: Any) -> "Expr":
-        """Subtract: expr - other → (expr - other)."""
-        if isinstance(other, Expr):
-            return Expr(f"({self.pgf} - {other.pgf})")
-        return Expr(f"({self.pgf} - {other})")
+    def __repr__(self) -> str:
+        """Return a developer-friendly representation."""
+        return f"Expr({self.pgf!r})"
 
-    def __mul__(self, other: Any) -> "Expr":
-        """Multiply: expr * other → (expr * other)."""
-        if isinstance(other, Expr):
-            return Expr(f"({self.pgf} * {other.pgf})")
-        return Expr(f"({self.pgf} * {other})")
-
-    def __truediv__(self, other: Any) -> "Expr":
-        """Divide: expr / other → (expr / other)."""
-        if isinstance(other, Expr):
-            return Expr(f"({self.pgf} / {other.pgf})")
-        return Expr(f"({self.pgf} / {other})")
-
-    def __pow__(self, other: Any) -> "Expr":
-        """Power: expr ** other → (expr ^ other) [PGF uses ^]."""
-        if isinstance(other, Expr):
-            return Expr(f"({self.pgf}^{other.pgf})")
-        return Expr(f"({self.pgf}^{other})")
-
-    # Reflected operators: other operand is left, Expr is right
-
-    def __radd__(self, other: Any) -> "Expr":
-        """Reflected add: other + expr → (other + expr)."""
-        return Expr(f"({other} + {self.pgf})")
-
-    def __rsub__(self, other: Any) -> "Expr":
-        """Reflected subtract: other - expr → (other - expr)."""
-        return Expr(f"({other} - {self.pgf})")
-
-    def __rmul__(self, other: Any) -> "Expr":
-        """Reflected multiply: other * expr → (other * expr)."""
-        return Expr(f"({other} * {self.pgf})")
-
-    def __rtruediv__(self, other: Any) -> "Expr":
-        """Reflected divide: other / expr → (other / expr)."""
-        return Expr(f"({other} / {self.pgf})")
-
-    def __rpow__(self, other: Any) -> "Expr":
-        """Reflected power: other ** expr → (other ^ expr)."""
-        return Expr(f"({other}^{self.pgf})")
+    def __str__(self) -> str:
+        """Return the PGF expression string for f-string interpolation."""
+        return self.pgf
 
 
 def Var(name: str) -> Expr:
