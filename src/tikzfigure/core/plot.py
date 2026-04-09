@@ -1,7 +1,93 @@
 from typing import Any
 
+from tikzfigure.core.base import TikzObject
 from tikzfigure.core.coordinate import TikzCoordinate
 from tikzfigure.core.path import TikzPath
+
+
+class Plot2D(TikzObject):
+    """A 2-D data plot for use within a pgfplots axis.
+
+    Lightweight data holder for x/y coordinates and pgfplots options.
+    Rendering is delegated to the parent Axis2D.
+    """
+
+    def __init__(
+        self,
+        x: list[float],
+        y: list[float],
+        label: str = "",
+        comment: str | None = None,
+        options: list | None = None,
+        **kwargs: Any,
+    ) -> None:
+        """Initialize a Plot2D.
+
+        Args:
+            x: List of x-coordinate values.
+            y: List of y-coordinate values.
+            label: Plot label (used in legend and serialization). Defaults to "".
+            comment: Optional comment prepended in the TikZ output.
+            options: Flag-style pgfplots options (e.g., ["thick"]).
+            **kwargs: Keyword-style pgfplots options (e.g., color="red").
+        """
+        if options is None:
+            options = []
+
+        super().__init__(
+            label=label,
+            comment=comment,
+            layer=0,
+            options=options,
+            **kwargs,
+        )
+        self._x = x
+        self._y = y
+
+    @property
+    def x(self) -> list[float]:
+        """X-coordinate values."""
+        return self._x
+
+    @property
+    def y(self) -> list[float]:
+        """Y-coordinate values."""
+        return self._y
+
+    def to_dict(self) -> dict[str, Any]:
+        """Serialize this plot to a plain dictionary.
+
+        Returns:
+            A dictionary with type, x, y, label, comment, options, and kwargs.
+        """
+        return {
+            "type": "Plot2D",
+            "x": self.x,
+            "y": self.y,
+            "label": self.label,
+            "comment": self.comment,
+            "options": self.options,
+            "kwargs": self.kwargs,
+        }
+
+    @classmethod
+    def from_dict(cls, d: dict[str, Any]) -> "Plot2D":
+        """Reconstruct a Plot2D from a dictionary.
+
+        Args:
+            d: Dictionary as produced by to_dict().
+
+        Returns:
+            A new Plot2D instance.
+        """
+        return cls(
+            x=d.get("x", []),
+            y=d.get("y", []),
+            label=d.get("label", ""),
+            comment=d.get("comment"),
+            options=d.get("options"),
+            **d.get("kwargs", {}),
+        )
 
 
 class Plot3D(TikzPath):

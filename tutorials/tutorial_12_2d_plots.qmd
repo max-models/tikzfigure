@@ -1,0 +1,465 @@
+---
+title: "2D Plots with pgfplots"
+jupyter: python3
+---
+
+**2D data visualization** is essential for scientific and engineering work. tikzfigure provides a high-level API for creating publication-quality 2D plots using pgfplots, a powerful LaTeX plotting library.
+
+This tutorial covers:
+
+- Creating a 2D axis with `axis2d()`
+- Adding plots to visualize data
+- Configuring axis labels, limits, and grids
+- Customizing plot appearance (colors, markers, line styles)
+- Adding legends and custom ticks
+- Real-world plotting examples
+
+Let's start with the basics:
+
+```{python}
+from tikzfigure import TikzFigure
+```
+
+## Your first 2D plot
+
+A 2D plot starts with creating an axis via `axis2d()`, then adding data with `add_plot()`.
+
+```{python}
+fig = TikzFigure()
+
+# Create a 2D axis
+ax = fig.axis2d(xlabel="X", ylabel="Y")
+
+# Add a plot with x and y data
+ax.add_plot([0, 1, 2, 3, 4], [0, 1, 4, 9, 16])
+
+fig.show(use_web_compilation=True)
+```
+
+{{< include includes/tikz_code_callout.qmd >}}
+
+This generates a simple scatter plot. pgfplots automatically scales the axes to fit the data.
+
+## Adding labels and limits
+
+Axis labels and explicit limits make plots more readable:
+
+```{python}
+fig = TikzFigure()
+
+ax = fig.axis2d(
+    xlabel="Time (seconds)",
+    ylabel="Distance (meters)",
+    xlim=(0, 5),
+    ylim=(0, 30),
+    grid=True
+)
+
+# Quadratic motion: d = 0.5 * a * t^2
+time = [0, 1, 2, 3, 4, 5]
+distance = [0, 2.5, 10, 22.5, 40, 62.5]
+
+ax.add_plot(time, distance, label="motion")
+
+fig.show(use_web_compilation=True)
+```
+
+{{< include includes/tikz_code_callout.qmd >}}
+
+The `grid=True` parameter adds grid lines. `xlim` and `ylim` set explicit axis ranges.
+
+## Multiple plots on one axis
+
+A single axis can hold multiple plots — great for comparisons:
+
+```{python}
+fig = TikzFigure()
+
+ax = fig.axis2d(
+    xlabel="X",
+    ylabel="Y",
+    xlim=(0, 10),
+    ylim=(0, 10),
+    grid=True
+)
+
+# Linear function
+x_linear = [0, 2, 4, 6, 8, 10]
+y_linear = [0, 2, 4, 6, 8, 10]
+ax.add_plot(x_linear, y_linear, label="y = x")
+
+# Quadratic function
+x_quad = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+y_quad = [0, 1, 4, 9, 16, 25, 36, 49, 64, 81, 100]
+ax.add_plot(x_quad, y_quad, label="y = x²")
+
+# Set legend position
+ax.set_legend(position="north west")
+
+fig.show(use_web_compilation=True)
+```
+
+{{< include includes/tikz_code_callout.qmd >}}
+
+Notice that plots without explicit labels don't appear in the legend.
+
+## Styling plots with colors and markers
+
+pgfplots supports extensive styling options:
+
+```{python}
+fig = TikzFigure()
+
+ax = fig.axis2d(
+    xlabel="Month",
+    ylabel="Temperature (°C)",
+    xlim=(0, 13),
+    grid=True
+)
+
+# Winter data
+months = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+temp_seattle = [-5, -4, 0, 5, 10, 15, 18, 17, 12, 6, 0, -4]
+temp_phoenix = [12, 15, 18, 24, 30, 36, 38, 37, 33, 26, 18, 12]
+
+# Seattle: blue with circle markers
+ax.add_plot(
+    months, temp_seattle,
+    label="Seattle",
+    color="blue",
+    mark="o"
+)
+
+# Phoenix: red with square markers
+ax.add_plot(
+    months, temp_phoenix,
+    label="Phoenix",
+    color="red",
+    mark="square"
+)
+
+ax.set_legend(position="north west")
+fig.show(use_web_compilation=True)
+```
+
+{{< include includes/tikz_code_callout.qmd >}}
+
+Available markers: `o` (circle), `*` (star), `square`, `triangle`, `diamond`, `x`, `+`
+
+Available colors: standard TikZ colors like `red`, `blue`, `green`, `black`, plus color mixing like `blue!50!red`
+
+## Line styles and advanced styling
+
+Customize plot appearance further:
+
+```{python}
+fig = TikzFigure()
+
+ax = fig.axis2d(
+    xlabel="X",
+    ylabel="Y",
+    xlim=(0, 10),
+    grid=True
+)
+
+x = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+y1 = [0, 1, 4, 9, 16, 25, 36, 49, 64, 81, 100]
+y2 = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20]
+
+# Solid line with thick width
+ax.add_plot(x, y1, label="Thick solid", color="red", line_width="2pt")
+
+# Dashed line
+ax.add_plot(x, y2, label="Thin dashed", color="blue", options=["dashed"])
+
+ax.set_legend()
+fig.show(use_web_compilation=True)
+```
+
+{{< include includes/tikz_code_callout.qmd >}}
+
+`options` accepts pgfplots flags like `"dashed"`, `"dotted"`, `"densely dashed"`. Use `line_width` for thickness.
+
+## Custom ticks and labels
+
+Control tick positions and labels:
+
+```{python}
+fig = TikzFigure()
+
+ax = fig.axis2d(
+    xlabel="Grade",
+    ylabel="Count",
+    xlim=(0.5, 4.5),
+    ylim=(0, 30)
+)
+
+# Grade distribution
+grades = [1, 2, 3, 4]
+counts = [5, 12, 18, 10]
+
+ax.add_plot(grades, counts, label="Students", color="green", mark="*")
+
+# Custom x-axis labels
+ax.set_ticks("x", [1, 2, 3, 4], labels=["A", "B", "C", "D"])
+
+# Y-axis ticks at multiples of 5
+ax.set_ticks("y", [0, 5, 10, 15, 20, 25, 30])
+
+ax.set_legend()
+fig.show(use_web_compilation=True)
+```
+
+{{< include includes/tikz_code_callout.qmd >}}
+
+## Trigonometric functions
+
+A classic example — sine and cosine waves:
+
+```{python}
+import math
+
+fig = TikzFigure()
+
+ax = fig.axis2d(
+    xlabel="Angle (radians)",
+    ylabel="Amplitude",
+    xlim=(0, 6.5),
+    ylim=(-1.5, 1.5),
+    grid=True
+)
+
+# Generate sine and cosine data
+x = [i * 0.1 for i in range(65)]
+y_sin = [math.sin(xi) for xi in x]
+y_cos = [math.cos(xi) for xi in x]
+
+ax.add_plot(x, y_sin, label="sin(x)", color="red")
+ax.add_plot(x, y_cos, label="cos(x)", color="blue")
+
+ax.set_legend(position="south east")
+fig.show(use_web_compilation=True)
+```
+
+{{< include includes/tikz_code_callout.qmd >}}
+
+## Exponential growth
+
+Visualizing exponential functions:
+
+```{python}
+import math
+
+fig = TikzFigure()
+
+ax = fig.axis2d(
+    xlabel="Time (years)",
+    ylabel="Population",
+    xlim=(0, 10),
+    ylim=(0, 1000),
+    grid=True
+)
+
+# Exponential growth: P(t) = 100 * e^(0.1*t)
+time = [i for i in range(11)]
+population = [100 * math.exp(0.1 * t) for t in time]
+
+ax.add_plot(
+    time, population,
+    label="Population growth",
+    color="darkgreen",
+    mark="o",
+    mark_size="2pt"
+)
+
+ax.set_legend(position="north west")
+fig.show(use_web_compilation=True)
+```
+
+{{< include includes/tikz_code_callout.qmd >}}
+
+## Multiple axes in one figure
+
+Create multiple independent plots in a single figure:
+
+```{python}
+fig = TikzFigure()
+
+# First axis: temperature over time
+ax1 = fig.axis2d(
+    xlabel="Hour",
+    ylabel="Temperature (°C)",
+    xlim=(0, 24),
+    ylim=(10, 30),
+    grid=True
+)
+hours = [0, 6, 12, 18, 24]
+temps = [12, 14, 28, 26, 18]
+ax1.add_plot(hours, temps, label="Daily temperature", color="orange", mark="*")
+ax1.set_legend(position="north east")
+
+# Second axis: humidity over time
+ax2 = fig.axis2d(
+    xlabel="Hour",
+    ylabel="Humidity (%)",
+    xlim=(0, 24),
+    ylim=(30, 90),
+    grid=True
+)
+humidity = [70, 65, 40, 35, 55]
+ax2.add_plot(hours, humidity, label="Daily humidity", color="cyan", mark="square")
+ax2.set_legend(position="south east")
+
+fig.show(use_web_compilation=True)
+```
+
+{{< include includes/tikz_code_callout.qmd >}}
+
+When you call `axis2d()` multiple times, each axis is rendered in sequence.
+
+## Data fitting example
+
+Comparing observed data with a fitted curve:
+
+```{python}
+fig = TikzFigure()
+
+ax = fig.axis2d(
+    xlabel="X",
+    ylabel="Y",
+    xlim=(-1, 5),
+    ylim=(-2, 10),
+    grid=True
+)
+
+# Noisy data points
+x_data = [0, 1, 1.5, 2, 2.5, 3, 4]
+y_data = [0, 0.9, 2.2, 3.8, 4.5, 6.2, 8.1]
+
+# Fitted polynomial: y ≈ 2x + 0.5
+x_fit = [i * 0.1 for i in range(50)]
+y_fit = [2 * x + 0.5 for x in x_fit]
+
+# Plot data points
+ax.add_plot(
+    x_data, y_data,
+    label="Observed data",
+    color="red",
+    mark="o",
+    mark_size="2pt",
+    options=["only marks"]
+)
+
+# Plot fitted line
+ax.add_plot(
+    x_fit, y_fit,
+    label="Linear fit: y = 2x + 0.5",
+    color="blue"
+)
+
+ax.set_legend(position="north west")
+fig.show(use_web_compilation=True)
+```
+
+{{< include includes/tikz_code_callout.qmd >}}
+
+The `options=["only marks"]` shows only markers without connecting lines.
+
+## Saving plots to disk
+
+Export your plots as PDF or PNG:
+
+```{python}
+fig = TikzFigure()
+
+ax = fig.axis2d(xlabel="X", ylabel="Y")
+ax.add_plot([0, 1, 2, 3], [0, 1, 4, 9], label="quadratic")
+ax.set_legend()
+
+# Save as PDF
+fig.savefig("plot.pdf")
+
+# Save as PNG
+fig.savefig("plot.png")
+```
+
+{{< include includes/tikz_code_callout.qmd >}}
+
+## Inspecting the TikZ code
+
+View the underlying pgfplots LaTeX:
+
+```{python}
+fig = TikzFigure()
+ax = fig.axis2d(xlabel="X", ylabel="Y", xlim=(0, 5), ylim=(0, 5))
+ax.add_plot([0, 1, 2, 3, 4], [0, 1, 2, 3, 4], label="linear", color="blue")
+ax.set_legend(position="north west")
+
+tikz_code = fig.generate_tikz()
+print(tikz_code)
+```
+
+{{< include includes/tikz_code_callout.qmd >}}
+
+This outputs pgfplots LaTeX code that you can use in `.tex` files or analyze for debugging.
+
+## API Reference
+
+### Creating an axis
+
+```{python}
+#| eval: false
+ax = fig.axis2d(
+    xlabel="",        # X-axis label
+    ylabel="",        # Y-axis label
+    xlim=(min, max),  # X-axis limits (None for auto)
+    ylim=(min, max),  # Y-axis limits (None for auto)
+    grid=True,        # Show grid lines
+    comment=None,     # Optional comment
+    **kwargs          # Additional pgfplots options
+)
+```
+
+### Adding plots
+
+```{python}
+#| eval: false
+ax.add_plot(
+    x,           # List of x values
+    y,           # List of y values
+    label="",    # Legend label
+    color="",    # Plot color
+    mark="",     # Marker type (o, *, square, etc.)
+    line_width="", # Line width (e.g., "2pt")
+    options=[],  # pgfplots flags (e.g., ["dashed"])
+    **kwargs     # Additional pgfplots options
+)
+```
+
+### Configuring the axis
+
+```{python}
+#| eval: false
+ax.set_xlabel(label)                    # Set x-axis label
+ax.set_ylabel(label)                    # Set y-axis label
+ax.set_xlim(min, max)                   # Set x-axis limits
+ax.set_ylim(min, max)                   # Set y-axis limits
+ax.set_grid(enabled)                    # Enable/disable grid
+ax.set_ticks(axis, positions, labels)   # Set custom ticks
+ax.set_legend(position="north east")    # Configure legend
+```
+
+{{< include includes/tikz_code_callout.qmd >}}
+
+## Summary
+
+You now know how to:
+
+- Create 2D axes with `axis2d()`
+- Add plots with `add_plot(x, y, ...)`
+- Configure axes (labels, limits, grid)
+- Style plots (colors, markers, line widths)
+- Set legends and custom ticks
+- Generate publication-quality figures
+
+For more advanced pgfplots features, pass additional kwargs to `axis2d()` or use the `options` parameter on `add_plot()`. The entire pgfplots toolkit is accessible through tikzfigure!

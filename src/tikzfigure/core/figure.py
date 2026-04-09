@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any
 
 from tikzfigure.core.arc import Arc
+from tikzfigure.core.axis import Axis2D
 from tikzfigure.core.base import TikzObject
 from tikzfigure.core.circle import Circle
 from tikzfigure.core.color import Color
@@ -211,6 +212,7 @@ class TikzFigure:
         self._variables: list[Variable] = []
         self._colors: list[tuple[str, Color]] = []
         self._ndim: int = ndim
+        self._axes: list[Axis2D] = []
 
         # Counter for unnamed nodes
         self._node_counter: int = 0
@@ -385,6 +387,7 @@ class TikzFigure:
             "colors": [
                 {"name": name, **color.to_dict()} for name, color in self._colors
             ],
+            "axes": [axis.to_dict() for axis in self._axes],
         }
 
     @classmethod
@@ -482,6 +485,11 @@ class TikzFigure:
                     pass
         if max_auto >= 0:
             fig._node_counter = max_auto + 1
+
+        # Reconstruct axes
+        for axis_data in d.get("axes", []):
+            axis = Axis2D.from_dict(axis_data)
+            fig.axes.append(axis)
 
         return fig
 
@@ -2474,6 +2482,46 @@ class TikzFigure:
         self.layers.add_item(item=plot, layer=layer, verbose=verbose)
         return plot
 
+    def axis2d(
+        self,
+        xlabel: str = "",
+        ylabel: str = "",
+        xlim: tuple[float, float] | None = None,
+        ylim: tuple[float, float] | None = None,
+        grid: bool = True,
+        layer: int = 0,
+        comment: str | None = None,
+        **kwargs: Any,
+    ) -> Axis2D:
+        """Create and register a 2D axis.
+
+        Args:
+            xlabel: Label for x-axis. Defaults to "".
+            ylabel: Label for y-axis. Defaults to "".
+            xlim: (min, max) tuple for x-axis limits, or None for auto.
+            ylim: (min, max) tuple for y-axis limits, or None for auto.
+            grid: Enable grid lines. Defaults to True.
+            layer: Layer index (for metadata; axes render after all layers).
+            comment: Optional comment prepended in TikZ output.
+            **kwargs: Additional pgfplots axis options.
+
+        Returns:
+            The newly created Axis2D object.
+        """
+        axis = Axis2D(
+            xlabel=xlabel,
+            ylabel=ylabel,
+            xlim=xlim,
+            ylim=ylim,
+            grid=grid,
+            label="",
+            comment=comment,
+            layer=layer,
+            **kwargs,
+        )
+        self.axes.append(axis)
+        return axis
+
     def add_loop(
         self,
         variable: str,
@@ -2555,6 +2603,12 @@ class TikzFigure:
             ``\\end{tikzpicture}``. Wrapped in a ``figure`` environment
             when a caption or label is set.
         """
+        # Ensure pgfplots is in extra_packages if axes are present
+        if self.axes and "pgfplots" not in (self._extra_packages or []):
+            if self._extra_packages is None:
+                self._extra_packages = []
+            self._extra_packages.append("pgfplots")
+
         tikz_script = ""
         if not skip_header:
             tikz_script += TIKZFIGURE_HEADER
@@ -2633,6 +2687,10 @@ class TikzFigure:
         )
         for layer in ordered_layers:
             tikz_script += layer.generate_tikz(use_layers=use_layers, verbose=verbose)
+
+        # Render axes (pgfplots requires them after all layer content)
+        for axis in self.axes:
+            tikz_script += axis.to_tikz()
 
         if self.ndim == 3:
             tikz_script += "\\end{axis}\n"
@@ -3141,6 +3199,11 @@ class TikzFigure:
     def variables(self) -> list:
         """List of :class:`Variable` objects defined in this figure."""
         return self._variables
+
+    @property
+    def axes(self) -> list[Axis2D]:
+        """List of :class:`Axis2D` objects created in this figure."""
+        return self._axes
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, TikzFigure):
