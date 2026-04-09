@@ -22,7 +22,8 @@ def main():
 
     fig.draw(points, options=["thick", "blue"])
 
-    fig.show()
+    fig.savefig("spiral.pdf", use_web_compilation=True)
+    fig.show(use_web_compilation=True)
 
 
 if __name__ == "__main__":

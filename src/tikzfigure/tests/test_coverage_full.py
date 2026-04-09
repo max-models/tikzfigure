@@ -377,9 +377,20 @@ def test_compile_pdf_success_and_failure(tmp_path, monkeypatch, capsys):
         raise subprocess.CalledProcessError(1, "pdflatex", stderr=b"boom")
 
     monkeypatch.setattr(subprocess, "run", raise_run)
+
+    # Mock requests.post to simulate successful web compilation
+    from unittest.mock import MagicMock
+
+    import requests
+
+    mock_response = MagicMock()
+    mock_response.status_code = 200
+    mock_response.content = b"%PDF-1.4\ndummy pdf"
+    monkeypatch.setattr(requests, "post", lambda *args, **kwargs: mock_response)
+
     fig.compile_pdf(filename=output_pdf, verbose=False)
-    captured = capsys.readouterr()
-    assert "An error occurred" in captured.out
+    # After fallback, the file should exist (created by web compiler)
+    assert output_pdf.exists()
 
 
 def test_savefig_tikz_pdf_png_and_invalid(tmp_path, monkeypatch):
@@ -389,7 +400,7 @@ def test_savefig_tikz_pdf_png_and_invalid(tmp_path, monkeypatch):
     tikz_path = tmp_path / "out.tikz"
     png_path = tmp_path / "out.png"
 
-    def fake_compile_pdf(filename, verbose=False):
+    def fake_compile_pdf(filename, verbose=False, use_web_compilation=False):
         with open(filename, "wb") as f:
             f.write(b"%PDF-1.4")
 
@@ -469,7 +480,12 @@ def test_show_jupyter_branch(monkeypatch):
     monkeypatch.setitem(sys.modules, "IPython", ipy_module)
     monkeypatch.setitem(sys.modules, "IPython.display", display_module)
     monkeypatch.setattr(
-        fig, "savefig", lambda filename, verbose=False, transparent=False: None
+        fig,
+        "savefig",
+        lambda filename,
+        verbose=False,
+        transparent=False,
+        use_web_compilation=False: None,
     )
 
     fig.show(width=100, height=200, verbose=False)
@@ -514,7 +530,13 @@ def test_show_backends_and_errors(monkeypatch, capsys):
     monkeypatch.setitem(sys.modules, "matplotlib.image", fake_image)
     monkeypatch.setitem(sys.modules, "matplotlib.pyplot", fake_pyplot)
     monkeypatch.setattr(
-        fig, "savefig", lambda filename, dpi=300, verbose=False, transparent=False: None
+        fig,
+        "savefig",
+        lambda filename,
+        dpi=300,
+        verbose=False,
+        transparent=False,
+        use_web_compilation=False: None,
     )
 
     fig._show_matplotlib(dpi=72, verbose=True)
@@ -554,7 +576,13 @@ def test_show_backends_and_errors(monkeypatch, capsys):
     monkeypatch.setitem(sys.modules, "PIL", fake_pil)
     monkeypatch.setitem(sys.modules, "PIL.Image", fake_pil_image)
     monkeypatch.setattr(
-        fig, "savefig", lambda filename, dpi=300, verbose=False, transparent=False: None
+        fig,
+        "savefig",
+        lambda filename,
+        dpi=300,
+        verbose=False,
+        transparent=False,
+        use_web_compilation=False: None,
     )
 
     fig._show_pillow(dpi=72, verbose=False)
