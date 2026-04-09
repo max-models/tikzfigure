@@ -53,6 +53,15 @@ class TikzFigure:
     to compile it, and :meth:`savefig` / :meth:`show` to export or display
     the result.
 
+    Compilation: By default, :meth:`compile_pdf`, :meth:`savefig`, and
+    :meth:`show` use pdflatex if available on your system. If pdflatex is
+    unavailable, tikzfigure automatically falls back to the latex-on-http
+    web API for compilation. You can explicitly request web-based compilation
+    by passing ``use_web_compilation=True`` to these methods. This allows
+    figures to be compiled and rendered without requiring a local LaTeX
+    installation. See https://github.com/max-models/tikzfigure for more
+    details.
+
     Attributes:
         layers: The :class:`LayerCollection` holding all drawing layers.
         variables: List of :class:`Variable` objects defined in this figure.
@@ -2679,17 +2688,26 @@ class TikzFigure:
         return latex_document
 
     def compile_pdf(
-        self, filename: Path | str = Path("output.pdf"), verbose: bool = False
+        self,
+        filename: Path | str = Path("output.pdf"),
+        verbose: bool = False,
+        use_web_compilation: bool = False,
     ) -> None:
-        """Compile the figure to a PDF file using ``pdflatex``.
+        """Compile the figure to a PDF file using ``pdflatex`` or web API.
 
-        Requires ``pdflatex`` to be installed and accessible from the
-        command line.
+        By default, uses local ``pdflatex`` if available, falling back to the
+        web-based LaTeX compilation API if pdflatex fails.
+
+        Requires ``pdflatex`` to be installed (for local compilation) or
+        internet access (for web compilation).
 
         Args:
             filename: Output PDF path. Defaults to ``"output.pdf"``.
             verbose: If ``True``, print the LaTeX source and the
                 ``pdflatex`` command before running.
+            use_web_compilation: If ``True``, use the web-based LaTeX
+                compilation API directly instead of attempting local pdflatex.
+                Defaults to ``False``.
         """
         if isinstance(filename, str):
             filename = Path(filename)
@@ -2697,6 +2715,15 @@ class TikzFigure:
         latex_document = self.generate_standalone()
         if verbose:
             print(latex_document)
+
+        # If explicit web compilation is requested, use it directly
+        if use_web_compilation:
+            from tikzfigure.core.web_compiler import compile_with_latex_on_http
+
+            compile_with_latex_on_http(latex_document, filename, verbose=verbose)
+            return
+
+        # Otherwise, try local pdflatex first
         # Use a temporary directory to store the LaTeX files
         with tempfile.TemporaryDirectory() as tempdir:
             # print(f"{type(tempdir) = } {tempdir = }")
@@ -2733,10 +2760,42 @@ class TikzFigure:
                 # Remove .aux and .log files
                 os.remove(filename.with_suffix(".aux"))
                 os.remove(filename.with_suffix(".log"))
-            except subprocess.CalledProcessError as e:
-                print("An error occurred while compiling the LaTeX document:")
-                print(e.stderr.decode())
-                return
+            except (subprocess.CalledProcessError, FileNotFoundError) as e:
+                # Pdflatex failed or not available - attempt fallback to web compilation
+                if verbose:
+                    if isinstance(e, FileNotFoundError):
+                        print(
+                            "pdflatex not available or compilation failed, attempting fallback to web API"
+                        )
+                    else:
+                        print(
+                            "Local pdflatex compilation failed, attempting fallback to web API..."
+                        )
+                        if e.stderr:
+                            print(e.stderr.decode())
+                        else:
+                            print(str(e))
+
+                from tikzfigure.core.web_compiler import compile_with_latex_on_http
+
+                try:
+                    compile_with_latex_on_http(
+                        latex_document, filename, verbose=verbose
+                    )
+                except RuntimeError as web_error:
+                    # Both local and web compilation failed - provide full context
+                    print("An error occurred while compiling the LaTeX document:")
+                    if isinstance(e, subprocess.CalledProcessError):
+                        if e.stderr:
+                            print(e.stderr.decode())
+                        else:
+                            print(str(e))
+                    elif isinstance(e, FileNotFoundError):
+                        print(f"pdflatex not found: {str(e)}")
+                    print(f"\nWeb compilation also failed: {str(web_error)}")
+                    raise RuntimeError(
+                        f"Local compilation failed. Web compilation fallback also failed: {str(web_error)}"
+                    ) from web_error
 
     def savefig(
         self,
@@ -2744,6 +2803,7 @@ class TikzFigure:
         dpi: int = 300,
         verbose: bool = False,
         transparent: bool = True,
+        use_web_compilation: bool = False,
     ) -> None:
         """Save the figure to a file.
 
@@ -2759,6 +2819,8 @@ class TikzFigure:
             transparent: If ``True``, render PNG output with a transparent
                 background instead of white.  Only supported for ``.png``;
                 ignored for other formats.
+            use_web_compilation: If ``True``, use the web-based LaTeX
+                compilation API instead of local ``pdflatex``. Defaults to ``False``.
 
         Raises:
             ValueError: If the file extension is not supported.
@@ -2770,7 +2832,11 @@ class TikzFigure:
 
         if ext == ".pdf":
             # Direct compile
-            self.compile_pdf(filename=filename, verbose=verbose)
+            self.compile_pdf(
+                filename=filename,
+                verbose=verbose,
+                use_web_compilation=use_web_compilation,
+            )
         elif ext == ".tikz":
             if verbose:
                 print(f"Saving TikZ code to {filename}")
@@ -2787,7 +2853,11 @@ class TikzFigure:
                 if verbose:
                     print(f"Compiling TikZ to temporary PDF: {temp_pdf}")
 
-                self.compile_pdf(filename=temp_pdf, verbose=verbose)
+                self.compile_pdf(
+                    filename=temp_pdf,
+                    verbose=verbose,
+                    use_web_compilation=use_web_compilation,
+                )
 
                 if verbose:
                     print(f"Converting {temp_pdf} → {filename}")
@@ -2803,7 +2873,11 @@ class TikzFigure:
             raise ValueError(f"Unsupported file format: {ext}")
 
     def _show_matplotlib(
-        self, dpi: int = 300, verbose: bool = False, transparent: bool = True
+        self,
+        dpi: int = 300,
+        verbose: bool = False,
+        transparent: bool = True,
+        use_web_compilation: bool = False,
     ) -> None:
         """Display the figure in a Matplotlib window.
 
@@ -2811,6 +2885,9 @@ class TikzFigure:
             dpi: Resolution for the intermediate PNG. Defaults to ``300``.
             verbose: If ``True``, print a status message.
             transparent: If ``True``, make the background transparent.
+            use_web_compilation: If ``True``, use the web-based LaTeX
+                compilation API instead of local ``pdflatex``.
+                Defaults to ``False``.
 
         Raises:
             ImportError: If ``matplotlib`` is not installed.
@@ -2830,7 +2907,12 @@ class TikzFigure:
 
         with tempfile.TemporaryDirectory() as tempdir:
             temp_png = Path(tempdir) / "temp.png"
-            self.savefig(filename=temp_png, dpi=dpi, verbose=verbose)
+            self.savefig(
+                filename=temp_png,
+                dpi=dpi,
+                verbose=verbose,
+                use_web_compilation=use_web_compilation,
+            )
 
             img = mpimg.imread(temp_png)
 
@@ -2844,7 +2926,11 @@ class TikzFigure:
             plt.show()
 
     def _show_system(
-        self, dpi: int = 300, transparent: bool = True, verbose: bool = False
+        self,
+        dpi: int = 300,
+        transparent: bool = True,
+        verbose: bool = False,
+        use_web_compilation: bool = False,
     ) -> None:
         """Display the figure using the OS default image viewer.
 
@@ -2852,13 +2938,20 @@ class TikzFigure:
             dpi: Resolution for the intermediate PNG. Defaults to ``300``.
             verbose: Unused; reserved for future debug output.
             transparent: If ``True``, make the background transparent.
+            use_web_compilation: If ``True``, use the web-based LaTeX
+                compilation API instead of local ``pdflatex``.
+                Defaults to ``False``.
         """
         with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as tmp:
             temp_path = tmp.name
 
         try:
             self.savefig(
-                filename=temp_path, dpi=dpi, transparent=transparent, verbose=verbose
+                filename=temp_path,
+                dpi=dpi,
+                transparent=transparent,
+                verbose=verbose,
+                use_web_compilation=use_web_compilation,
             )
 
             # Open with system default viewer
@@ -2880,7 +2973,11 @@ class TikzFigure:
             print(f"Figure saved to: {temp_path}")
 
     def _show_pillow(
-        self, dpi: int = 300, verbose: bool = False, transparent: bool = True
+        self,
+        dpi: int = 300,
+        verbose: bool = False,
+        transparent: bool = True,
+        use_web_compilation: bool = False,
     ) -> None:
         """Display the figure using PIL/Pillow's built-in image viewer.
 
@@ -2888,6 +2985,9 @@ class TikzFigure:
             dpi: Resolution for the intermediate PNG. Defaults to ``300``.
             verbose: Unused; reserved for future debug output.
             transparent: If ``True``, make the background transparent.
+            use_web_compilation: If ``True``, use the web-based LaTeX
+                compilation API instead of local ``pdflatex``.
+                Defaults to ``False``.
 
         Raises:
             ImportError: If ``Pillow`` is not installed.
@@ -2904,7 +3004,11 @@ class TikzFigure:
         with tempfile.TemporaryDirectory() as tempdir:
             temp_png = Path(tempdir) / "temp.png"
             self.savefig(
-                filename=temp_png, dpi=dpi, transparent=transparent, verbose=verbose
+                filename=temp_png,
+                dpi=dpi,
+                transparent=transparent,
+                verbose=verbose,
+                use_web_compilation=use_web_compilation,
             )
 
             img = Image.open(temp_png)
@@ -2918,6 +3022,7 @@ class TikzFigure:
         verbose: bool = False,
         backend: str = "matplotlib",
         transparent: bool = True,
+        use_web_compilation: bool = False,
     ) -> None:
         """Display the figure interactively.
 
@@ -2940,6 +3045,9 @@ class TikzFigure:
                   window.
                 - ``"system"`` – open with the OS default image viewer.
                 - ``"pillow"`` – open with PIL/Pillow.
+            use_web_compilation: If ``True``, use the web-based LaTeX
+                compilation API instead of local ``pdflatex``.
+                Defaults to ``False``.
 
         Raises:
             ValueError: If *backend* is not one of the supported values.
@@ -2963,7 +3071,10 @@ class TikzFigure:
                 with tempfile.TemporaryDirectory() as tempdir:
                     temp_pdf = Path(tempdir) / "temp.png"
                     self.savefig(
-                        filename=temp_pdf, transparent=transparent, verbose=verbose
+                        filename=temp_pdf,
+                        transparent=transparent,
+                        verbose=verbose,
+                        use_web_compilation=use_web_compilation,
                     )
                     display(Image(filename=temp_pdf, width=width, height=height))
                 return
@@ -2972,11 +3083,26 @@ class TikzFigure:
 
         # Not in Jupyter - use specified backend
         if backend == "matplotlib":
-            self._show_matplotlib(dpi=dpi, verbose=verbose, transparent=transparent)
+            self._show_matplotlib(
+                dpi=dpi,
+                verbose=verbose,
+                transparent=transparent,
+                use_web_compilation=use_web_compilation,
+            )
         elif backend == "system":
-            self._show_system(dpi=dpi, verbose=verbose, transparent=transparent)
+            self._show_system(
+                dpi=dpi,
+                verbose=verbose,
+                transparent=transparent,
+                use_web_compilation=use_web_compilation,
+            )
         elif backend == "pillow":
-            self._show_pillow(dpi=dpi, verbose=verbose, transparent=transparent)
+            self._show_pillow(
+                dpi=dpi,
+                verbose=verbose,
+                transparent=transparent,
+                use_web_compilation=use_web_compilation,
+            )
         else:
             raise ValueError(
                 f"Unknown backend '{backend}'. "

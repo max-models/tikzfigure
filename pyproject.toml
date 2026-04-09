@@ -40,6 +40,7 @@ optional-dependencies.vis = [
   "matplotlib",
   "jupyterlab",
   "pymupdf",
+  "requests",
 ]
 
 optional-dependencies.docs = [
@@ -55,6 +56,8 @@ optional-dependencies.docs = [
 optional-dependencies.test = [
   "coverage",
   "pytest",
+  "types-requests",
+  "mypy",
 ]
 urls."Source" = "https://github.com/max-models/tikzfigure"
 
@@ -67,3 +70,6 @@ check_untyped_defs = true
 warn_return_any = true
 warn_unused_ignores = true
 exclude = ["src/tikzfigure/tests"]
+
+[tool.isort]
+profile = "black"
