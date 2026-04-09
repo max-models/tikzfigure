@@ -55,6 +55,8 @@ optional-dependencies.docs = [
 optional-dependencies.test = [
   "coverage",
   "pytest",
+  "types-requests",
+  "mypy",
 ]
 urls."Source" = "https://github.com/max-models/tikzfigure"
 
