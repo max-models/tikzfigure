@@ -191,3 +191,18 @@ junit/
 
 # Outputs
 tutorials/*_files/
+
+# trash
+.claude/
+.omc/
+CLAUDE.md
+README.html
+TIKZ_COMMAND_COVERAGE.md
+app.js
+app.py
+docs/superpowers/
+package-lock.json
+serve_cors.py
+todo.md
+tutorials/out/
+tutorials/tutorial_01_getting_started.html
