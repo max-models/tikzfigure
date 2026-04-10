@@ -45,12 +45,16 @@ class Plot2D(TikzObject):
         if func is None and (x is None or y is None):
             raise ValueError("Must specify either func or both (x, y) data")
 
+        # Extract layer if provided in kwargs to avoid conflict
+        # (layer is a property of the parent Axis2D, not the plot itself)
+        kwargs_filtered = {k: v for k, v in kwargs.items() if k != "layer"}
+
         super().__init__(
             label=label,
             comment=comment,
             layer=0,
             options=options,
-            **kwargs,
+            **kwargs_filtered,
         )
         self._x = x if x is not None else []
         self._y = y if y is not None else []

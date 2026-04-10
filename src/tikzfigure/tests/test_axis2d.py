@@ -529,6 +529,147 @@ class TestTikzFigureSerialization:
         assert fig2.axes[0].plots[0].label == "sensor1"
 
 
+class TestSubfigures:
+    def test_generate_subfigures_basic(self):
+        """Test basic subfigure generation with two figures."""
+        fig1 = TikzFigure()
+        ax1 = fig1.axis2d(xlabel="X1")
+        ax1.add_plot([0, 1], [0, 1])
+
+        fig2 = TikzFigure()
+        ax2 = fig2.axis2d(xlabel="X2")
+        ax2.add_plot([0, 1], [0, 1])
+
+        subfig_code = TikzFigure.generate_subfigures([fig1, fig2])
+
+        assert "\\begin{figure}" in subfig_code
+        assert "\\end{figure}" in subfig_code
+        assert subfig_code.count("\\begin{subfigure}") == 2
+        assert subfig_code.count("\\end{subfigure}") == 2
+        assert "\\hspace" in subfig_code
+
+    def test_generate_subfigures_with_captions(self):
+        """Test subfigure generation with captions."""
+        fig1 = TikzFigure()
+        ax1 = fig1.axis2d()
+        ax1.add_plot([0, 1], [0, 1])
+
+        fig2 = TikzFigure()
+        ax2 = fig2.axis2d()
+        ax2.add_plot([0, 1], [0, 1])
+
+        captions = ["Caption One", "Caption Two"]
+        subfig_code = TikzFigure.generate_subfigures([fig1, fig2], captions=captions)
+
+        assert "Caption One" in subfig_code
+        assert "Caption Two" in subfig_code
+        assert subfig_code.count("\\caption") == 2
+
+    def test_generate_subfigures_with_labels(self):
+        """Test subfigure generation with labels."""
+        fig1 = TikzFigure()
+        ax1 = fig1.axis2d()
+        ax1.add_plot([0, 1], [0, 1])
+
+        fig2 = TikzFigure()
+        ax2 = fig2.axis2d()
+        ax2.add_plot([0, 1], [0, 1])
+
+        labels = ["fig:one", "fig:two"]
+        subfig_code = TikzFigure.generate_subfigures(
+            [fig1, fig2], captions=["A", "B"], labels=labels
+        )
+
+        assert "\\label{fig:one}" in subfig_code
+        assert "\\label{fig:two}" in subfig_code
+
+    def test_generate_subfigures_custom_widths(self):
+        """Test subfigure generation with custom widths."""
+        fig1 = TikzFigure()
+        ax1 = fig1.axis2d()
+        ax1.add_plot([0, 1], [0, 1])
+
+        fig2 = TikzFigure()
+        ax2 = fig2.axis2d()
+        ax2.add_plot([0, 1], [0, 1])
+
+        widths = [0.4, 0.4]
+        subfig_code = TikzFigure.generate_subfigures([fig1, fig2], widths=widths)
+
+        assert "{0.4\\textwidth}" in subfig_code
+
+    def test_generate_subfigures_custom_spacing(self):
+        """Test subfigure generation with custom spacing."""
+        fig1 = TikzFigure()
+        ax1 = fig1.axis2d()
+        ax1.add_plot([0, 1], [0, 1])
+
+        fig2 = TikzFigure()
+        ax2 = fig2.axis2d()
+        ax2.add_plot([0, 1], [0, 1])
+
+        spacing = "1cm"
+        subfig_code = TikzFigure.generate_subfigures([fig1, fig2], spacing=spacing)
+
+        assert f"\\hspace{{{spacing}}}" in subfig_code
+
+    def test_generate_subfigures_three_figures(self):
+        """Test subfigure generation with three figures."""
+        figs = [TikzFigure(), TikzFigure(), TikzFigure()]
+        for fig in figs:
+            ax = fig.axis2d()
+            ax.add_plot([0, 1], [0, 1])
+
+        subfig_code = TikzFigure.generate_subfigures(figs)
+
+        assert subfig_code.count("\\begin{subfigure}") == 3
+        assert subfig_code.count("\\hspace") == 2  # Two spacings for three figs
+
+    def test_generate_subfigures_mismatched_captions(self):
+        """Test error when captions length doesn't match figures length."""
+        fig1 = TikzFigure()
+        ax1 = fig1.axis2d()
+        ax1.add_plot([0, 1], [0, 1])
+
+        fig2 = TikzFigure()
+        ax2 = fig2.axis2d()
+        ax2.add_plot([0, 1], [0, 1])
+
+        with pytest.raises(ValueError, match="captions length"):
+            TikzFigure.generate_subfigures([fig1, fig2], captions=["Only one"])
+
+    def test_generate_subfigures_mismatched_labels(self):
+        """Test error when labels length doesn't match figures length."""
+        fig1 = TikzFigure()
+        ax1 = fig1.axis2d()
+        ax1.add_plot([0, 1], [0, 1])
+
+        fig2 = TikzFigure()
+        ax2 = fig2.axis2d()
+        ax2.add_plot([0, 1], [0, 1])
+
+        with pytest.raises(ValueError, match="labels length"):
+            TikzFigure.generate_subfigures([fig1, fig2], labels=["Only one"])
+
+    def test_generate_subfigures_mismatched_widths(self):
+        """Test error when widths length doesn't match figures length."""
+        fig1 = TikzFigure()
+        ax1 = fig1.axis2d()
+        ax1.add_plot([0, 1], [0, 1])
+
+        fig2 = TikzFigure()
+        ax2 = fig2.axis2d()
+        ax2.add_plot([0, 1], [0, 1])
+
+        with pytest.raises(ValueError, match="widths length"):
+            TikzFigure.generate_subfigures([fig1, fig2], widths=[0.5])
+
+    def test_generate_subfigures_empty_list(self):
+        """Test error when figures list is empty."""
+        with pytest.raises(ValueError, match="at least one figure"):
+            TikzFigure.generate_subfigures([])
+
+
 class TestAxis2DIntegration:
     def test_full_workflow(self):
         """Test complete workflow: create figure, add axis, plots, generate TikZ."""

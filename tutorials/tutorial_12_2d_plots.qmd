@@ -33,7 +33,7 @@ ax = fig.axis2d(xlabel="X", ylabel="Y")
 # Add a plot with x and y data
 ax.add_plot([0, 1, 2, 3, 4], [0, 1, 4, 9, 16])
 
-fig.show(use_web_compilation=True)
+fig.show()
 ```
 
 {{< include includes/tikz_code_callout.qmd >}}
@@ -61,7 +61,7 @@ distance = [0, 2.5, 10, 22.5, 40, 62.5]
 
 ax.add_plot(time, distance, label="motion")
 
-fig.show(use_web_compilation=True)
+fig.show()
 ```
 
 {{< include includes/tikz_code_callout.qmd >}}
@@ -96,7 +96,7 @@ ax.add_plot(x_quad, y_quad, label="y = x²")
 # Set legend position
 ax.set_legend(position="north west")
 
-fig.show(use_web_compilation=True)
+fig.show()
 ```
 
 {{< include includes/tikz_code_callout.qmd >}}
@@ -139,7 +139,7 @@ ax.add_plot(
 )
 
 ax.set_legend(position="north west")
-fig.show(use_web_compilation=True)
+fig.show()
 ```
 
 {{< include includes/tikz_code_callout.qmd >}}
@@ -173,7 +173,7 @@ ax.add_plot(x, y1, label="Thick solid", color="red", line_width="2pt")
 ax.add_plot(x, y2, label="Thin dashed", color="blue", options=["dashed"])
 
 ax.set_legend()
-fig.show(use_web_compilation=True)
+fig.show()
 ```
 
 {{< include includes/tikz_code_callout.qmd >}}
@@ -207,7 +207,7 @@ ax.set_ticks("x", [1, 2, 3, 4], labels=["A", "B", "C", "D"])
 ax.set_ticks("y", [0, 5, 10, 15, 20, 25, 30])
 
 ax.set_legend()
-fig.show(use_web_compilation=True)
+fig.show()
 ```
 
 {{< include includes/tikz_code_callout.qmd >}}
@@ -238,7 +238,7 @@ ax.add_plot(x, y_sin, label="sin(x)", color="red")
 ax.add_plot(x, y_cos, label="cos(x)", color="blue")
 
 ax.set_legend(position="south east")
-fig.show(use_web_compilation=True)
+fig.show()
 ```
 
 {{< include includes/tikz_code_callout.qmd >}}
@@ -263,7 +263,7 @@ ax.add_plot(func="sin(x)", label="sin(x)", color="red", line_width="1.5pt")
 ax.add_plot(func="cos(x)", label="cos(x)", color="blue", line_width="1.5pt")
 
 ax.set_legend(position="south east")
-fig.show(use_web_compilation=True)
+fig.show()
 ```
 
 The `func` parameter accepts any valid pgfplots function expression: `sin(x)`, `cos(x)`, `x^2`, `sqrt(x)`, `abs(x)`, `exp(x)`, `ln(x)`, etc.
@@ -294,7 +294,7 @@ ax.add_plot(x, y_quad, label="x²", color="red")
 ax.add_plot(x, y_sqrt, label="2√x", color="blue")
 
 ax.set_legend(position="north west")
-fig.show(use_web_compilation=True)
+fig.show()
 ```
 
 Combining multiple function plots is especially useful for comparing different curves:
@@ -316,7 +316,7 @@ ax.add_plot(func="sqrt(x)", label="Square root", color="blue", line_width="2pt")
 ax.add_plot(func="x/2", label="Half: x/2", color="green")
 
 ax.set_legend(position="north west")
-fig.show(use_web_compilation=True)
+fig.show()
 ```
 
 ## Exponential growth
@@ -349,7 +349,7 @@ ax.add_plot(
 )
 
 ax.set_legend(position="north west")
-fig.show(use_web_compilation=True)
+fig.show()
 ```
 
 {{< include includes/tikz_code_callout.qmd >}}
@@ -386,7 +386,7 @@ humidity = [70, 65, 40, 35, 55]
 ax2.add_plot(hours, humidity, label="Daily humidity", color="cyan", mark="square")
 ax2.set_legend(position="south east")
 
-fig.show(use_web_compilation=True)
+fig.show()
 ```
 
 {{< include includes/tikz_code_callout.qmd >}}
@@ -434,7 +434,7 @@ ax.add_plot(
 )
 
 ax.set_legend(position="north west")
-fig.show(use_web_compilation=True)
+fig.show()
 ```
 
 {{< include includes/tikz_code_callout.qmd >}}
@@ -549,7 +549,7 @@ fig.add_node(2.5, 2.5, label="bg", content="Background",
 fig.add_node(4, 4, label="fg", content="Foreground!",
              shape="rectangle", fill="yellow!30", layer=2)
 
-fig.show(use_web_compilation=True)
+fig.show()
 ```
 
 Multiple axes can be combined on different layers for complex visualizations:
@@ -577,20 +577,103 @@ ax_fg.add_plot([1, 3, 5, 7, 9], [2, 8, 10, 6, 4],
                label="Measurements", color="blue!70", mark="*")
 ax_fg.set_legend(position="south east")
 
-fig.show(use_web_compilation=True)
+fig.show()
 ```
 
 Layers ensure proper z-ordering: axes on layer 0 render first (background), then axes on layer 1 (foreground).
+
+## Side-by-side subfigures
+
+Create a single figure with multiple subfigures arranged horizontally using the `subfigure_axis()` method. This is useful for comparing related plots or showing before/after visualizations:
+
+```{python}
+fig = TikzFigure()
+
+# First subfigure: sine wave
+ax1 = fig.subfigure_axis(
+    xlabel="x", ylabel="y",
+    xlim=(0, 360), ylim=(-1.5, 1.5),
+    grid=True,
+    caption="Sine Function",
+    width=0.45
+)
+ax1.add_plot(func="sin(x)", label="sin(x)", color="red", line_width="1.5pt")
+ax1.set_legend(position="north east")
+
+# Second subfigure: cosine wave
+ax2 = fig.subfigure_axis(
+    xlabel="x", ylabel="y",
+    xlim=(0, 360), ylim=(-1.5, 1.5),
+    grid=True,
+    caption="Cosine Function",
+    width=0.45
+)
+ax2.add_plot(func="cos(x)", label="cos(x)", color="blue", line_width="1.5pt")
+ax2.set_legend(position="north east")
+
+fig.show()
+```
+
+{{< include includes/tikz_code_callout.qmd >}}
+
+You can also create more subfigures by calling `subfigure_axis()` multiple times:
+
+```{python}
+fig = TikzFigure()
+
+# Three comparison plots
+titles = ["Linear: y=x", "Quadratic: y=x²", "Cubic: y=x³"]
+formulas = ["x", "x^2", "x^3"]
+colors = ["red", "green", "blue"]
+
+for title, formula, color in zip(titles, formulas, colors):
+    ax = fig.subfigure_axis(
+        xlabel="x", ylabel="y",
+        xlim=(0, 5), ylim=(0, 10),
+        grid=True,
+        caption=title,
+        width=0.3
+    )
+    ax.add_plot(func=formula, color=color, line_width="2pt")
+
+fig.show()
+```
+
+{{< include includes/tikz_code_callout.qmd >}}
+
+**API Reference for `subfigure_axis()`:**
+
+```{python}
+#| eval: false
+ax = fig.subfigure_axis(
+    xlabel="",        # X-axis label
+    ylabel="",        # Y-axis label
+    xlim=(min, max),  # X-axis limits (None for auto)
+    ylim=(min, max),  # Y-axis limits (None for auto)
+    grid=True,        # Show grid lines
+    caption="",       # Caption for this subfigure
+    width=0.45,       # Width as fraction (e.g., 0.45 for ~45% of page width)
+    **kwargs          # Additional pgfplots axis options
+)
+```
+
+Features:
+- Call `subfigure_axis()` multiple times to add more subfigures
+- Each subfigure can have its own caption and width
+- `fig.show()` automatically displays all subfigures side-by-side
+- `fig.generate_tikz()` produces proper LaTeX subfigure code
+- Use `width` to control subfigure sizing (typically 0.3-0.45 for 2-3 plots)
 
 ## Summary
 
 You now know how to:
 
 - Create 2D axes with `axis2d()`
-- Add plots with `add_plot(x, y, ...)`
-- Configure axes (labels, limits, grid)
+- Add plots with `add_plot(x, y, ...)` or plot functions with `add_plot(func="...")`
+- Configure axes (labels, limits, grid, layers)
 - Style plots (colors, markers, line widths)
-- Set legends and custom ticks
+- Set legends, custom ticks, and layering
+- Arrange multiple plots side-by-side with `generate_subfigures()`
 - Generate publication-quality figures
 
 For more advanced pgfplots features, pass additional kwargs to `axis2d()` or use the `options` parameter on `add_plot()`. The entire pgfplots toolkit is accessible through tikzfigure!
