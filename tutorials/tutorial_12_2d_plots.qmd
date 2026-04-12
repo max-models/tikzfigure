@@ -651,6 +651,36 @@ Features:
 - `fig.generate_tikz()` produces proper LaTeX groupplot code
 - Use `width` to control subfigure sizing (typically 0.3-0.45 for 2-3 plots)
 
+## Grid layouts for subfigures
+
+Create multi-row and multi-column subfigure layouts by specifying `rows` and `cols` when creating the figure:
+
+```{python}
+fig = TikzFigure(rows=2, cols=2)
+
+# Top-left (row 0, col 0)
+ax1 = fig.subfigure_axis(xlabel="x", ylabel="y", width=0.45)
+ax1.add_plot([0, 1], [0, 1], label="linear")
+ax1.set_legend()
+
+# Top-right (row 0, col 1)
+ax2 = fig.subfigure_axis(xlabel="x", ylabel="y", width=0.45)
+ax2.add_plot([0, 1], [1, 0], label="inverse")
+ax2.set_legend()
+
+# Bottom-left (row 1, col 0)
+ax3 = fig.subfigure_axis(xlabel="x", ylabel="y", width=0.45)
+ax3.add_plot([0, 1], [0, 2], label="double")
+ax3.set_legend()
+
+# Bottom-right left empty (allows partial grids)
+fig.show()
+```
+
+{{< include includes/tikz_code_callout.qmd >}}
+
+Axes fill **left-to-right, top-to-bottom** automatically. You can create partial grids (fewer axes than grid cells). Grid layout works alongside regular axes — they render separately in the same figure.
+
 ## Summary
 
 You now know how to:

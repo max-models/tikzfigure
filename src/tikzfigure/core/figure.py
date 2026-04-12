@@ -165,6 +165,8 @@ class TikzFigure:
         figsize: tuple[float, float] = (10, 6),
         description: str | None = None,
         show_axes: bool = False,
+        rows: int | None = None,
+        cols: int | None = None,
     ) -> None:
         """Initialize a TikzFigure.
 
@@ -192,6 +194,10 @@ class TikzFigure:
                 purposes (not emitted in TikZ output).
             show_axes: For 3-D figures, if ``True`` render the pgfplots
                 axis lines and labels. Defaults to ``False``.
+            rows: Number of rows in subfigure grid. Must be specified with cols.
+                Defaults to None (no grid).
+            cols: Number of columns in subfigure grid. Must be specified with rows.
+                Defaults to None (no grid).
         """
 
         self._figsize: tuple[float, float] = figsize
@@ -212,6 +218,23 @@ class TikzFigure:
         self._axes: list[Axis2D] = []
         # Subfigure axes with metadata (axis, width)
         self._subfigure_axes: list[tuple[Axis2D, float]] = []
+
+        # Grid layout parameters
+        self._subfigure_rows: int | None = rows
+        self._subfigure_cols: int | None = cols
+        self._subfigure_grid: dict[tuple[int, int], tuple[Axis2D, float]] = {}
+        self._subfigure_position: int = 0
+
+        # Validate grid parameters
+        if (rows is None) != (cols is None):
+            raise ValueError("Both rows and cols must be specified together")
+        if rows is not None:
+            # At this point, we know cols is also not None (from the check above)
+            assert cols is not None  # Help mypy with type narrowing
+            if rows < 1 or cols < 1:
+                raise ValueError(
+                    f"rows and cols must be positive integers, got rows={rows}, cols={cols}"
+                )
 
         # Counter for unnamed nodes
         self._node_counter: int = 0
@@ -380,6 +403,8 @@ class TikzFigure:
             "figure_setup": self._figure_setup,
             "figsize": list(self._figsize),
             "description": self._description,
+            "subfigure_rows": self._subfigure_rows,
+            "subfigure_cols": self._subfigure_cols,
             "layers": layers_dict,
             "variables": [v.to_dict() for v in self._variables],
             "colors": [
@@ -408,6 +433,8 @@ class TikzFigure:
             figsize=tuple(d.get("figsize", [10, 6])),
             description=d.get("description"),
             show_axes=d.get("show_axes", False),
+            rows=d.get("subfigure_rows"),
+            cols=d.get("subfigure_cols"),
         )
 
         for var_dict in d.get("variables", []):
@@ -2582,8 +2609,26 @@ class TikzFigure:
             layer=0,
             **kwargs,
         )
-        # Store as subfigure with width metadata
-        self._subfigure_axes.append((axis, width))
+        # Store axis in grid or list
+        if self._subfigure_rows is not None:  # Grid mode
+            assert self._subfigure_cols is not None  # Type narrowing for mypy
+            # Check grid not full
+            if self._subfigure_position >= self._subfigure_rows * self._subfigure_cols:
+                raise ValueError(
+                    f"Subfigure grid ({self._subfigure_rows}x{self._subfigure_cols}) is full. "
+                    f"Cannot add more axes."
+                )
+
+            # Calculate grid position
+            row = self._subfigure_position // self._subfigure_cols
+            col = self._subfigure_position % self._subfigure_cols
+
+            # Store in grid
+            self._subfigure_grid[(row, col)] = (axis, width)
+            self._subfigure_position += 1
+        else:  # Single-row mode (backward compatible)
+            self._subfigure_axes.append((axis, width))
+
         return axis
 
     def add_loop(
@@ -2790,7 +2835,7 @@ class TikzFigure:
         tikz_script += "\\end{tikzpicture}"
 
         # Handle subfigure layout if subfigure axes are present
-        if self._subfigure_axes:
+        if self._subfigure_axes or self._subfigure_grid:
             # Create a single tikzpicture using pgfplots groupplot environment
             # for proper layout management
             subfig_tikz = "\\begin{tikzpicture}\n"
@@ -2808,15 +2853,39 @@ class TikzFigure:
             for name, color in self.colors:
                 subfig_tikz += f"\\colorlet{{{name}}}{{{color.color_spec}}}\n"
 
-            # Use groupplot for horizontal layout (side-by-side axes)
-            num_axes = len(self._subfigure_axes)
-            group_opts = (
-                f"group style={{group size={num_axes} by 1, horizontal sep=1.5cm}}"
-            )
+            # Determine layout and collect axes to render
+            if self._subfigure_rows is not None:  # Grid mode
+                # Build groupplot with rows and columns
+                num_cols = self._subfigure_cols
+                assert num_cols is not None  # Type guard for mypy
+                num_rows = self._subfigure_rows
+                group_opts = (
+                    f"group style={{"
+                    f"group size={num_cols} by {num_rows}, "
+                    f"horizontal sep=1.5cm, "
+                    f"vertical sep=2cm"
+                    f"}}"
+                )
+
+                # Collect axes in grid order (row-major)
+                axes_to_render = []
+                for row in range(num_rows):
+                    for col in range(num_cols):
+                        if (row, col) in self._subfigure_grid:
+                            axis, width = self._subfigure_grid[(row, col)]
+                            axes_to_render.append((axis, width))
+            else:  # Single-row mode (backward compatible)
+                num_axes = len(self._subfigure_axes)
+                group_opts = (
+                    f"group style={{group size={num_axes} by 1, horizontal sep=1.5cm}}"
+                )
+                axes_to_render = self._subfigure_axes
+
+            # Build the groupplot
             subfig_tikz += f"\\begin{{groupplot}}[{group_opts}]\n"
 
-            # Add each axis to the groupplot
-            for axis, width in self._subfigure_axes:
+            # Add each axis to groupplot
+            for axis, width in axes_to_render:
                 # Get the axis tikz code and strip the outer tikzpicture wrapper
                 axis_tikz = axis.to_tikz()
                 axis_tikz = axis_tikz.replace("\\begin{tikzpicture}\n", "")
