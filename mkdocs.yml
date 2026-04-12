@@ -57,15 +57,26 @@ nav:
   - Tutorials:
       - Getting Started: tutorials/tutorial_01_getting_started.md
       - Styling: tutorials/tutorial_02_styling.md
-      - Paths and Shapes: tutorials/tutorial_03_paths_and_shapes.md
-      - Layers: tutorials/tutorial_04_layers.md
-      - Loops: tutorials/tutorial_05_loops.md
-      - Coordinates and Midpoints: tutorials/tutorial_06_coordinates_and_midpoints.md
-      - 3D Figures: tutorials/tutorial_07_3d_figures.md
-      - Raw TikZ: tutorials/tutorial_08_raw_tikz.md
-      - Space-Filling Curves: tutorials/tutorial_09_space_filling_curves.md
-      - Calendar: tutorials/tutorial_10_calendar.md
-      - Jupyter Magic: tutorials/tutorial_11_jupyter_magic.ipynb
+      - Paths: tutorials/tutorial_03_paths.md
+      - TikZ Primitives: tutorials/tutorial_04_primitives.md
+      - Layers: tutorials/tutorial_05_layers.md
+      - Loops: tutorials/tutorial_06_loops.md
+      - Coordinates and Midpoints: tutorials/tutorial_07_coordinates_and_midpoints.md
+      - 3D Figures: tutorials/tutorial_08_3d_figures.md
+      - Raw TikZ: tutorials/tutorial_09_raw_tikz.md
+      - Math Expressions: tutorials/tutorial_10_math_expressions.md
+      - 2D Plots - Basics: tutorials/tutorial_11_2d_plots_basics.md
+      - 2D Plots - Styling: tutorials/tutorial_12_2d_plots_styling.md
+      - 2D Plots - Functions: tutorials/tutorial_13_2d_plots_functions.md
+      - Subfigures and Grids: tutorials/tutorial_14_subfigures.md
+      - Mixed Subfigures: tutorials/tutorial_15_mixed_subfigures.md
+      - Saving and Exporting: tutorials/tutorial_16_saving_and_exporting.md
+      - Figure Configuration: tutorials/tutorial_17_figure_configuration.md
+      - Shading and Patterns: tutorials/tutorial_18_shading_and_patterns.md
+      - Opacity: tutorials/tutorial_19_opacity_and_transparency.md
+      - Decorations: tutorials/tutorial_20_decorations.md
+      - Advanced Styling: tutorials/tutorial_21_advanced_styling.md
+      - Calendar: tutorials/tutorial_22_calendar.md
   - API Reference: api.md
 
 markdown_extensions:

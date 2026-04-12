@@ -246,7 +246,7 @@ LaTeX is clean and readable — not a long list of hardcoded coordinates.
 ## Advanced: combining loops with expressions
 
 For parametric figures like grids or circles, you can combine TikZ `\foreach` loops
-(from [tutorial 5](tutorial_05_loops.qmd)) with math expressions for even more compact code:
+(from [tutorial 6](tutorial_06_loops.qmd)) with math expressions for even more compact code:
 
 ```{python}
 from tikzfigure.math import sin, cos, Var
@@ -299,6 +299,6 @@ To avoid confusion, avoid `from tikzfigure.math import *` (which would shadow gl
 
 ## Next steps
 
-- Combine expressions with [loops](tutorial_05_loops.qmd) for parametric grids
-- Use expressions in [styling and transformations](tutorial_16_advanced_styling.qmd)
+- Combine expressions with [loops](tutorial_06_loops.qmd) for parametric grids
+- Use expressions in [styling and transformations](tutorial_21_advanced_styling.qmd)
 - See the [PGF manual](https://ctan.org/pkg/pgf) for the full list of functions and their behavior
