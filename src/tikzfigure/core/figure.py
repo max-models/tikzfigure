@@ -2486,6 +2486,8 @@ class TikzFigure:
         xlim: tuple[float, float] | None = None,
         ylim: tuple[float, float] | None = None,
         grid: bool = True,
+        width: str | int | float | None = None,
+        height: str | int | float | None = None,
         layer: int = 0,
         comment: str | None = None,
         **kwargs: Any,
@@ -2498,6 +2500,10 @@ class TikzFigure:
             xlim: (min, max) tuple for x-axis limits, or None for auto.
             ylim: (min, max) tuple for y-axis limits, or None for auto.
             grid: Enable grid lines. Defaults to True.
+            width: Width of the axis as a string (e.g., "8cm"), number in cm,
+                or None for auto. Defaults to None.
+            height: Height of the axis as a string (e.g., "6cm"), number in cm,
+                or None for auto. Defaults to None.
             layer: Layer index (for metadata; axes render after all layers).
             comment: Optional comment prepended in TikZ output.
             **kwargs: Additional pgfplots axis options.
@@ -2511,6 +2517,8 @@ class TikzFigure:
             xlim=xlim,
             ylim=ylim,
             grid=grid,
+            width=width,
+            height=height,
             label="",
             comment=comment,
             layer=layer,
@@ -2527,6 +2535,7 @@ class TikzFigure:
         ylim: tuple[float, float] | None = None,
         grid: bool = True,
         width: float = 0.45,
+        height: str | int | float | None = None,
         comment: str | None = None,
         **kwargs: Any,
     ) -> Axis2D:
@@ -2543,19 +2552,31 @@ class TikzFigure:
             xlim: (min, max) tuple for x-axis limits, or None for auto.
             ylim: (min, max) tuple for y-axis limits, or None for auto.
             grid: Enable grid lines. Defaults to True.
-            width: Width as a fraction of page width (0.0-1.0). Defaults to 0.45.
+            width: Width as a fraction of page width (0.0-1.0]. Defaults to 0.45.
+            height: Height of the axis as a string (e.g., "4cm"), number in cm,
+                or None for auto. Defaults to None.
             comment: Optional comment prepended in TikZ output.
             **kwargs: Additional pgfplots axis options.
 
         Returns:
             The newly created Axis2D object.
+
+        Raises:
+            ValueError: If width is not in range (0.0, 1.0].
         """
+        # Validate width
+        if not (0 < width <= 1.0):
+            raise ValueError(
+                f"subfigure width must be in range (0.0, 1.0], got {width}"
+            )
+
         axis = Axis2D(
             xlabel=xlabel,
             ylabel=ylabel,
             xlim=xlim,
             ylim=ylim,
             grid=grid,
+            height=height,
             label="",
             comment=comment,
             layer=0,
@@ -2746,7 +2767,7 @@ class TikzFigure:
         for layer in ordered_layers:
             tikz_script += layer.generate_tikz(use_layers=use_layers, verbose=verbose)
             # Render axes for this layer immediately after the layer itself
-            if layer.label in axes_by_layer:
+            if isinstance(layer.label, int) and layer.label in axes_by_layer:
                 for axis in axes_by_layer[layer.label]:
                     tikz_script += axis.to_tikz()
 

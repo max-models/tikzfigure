@@ -100,6 +100,49 @@ class TestPlot2D:
 
 
 class TestAxis2D:
+    def test_normalize_dimension_string_valid(self):
+        """Test that valid LaTeX length strings are accepted."""
+        assert Axis2D._normalize_dimension("8cm", "width") == "8cm"
+        assert Axis2D._normalize_dimension("10pt", "height") == "10pt"
+        assert Axis2D._normalize_dimension("5mm", "width") == "5mm"
+        assert Axis2D._normalize_dimension("12ex", "height") == "12ex"
+        assert Axis2D._normalize_dimension("2in", "width") == "2in"
+
+    def test_normalize_dimension_string_invalid(self):
+        """Test that strings without units are rejected."""
+        with pytest.raises(ValueError, match="must include a unit"):
+            Axis2D._normalize_dimension("8", "width")
+
+        with pytest.raises(ValueError, match="must include a unit"):
+            Axis2D._normalize_dimension("invalid", "height")
+
+    def test_normalize_dimension_number_valid(self):
+        """Test that numeric inputs are converted to cm strings."""
+        assert Axis2D._normalize_dimension(8, "width") == "8cm"
+        assert Axis2D._normalize_dimension(10.5, "height") == "10.5cm"
+        assert Axis2D._normalize_dimension(1, "width") == "1cm"
+
+    def test_normalize_dimension_number_invalid(self):
+        """Test that zero and negative numbers are rejected."""
+        with pytest.raises(ValueError, match="must be positive"):
+            Axis2D._normalize_dimension(0, "width")
+
+        with pytest.raises(ValueError, match="must be positive"):
+            Axis2D._normalize_dimension(-5, "height")
+
+    def test_normalize_dimension_none(self):
+        """Test that None returns None."""
+        assert Axis2D._normalize_dimension(None, "width") is None
+        assert Axis2D._normalize_dimension(None, "height") is None
+
+    def test_normalize_dimension_invalid_type(self):
+        """Test that invalid types are rejected."""
+        with pytest.raises(TypeError, match="must be a string, number, or None"):
+            Axis2D._normalize_dimension([8, 6], "width")
+
+        with pytest.raises(TypeError, match="must be a string, number, or None"):
+            Axis2D._normalize_dimension({"width": 8}, "width")
+
     def test_axis2d_basic_construction(self):
         """Test Axis2D constructor and basic properties."""
         axis = Axis2D(
@@ -355,6 +398,49 @@ class TestAxis2D:
         assert "{x^2}" in tikz
         assert "\\legend{data, function}" in tikz
 
+    def test_axis2d_width_height_initialization(self):
+        """Test that Axis2D stores width and height correctly."""
+        axis = Axis2D(xlabel="X", ylabel="Y", width=8, height=6)
+        assert axis.width == "8cm"
+        assert axis.height == "6cm"
+
+    def test_axis2d_width_height_string(self):
+        """Test that Axis2D accepts string dimensions."""
+        axis = Axis2D(xlabel="X", width="10cm", height="7pt")
+        assert axis.width == "10cm"
+        assert axis.height == "7pt"
+
+    def test_axis2d_width_height_none(self):
+        """Test that Axis2D handles None dimensions."""
+        axis = Axis2D(xlabel="X")
+        assert axis.width is None
+        assert axis.height is None
+
+    def test_axis2d_to_tikz_with_width(self):
+        """Test that Axis2D.to_tikz() includes width in axis options."""
+        axis = Axis2D(xlabel="X", ylabel="Y", width=8)
+        axis.add_plot([0, 1], [0, 1])
+
+        tikz = axis.to_tikz()
+        assert "width=8cm" in tikz
+
+    def test_axis2d_to_tikz_with_height(self):
+        """Test that Axis2D.to_tikz() includes height in axis options."""
+        axis = Axis2D(xlabel="X", ylabel="Y", height=6)
+        axis.add_plot([0, 1], [0, 1])
+
+        tikz = axis.to_tikz()
+        assert "height=6cm" in tikz
+
+    def test_axis2d_to_tikz_with_width_and_height(self):
+        """Test that Axis2D.to_tikz() includes both dimensions."""
+        axis = Axis2D(xlabel="X", ylabel="Y", width=8, height=6)
+        axis.add_plot([0, 1], [0, 1])
+
+        tikz = axis.to_tikz()
+        assert "width=8cm" in tikz
+        assert "height=6cm" in tikz
+
 
 class TestAxis2DSerialization:
     def test_axis2d_to_dict(self):
@@ -422,6 +508,46 @@ class TestAxis2DSerialization:
         assert axis2.grid == axis1.grid
         assert len(axis2.plots) == len(axis1.plots)
 
+    def test_axis2d_to_dict_with_dimensions(self):
+        """Test that Axis2D.to_dict() includes width and height."""
+        axis = Axis2D(xlabel="X", ylabel="Y", width=8, height=6)
+        axis.add_plot([0, 1], [0, 1])
+
+        d = axis.to_dict()
+        assert d["width"] == "8cm"
+        assert d["height"] == "6cm"
+
+    def test_axis2d_from_dict_with_dimensions(self):
+        """Test that Axis2D.from_dict() restores width and height."""
+        d = {
+            "type": "Axis2D",
+            "xlabel": "X",
+            "ylabel": "Y",
+            "width": "8cm",
+            "height": "6cm",
+            "xlim": None,
+            "ylim": None,
+            "grid": True,
+            "label": "",
+            "plots": [],
+            "ticks": {},
+            "legend_position": None,
+        }
+        axis = Axis2D.from_dict(d)
+        assert axis.width == "8cm"
+        assert axis.height == "6cm"
+
+    def test_axis2d_round_trip_with_dimensions(self):
+        """Test that Axis2D serialization round-trip preserves dimensions."""
+        axis1 = Axis2D(xlabel="X", ylabel="Y", width=8, height=6)
+        axis1.add_plot([0, 1], [0, 1])
+
+        d = axis1.to_dict()
+        axis2 = Axis2D.from_dict(d)
+
+        assert axis2.width == axis1.width
+        assert axis2.height == axis1.height
+
 
 class TestTikzFigureAxis2D:
     def test_tikzfigure_axis2d_method(self):
@@ -434,6 +560,19 @@ class TestTikzFigureAxis2D:
         assert axis.ylabel == "Y"
         assert len(fig.axes) == 1
         assert fig.axes[0] is axis
+
+    def test_tikzfigure_axis2d_dimensions_in_output(self):
+        """Test that dimensions specified in axis2d() appear in TikZ output."""
+        fig = TikzFigure()
+        ax = fig.axis2d(xlabel="X", ylabel="Y", width=8, height=6)
+        ax.add_plot([0, 1, 2], [0, 1, 2])
+
+        tikz = fig.generate_tikz()
+
+        # Verify dimensions are in pgfplots output
+        assert "width=8cm" in tikz
+        assert "height=6cm" in tikz
+        assert "\\begin{axis}" in tikz
 
     def test_tikzfigure_multiple_axes(self):
         """Test TikzFigure can hold multiple axes."""
@@ -500,6 +639,14 @@ class TestTikzFigureAxis2D:
         assert "\\begin{axis}" in tikz
         assert "xlabel=X" in tikz
 
+    def test_tikzfigure_axis2d_with_dimensions(self):
+        """Test that TikzFigure.axis2d() passes dimensions to Axis2D."""
+        fig = TikzFigure()
+        ax = fig.axis2d(xlabel="X", ylabel="Y", width=8, height=6)
+
+        assert ax.width == "8cm"
+        assert ax.height == "6cm"
+
 
 class TestTikzFigureSerialization:
     def test_tikzfigure_to_dict_with_axes(self):
@@ -530,6 +677,25 @@ class TestTikzFigureSerialization:
 
 
 class TestSubfigures:
+    def test_subfigure_axis_with_height(self):
+        """Test that subfigure_axis() accepts height parameter."""
+        fig = TikzFigure()
+        ax1 = fig.subfigure_axis(xlabel="X", width=0.45, height=4)
+        ax2 = fig.subfigure_axis(xlabel="Y", width=0.45, height=6)
+
+        assert ax1.height == "4cm"
+        assert ax2.height == "6cm"
+
+    def test_subfigure_axis_width_validation(self):
+        """Test that subfigure_axis() validates width is in (0.0, 1.0]."""
+        fig = TikzFigure()
+
+        with pytest.raises(ValueError, match="width must be in range"):
+            fig.subfigure_axis(width=0)
+
+        with pytest.raises(ValueError, match="width must be in range"):
+            fig.subfigure_axis(width=1.5)
+
     def test_generate_subfigures_basic(self):
         """Test basic subfigure generation with two figures."""
         fig1 = TikzFigure()
@@ -636,6 +802,23 @@ class TestSubfigures:
         """Test error when figures list is empty."""
         with pytest.raises(ValueError, match="at least one figure"):
             TikzFigure.generate_subfigures([])
+
+    def test_subfigure_axis_dimensions_in_output(self):
+        """Test that subfigure dimensions appear correctly in TikZ output."""
+        fig = TikzFigure()
+
+        ax1 = fig.subfigure_axis(xlabel="Sin", width=0.45, height=4)
+        ax1.add_plot(func="sin(x)", label="sin(x)")
+
+        ax2 = fig.subfigure_axis(xlabel="Cos", width=0.45, height=5)
+        ax2.add_plot(func="cos(x)", label="cos(x)")
+
+        tikz = fig.generate_tikz()
+
+        # Verify both subfigures have their heights in output
+        assert "height=4cm" in tikz
+        assert "height=5cm" in tikz
+        assert "\\begin{groupplot}" in tikz
 
 
 class TestAxis2DIntegration:

@@ -40,7 +40,7 @@ A 2D plot starts with creating an axis via `axis2d()`, then adding data with `ad
 fig = TikzFigure()
 
 # Create a 2D axis
-ax = fig.axis2d(xlabel="X", ylabel="Y")
+ax = fig.axis2d(xlabel="$X$", ylabel="$Y$")
 
 # Add a plot with x and y data
 ax.add_plot([0, 1, 2, 3, 4], [0, 1, 4, 9, 16])
@@ -98,12 +98,12 @@ ax = fig.axis2d(
 # Linear function
 x_linear = [0, 2, 4, 6, 8, 10]
 y_linear = [0, 2, 4, 6, 8, 10]
-ax.add_plot(x_linear, y_linear, label="y = x")
+ax.add_plot(x_linear, y_linear, label="$y = x$")
 
 # Quadratic function
 x_quad = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 y_quad = [0, 1, 4, 9, 16, 25, 36, 49, 64, 81, 100]
-ax.add_plot(x_quad, y_quad, label="y = x²")
+ax.add_plot(x_quad, y_quad, label="$y = x^2$")
 
 # Set legend position
 ax.set_legend(position="north west")
@@ -160,6 +160,38 @@ Available markers: `o` (circle), `*` (star), `square`, `triangle`, `diamond`, `x
 
 Available colors: standard TikZ colors like `red`, `blue`, `green`, `black`, plus color mixing like `blue!50!red`
 
+## Controlling plot dimensions
+
+By default, pgfplots automatically sizes plots based on content. You can override this with explicit `width` and `height` parameters:
+
+```{python}
+fig = TikzFigure()
+
+ax = fig.axis2d(
+    xlabel="X",
+    ylabel="Y",
+    xlim=(0, 10),
+    ylim=(0, 10),
+    width=8,      # 8cm wide
+    height=6,     # 6cm tall
+    grid=True
+)
+
+ax.add_plot([0, 5, 10], [0, 5, 10], label="Linear", color="blue")
+ax.set_legend()
+fig.show()
+```
+
+{{< include includes/tikz_code_callout.qmd >}}
+
+Dimensions can be specified in multiple formats:
+
+- **Numbers (assume cm):** `width=8, height=6`
+- **Strings with units:** `width="8cm", height="6pt"`
+- **Both mixed:** `width=8, height="5cm"`
+
+When `None` (the default), pgfplots auto-sizes the axis to fit content and labels.
+
 ## Line styles and advanced styling
 
 Customize plot appearance further:
@@ -168,8 +200,8 @@ Customize plot appearance further:
 fig = TikzFigure()
 
 ax = fig.axis2d(
-    xlabel="X",
-    ylabel="Y",
+    xlabel="$X$",
+    ylabel="$Y$",
     xlim=(0, 10),
     grid=True
 )
@@ -246,8 +278,8 @@ x = [i * 0.1 for i in range(65)]
 y_sin = [math.sin(xi) for xi in x]
 y_cos = [math.cos(xi) for xi in x]
 
-ax.add_plot(x, y_sin, label="sin(x)", color="red")
-ax.add_plot(x, y_cos, label="cos(x)", color="blue")
+ax.add_plot(x, y_sin, label=r"$\sin(x)$", color="red")
+ax.add_plot(x, y_cos, label=r"$\cos(x)$", color="blue")
 
 ax.set_legend(position="south east")
 fig.show()
@@ -270,12 +302,11 @@ ax = fig.subfigure_axis(
 )
 
 # Plot trigonometric functions directly
-ax.add_plot(func="sin(x)", label="sin(x)", color="red", line_width="1.5pt")
-ax.add_plot(func="cos(x)", label="cos(x)", color="blue", line_width="1.5pt")
+ax.add_plot(func="sin(x)", label=r"$\sin(x)$", color="red", line_width="1.5pt")
+ax.add_plot(func="cos(x)", label=r"$\cos(x)$", color="blue", line_width="1.5pt")
 
 ax.set_legend(position="south east")
 fig.show()
-
 ```
 
 The `func` parameter accepts any valid pgfplots function expression: `sin(x)`, `cos(x)`, `x^2`, `sqrt(x)`, `abs(x)`, `exp(x)`, `ln(x)`, etc.
@@ -485,57 +516,6 @@ ax.set_legend(position="north west")
 
 tikz_code = fig.generate_tikz()
 print(tikz_code)
-```
-
-{{< include includes/tikz_code_callout.qmd >}}
-
-This outputs pgfplots LaTeX code that you can use in `.tex` files or analyze for debugging.
-
-## API Reference
-
-### Creating an axis
-
-```{python}
-#| eval: false
-ax = fig.axis2d(
-    xlabel="",        # X-axis label
-    ylabel="",        # Y-axis label
-    xlim=(min, max),  # X-axis limits (None for auto)
-    ylim=(min, max),  # Y-axis limits (None for auto)
-    grid=True,        # Show grid lines
-    layer=0,          # Layer index for z-ordering
-    comment=None,     # Optional comment
-    **kwargs          # Additional pgfplots options
-)
-```
-
-### Adding plots
-
-```{python}
-#| eval: false
-ax.add_plot(
-    x,           # List of x values
-    y,           # List of y values
-    label="",    # Legend label
-    color="",    # Plot color
-    mark="",     # Marker type (o, *, square, etc.)
-    line_width="", # Line width (e.g., "2pt")
-    options=[],  # pgfplots flags (e.g., ["dashed"])
-    **kwargs     # Additional pgfplots options
-)
-```
-
-### Configuring the axis
-
-```{python}
-#| eval: false
-ax.set_xlabel(label)                    # Set x-axis label
-ax.set_ylabel(label)                    # Set y-axis label
-ax.set_xlim(min, max)                   # Set x-axis limits
-ax.set_ylim(min, max)                   # Set y-axis limits
-ax.set_grid(enabled)                    # Enable/disable grid
-ax.set_ticks(axis, positions, labels)   # Set custom ticks
-ax.set_legend(position="north east")    # Configure legend
 ```
 
 {{< include includes/tikz_code_callout.qmd >}}
