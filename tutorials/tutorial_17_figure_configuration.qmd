@@ -11,7 +11,7 @@ set up in LaTeX. This tutorial covers:
 - `document_setup`: raw LaTeX preamble additions (for `\usetikzlibrary` etc.)
 - `extra_packages`: additional LaTeX packages
 - `generate_standalone()`: inspecting the full compilable document
-- `caption` and `label`: wrapping the figure in a `\begin{figure}` environment
+- `label`: wrapping the figure in a `\begin{figure}` environment
 - `figsize`: display-size hint for Jupyter
 
 ```{python}
@@ -180,15 +180,13 @@ print(fig.generate_standalone())
 
 {{< include includes/tikz_code_callout.qmd >}}
 
-## `caption` and `label`: wrapping in a figure environment
+## `label`: wrapping in a figure environment
 
-When `caption` is set, tikzfigure wraps the `tikzpicture` in a
-`\begin{figure}...\end{figure}` environment and adds `\caption{...}`.
-`label` adds a `\label{...}` for cross-referencing.
+When `label` is set, tikzfigure wraps the `tikzpicture` in a
+`\begin{figure}...\end{figure}` environment and adds `\label{...}` for cross-referencing.
 
 ```{python}
 fig = TikzFigure(
-    caption="A simple directed graph.",
     label="fig:simple-graph",
 )
 

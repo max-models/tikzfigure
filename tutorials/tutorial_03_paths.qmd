@@ -1,0 +1,177 @@
+---
+title: "Paths and Shapes"
+jupyter: python3
+---
+
+Beyond simple node-to-node connections, tikzfigure lets you draw arbitrary paths
+from lists of `(x, y)` coordinates.
+
+- drawing open and closed coordinate paths
+- `filldraw` for filled closed shapes
+- rounded corners
+- custom shapes (heart, star)
+- parametric curves with NumPy (spiral, sun)
+
+```{python}
+import numpy as np
+
+from tikzfigure import TikzFigure
+```
+
+## Open and closed coordinate paths
+
+Pass a list of `[x, y]` pairs (or `(x, y)` tuples) to `fig.draw()`.
+Set `cycle=True` to close the path back to the starting point.
+
+```{python}
+fig = TikzFigure()
+
+# Open path - a zigzag
+zigzag = [[0, 0], [1, 1], [2, 0], [3, 1], [4, 0]]
+fig.draw(zigzag, line_width=2, color="blue")
+
+# Closed path - a triangle
+triangle = [[6, 0], [8, 0], [7, 1.5]]
+fig.draw(triangle, cycle=True, line_width=2, color="red")
+
+fig.show()
+```
+
+{{< include includes/tikz_code_callout.qmd >}}
+
+## Filled shapes with `filldraw`
+
+`fig.filldraw()` is shorthand for a closed path that is both drawn (outline) and filled.
+You can also use `fig.draw(..., fill="color")` for the same effect.
+
+```{python}
+fig = TikzFigure()
+
+# Pentagon via filldraw
+angles = np.linspace(np.pi / 2, np.pi / 2 + 2 * np.pi, 6)[:-1]
+pentagon = list(zip(np.cos(angles) * 2 + 2, np.sin(angles) * 2 + 2))
+fig.filldraw(pentagon, cycle=True, line_width=2, color="purple", fill="purple!20")
+
+# Same via draw(..., fill=...)
+hexagon_angles = np.linspace(0, 2 * np.pi, 7)[:-1]
+hexagon = list(zip(np.cos(hexagon_angles) * 2 + 7, np.sin(hexagon_angles) * 2 + 2))
+fig.draw(hexagon, cycle=True, line_width=2, color="teal", fill="teal!20")
+
+fig.show()
+```
+
+{{< include includes/tikz_code_callout.qmd >}}
+
+## Rounded corners
+
+The `rounded_corners` parameter (in pt) smooths the corners of any path.
+
+```{python}
+fig = TikzFigure()
+
+# Same square, with increasing corner radius
+for i, radius in enumerate([0, 5, 15, 30]):
+    x0 = i * 3.5
+    square = [[x0, 0], [x0 + 2, 0], [x0 + 2, 2], [x0, 2]]
+    fig.draw(
+        square,
+        cycle=True,
+        line_width=2,
+        color="black",
+        fill="orange!20",
+        rounded_corners=f"{radius}pt",
+    )
+    fig.add_node(x0 + 1, -0.5, content=f"{radius}pt", draw="none")
+
+fig.show()
+```
+
+{{< include includes/tikz_code_callout.qmd >}}
+
+## Heart shape
+
+A heart drawn from seven control points with rounded corners.
+
+```{python}
+fig = TikzFigure()
+
+fig.colorlet("lightred", "red!40!white")
+
+heart = [[2, 0], [0, 3.5], [1, 4.5], [2, 3.0], [3, 4.5], [4, 3.5], [3, 2]]
+
+fig.draw(
+    heart,
+    rounded_corners="20pt",
+    line_width=4,
+    cycle=True,
+    color="red",
+    fill="lightred",
+)
+
+fig.show()
+```
+
+{{< include includes/tikz_code_callout.qmd >}}
+
+## Star shape
+
+A five-pointed star drawn from six points (the last one closes back to the first).
+
+```{python}
+fig = TikzFigure()
+
+star = [[0, 0], [1, 2.5], [2, 0], [-0.5, 1.5], [2.5, 1.5], [0, 0]]
+
+fig.draw(star, line_width=3, cycle=True, color="gold", fill="yellow!50!white")
+
+fig.show()
+```
+
+{{< include includes/tikz_code_callout.qmd >}}
+
+## Parametric curves with NumPy
+
+Any iterable of `(x, y)` pairs works as a path, so NumPy arrays plug in naturally
+for smooth parametric curves.
+
+```{python}
+fig = TikzFigure()
+
+# Spiral
+N = 300
+theta = np.linspace(0, 8 * np.pi, N)
+r = np.linspace(0.1, 3, N)
+spiral = list(zip(r * np.cos(theta) + 4, r * np.sin(theta) + 4))
+fig.draw(spiral, line_width=2, color="teal")
+
+fig.show()
+```
+
+{{< include includes/tikz_code_callout.qmd >}}
+
+## Sun: circle core + radial rays
+
+A filled circle for the core, plus short line segments for rays at equal angles.
+
+```{python}
+fig = TikzFigure()
+
+cx, cy, R = 4, 4, 1.0  # center and core radius
+
+# Core
+theta = np.linspace(0, 2 * np.pi, 60)
+core = list(zip(cx + R * np.cos(theta), cy + R * np.sin(theta)))
+fig.filldraw(core, cycle=True, line_width=2, color="orange", fill="yellow!60")
+
+# Rays
+for angle in np.linspace(0, 2 * np.pi, 12, endpoint=False):
+    x0 = cx + R * np.cos(angle)
+    y0 = cy + R * np.sin(angle)
+    x1 = cx + (R + 0.7) * np.cos(angle)
+    y1 = cy + (R + 0.7) * np.sin(angle)
+    fig.draw([(x0, y0), (x1, y1)], line_width=2, color="orange")
+
+fig.show()
+```
+
+{{< include includes/tikz_code_callout.qmd >}}

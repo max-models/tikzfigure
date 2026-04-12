@@ -1,0 +1,143 @@
+---
+title: "2D Plots: Basics"
+jupyter: python3
+---
+
+tikzfigure provides a high-level API for creating publication-quality 2D plots
+using pgfplots. This tutorial covers the fundamentals:
+
+- Creating a 2D axis with `axis2d()`
+- Adding data plots
+- Axis labels, limits, and grids
+- Multiple plots on one axis
+- Controlling plot dimensions
+
+```{python}
+from tikzfigure import TikzFigure
+```
+
+## Your first 2D plot
+
+A 2D plot starts with creating an axis via `axis2d()`, then adding data with `add_plot()`.
+
+```{python}
+fig = TikzFigure()
+
+# Create a 2D axis
+ax = fig.axis2d(xlabel="$X$", ylabel="$Y$")
+
+# Add a plot with x and y data
+ax.add_plot([0, 1, 2, 3, 4], [0, 1, 4, 9, 16])
+
+fig.show()
+```
+
+{{< include includes/tikz_code_callout.qmd >}}
+
+pgfplots automatically scales the axes to fit the data.
+
+## Adding labels and limits
+
+Axis labels and explicit limits make plots more readable:
+
+```{python}
+fig = TikzFigure()
+
+ax = fig.axis2d(
+    xlabel="Time (seconds)",
+    ylabel="Distance (meters)",
+    xlim=(0, 5),
+    ylim=(0, 30),
+    grid=True
+)
+
+time = [0, 1, 2, 3, 4, 5]
+distance = [0, 2.5, 10, 22.5, 40, 62.5]
+
+ax.add_plot(time, distance, label="motion")
+
+fig.show()
+```
+
+{{< include includes/tikz_code_callout.qmd >}}
+
+`grid=True` adds grid lines. `xlim` and `ylim` set explicit axis ranges.
+
+## Multiple plots on one axis
+
+A single axis can hold multiple plots for comparisons:
+
+```{python}
+fig = TikzFigure()
+
+ax = fig.axis2d(
+    xlabel="X", ylabel="Y",
+    xlim=(0, 10), ylim=(0, 10),
+    grid=True
+)
+
+ax.add_plot([0, 2, 4, 6, 8, 10], [0, 2, 4, 6, 8, 10], label="$y = x$")
+ax.add_plot([0, 1, 2, 3], [0, 1, 4, 9], label="$y = x^2$")
+
+ax.set_legend(position="north west")
+
+fig.show()
+```
+
+{{< include includes/tikz_code_callout.qmd >}}
+
+## Controlling plot dimensions
+
+Override the default sizing with explicit `width` and `height`:
+
+```{python}
+fig = TikzFigure()
+
+ax = fig.axis2d(
+    xlabel="X", ylabel="Y",
+    xlim=(0, 10), ylim=(0, 10),
+    width='8cm',
+    height='4cm',
+    grid=True
+)
+
+ax.add_plot(x=[0, 5, 10], y=[0, 5, 10], label="Linear", color="blue")
+
+fig.show()
+```
+
+{{< include includes/tikz_code_callout.qmd >}}
+
+Dimensions can be specified as:
+
+- **Numbers (cm):** `width=8, height=6`
+- **Strings with units:** `width="8cm", height="6pt"`
+- **None (default):** pgfplots auto-sizes the axis
+
+## Multiple independent axes
+
+Call `axis2d()` multiple times for separate plots rendered in sequence:
+
+```{python}
+fig = TikzFigure()
+
+ax1 = fig.axis2d(
+    xlabel="Hour", ylabel="Temperature",
+    xlim=(0, 24), ylim=(10, 30), grid=True
+)
+ax1.add_plot([0, 6, 12, 18, 24], [12, 14, 28, 26, 18],
+             label="Temperature", color="orange", mark="*")
+ax1.set_legend(position="north east")
+
+ax2 = fig.axis2d(
+    xlabel="Hour", ylabel="Humidity (%)",
+    xlim=(0, 24), ylim=(30, 90), grid=True
+)
+ax2.add_plot([0, 6, 12, 18, 24], [70, 65, 40, 35, 55],
+             label="Humidity", color="cyan", mark="square")
+ax2.set_legend(position="south east")
+
+fig.show()
+```
+
+{{< include includes/tikz_code_callout.qmd >}}

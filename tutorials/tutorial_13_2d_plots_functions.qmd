@@ -1,0 +1,111 @@
+---
+title: "2D Plots: Functions"
+jupyter: python3
+---
+
+pgfplots can evaluate mathematical functions directly, and Python's `math` module
+gives you full flexibility for data generation.
+
+```{python}
+import math
+from tikzfigure import TikzFigure
+```
+
+## Plotting functions directly
+
+Pass a function expression as a string to `func=` for smooth curves without
+pre-computing data points:
+
+```{python}
+fig = TikzFigure()
+
+ax = fig.axis2d(
+    xlabel="x", ylabel="y",
+    xlim=(0, 360), ylim=(-1.5, 1.5),
+    grid=True
+)
+
+ax.add_plot(func="sin(x)", label=r"$\sin(x)$", color="red", line_width="1.5pt")
+ax.add_plot(func="cos(x)", label=r"$\cos(x)$", color="blue", line_width="1.5pt")
+
+ax.set_legend(position="south east")
+fig.show()
+```
+
+{{< include includes/tikz_code_callout.qmd >}}
+
+`func` accepts any pgfplots expression: `sin(x)`, `cos(x)`, `x^2`, `sqrt(x)`, `exp(x)`, `ln(x)`, etc.
+
+## Comparing functions
+
+Plot multiple functions side-by-side:
+
+```{python}
+fig = TikzFigure()
+
+ax = fig.axis2d(
+    xlabel="$x$", ylabel="$y$",
+    xlim=(0, 10), ylim=(0, 5),
+    grid=True
+)
+
+ax.add_plot(func="x", label="$x$", color="black")
+ax.add_plot(func="sqrt(x)", label=r"$\sqrt{x}$", color="blue", line_width="2pt")
+ax.add_plot(func="x/2", label="$x/2$", color="green")
+
+ax.set_legend(position="north west")
+fig.show()
+```
+
+{{< include includes/tikz_code_callout.qmd >}}
+
+## Generating data with Python
+
+For more complex curves, use Python's `math` module with list comprehensions:
+
+```{python}
+fig = TikzFigure()
+
+ax = fig.axis2d(
+    xlabel="Angle (radians)", ylabel="Amplitude",
+    xlim=(0, 6.5), ylim=(-1.5, 1.5),
+    grid=True
+)
+
+x = [i * 0.1 for i in range(65)]
+y_sin = [math.sin(xi) for xi in x]
+y_cos = [math.cos(xi) for xi in x]
+
+ax.add_plot(x, y_sin, label=r"$\sin(x)$", color="red")
+ax.add_plot(x, y_cos, label=r"$\cos(x)$", color="blue")
+
+ax.set_legend(position="south east")
+fig.show()
+```
+
+{{< include includes/tikz_code_callout.qmd >}}
+
+## Exponential growth
+
+Visualizing exponential functions with Python-generated data:
+
+```{python}
+fig = TikzFigure()
+
+ax = fig.axis2d(
+    xlabel="Time (years)", ylabel="Population",
+    xlim=(0, 10), ylim=(0, 1000),
+    grid=True
+)
+
+time = [i for i in range(11)]
+population = [100 * math.exp(0.1 * t) for t in time]
+
+ax.add_plot(time, population, label="$P(t) = 100 e^{0.1t}$",
+            color="darkgreen", mark="o", mark_size="2pt")
+
+ax.set_legend(position="north west")
+fig.show()
+```
+
+{{< include includes/tikz_code_callout.qmd >}}
