@@ -172,13 +172,13 @@ ax = fig.axis2d(
     ylabel="Y",
     xlim=(0, 10),
     ylim=(0, 10),
-    width=8,      # 8cm wide
-    height=6,     # 6cm tall
+    width='8cm', # 8cm wide
+    height='4cm', # 6cm tall
     grid=True
 )
 
-ax.add_plot([0, 5, 10], [0, 5, 10], label="Linear", color="blue")
-ax.set_legend()
+ax.add_plot(x=[0, 5, 10], y=[0, 5, 10], label="Linear", color="blue")
+#ax.set_legend()
 fig.show()
 ```
 
@@ -346,17 +346,17 @@ Combining multiple function plots is especially useful for comparing different c
 fig = TikzFigure()
 
 ax = fig.axis2d(
-    xlabel="x",
-    ylabel="y",
+    xlabel="$x$",
+    ylabel="$y$",
     xlim=(0, 10),
     ylim=(0, 5),
     grid=True
 )
 
 # Multiple function plots for comparison
-ax.add_plot(func="x", label="Linear: x", color="black")
-ax.add_plot(func="sqrt(x)", label="Square root", color="blue", line_width="2pt")
-ax.add_plot(func="x/2", label="Half: x/2", color="green")
+ax.add_plot(func="x", label="$x$", color="black")
+ax.add_plot(func="sqrt(x)", label=r"$\sqrt{x}$", color="blue", line_width="2pt")
+ax.add_plot(func="x/2", label="$x/2$", color="green")
 
 ax.set_legend(position="north west")
 fig.show()
@@ -641,7 +641,7 @@ ax = fig.subfigure_axis(
     ylim=(min, max),  # Y-axis limits (None for auto)
     grid=True,        # Show grid lines
     width=0.45,       # Width as fraction (e.g., 0.45 for ~45% of page width)
-    **kwargs          # Additional pgfplots axis options
+    # **kwargs          # Additional pgfplots axis options
 )
 ```
 
