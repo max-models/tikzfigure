@@ -3,36 +3,65 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TikZ Interactive Editor</title>
+  <title>TikZ Interactive Editor — tikzfigure</title>
   <link rel="stylesheet" href="/tikzfigure/tikz-editor.css">
 </head>
 <body>
 
 <div id="toolbar">
-  <h1>TikZ Editor</h1>
-  <button class="tool-btn active" id="btn-select" title="Select / Move (V)">Select (V)</button>
-  <button class="tool-btn" id="btn-add-node" title="Add Node (N)">+ Node (N)</button>
-  <button class="tool-btn" id="btn-add-edge" title="Add Edge (E)">+ Edge (E)</button>
-  <button class="tool-btn" id="btn-delete" title="Delete selected (Del)">Delete (Del)</button>
-  <button class="tool-btn" id="btn-clear" title="Clear all">Clear</button>
-  <button class="tool-btn compile-toolbar-btn" id="btn-compile-toolbar" title="Compile to PDF">⚡ PDF</button>
-  <span style="flex:1"></span>
-  <span id="pyodide-status">Loading Pyodide…</span>
+  <span class="toolbar-brand">TikZ Editor</span>
+  <div class="toolbar-group">
+    <button class="tool-btn active" id="btn-select" title="Select / Move (V)">Select</button>
+    <button class="tool-btn" id="btn-add-node" title="Add Node (N)">Node</button>
+    <button class="tool-btn" id="btn-add-edge" title="Add Edge (E)">Edge</button>
+  </div>
+  <div class="toolbar-sep"></div>
+  <div class="toolbar-group">
+    <button class="tool-btn" id="btn-undo" title="Undo (Ctrl+Z)" disabled>Undo</button>
+    <button class="tool-btn" id="btn-redo" title="Redo (Ctrl+Shift+Z)" disabled>Redo</button>
+  </div>
+  <div class="toolbar-sep"></div>
+  <div class="toolbar-group">
+    <button class="tool-btn" id="btn-duplicate" title="Duplicate (Ctrl+D)">Duplicate</button>
+    <button class="tool-btn" id="btn-delete" title="Delete (Del)">Delete</button>
+    <button class="tool-btn" id="btn-clear" title="Clear all">Clear</button>
+  </div>
+  <div class="toolbar-sep"></div>
+  <div class="toolbar-group">
+    <button class="tool-btn toggle active" id="btn-grid" title="Toggle Grid (G)">Grid</button>
+    <button class="tool-btn toggle active" id="btn-snap" title="Toggle Snap">Snap</button>
+  </div>
+  <div class="toolbar-sep"></div>
+  <div class="toolbar-group zoom-group">
+    <button class="tool-btn small" id="btn-zoom-out" title="Zoom Out">&minus;</button>
+    <span id="zoom-level">100%</span>
+    <button class="tool-btn small" id="btn-zoom-in" title="Zoom In">+</button>
+    <button class="tool-btn small" id="btn-zoom-reset" title="Reset View">Fit</button>
+  </div>
+  <span class="toolbar-spacer"></span>
+  <button class="tool-btn compile-btn" id="btn-compile-toolbar" title="Compile to PDF">PDF</button>
+  <span id="pyodide-status">Loading Pyodide...</span>
 </div>
 
 <div id="main">
   <div id="canvas-area" class="mode-select">
     <svg id="svg-canvas">
       <defs>
+        <pattern id="grid-dots" width="20" height="20" patternUnits="userSpaceOnUse">
+          <circle cx="10" cy="10" r="0.6" fill="#282d3e"/>
+        </pattern>
         <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
-          <polygon points="0 0, 10 3.5, 0 7" fill="#94a3b8" />
+          <polygon points="0 0, 10 3.5, 0 7" fill="context-stroke"/>
         </marker>
-        <marker id="arrowhead-selected" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
-          <polygon points="0 0, 10 3.5, 0 7" fill="#a78bfa" />
+        <marker id="arrowhead-sel" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+          <polygon points="0 0, 10 3.5, 0 7" fill="#818cf8"/>
         </marker>
       </defs>
-      <g id="edges-layer"></g>
-      <g id="nodes-layer"></g>
+      <g id="world">
+        <rect id="grid-bg" x="-5000" y="-5000" width="10000" height="10000" fill="url(#grid-dots)"/>
+        <g id="edges-layer"></g>
+        <g id="nodes-layer"></g>
+      </g>
     </svg>
   </div>
 
@@ -41,13 +70,11 @@
   <div id="right-panel">
     <div id="tab-bar"></div>
     <div id="tab-content">
-
       <div id="tab-pane-props" class="tab-pane">
         <div class="panel-body" id="properties-panel">
-          <p style="font-size:0.78rem;color:#64748b;">Select a node or edge to edit its properties.</p>
+          <p class="hint">Select a node or edge to edit properties.</p>
         </div>
       </div>
-
       <div id="tab-pane-code" class="tab-pane">
         <div id="code-output">
           <details class="code-fold" open>
@@ -60,11 +87,10 @@
           </details>
         </div>
       </div>
-
       <div id="tab-pane-pdf" class="tab-pane">
         <div id="pdf-pane-inner">
-          <button id="compile-btn" disabled>⚡ Compile to PDF (latex-on-http)</button>
-          <a id="pdf-download" style="display:none;" download="figure.pdf">⬇ Download / Open PDF</a>
+          <button id="compile-btn" disabled>Compile to PDF (latex-on-http)</button>
+          <a id="pdf-download" style="display:none;" download="figure.pdf">Download PDF</a>
           <canvas id="pdf-canvas" style="display:none;"></canvas>
           <details id="compile-log-details" style="display:none;">
             <summary>Compilation log</summary>
@@ -72,12 +98,13 @@
           </details>
         </div>
       </div>
-
     </div>
   </div>
 </div>
 
-<div id="status-bar">Ready. Click canvas in Node mode to add nodes.</div>
+<div id="context-menu"></div>
+
+<div id="status-bar">Ready. Press N to add nodes, E for edges, V to select. Scroll to zoom, middle-click to pan.</div>
 
 <script src="https://cdn.jsdelivr.net/pyodide/v0.25.0/full/pyodide.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
