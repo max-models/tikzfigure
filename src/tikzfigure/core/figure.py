@@ -222,7 +222,10 @@ class TikzFigure:
         # Grid layout parameters
         self._subfigure_rows: int | None = rows
         self._subfigure_cols: int | None = cols
-        self._subfigure_grid: dict[tuple[int, int], tuple[Axis2D, float]] = {}
+        # Grid stores: (Axis2D | TikzFigure, width, height_str?)
+        # For Axis2D: (axis, width)
+        # For TikzFigure: (subfig, width, height_str)
+        self._subfigure_grid: dict[tuple[int, int], tuple[Any, float, ...]] = {}
         self._subfigure_position: int = 0
 
         # Validate grid parameters
@@ -2631,6 +2634,86 @@ class TikzFigure:
 
         return axis
 
+    def add_subfigure(
+        self,
+        width: float = 0.45,
+        height: str | int | float | None = None,
+    ) -> "TikzFigure":
+        """Create a subfigure using the full TikZ API in grid layout.
+
+        Returns a TikzFigure instance for this grid cell that you can use with
+        the full TikZ API: add_node(), draw(), filldraw(), etc.
+
+        Args:
+            width: Width of the subfigure as a fraction of available space
+                (0.0-1.0). Defaults to 0.45.
+            height: Height of the subfigure as a string (e.g., "6cm"), number
+                in cm, or None for auto. Defaults to None.
+
+        Returns:
+            A TikzFigure instance for this subfigure cell.
+
+        Raises:
+            ValueError: If grid mode is not active or grid is full.
+            ValueError: If width is not in range (0.0, 1.0].
+
+        Example:
+            >>> fig = TikzFigure(rows=2, cols=2)
+            >>> subfig = fig.add_subfigure(width=0.45)
+            >>> A = subfig.add_node(0, 1, label="A", content="A")
+            >>> B = subfig.add_node(2, 1, label="B", content="B")
+            >>> subfig.draw([A, B], options=["->"])
+        """
+        if width <= 0 or width > 1.0:
+            raise ValueError(f"width must be in range (0.0, 1.0], got {width}")
+
+        if self._subfigure_rows is None:
+            raise ValueError(
+                "add_subfigure() can only be used with grid layout. "
+                "Create figure with rows and cols: TikzFigure(rows=2, cols=2)"
+            )
+
+        # Check grid not full
+        if self._subfigure_position >= self._subfigure_rows * self._subfigure_cols:
+            raise ValueError(
+                f"Subfigure grid ({self._subfigure_rows}x{self._subfigure_cols}) is full. "
+                f"Cannot add more subfigures."
+            )
+
+        # Normalize height if provided
+        height_str: str | None = None
+        if height is not None:
+            if isinstance(height, str):
+                # Validate: must contain a unit suffix
+                if not any(
+                    height.endswith(unit) for unit in ["cm", "pt", "mm", "ex", "in"]
+                ):
+                    raise ValueError(
+                        f'height string must include a unit (e.g., "6cm"), got "{height}"'
+                    )
+                height_str = height
+            elif isinstance(height, (int, float)):
+                if height <= 0:
+                    raise ValueError(f"height must be positive, got {height}")
+                height_str = f"{height}cm"
+            else:
+                raise TypeError(
+                    f"height must be a string, number, or None, got {type(height).__name__}"
+                )
+
+        # Calculate grid position
+        row = self._subfigure_position // self._subfigure_cols
+        col = self._subfigure_position % self._subfigure_cols
+
+        # Create a TikzFigure for this subfigure cell (bare, no axes)
+        # Store as tuple: (TikzFigure, width, height_str)
+        subfig = TikzFigure(ndim=2)
+        subfig._is_bare_subfigure = True  # Flag to render without axes
+        self._subfigure_grid[(row, col)] = (subfig, width, height_str or "None")
+        self._subfigure_position += 1
+
+        return subfig
+
     def add_loop(
         self,
         variable: str,
@@ -2690,6 +2773,151 @@ class TikzFigure:
             # if "} % \\end foreach" in line and num_tabs > 0:
             #     num_tabs -= 1
         return tikz_script_new
+
+    def _render_axis_in_groupplot(self, axis: Axis2D) -> str:
+        """Render an Axis2D as a \\nextgroupplot entry inside a groupplot."""
+        axis_tikz = axis.to_tikz()
+        axis_tikz = axis_tikz.replace("\\begin{tikzpicture}\n", "")
+        axis_tikz = axis_tikz.replace("\\end{tikzpicture}", "")
+        axis_tikz = axis_tikz.strip()
+
+        # Replace \begin{axis}[ with \nextgroupplot[
+        axis_tikz = axis_tikz.replace("\\begin{axis}[", "\\nextgroupplot[")
+
+        # Check if axis has function-based plots and add domain if needed
+        has_function = any(plot.is_function for plot in axis.plots)
+        if has_function and axis.xlim:
+            xmin, xmax = axis.xlim
+            axis_tikz = axis_tikz.replace(
+                "\\nextgroupplot[",
+                f"\\nextgroupplot[domain={xmin}:{xmax}, ",
+                1,
+            )
+
+        # Remove the \end{axis} (groupplot handles it)
+        axis_tikz = axis_tikz.replace("\\end{axis}", "")
+
+        # Indent and add to groupplot
+        axis_lines = axis_tikz.split("\n")
+        return "\n".join(["    " + line for line in axis_lines]) + "\n"
+
+    def _render_groupplot_grid(self, num_rows: int, num_cols: int) -> str:
+        """Render a grid of Axis2D items using pgfplots groupplot."""
+        group_opts = (
+            f"group style={{"
+            f"group size={num_cols} by {num_rows}, "
+            f"horizontal sep=1.5cm, "
+            f"vertical sep=2cm"
+            f"}}"
+        )
+        result = f"\\begin{{groupplot}}[{group_opts}]\n"
+
+        for row in range(num_rows):
+            for col in range(num_cols):
+                if (row, col) in self._subfigure_grid:
+                    item_data = self._subfigure_grid[(row, col)]
+                    axis = item_data[0]
+                    result += self._render_axis_in_groupplot(axis)
+
+        result += "\\end{groupplot}\n"
+        return result
+
+    def _render_mixed_grid(self, num_rows: int, num_cols: int) -> str:
+        """Render a grid with mixed Axis2D and bare TikzFigure items.
+
+        Uses scope-based positioning instead of groupplot, since groupplot
+        always creates axis environments which is wrong for bare diagrams.
+        """
+        textwidth_cm = 14.0  # approximate \\textwidth
+        h_sep = 2.0  # cm between columns
+        v_sep = 2.0  # cm between rows
+        default_height = 6.0  # cm
+
+        # Compute column widths (max width per column)
+        col_widths: list[float] = []
+        for col in range(num_cols):
+            max_w = 0.0
+            for row in range(num_rows):
+                if (row, col) in self._subfigure_grid:
+                    w = self._subfigure_grid[(row, col)][1]
+                    max_w = max(max_w, w * textwidth_cm)
+            col_widths.append(max_w if max_w > 0 else 7.0)
+
+        # Compute cumulative x-offsets per column
+        x_offsets = [0.0]
+        for c in range(num_cols - 1):
+            x_offsets.append(x_offsets[-1] + col_widths[c] + h_sep)
+
+        # Compute row heights (max height per row)
+        row_heights: list[float] = []
+        for row in range(num_rows):
+            max_h = default_height
+            for col in range(num_cols):
+                if (row, col) in self._subfigure_grid:
+                    item_data = self._subfigure_grid[(row, col)]
+                    if len(item_data) == 3 and item_data[2] != "None":
+                        h_str = str(item_data[2])
+                        if h_str.endswith("cm"):
+                            max_h = max(max_h, float(h_str[:-2]))
+            row_heights.append(max_h)
+
+        # Compute cumulative y-offsets per row (negative = downward)
+        y_offsets = [0.0]
+        for r in range(num_rows - 1):
+            y_offsets.append(y_offsets[-1] - row_heights[r] - v_sep)
+
+        # Render each cell in a positioned scope
+        result = ""
+        for row in range(num_rows):
+            for col in range(num_cols):
+                if (row, col) not in self._subfigure_grid:
+                    continue
+
+                item_data = self._subfigure_grid[(row, col)]
+                if len(item_data) == 3:
+                    item, width, height_str = item_data
+                else:
+                    item, width = item_data
+                    height_str = "None"
+
+                x = x_offsets[col]
+                y = y_offsets[row]
+                width_cm = f"{width * textwidth_cm:.1f}cm"
+
+                if isinstance(item, Axis2D):
+                    result += f"\\begin{{scope}}[xshift={x:.1f}cm, yshift={y:.1f}cm]\n"
+                    axis_tikz = item.to_tikz()
+                    # Add width to axis if not already set
+                    if not item._width:
+                        axis_tikz = axis_tikz.replace(
+                            "\\begin{axis}[",
+                            f"\\begin{{axis}}[width={width_cm}, ",
+                        )
+                    # Add domain for function-based plots
+                    has_function = any(plot.is_function for plot in item.plots)
+                    if has_function and item.xlim:
+                        xmin, xmax = item.xlim
+                        axis_tikz = axis_tikz.replace(
+                            "\\begin{axis}[",
+                            f"\\begin{{axis}}[domain={xmin}:{xmax}, ",
+                            1,
+                        )
+                    for line in axis_tikz.split("\n"):
+                        if line.strip():
+                            result += f"    {line}\n"
+                    result += "\\end{scope}\n"
+                elif isinstance(item, TikzFigure):
+                    result += f"\\begin{{scope}}[xshift={x:.1f}cm, yshift={y:.1f}cm]\n"
+                    for layer_label, layer in item._layers.layers.items():
+                        if isinstance(layer_label, int):
+                            for tikz_obj in layer.items:
+                                tikz_content = tikz_obj.to_tikz()
+                                for line in tikz_content.split("\n"):
+                                    if line.strip():
+                                        result += f"    {line}\n"
+                    result += "\\end{scope}\n"
+
+        return result
 
     def generate_tikz(
         self,
@@ -2855,66 +3083,33 @@ class TikzFigure:
 
             # Determine layout and collect axes to render
             if self._subfigure_rows is not None:  # Grid mode
-                # Build groupplot with rows and columns
                 num_cols = self._subfigure_cols
                 assert num_cols is not None  # Type guard for mypy
                 num_rows = self._subfigure_rows
-                group_opts = (
-                    f"group style={{"
-                    f"group size={num_cols} by {num_rows}, "
-                    f"horizontal sep=1.5cm, "
-                    f"vertical sep=2cm"
-                    f"}}"
+
+                # Check if grid has any bare TikzFigure items (diagrams)
+                has_bare_subfigures = any(
+                    isinstance(item_data[0], TikzFigure)
+                    for item_data in self._subfigure_grid.values()
                 )
 
-                # Collect axes in grid order (row-major)
-                axes_to_render = []
-                for row in range(num_rows):
-                    for col in range(num_cols):
-                        if (row, col) in self._subfigure_grid:
-                            axis, width = self._subfigure_grid[(row, col)]
-                            axes_to_render.append((axis, width))
+                if has_bare_subfigures:
+                    # Mixed content: use scope-based positioning
+                    # (groupplot can't render non-axis content)
+                    subfig_tikz += self._render_mixed_grid(num_rows, num_cols)
+                else:
+                    # All Axis2D: use groupplot for proper alignment
+                    subfig_tikz += self._render_groupplot_grid(num_rows, num_cols)
             else:  # Single-row mode (backward compatible)
                 num_axes = len(self._subfigure_axes)
                 group_opts = (
                     f"group style={{group size={num_axes} by 1, horizontal sep=1.5cm}}"
                 )
-                axes_to_render = self._subfigure_axes
-
-            # Build the groupplot
-            subfig_tikz += f"\\begin{{groupplot}}[{group_opts}]\n"
-
-            # Add each axis to groupplot
-            for axis, width in axes_to_render:
-                # Get the axis tikz code and strip the outer tikzpicture wrapper
-                axis_tikz = axis.to_tikz()
-                axis_tikz = axis_tikz.replace("\\begin{tikzpicture}\n", "")
-                axis_tikz = axis_tikz.replace("\\end{tikzpicture}", "")
-                axis_tikz = axis_tikz.strip()
-
-                # Replace \begin{axis}[ with \nextgroupplot[
-                axis_tikz = axis_tikz.replace("\\begin{axis}[", "\\nextgroupplot[")
-
-                # Check if axis has function-based plots and add domain if needed
-                has_function = any(plot.is_function for plot in axis.plots)
-                if has_function and axis.xlim:
-                    xmin, xmax = axis.xlim
-                    # Add domain parameter for pgfplots function evaluation
-                    axis_tikz = axis_tikz.replace(
-                        "\\nextgroupplot[",
-                        f"\\nextgroupplot[domain={xmin}:{xmax}, ",
-                        1,  # Only replace first occurrence
-                    )
-
-                # Remove the \end{axis} (groupplot handles it)
-                axis_tikz = axis_tikz.replace("\\end{axis}", "")
-
-                # Indent and add to groupplot
-                axis_lines = axis_tikz.split("\n")
-                axis_tikz_indented = "\n".join(["    " + line for line in axis_lines])
-                subfig_tikz += axis_tikz_indented + "\n"
-
-            subfig_tikz += "\\end{groupplot}\n"
+                subfig_tikz += f"\\begin{{groupplot}}[{group_opts}]\n"
+                for item_tuple in self._subfigure_axes:
+                    item, width = item_tuple
+                    subfig_tikz += self._render_axis_in_groupplot(item)
+                subfig_tikz += "\\end{groupplot}\n"
 
             subfig_tikz += "\\end{tikzpicture}"
             tikz_script = subfig_tikz

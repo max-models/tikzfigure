@@ -1099,3 +1099,138 @@ class TestAxis2DIntegration:
         axis, width = fig._subfigure_grid[(0, 0)]
         assert width == 0.45
         assert axis.height == "6cm"
+
+    def test_add_subfigure_basic(self):
+        """Test that add_subfigure() returns a TikzFigure."""
+        fig = TikzFigure(rows=2, cols=2)
+
+        # Add a subfigure
+        subfig = fig.add_subfigure(width=0.45)
+
+        # Verify it's a TikzFigure
+        assert isinstance(subfig, TikzFigure)
+        assert (0, 0) in fig._subfigure_grid
+
+    def test_add_subfigure_with_nodes(self):
+        """Test that subfigure can use add_node() API."""
+        fig = TikzFigure(rows=2, cols=2)
+
+        # Create subfigure and add nodes
+        subfig = fig.add_subfigure(width=0.45)
+        A = subfig.add_node(0, 1, label="A", content="A", shape="circle")
+        B = subfig.add_node(2, 1, label="B", content="B", shape="circle")
+        subfig.draw([A, B], options=["->"])
+
+        # Verify subfigure has nodes
+        assert len(subfig._layers.layers[0].items) > 0
+
+    def test_add_subfigure_with_height(self):
+        """Test that add_subfigure() stores height parameter."""
+        fig = TikzFigure(rows=2, cols=2)
+
+        # Add subfigure with height
+        subfig = fig.add_subfigure(width=0.45, height=5)
+
+        # Verify it's in the grid
+        item, width, height_str = fig._subfigure_grid[(0, 0)]
+        assert isinstance(item, TikzFigure)
+        assert width == 0.45
+        assert height_str == "5cm"
+
+    def test_add_subfigure_positioning(self):
+        """Test that add_subfigure() positions correctly in grid."""
+        fig = TikzFigure(rows=2, cols=2)
+
+        # Add in order: Subfig, Axis, Subfig, Axis
+        subfig1 = fig.add_subfigure(width=0.45)
+        A = subfig1.add_node(0, 0, label="A", content="A")
+
+        ax1 = fig.subfigure_axis(xlabel="x")
+        ax1.add_plot([0, 1], [0, 1])
+
+        subfig2 = fig.add_subfigure(width=0.45)
+        B = subfig2.add_node(0, 0, label="B", content="B")
+
+        ax2 = fig.subfigure_axis(xlabel="x")
+        ax2.add_plot([0, 1], [1, 0])
+
+        # Verify positions
+        assert (0, 0) in fig._subfigure_grid  # Subfig
+        assert (0, 1) in fig._subfigure_grid  # Axis
+        assert (1, 0) in fig._subfigure_grid  # Subfig
+        assert (1, 1) in fig._subfigure_grid  # Axis
+
+    def test_add_subfigure_without_grid(self):
+        """Test that add_subfigure() requires grid mode."""
+        fig = TikzFigure()  # No rows/cols
+
+        with pytest.raises(ValueError, match="add_subfigure.*grid layout"):
+            fig.add_subfigure(width=0.45)
+
+    def test_add_subfigure_width_validation(self):
+        """Test that add_subfigure() validates width."""
+        fig = TikzFigure(rows=2, cols=2)
+
+        # Width out of range
+        with pytest.raises(ValueError, match="width must be in range"):
+            fig.add_subfigure(width=1.5)
+
+        with pytest.raises(ValueError, match="width must be in range"):
+            fig.add_subfigure(width=0)
+
+    def test_add_subfigure_height_validation(self):
+        """Test that add_subfigure() validates height."""
+        fig = TikzFigure(rows=2, cols=2)
+
+        # Height without unit
+        with pytest.raises(ValueError, match="must include a unit"):
+            fig.add_subfigure(height="5")
+
+        # Negative height
+        with pytest.raises(ValueError, match="must be positive"):
+            fig.add_subfigure(height=-5)
+
+    def test_add_subfigure_overflow(self):
+        """Test that add_subfigure() detects grid overflow."""
+        fig = TikzFigure(rows=2, cols=2)
+
+        # Fill all 4 cells
+        for i in range(4):
+            fig.add_subfigure(width=0.45)
+
+        # 5th should fail
+        with pytest.raises(ValueError, match="grid.*is full"):
+            fig.add_subfigure(width=0.45)
+
+    def test_mixed_axis_and_subfig_rendering(self):
+        """Test that mixed axis and subfigure renders correctly."""
+        fig = TikzFigure(rows=2, cols=2)
+
+        # Add mixed content
+        ax1 = fig.subfigure_axis(xlabel="x")
+        ax1.add_plot([0, 1], [0, 1])
+
+        subfig1 = fig.add_subfigure(width=0.45)
+        A = subfig1.add_node(0, 1, label="A", content="A", shape="circle")
+        B = subfig1.add_node(2, 1, label="B", content="B", shape="circle")
+        subfig1.draw([A, B], options=["->"])
+
+        ax2 = fig.subfigure_axis(xlabel="x")
+        ax2.add_plot([0, 1], [1, 0])
+
+        subfig2 = fig.add_subfigure(width=0.45)
+        C = subfig2.add_node(1, 1, label="C", content="C")
+
+        # Generate TikZ
+        tikz = fig.generate_tikz()
+
+        # Mixed mode uses scope-based positioning, not groupplot
+        assert "\\begin{scope}" in tikz
+        assert "groupplot" not in tikz
+        # Verify axis content is present
+        assert "\\begin{axis}" in tikz
+        assert tikz.count("\\begin{axis}") == 2
+        # Verify diagram content is present (no axis wrapper)
+        assert "\\node[shape=circle] (A)" in tikz
+        assert "\\draw[->] (A) to (B)" in tikz
+        assert "\\node (C)" in tikz

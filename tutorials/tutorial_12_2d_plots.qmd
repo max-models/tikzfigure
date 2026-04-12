@@ -681,6 +681,267 @@ fig.show()
 
 Axes fill **left-to-right, top-to-bottom** automatically. You can create partial grids (fewer axes than grid cells). Grid layout works alongside regular axes — they render separately in the same figure.
 
+### Rectangular grids (more rows than columns)
+
+Create grids with more rows for vertical stacking:
+
+```{python}
+fig = TikzFigure(rows=3, cols=2)
+
+# Row 0: Linear and quadratic
+ax1 = fig.subfigure_axis(xlabel="x", ylabel="$f(x)$", width=0.4)
+ax1.add_plot([0, 1, 2], [0, 1, 2], label="$x$")
+ax1.set_legend()
+
+ax2 = fig.subfigure_axis(xlabel="x", ylabel="$f(x)$", width=0.4)
+ax2.add_plot([0, 1, 2], [0, 1, 4], label="$x^2$")
+ax2.set_legend()
+
+# Row 1: Cubic and square root
+ax3 = fig.subfigure_axis(xlabel="x", ylabel="$f(x)$", width=0.4)
+ax3.add_plot([0, 1, 2], [0, 1, 8], label="$x^3$")
+ax3.set_legend()
+
+ax4 = fig.subfigure_axis(xlabel="x", ylabel="$f(x)$", width=0.4)
+x_vals = [0, 0.5, 1, 1.5, 2]
+y_vals = [x**0.5 for x in x_vals]
+ax4.add_plot(x_vals, y_vals, label="$\\sqrt{x}$")
+ax4.set_legend()
+
+# Row 2: Sine and cosine
+ax5 = fig.subfigure_axis(xlabel="x", ylabel="$f(x)$", width=0.4)
+ax5.add_plot(func="sin(deg(x))", label="$\\sin(x)$", domain="0:360")
+ax5.set_legend()
+
+ax6 = fig.subfigure_axis(xlabel="x", ylabel="$f(x)$", width=0.4)
+ax6.add_plot(func="cos(deg(x))", label="$\\cos(x)$", domain="0:360")
+ax6.set_legend()
+
+fig.show()
+```
+
+{{< include includes/tikz_code_callout.qmd >}}
+
+### Partial grids (fewer axes than cells)
+
+Leave some grid cells empty by not filling all positions:
+
+```{python}
+fig = TikzFigure(rows=2, cols=3)
+
+# Only add 4 of 6 axes
+ax1 = fig.subfigure_axis(xlabel="Linear", ylabel="$y$", width=0.3)
+ax1.add_plot([0, 1], [0, 1])
+
+ax2 = fig.subfigure_axis(xlabel="Quadratic", ylabel="$y$", width=0.3)
+ax2.add_plot([0, 1], [0, 1], plot_style="dashed")
+
+ax3 = fig.subfigure_axis(xlabel="Cubic", ylabel="$y$", width=0.3)
+ax3.add_plot([0, 1], [0, 1], plot_style="dotted")
+
+ax4 = fig.subfigure_axis(xlabel="Square Root", ylabel="$y$", width=0.3)
+x_vals = [0, 0.5, 1]
+y_vals = [x**0.5 for x in x_vals]
+ax4.add_plot(x_vals, y_vals)
+
+# Bottom-right 2 cells are empty - they'll be skipped in rendering
+fig.show()
+```
+
+{{< include includes/tikz_code_callout.qmd >}}
+
+### Grid with different axis dimensions
+
+Control the height of each axis independently within the grid:
+
+```{python}
+fig = TikzFigure(rows=2, cols=2)
+
+# Tall axis (top-left)
+ax1 = fig.subfigure_axis(xlabel="x", width=0.45, height=7)
+ax1.add_plot([0, 1], [0, 1])
+ax1.set_ylabel("Tall axis")
+
+# Short axis (top-right)
+ax2 = fig.subfigure_axis(xlabel="x", width=0.45, height=3)
+ax2.add_plot([0, 1], [0, 1])
+ax2.set_ylabel("Short axis")
+
+# Normal axis (bottom-left)
+ax3 = fig.subfigure_axis(xlabel="x", width=0.45, height=5)
+ax3.add_plot([0, 1], [0, 1])
+ax3.set_ylabel("Normal axis")
+
+# Normal axis (bottom-right)
+ax4 = fig.subfigure_axis(xlabel="x", width=0.45, height=5)
+ax4.add_plot([0, 1], [1, 0])
+ax4.set_ylabel("Normal axis")
+
+fig.show()
+```
+
+{{< include includes/tikz_code_callout.qmd >}}
+
+### Single-row grid (backward compatibility)
+
+The original single-row layout still works as before:
+
+```{python}
+fig = TikzFigure(rows=1, cols=3)  # 1 row, 3 columns = horizontal layout
+
+ax1 = fig.subfigure_axis(xlabel="Plot 1", width=0.3)
+ax1.add_plot([0, 1], [0, 1])
+
+ax2 = fig.subfigure_axis(xlabel="Plot 2", width=0.3)
+ax2.add_plot([0, 1], [1, 0])
+
+ax3 = fig.subfigure_axis(xlabel="Plot 3", width=0.3)
+ax3.add_plot([0, 1], [0, 0.5])
+
+fig.show()
+```
+
+{{< include includes/tikz_code_callout.qmd >}}
+
+### Grid with data comparison
+
+Practical example: Compare different datasets in a 2×2 grid:
+
+```{python}
+import math
+
+fig = TikzFigure(rows=2, cols=2)
+
+# Dataset 1: Linear trend
+ax1 = fig.subfigure_axis(xlabel="Time", ylabel="Value", width=0.45)
+x1 = [0, 1, 2, 3, 4]
+y1 = [i*2 for i in x1]
+ax1.add_plot(x1, y1, label="Linear", plot_style="solid", marker="*")
+ax1.set_legend()
+
+# Dataset 2: Exponential growth
+ax2 = fig.subfigure_axis(xlabel="Time", ylabel="Value", width=0.45)
+x2 = [0, 1, 2, 3, 4]
+y2 = [2**i for i in x2]
+ax2.add_plot(x2, y2, label="Exponential", plot_style="dashed", marker="o")
+ax2.set_legend()
+
+# Dataset 3: Oscillation
+ax3 = fig.subfigure_axis(xlabel="Time", ylabel="Amplitude", width=0.45)
+x3 = [i*0.2 for i in range(26)]
+y3 = [math.sin(x) for x in x3]
+ax3.add_plot(x3, y3, label="Sine wave", plot_style="dotted")
+ax3.set_legend()
+
+# Dataset 4: Comparison of all three
+ax4 = fig.subfigure_axis(xlabel="Time", ylabel="Value", width=0.45)
+ax4.add_plot([0, 1, 2, 3, 4], [i*2 for i in [0, 1, 2, 3, 4]], label="Linear")
+ax4.add_plot([0, 1, 2, 3], [1, 2, 4, 8], label="Exponential")
+x_sine = [i*0.4 for i in range(11)]
+y_sine = [math.sin(x) for x in x_sine]
+ax4.add_plot(x_sine, y_sine, label="Sine wave")
+ax4.set_legend()
+
+fig.show()
+```
+
+{{< include includes/tikz_code_callout.qmd >}}
+
+### Mixing axes and TikZ diagrams in grids
+
+You can combine axis-based plots with custom TikZ diagrams in the same grid using `add_subfigure()`. This gives you the full TikZ API with `add_node()`, `draw()`, etc.:
+
+```{python}
+fig = TikzFigure(rows=2, cols=2)
+
+# Top-left: Regular axis with plot
+ax1 = fig.subfigure_axis(xlabel="x", ylabel="y", width=0.45)
+ax1.add_plot([0, 1, 2], [0, 1, 4], label="$y=x^2$")
+ax1.set_legend()
+
+# Top-right: Custom TikZ diagram
+subfig1 = fig.add_subfigure(width=0.45, height=5)
+A = subfig1.add_node(0, 2, label="A", content="A", shape="circle", fill="cyan!40")
+B = subfig1.add_node(3, 2, label="B", content="B", shape="circle", fill="cyan!40")
+C = subfig1.add_node(0, 0, label="C", content="C", shape="circle", fill="cyan!40")
+D = subfig1.add_node(3, 0, label="D", content="D", shape="circle", fill="cyan!40")
+subfig1.draw([A, B], options=["->"])
+subfig1.draw([A, C], options=["->"])
+subfig1.draw([B, D], options=["->"])
+subfig1.draw([C, D], options=["->"])
+
+# Bottom-left: Another axis
+ax2 = fig.subfigure_axis(xlabel="x", ylabel="y", width=0.45)
+ax2.add_plot([0, 1, 2], [2, 1, 0], label="$y=-x+2$")
+ax2.set_legend()
+
+# Bottom-right: Another diagram
+subfig2 = fig.add_subfigure(width=0.45, height=5)
+E = subfig2.add_node(1.5, 1.5, label="E", content="E", shape="rectangle", fill="red!40")
+F = subfig2.add_node(1.5, 0, label="F", content="F", shape="rectangle", fill="red!40")
+G = subfig2.add_node(0, 0.75, label="G", content="G", shape="rectangle", fill="green!40")
+subfig2.draw([E, F], options=["->"])
+subfig2.draw([E, G], options=["<->"])
+
+fig.show()
+```
+
+{{< include includes/tikz_code_callout.qmd >}}
+
+**Using `add_subfigure()` for custom TikZ diagrams:**
+
+- Call `fig.add_subfigure(width=0.45, height=5)` to create a TikZ diagram cell
+- Use the returned TikzFigure with the full API: `add_node()`, `draw()`, `filldraw()`, etc.
+- Nodes, paths, and shapes are positioned in the same coordinate system
+- Use `width` (0.0-1.0) and `height` (e.g., "5cm") to control cell dimensions
+- Mix and match: axes and diagrams can be in the same grid
+- Each cell is positioned automatically left-to-right, top-to-bottom
+
+### Example: Flowchart with convergence plot
+
+Combine a data plot with an algorithm flowchart:
+
+```{python}
+fig = TikzFigure(rows=1, cols=2)
+
+# Left: Convergence plot
+ax1 = fig.subfigure_axis(xlabel="Iteration", ylabel="Error", width=0.4)
+x_data = [1, 2, 3, 4, 5]
+y_data = [0.8, 0.4, 0.2, 0.1, 0.05]
+ax1.add_plot(x_data, y_data, marker="o", label="Convergence")
+ax1.set_legend()
+
+# Right: Algorithm flowchart
+flowchart = fig.add_subfigure(width=0.4, height=6)
+start = flowchart.add_node(1.5, 3.5, label="start", content="Start", shape="circle", fill="green!40")
+input_node = flowchart.add_node(1.5, 2.5, label="input", content="Input", shape="rectangle", fill="cyan!40")
+process = flowchart.add_node(1.5, 1.5, label="process", content="Iterate", shape="rectangle", fill="yellow!40")
+check = flowchart.add_node(1.5, 0.5, label="check", content="Converged?", shape="diamond")
+output = flowchart.add_node(0.5, -0.5, label="output", content="Output", shape="rectangle", fill="cyan!40")
+end = flowchart.add_node(2.5, -0.5, label="end", content="End", shape="circle", fill="red!40")
+
+flowchart.draw([start, input_node], options=["->"])
+flowchart.draw([input_node, process], options=["->"])
+flowchart.draw([process, check], options=["->"])
+flowchart.draw([check, output], options=["->", "left"], label="yes")
+flowchart.draw([check, process], options=["->", "right"], label="no", bend_left=20)
+flowchart.draw([output, end], options=["->"])
+
+fig.show()
+```
+
+{{< include includes/tikz_code_callout.qmd >}}
+
+**Key points about grid layouts:**
+
+- `rows` and `cols` activate grid mode (when both are specified)
+- Without `rows`/`cols`, subfigures render in single-row layout (backward compatible)
+- Axes are positioned automatically in left-to-right, top-to-bottom order
+- Partial grids are allowed (don't need to fill all cells)
+- Each axis can have independent `width` and `height` settings
+- Grid and regular axes can coexist in the same figure
+- Empty cells are skipped in rendering (no placeholder output)
+
 ## Summary
 
 You now know how to:
