@@ -1,6 +1,16 @@
 ---
-title: "2D Plots with pgfplots"
-jupyter: python3
+title: 2D Plots with pgfplots
+jupyter:
+  jupytext:
+    text_representation:
+      extension: .qmd
+      format_name: quarto
+      format_version: '1.0'
+      jupytext_version: 1.19.1
+  kernelspec:
+    display_name: Python 3
+    language: python
+    name: python3
 ---
 
 **2D data visualization** is essential for scientific and engineering work. tikzfigure provides a high-level API for creating publication-quality 2D plots using pgfplots, a powerful LaTeX plotting library.
@@ -18,6 +28,8 @@ Let's start with the basics:
 
 ```{python}
 from tikzfigure import TikzFigure
+%load_ext autoreload
+%autoreload 2
 ```
 
 ## Your first 2D plot
@@ -250,12 +262,11 @@ pgfplots can evaluate functions directly without pre-computing data points. Pass
 ```{python}
 fig = TikzFigure()
 
-ax = fig.axis2d(
-    xlabel="x",
-    ylabel="y",
-    xlim=(0, 360),
-    ylim=(-1.5, 1.5),
-    grid=True
+ax = fig.subfigure_axis(
+    xlabel="x", ylabel="y",
+    xlim=(0, 360), ylim=(-1.5, 1.5),
+    grid=True,
+    width=0.45
 )
 
 # Plot trigonometric functions directly
@@ -264,6 +275,7 @@ ax.add_plot(func="cos(x)", label="cos(x)", color="blue", line_width="1.5pt")
 
 ax.set_legend(position="south east")
 fig.show()
+
 ```
 
 The `func` parameter accepts any valid pgfplots function expression: `sin(x)`, `cos(x)`, `x^2`, `sqrt(x)`, `abs(x)`, `exp(x)`, `ln(x)`, etc.
@@ -290,8 +302,8 @@ x = [i * 0.2 for i in range(50)]
 y_quad = [xi**2 for xi in x]
 y_sqrt = [2 * math.sqrt(xi) for xi in x]
 
-ax.add_plot(x, y_quad, label="x²", color="red")
-ax.add_plot(x, y_sqrt, label="2√x", color="blue")
+ax.add_plot(x, y_quad, label=r"$x^2$", color="red")
+ax.add_plot(x, y_sqrt, label=r"$2\sqrt{x}$", color="blue")
 
 ax.set_legend(position="north west")
 fig.show()
@@ -594,7 +606,6 @@ ax1 = fig.subfigure_axis(
     xlabel="x", ylabel="y",
     xlim=(0, 360), ylim=(-1.5, 1.5),
     grid=True,
-    caption="Sine Function",
     width=0.45
 )
 ax1.add_plot(func="sin(x)", label="sin(x)", color="red", line_width="1.5pt")
@@ -605,13 +616,13 @@ ax2 = fig.subfigure_axis(
     xlabel="x", ylabel="y",
     xlim=(0, 360), ylim=(-1.5, 1.5),
     grid=True,
-    caption="Cosine Function",
     width=0.45
 )
 ax2.add_plot(func="cos(x)", label="cos(x)", color="blue", line_width="1.5pt")
 ax2.set_legend(position="north east")
 
 fig.show()
+print(fig)
 ```
 
 {{< include includes/tikz_code_callout.qmd >}}
@@ -622,16 +633,14 @@ You can also create more subfigures by calling `subfigure_axis()` multiple times
 fig = TikzFigure()
 
 # Three comparison plots
-titles = ["Linear: y=x", "Quadratic: y=x²", "Cubic: y=x³"]
 formulas = ["x", "x^2", "x^3"]
 colors = ["red", "green", "blue"]
 
-for title, formula, color in zip(titles, formulas, colors):
+for formula, color in zip(formulas, colors):
     ax = fig.subfigure_axis(
         xlabel="x", ylabel="y",
         xlim=(0, 5), ylim=(0, 10),
         grid=True,
-        caption=title,
         width=0.3
     )
     ax.add_plot(func=formula, color=color, line_width="2pt")
@@ -651,7 +660,6 @@ ax = fig.subfigure_axis(
     xlim=(min, max),  # X-axis limits (None for auto)
     ylim=(min, max),  # Y-axis limits (None for auto)
     grid=True,        # Show grid lines
-    caption="",       # Caption for this subfigure
     width=0.45,       # Width as fraction (e.g., 0.45 for ~45% of page width)
     **kwargs          # Additional pgfplots axis options
 )
@@ -659,9 +667,8 @@ ax = fig.subfigure_axis(
 
 Features:
 - Call `subfigure_axis()` multiple times to add more subfigures
-- Each subfigure can have its own caption and width
 - `fig.show()` automatically displays all subfigures side-by-side
-- `fig.generate_tikz()` produces proper LaTeX subfigure code
+- `fig.generate_tikz()` produces proper LaTeX groupplot code
 - Use `width` to control subfigure sizing (typically 0.3-0.45 for 2-3 plots)
 
 ## Summary

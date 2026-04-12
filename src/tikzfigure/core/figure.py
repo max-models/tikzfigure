@@ -163,7 +163,6 @@ class TikzFigure:
         document_setup: str | None = None,
         figure_setup: str | None = None,
         figsize: tuple[float, float] = (10, 6),
-        caption: str | None = None,
         description: str | None = None,
         show_axes: bool = False,
     ) -> None:
@@ -189,7 +188,6 @@ class TikzFigure:
                 ``\\begin{tikzpicture}[…]`` bracket.
             figsize: ``(width, height)`` in centimetres used as a hint
                 for display backends. Defaults to ``(10, 6)``.
-            caption: ``\\caption`` text for the ``figure`` environment.
             description: Long description stored for documentation
                 purposes (not emitted in TikZ output).
             show_axes: For 3-D figures, if ``True`` render the pgfplots
@@ -197,7 +195,6 @@ class TikzFigure:
         """
 
         self._figsize: tuple[float, float] = figsize
-        self._caption: str | None = caption
         self._description: str | None = description
         self._label: str | None = label
         self._grid: bool = grid
@@ -213,8 +210,8 @@ class TikzFigure:
         self._colors: list[tuple[str, Color]] = []
         self._ndim: int = ndim
         self._axes: list[Axis2D] = []
-        # Subfigure axes with metadata (axis, caption, width)
-        self._subfigure_axes: list[tuple[Axis2D, str, float]] = []
+        # Subfigure axes with metadata (axis, width)
+        self._subfigure_axes: list[tuple[Axis2D, float]] = []
 
         # Counter for unnamed nodes
         self._node_counter: int = 0
@@ -382,7 +379,6 @@ class TikzFigure:
             "document_setup": self._document_setup,
             "figure_setup": self._figure_setup,
             "figsize": list(self._figsize),
-            "caption": self._caption,
             "description": self._description,
             "layers": layers_dict,
             "variables": [v.to_dict() for v in self._variables],
@@ -410,7 +406,6 @@ class TikzFigure:
             document_setup=d.get("document_setup"),
             figure_setup=d.get("figure_setup"),
             figsize=tuple(d.get("figsize", [10, 6])),
-            caption=d.get("caption"),
             description=d.get("description"),
             show_axes=d.get("show_axes", False),
         )
@@ -2531,7 +2526,6 @@ class TikzFigure:
         xlim: tuple[float, float] | None = None,
         ylim: tuple[float, float] | None = None,
         grid: bool = True,
-        caption: str = "",
         width: float = 0.45,
         comment: str | None = None,
         **kwargs: Any,
@@ -2549,7 +2543,6 @@ class TikzFigure:
             xlim: (min, max) tuple for x-axis limits, or None for auto.
             ylim: (min, max) tuple for y-axis limits, or None for auto.
             grid: Enable grid lines. Defaults to True.
-            caption: Caption text for this subfigure.
             width: Width as a fraction of page width (0.0-1.0). Defaults to 0.45.
             comment: Optional comment prepended in TikZ output.
             **kwargs: Additional pgfplots axis options.
@@ -2568,8 +2561,8 @@ class TikzFigure:
             layer=0,
             **kwargs,
         )
-        # Store as subfigure with caption and width
-        self._subfigure_axes.append((axis, caption, width))
+        # Store as subfigure with width metadata
+        self._subfigure_axes.append((axis, width))
         return axis
 
     def add_loop(
@@ -2651,7 +2644,7 @@ class TikzFigure:
             A string containing the full TikZ source, starting with
             ``\\begin{tikzpicture}`` and ending with
             ``\\end{tikzpicture}``. Wrapped in a ``figure`` environment
-            when a caption or label is set.
+            when a label is set.
         """
         # Ensure pgfplots is in extra_packages if axes are present
         if self.axes and "pgfplots" not in (self._extra_packages or []):
@@ -2794,16 +2787,15 @@ class TikzFigure:
             for name, color in self.colors:
                 subfig_tikz += f"\\colorlet{{{name}}}{{{color.color_spec}}}\n"
 
-            # Use groupplot for vertical stacking
+            # Use groupplot for horizontal layout (side-by-side axes)
             num_axes = len(self._subfigure_axes)
-            group_opts = f"group style={{group size={num_axes} by 1, vertical sep=2cm}}"
+            group_opts = (
+                f"group style={{group size={num_axes} by 1, horizontal sep=1.5cm}}"
+            )
             subfig_tikz += f"\\begin{{groupplot}}[{group_opts}]\n"
 
-            # Collect captions to add after groupplot
-            captions = []
-
             # Add each axis to the groupplot
-            for i, (axis, caption, width) in enumerate(self._subfigure_axes):
+            for axis, width in self._subfigure_axes:
                 # Get the axis tikz code and strip the outer tikzpicture wrapper
                 axis_tikz = axis.to_tikz()
                 axis_tikz = axis_tikz.replace("\\begin{tikzpicture}\n", "")
@@ -2832,25 +2824,13 @@ class TikzFigure:
                 axis_tikz_indented = "\n".join(["    " + line for line in axis_lines])
                 subfig_tikz += axis_tikz_indented + "\n"
 
-                # Store caption for later
-                if caption:
-                    captions.append((i, caption))
-
             subfig_tikz += "\\end{groupplot}\n"
-
-            # Add captions as text nodes below each axis
-            # Approximate positioning: each axis + vertical space takes ~7cm
-            for axis_idx, caption_text in captions:
-                y_pos = -(axis_idx * 7 + 5.5)  # 5.5cm below the axis
-                subfig_tikz += f"\\node at (group c1r{axis_idx + 1}.south) [below=0.3cm] {{{caption_text}}};\n"
 
             subfig_tikz += "\\end{tikzpicture}"
             tikz_script = subfig_tikz
         # Wrap in figure environment if necessary (and not already wrapped for subfigures)
-        elif self._caption or self._description or self._label:
+        elif self._description or self._label:
             figure_env = "\\begin{figure}\n" + tikz_script + "\n"
-            if self._caption:
-                figure_env += f"    \\caption{{{self._caption}}}\n"
             if self._label:
                 figure_env += f"    \\label{{{self._label}}}\n"
             figure_env += "\\end{figure}"
@@ -2864,7 +2844,6 @@ class TikzFigure:
     @staticmethod
     def generate_subfigures(
         figures: list["TikzFigure"],
-        captions: list[str] | None = None,
         labels: list[str] | None = None,
         widths: list[float] | None = None,
         spacing: str = "0.5cm",
@@ -2872,12 +2851,10 @@ class TikzFigure:
         """Generate LaTeX code for side-by-side subfigures.
 
         Creates multiple figures arranged horizontally in a single LaTeX figure
-        environment. Each subfigure can have its own caption and label.
+        environment. Each subfigure can have its own label.
 
         Args:
             figures: List of TikzFigure objects to arrange side-by-side.
-            captions: Optional list of captions (one per figure). If provided,
-                must have same length as figures.
             labels: Optional list of LaTeX labels (one per figure). If provided,
                 must have same length as figures.
             widths: Optional list of subfigure widths as fractions (e.g., [0.45, 0.45]).
@@ -2888,16 +2865,10 @@ class TikzFigure:
             LaTeX code for a figure environment with side-by-side subfigures.
 
         Raises:
-            ValueError: If captions/labels length doesn't match figures length.
+            ValueError: If labels length doesn't match figures length.
         """
         if not figures:
             raise ValueError("Must provide at least one figure")
-
-        if captions is not None and len(captions) != len(figures):
-            raise ValueError(
-                f"captions length ({len(captions)}) must match figures length "
-                f"({len(figures)})"
-            )
 
         if labels is not None and len(labels) != len(figures):
             raise ValueError(
@@ -2924,7 +2895,6 @@ class TikzFigure:
 
         for i, fig in enumerate(figures):
             width = widths[i]
-            caption = captions[i] if captions else ""
             label = labels[i] if labels else ""
 
             # Generate TikZ code without header or figure wrapper
@@ -2940,9 +2910,7 @@ class TikzFigure:
             latex_code += f"        \\centering\n"
             latex_code += f"        {tikz_code}\n"
 
-            # Add caption and label to subfigure if provided
-            if caption:
-                latex_code += f"        \\caption{{{caption}}}\n"
+            # Add label to subfigure if provided
             if label:
                 latex_code += f"        \\label{{{label}}}\n"
 
@@ -3451,8 +3419,8 @@ class TikzFigure:
         return self._axes
 
     @property
-    def subfigure_axes(self) -> list[tuple[Axis2D, str, float]]:
-        """List of subfigure axes with captions and widths."""
+    def subfigure_axes(self) -> list[tuple[Axis2D, float]]:
+        """List of subfigure axes with widths."""
         return self._subfigure_axes
 
     def __eq__(self, other: object) -> bool:

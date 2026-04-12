@@ -548,23 +548,6 @@ class TestSubfigures:
         assert subfig_code.count("\\end{subfigure}") == 2
         assert "\\hspace" in subfig_code
 
-    def test_generate_subfigures_with_captions(self):
-        """Test subfigure generation with captions."""
-        fig1 = TikzFigure()
-        ax1 = fig1.axis2d()
-        ax1.add_plot([0, 1], [0, 1])
-
-        fig2 = TikzFigure()
-        ax2 = fig2.axis2d()
-        ax2.add_plot([0, 1], [0, 1])
-
-        captions = ["Caption One", "Caption Two"]
-        subfig_code = TikzFigure.generate_subfigures([fig1, fig2], captions=captions)
-
-        assert "Caption One" in subfig_code
-        assert "Caption Two" in subfig_code
-        assert subfig_code.count("\\caption") == 2
-
     def test_generate_subfigures_with_labels(self):
         """Test subfigure generation with labels."""
         fig1 = TikzFigure()
@@ -576,9 +559,7 @@ class TestSubfigures:
         ax2.add_plot([0, 1], [0, 1])
 
         labels = ["fig:one", "fig:two"]
-        subfig_code = TikzFigure.generate_subfigures(
-            [fig1, fig2], captions=["A", "B"], labels=labels
-        )
+        subfig_code = TikzFigure.generate_subfigures([fig1, fig2], labels=labels)
 
         assert "\\label{fig:one}" in subfig_code
         assert "\\label{fig:two}" in subfig_code
@@ -624,19 +605,6 @@ class TestSubfigures:
 
         assert subfig_code.count("\\begin{subfigure}") == 3
         assert subfig_code.count("\\hspace") == 2  # Two spacings for three figs
-
-    def test_generate_subfigures_mismatched_captions(self):
-        """Test error when captions length doesn't match figures length."""
-        fig1 = TikzFigure()
-        ax1 = fig1.axis2d()
-        ax1.add_plot([0, 1], [0, 1])
-
-        fig2 = TikzFigure()
-        ax2 = fig2.axis2d()
-        ax2.add_plot([0, 1], [0, 1])
-
-        with pytest.raises(ValueError, match="captions length"):
-            TikzFigure.generate_subfigures([fig1, fig2], captions=["Only one"])
 
     def test_generate_subfigures_mismatched_labels(self):
         """Test error when labels length doesn't match figures length."""
