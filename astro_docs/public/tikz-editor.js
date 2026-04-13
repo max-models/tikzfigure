@@ -1612,6 +1612,126 @@ document.getElementById('drawer-tabs').addEventListener('click', (e) => {
   if (btn) switchDrawerSection(btn.dataset.section);
 });
 
+// ─── Compile Dialog ────────────────────────────────────────────────────────
+
+function openCompileDialog() {
+  if (!state.standaloneLaTeX) {
+    setStatus('No LaTeX code ready — add nodes and wait for Pyodide.');
+    return;
+  }
+  const overlay = document.getElementById('compile-dialog-overlay');
+  const layersContainer = document.getElementById('compile-dialog-layers');
+  const compileDialogBtn = document.getElementById('dialog-compile');
+
+  layersContainer.innerHTML = state.layers.length
+    ? state.layers.map(l => `
+        <label class="dialog-layer-row">
+          <input type="checkbox" data-layer-id="${l.id}" checked>
+          ${l.name}
+        </label>
+      `).join('')
+    : '<label class="dialog-layer-row"><input type="checkbox" data-layer-id="0" checked> Default</label>';
+
+  const updateCompileBtn = () => {
+    const anyChecked = layersContainer.querySelectorAll('input[type="checkbox"]:checked').length > 0;
+    compileDialogBtn.disabled = !anyChecked;
+    compileDialogBtn.title = anyChecked ? '' : 'Select at least one layer.';
+  };
+  layersContainer.addEventListener('change', updateCompileBtn);
+  updateCompileBtn();
+
+  overlay.style.display = 'flex';
+}
+
+function closeCompileDialog() {
+  document.getElementById('compile-dialog-overlay').style.display = 'none';
+}
+
+function executeCompile() {
+  const checkedIds = new Set(
+    Array.from(document.querySelectorAll('#compile-dialog-layers input[type="checkbox"]:checked'))
+      .map(cb => parseInt(cb.dataset.layerId))
+  );
+  closeCompileDialog();
+  runCompile(checkedIds);
+}
+
+async function runCompile(includedLayerIds) {
+  if (!state.standaloneLaTeX) { setStatus('No LaTeX to compile.'); return; }
+
+  const allIncluded = state.layers.every(l => includedLayerIds.has(l.id));
+  let latexToCompile = state.standaloneLaTeX;
+
+  if (!allIncluded) {
+    const excludedNames = state.layers
+      .filter(l => !includedLayerIds.has(l.id))
+      .map(l => l.name);
+    excludedNames.forEach(name => {
+      const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const re = new RegExp(
+        `\\\\begin\\{pgfonlayer\\}\\{${escaped}\\}[\\s\\S]*?\\\\end\\{pgfonlayer\\}`,
+        'g'
+      );
+      latexToCompile = latexToCompile.replace(re, '');
+    });
+  }
+
+  const compileBtn = document.getElementById('compile-btn');
+  compileBtn.disabled = true;
+  compileBtn.textContent = 'Compiling\u2026';
+  setStatus('Sending to latex.ytotech.com\u2026');
+  showLog('', false);
+
+  const pdfDl = document.getElementById('pdf-download');
+  const pdfViewer = document.getElementById('pdf-viewer');
+
+  try {
+    const resp = await fetch('https://latex.ytotech.com/builds/sync', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        compiler: 'pdflatex',
+        resources: [{ main: true, content: latexToCompile }],
+      }),
+    });
+
+    if (resp.status === 201) {
+      const buf = await resp.arrayBuffer();
+      if (state._prevPdfUrl) URL.revokeObjectURL(state._prevPdfUrl);
+      const blob = new Blob([buf], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+      state._prevPdfUrl = url;
+      pdfViewer.src = url;
+      pdfViewer.style.display = 'block';
+      pdfDl.href = url;
+      pdfDl.style.display = 'inline-block';
+      setStatus('PDF compiled successfully.');
+      showLog('Compilation successful.', false);
+      switchDrawerSection('preview');
+    } else {
+      const json = await resp.json().catch(() => ({}));
+      const log = (json.log_files || {})['__main_document__.log'] || JSON.stringify(json);
+      showLog(log, true);
+      const errLine = log.split('\n').find(l => l.startsWith('!') || /TeX capacity exceeded/i.test(l)) || `HTTP ${resp.status}`;
+      setStatus(`Compilation error: ${errLine.trim()}`);
+      switchDrawerSection('preview');
+    }
+  } catch (err) {
+    setStatus(`Network error: ${err.message}`);
+    showLog(err.message, true);
+  } finally {
+    compileBtn.disabled = false;
+    compileBtn.textContent = 'Compile to PDF (latex-on-http)';
+  }
+}
+
+document.getElementById('dialog-cancel').addEventListener('click', closeCompileDialog);
+document.getElementById('dialog-compile').addEventListener('click', executeCompile);
+document.getElementById('compile-dialog-overlay').addEventListener('click', (e) => {
+  if (e.target === document.getElementById('compile-dialog-overlay')) closeCompileDialog();
+});
+document.getElementById('compile-btn').addEventListener('click', () => openCompileDialog());
+
 // ─── Pyodide ───────────────────────────────────────────────────────────────
 
 async function initPyodide() {
@@ -1658,8 +1778,7 @@ function copyCode(type) {
 window.copyCode = copyCode;
 
 document.getElementById('btn-compile-toolbar').addEventListener('click', () => {
-  if (!compileBtn.disabled) compileBtn.click();
-  else setStatus('No TikZ code ready \u2014 add nodes first.');
+  openCompileDialog();
 });
 
 // ─── Export .tex ──────────────────────────────────────────────────────────
@@ -1700,50 +1819,6 @@ function showLog(text, hasError) {
 }
 
 function esc(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-
-compileBtn.addEventListener('click', async () => {
-  if (!state.standaloneLaTeX) { setStatus('No LaTeX to compile.'); return; }
-
-  compileBtn.disabled = true;
-  compileBtn.textContent = 'Compiling\u2026';
-  setStatus('Sending to latex.ytotech.com\u2026');
-  showLog('', false);
-
-  const pdfDl = document.getElementById('pdf-download');
-  try {
-    const resp = await fetch('https://latex.ytotech.com/builds/sync', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ compiler: 'pdflatex', resources: [{ main: true, content: state.standaloneLaTeX }] }),
-    });
-
-    if (resp.status === 201) {
-      const buf = await resp.arrayBuffer();
-      if (state._prevPdfUrl) URL.revokeObjectURL(state._prevPdfUrl);
-      const blob = new Blob([buf], { type: 'application/pdf' });
-      const url = URL.createObjectURL(blob);
-      state._prevPdfUrl = url;
-      pdfViewer.src = url;
-      pdfViewer.style.display = 'block';
-      pdfDl.href = url;
-      pdfDl.style.display = 'inline-block';
-      setStatus('PDF compiled successfully.');
-      showLog('Compilation successful.', false);
-    } else {
-      const json = await resp.json().catch(() => ({}));
-      const log = (json.log_files || {})['__main_document__.log'] || JSON.stringify(json);
-      showLog(log, true);
-      const errLine = log.split('\n').find(l => l.startsWith('!') || /TeX capacity exceeded/i.test(l)) || `HTTP ${resp.status}`;
-      setStatus(`Compilation error: ${errLine.trim()}`);
-    }
-  } catch (err) {
-    setStatus(`Network error: ${err.message}`);
-    showLog(err.message, true);
-  } finally {
-    compileBtn.disabled = false;
-    compileBtn.textContent = 'Compile to PDF (latex-on-http)';
-  }
-});
 
 // ─── Theme Toggle ─────────────────────────────────────────────────────────
 
