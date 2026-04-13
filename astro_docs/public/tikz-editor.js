@@ -46,8 +46,7 @@ const tikzPre       = document.getElementById('tikz-code');
 const compileBtn    = document.getElementById('compile-btn');
 const pdfViewer     = document.getElementById('pdf-viewer');
 const pyodideStatus = document.getElementById('pyodide-status');
-const resizer       = document.getElementById('resizer');
-const rightPanelEl  = document.getElementById('right-panel');
+const canvasResizer = document.getElementById('canvas-resizer');
 const contextMenu   = document.getElementById('context-menu');
 const zoomLabel     = document.getElementById('zoom-level');
 const layersPanel   = document.getElementById('layers-panel');
@@ -561,7 +560,6 @@ function selectNode(id, additive = false) {
   }
   updatePropertiesPanel();
   renderAll();
-  switchTab('props');
 }
 
 function selectPath(id, additive = false) {
@@ -572,7 +570,6 @@ function selectPath(id, additive = false) {
   }
   updatePropertiesPanel();
   renderAll();
-  switchTab('props');
 }
 
 function clearSelection() {
@@ -920,23 +917,8 @@ function setMode(mode) {
 document.getElementById('btn-select').onclick = () => setMode('select');
 document.getElementById('btn-add-node').onclick = () => setMode('node');
 document.getElementById('btn-add-edge').onclick = () => setMode('edge');
-document.getElementById('btn-delete').onclick = deleteSelected;
-document.getElementById('btn-duplicate').onclick = () => duplicateSelected();
 document.getElementById('btn-undo').onclick = undo;
 document.getElementById('btn-redo').onclick = redo;
-
-document.getElementById('btn-clear').onclick = () => {
-  if (!confirm('Clear all nodes and edges?')) return;
-  saveHistory();
-  state.nodes = []; state.paths = [];
-  state.nextNodeId = 1; state.nextPathId = 1;
-  state.rawTikz = '';
-  if (rawTikzInput) rawTikzInput.value = '';
-  clearSelection();
-  showTemplateGallery();
-  renderLayersPanel();
-  setStatus('Canvas cleared.');
-};
 
 // ─── Keyboard Shortcuts ────────────────────────────────────────────────────
 
@@ -963,20 +945,27 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') { setMode('select'); clearSelection(); hideContextMenu(); }
 });
 
-// ─── Resizer ───────────────────────────────────────────────────────────────
+// ─── Drawer Resize ─────────────────────────────────────────────────────────
 
-resizer.addEventListener('mousedown', (e) => {
+canvasResizer.addEventListener('mousedown', (e) => {
   e.preventDefault();
-  const startX = e.clientX;
-  const startWidth = rightPanelEl.offsetWidth;
-  const onMove = (ev) => rightPanelEl.style.width = `${Math.max(180, startWidth + (startX - ev.clientX))}px`;
+  const startY = e.clientY;
+  const drawer = document.getElementById('drawer');
+  const startH = drawer.offsetHeight;
+  const canvasCol = document.getElementById('canvas-column');
+
+  const onMove = (ev) => {
+    const delta = startY - ev.clientY;
+    const newH = Math.max(80, Math.min(canvasCol.offsetHeight - 200, startH + delta));
+    drawer.style.height = `${newH}px`;
+  };
   const onUp = () => {
     document.removeEventListener('mousemove', onMove);
     document.removeEventListener('mouseup', onUp);
     document.body.style.cursor = '';
     document.body.style.userSelect = '';
   };
-  document.body.style.cursor = 'col-resize';
+  document.body.style.cursor = 'row-resize';
   document.body.style.userSelect = 'none';
   document.addEventListener('mousemove', onMove);
   document.addEventListener('mouseup', onUp);
@@ -1604,100 +1593,24 @@ standalone_result = fig.generate_standalone()
   }
 }
 
-// ─── Tab System ────────────────────────────────────────────────────────────
+// ─── Drawer Section Switcher ───────────────────────────────────────────────
 
-const tabState = {
-  tabs: [
-    { id: 'props', label: 'Properties' },
-    { id: 'code',  label: 'Code' },
-    { id: 'pdf',   label: 'PDF' },
-    { id: 'layers', label: 'Layers' },
-  ],
-  visible: new Set(['props', 'code', 'pdf', 'layers']),
-  active: 'props',
-};
+const drawerState = { section: 'code' };
 
-function switchTab(id) {
-  if (!tabState.visible.has(id)) tabState.visible.add(id);
-  tabState.active = id;
-  renderTabs();
-  if (id === 'layers') renderLayersPanel();
-}
-
-function renderTabs() {
-  const tabBar = document.getElementById('tab-bar');
-  const visible = tabState.tabs.filter(t => tabState.visible.has(t.id));
-  const hidden  = tabState.tabs.filter(t => !tabState.visible.has(t.id));
-
-  if (tabState.active && !tabState.visible.has(tabState.active))
-    tabState.active = visible[0]?.id ?? null;
-
-  tabBar.innerHTML = visible.map(t => `
-    <button class="tab-btn${t.id === tabState.active ? ' active' : ''}" data-tab="${t.id}" draggable="true">
-      ${t.label}<span class="tab-hide-btn" data-hide="${t.id}">\u00d7</span>
-    </button>
-  `).join('') + (hidden.length ? '<button id="tab-restore-btn" title="Restore hidden tabs">+</button>' : '');
-
-  tabState.tabs.forEach(t => {
-    const pane = document.getElementById(`tab-pane-${t.id}`);
-    if (!pane) return;
-    const show = t.id === tabState.active;
-    pane.style.display = show ? 'flex' : 'none';
-    pane.classList.toggle('active-pane', show);
+function switchDrawerSection(section) {
+  drawerState.section = section;
+  document.querySelectorAll('.drawer-tab').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.section === section);
   });
-
-  tabBar.querySelectorAll('.tab-btn[draggable]').forEach(btn => {
-    const id = btn.dataset.tab;
-    btn.addEventListener('dragstart', e => { e.dataTransfer.setData('text/plain', id); btn.classList.add('dragging'); });
-    btn.addEventListener('dragend', () => btn.classList.remove('dragging'));
-    btn.addEventListener('dragover', e => { e.preventDefault(); btn.classList.add('drag-over'); });
-    btn.addEventListener('dragleave', () => btn.classList.remove('drag-over'));
-    btn.addEventListener('drop', e => {
-      e.preventDefault(); btn.classList.remove('drag-over');
-      const from = e.dataTransfer.getData('text/plain'), to = id;
-      if (from === to) return;
-      const fi = tabState.tabs.findIndex(t => t.id === from);
-      const ti = tabState.tabs.findIndex(t => t.id === to);
-      const [moved] = tabState.tabs.splice(fi, 1);
-      tabState.tabs.splice(ti, 0, moved);
-      renderTabs();
-    });
+  document.querySelectorAll('.drawer-section').forEach(el => {
+    el.style.display = el.id === `drawer-section-${section}` ? '' : 'none';
   });
 }
 
-document.getElementById('tab-bar').addEventListener('click', e => {
-  const hide = e.target.closest('[data-hide]');
-  if (hide) {
-    e.stopPropagation();
-    const id = hide.dataset.hide;
-    tabState.visible.delete(id);
-    if (tabState.active === id)
-      tabState.active = tabState.tabs.find(t => tabState.visible.has(t.id))?.id ?? null;
-    renderTabs();
-    return;
-  }
-  if (e.target.id === 'tab-restore-btn') { showRestoreMenu(e.target); return; }
-  const btn = e.target.closest('.tab-btn[data-tab]');
-  if (btn) { tabState.active = btn.dataset.tab; renderTabs(); if (btn.dataset.tab === 'layers') renderLayersPanel(); }
+document.getElementById('drawer-tabs').addEventListener('click', (e) => {
+  const btn = e.target.closest('.drawer-tab');
+  if (btn) switchDrawerSection(btn.dataset.section);
 });
-
-function showRestoreMenu(anchor) {
-  document.getElementById('tab-restore-menu')?.remove();
-  const hidden = tabState.tabs.filter(t => !tabState.visible.has(t.id));
-  if (!hidden.length) return;
-  const menu = document.createElement('div');
-  menu.id = 'tab-restore-menu';
-  hidden.forEach(tab => {
-    const b = document.createElement('button');
-    b.textContent = tab.label;
-    b.onclick = ev => { ev.stopPropagation(); tabState.visible.add(tab.id); tabState.active = tab.id; renderTabs(); menu.remove(); };
-    menu.appendChild(b);
-  });
-  document.getElementById('tab-bar').appendChild(menu);
-  setTimeout(() => document.addEventListener('click', () => menu.remove(), { once: true }), 0);
-}
-
-renderTabs();
 
 // ─── Pyodide ───────────────────────────────────────────────────────────────
 
