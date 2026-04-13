@@ -2,12 +2,16 @@
 
 const state = {
   nodes: [],
-  edges: [],
-  selected: null,        // { type: 'node'|'edge', id }
-  mode: 'select',        // 'select' | 'node' | 'edge'
-  edgeSource: null,
+  paths: [],
+  selected: [],              // array of { type: 'node'|'path', id }
+  mode: 'select',            // 'select' | 'node' | 'edge'
+  pathBuilder: [],            // node IDs being connected
   nextNodeId: 1,
-  nextEdgeId: 1,
+  nextPathId: 1,
+  // Layers
+  layers: [{ id: 0, name: 'Default', visible: true, locked: false }],
+  activeLayer: 0,
+  nextLayerId: 1,
   // Zoom & Pan
   zoom: 1,
   panX: 0,
@@ -23,6 +27,8 @@ const state = {
   pyodide: null,
   pyodideReady: false,
   standaloneLaTeX: '',
+  // Raw TikZ
+  rawTikz: '',
 };
 
 // ─── DOM Refs ──────────────────────────────────────────────────────────────
@@ -38,31 +44,66 @@ const propPanel     = document.getElementById('properties-panel');
 const pythonPre     = document.getElementById('python-code');
 const tikzPre       = document.getElementById('tikz-code');
 const compileBtn    = document.getElementById('compile-btn');
-const pdfCanvas     = document.getElementById('pdf-canvas');
+const pdfViewer     = document.getElementById('pdf-viewer');
 const pyodideStatus = document.getElementById('pyodide-status');
 const resizer       = document.getElementById('resizer');
 const rightPanelEl  = document.getElementById('right-panel');
 const contextMenu   = document.getElementById('context-menu');
 const zoomLabel     = document.getElementById('zoom-level');
+const layersPanel   = document.getElementById('layers-panel');
+const rawTikzInput  = document.getElementById('raw-tikz-input');
+const marqueeEl     = document.getElementById('selection-marquee');
 
 function setStatus(msg) { statusBar.textContent = msg; }
+
+// ─── Selection Helpers ────────────────────────────────────────────────────
+
+function isSelected(type, id) {
+  return state.selected.some(s => s.type === type && s.id === id);
+}
+
+function primarySelection() {
+  return state.selected.length === 1 ? state.selected[0] : null;
+}
+
+function addToSelection(type, id) {
+  if (!isSelected(type, id)) state.selected.push({ type, id });
+}
+
+function removeFromSelection(type, id) {
+  state.selected = state.selected.filter(s => !(s.type === type && s.id === id));
+}
+
+function toggleInSelection(type, id) {
+  if (isSelected(type, id)) removeFromSelection(type, id);
+  else addToSelection(type, id);
+}
 
 // ─── History (Undo/Redo) ───────────────────────────────────────────────────
 
 function snapshot() {
   return {
     nodes: JSON.parse(JSON.stringify(state.nodes)),
-    edges: JSON.parse(JSON.stringify(state.edges)),
+    paths: JSON.parse(JSON.stringify(state.paths)),
+    layers: JSON.parse(JSON.stringify(state.layers)),
+    activeLayer: state.activeLayer,
     nid: state.nextNodeId,
-    eid: state.nextEdgeId,
+    pid: state.nextPathId,
+    lid: state.nextLayerId,
+    rawTikz: state.rawTikz,
   };
 }
 
 function restore(snap) {
   state.nodes = snap.nodes;
-  state.edges = snap.edges;
+  state.paths = snap.paths;
+  state.layers = snap.layers;
+  state.activeLayer = snap.activeLayer;
   state.nextNodeId = snap.nid;
-  state.nextEdgeId = snap.eid;
+  state.nextPathId = snap.pid;
+  state.nextLayerId = snap.lid;
+  state.rawTikz = snap.rawTikz;
+  if (rawTikzInput) rawTikzInput.value = state.rawTikz;
 }
 
 function saveHistory() {
@@ -77,6 +118,7 @@ function undo() {
   state.redoStack.push(snapshot());
   restore(state.undoStack.pop());
   clearSelection();
+  renderLayersPanel();
   updateHistoryButtons();
   setStatus('Undone.');
 }
@@ -86,6 +128,7 @@ function redo() {
   state.undoStack.push(snapshot());
   restore(state.redoStack.pop());
   clearSelection();
+  renderLayersPanel();
   updateHistoryButtons();
   setStatus('Redone.');
 }
@@ -101,13 +144,13 @@ function defaultNode(x, y) {
   return {
     id: `n${state.nextNodeId++}`,
     x, y,
-    label: `Node ${state.nextNodeId - 1}`,
-    shape: 'rectangle',
+    label: '',
+    shape: 'circle',
     fill: null,
     draw: null,
     textColor: null,
-    minWidth: 60,
-    minHeight: 30,
+    minWidth: 40,
+    minHeight: 40,
     opacity: null, fillOpacity: null, drawOpacity: null,
     minimumSize: null,
     innerSep: null, outerSep: null,
@@ -117,19 +160,57 @@ function defaultNode(x, y) {
     rotate: null, xshift: null, yshift: null, scale: null,
     roundedCorners: null, dashPattern: null, doubleBorder: false,
     pattern: null, shading: null,
+    layer: state.activeLayer,
+    comment: null,
   };
 }
 
-function defaultEdge(sourceId, targetId) {
+function defaultPath(nodeIds) {
   return {
-    id: `e${state.nextEdgeId++}`,
-    sourceId, targetId,
+    id: `p${state.nextPathId++}`,
+    nodeIds,
+    cycle: false,
     color: '#666666',
     lineWidth: 1,
+    fill: null,
+    fillOpacity: null,
     arrow: 'none',
-    bendLeft: 0,
-    bendRight: 0,
+    opacity: null,
+    drawOpacity: null,
+    dashPattern: null,
+    dashPhase: null,
+    double: false,
+    doubleDistance: null,
+    roundedCorners: null,
+    bendLeft: null,
+    bendRight: null,
+    decoration: null,
+    lineCap: null,
+    lineJoin: null,
+    layer: state.activeLayer,
+    comment: null,
   };
+}
+
+// ─── Layer Helpers ─────────────────────────────────────────────────────────
+
+function getLayer(id) {
+  return state.layers.find(l => l.id === id);
+}
+
+function isLayerVisible(layerId) {
+  const l = getLayer(layerId);
+  return l ? l.visible : true;
+}
+
+function isLayerLocked(layerId) {
+  const l = getLayer(layerId);
+  return l ? l.locked : false;
+}
+
+function itemCountForLayer(layerId) {
+  return state.nodes.filter(n => n.layer === layerId).length +
+         state.paths.filter(p => p.layer === layerId).length;
 }
 
 // ─── Zoom & Pan ────────────────────────────────────────────────────────────
@@ -215,7 +296,7 @@ document.getElementById('btn-snap').onclick = toggleSnap;
 // ─── Render ────────────────────────────────────────────────────────────────
 
 function renderAll() {
-  renderEdges();
+  renderPaths();
   renderNodes();
   generateCode();
 }
@@ -223,9 +304,11 @@ function renderAll() {
 function renderNodes() {
   nodesLayer.innerHTML = '';
   for (const node of state.nodes) {
+    if (!isLayerVisible(node.layer)) continue;
+
     const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-    const isSel = state.selected?.type === 'node' && state.selected.id === node.id;
-    const isSrc = state.edgeSource === node.id;
+    const isSel = isSelected('node', node.id);
+    const isSrc = state.pathBuilder.includes(node.id);
     g.setAttribute('class', 'tikz-node' + (isSel ? ' selected' : '') + (isSrc ? ' edge-source' : ''));
     g.setAttribute('data-id', node.id);
     g.setAttribute('transform', `translate(${node.x}, ${node.y})`);
@@ -253,92 +336,152 @@ function renderNodes() {
     }
 
     shape.setAttribute('fill', node.fill || 'none');
-    const strokeColor = isSel ? '#818cf8' : isSrc ? '#fbbf24' : (node.draw || '#555');
+    shape.setAttribute('pointer-events', 'all');
+    const strokeColor = isSel ? '#818cf8' : isSrc ? '#fbbf24' : (node.draw || 'var(--node-stroke)');
     shape.setAttribute('stroke', strokeColor);
     shape.setAttribute('stroke-width', isSel || isSrc ? 2 : 1);
+    if (node.opacity != null) shape.setAttribute('opacity', node.opacity);
     g.appendChild(shape);
 
-    const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-    text.setAttribute('text-anchor', 'middle');
-    text.setAttribute('dominant-baseline', 'central');
-    text.setAttribute('fill', node.textColor || '#c0c4d0');
-    text.textContent = node.label;
-    g.appendChild(text);
+    if (node.label) {
+      const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      text.setAttribute('text-anchor', 'middle');
+      text.setAttribute('dominant-baseline', 'central');
+      text.setAttribute('fill', node.textColor || 'var(--node-text)');
+      text.textContent = node.label;
+      g.appendChild(text);
+    }
 
     attachNodeEvents(g, node);
     nodesLayer.appendChild(g);
   }
 }
 
-function renderEdges() {
+function renderPaths() {
   edgesLayer.innerHTML = '';
-  for (const edge of state.edges) {
-    const src = state.nodes.find(n => n.id === edge.sourceId);
-    const tgt = state.nodes.find(n => n.id === edge.targetId);
-    if (!src || !tgt) continue;
 
-    const isSel = state.selected?.type === 'edge' && state.selected.id === edge.id;
-    const color = isSel ? '#818cf8' : edge.color;
-    const d = edgePath(src, tgt, edge);
+  // Draw in-progress path builder preview
+  if (state.pathBuilder.length > 0) {
+    const pts = state.pathBuilder.map(id => state.nodes.find(n => n.id === id)).filter(Boolean);
+    if (pts.length >= 1) {
+      let d = `M ${pts[0].x} ${pts[0].y}`;
+      for (let i = 1; i < pts.length; i++) d += ` L ${pts[i].x} ${pts[i].y}`;
+      const preview = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      preview.setAttribute('d', d);
+      preview.setAttribute('stroke', '#818cf8');
+      preview.setAttribute('stroke-width', 1.5);
+      preview.setAttribute('stroke-dasharray', '6 3');
+      preview.setAttribute('fill', 'none');
+      preview.style.pointerEvents = 'none';
+      edgesLayer.appendChild(preview);
+    }
+  }
+
+  for (const p of state.paths) {
+    if (!isLayerVisible(p.layer)) continue;
+
+    const pts = p.nodeIds.map(id => state.nodes.find(n => n.id === id)).filter(Boolean);
+    if (pts.length < 2) continue;
+
+    const isSel = isSelected('path', p.id);
+    const color = isSel ? '#818cf8' : p.color;
+
+    let d = `M ${pts[0].x} ${pts[0].y}`;
+    for (let i = 1; i < pts.length; i++) d += ` L ${pts[i].x} ${pts[i].y}`;
+    if (p.cycle) d += ' Z';
 
     // Invisible hit area
     const hit = document.createElementNS('http://www.w3.org/2000/svg', 'path');
     hit.setAttribute('d', d);
     hit.setAttribute('stroke', 'transparent');
-    hit.setAttribute('stroke-width', Math.max(12 / state.zoom, edge.lineWidth + 8));
-    hit.setAttribute('fill', 'none');
+    hit.setAttribute('stroke-width', Math.max(12 / state.zoom, p.lineWidth + 8));
+    hit.setAttribute('fill', p.cycle ? 'transparent' : 'none');
     hit.style.cursor = 'pointer';
-    hit.addEventListener('click', (ev) => { ev.stopPropagation(); selectEdge(edge.id); });
-    hit.addEventListener('contextmenu', (ev) => { ev.preventDefault(); ev.stopPropagation(); selectEdge(edge.id); showContextMenu(ev, 'edge', edge); });
+    hit.setAttribute('pointer-events', 'all');
+    hit.addEventListener('click', (ev) => { ev.stopPropagation(); selectPath(p.id, ev.shiftKey); });
+    hit.addEventListener('contextmenu', (ev) => { ev.preventDefault(); ev.stopPropagation(); selectPath(p.id); showContextMenu(ev, 'path', p); });
     edgesLayer.appendChild(hit);
 
     const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
     path.setAttribute('class', 'tikz-edge' + (isSel ? ' selected' : ''));
     path.setAttribute('d', d);
     path.setAttribute('stroke', color);
-    path.setAttribute('stroke-width', edge.lineWidth);
-    if (edge.arrow !== 'none') {
+    path.setAttribute('stroke-width', p.double ? p.lineWidth + 2 : p.lineWidth);
+    path.setAttribute('fill', p.fill || 'none');
+    if (p.fill && p.fillOpacity != null) path.setAttribute('fill-opacity', p.fillOpacity);
+    if (p.opacity != null) path.setAttribute('opacity', p.opacity);
+    if (p.drawOpacity != null) path.setAttribute('stroke-opacity', p.drawOpacity);
+    if (p.dashPattern) {
+      const dash = { 'dashed': '8 4', 'dotted': '2 3', 'densely dashed': '4 2', 'loosely dashed': '12 6', 'dash dot': '8 3 2 3' }[p.dashPattern] || p.dashPattern.replace(/on |off /g, '').replace(/pt/g, '');
+      path.setAttribute('stroke-dasharray', dash);
+    }
+    if (p.lineCap) path.setAttribute('stroke-linecap', p.lineCap);
+    if (p.lineJoin) path.setAttribute('stroke-linejoin', p.lineJoin);
+    if (p.roundedCorners) path.setAttribute('stroke-linejoin', 'round');
+    if (p.arrow !== 'none') {
       path.setAttribute('marker-end', isSel ? 'url(#arrowhead-sel)' : 'url(#arrowhead)');
     }
     edgesLayer.appendChild(path);
-  }
-}
 
-function edgePath(src, tgt, edge) {
-  if (edge.bendLeft !== 0 || edge.bendRight !== 0) {
-    const bend = (edge.bendLeft - edge.bendRight) * 0.5;
-    const mx = (src.x + tgt.x) / 2, my = (src.y + tgt.y) / 2;
-    const dx = tgt.x - src.x, dy = tgt.y - src.y;
-    const len = Math.sqrt(dx * dx + dy * dy) || 1;
-    const cx = mx + (-dy / len) * bend * 1.5;
-    const cy = my + (dx / len) * bend * 1.5;
-    return `M ${src.x} ${src.y} Q ${cx} ${cy} ${tgt.x} ${tgt.y}`;
+    if (p.double) {
+      const inner = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      inner.setAttribute('d', d);
+      inner.setAttribute('stroke', p.fill || 'var(--bg-canvas, #0c0e16)');
+      inner.setAttribute('stroke-width', Math.max(1, p.lineWidth - 1));
+      inner.setAttribute('fill', 'none');
+      inner.style.pointerEvents = 'none';
+      edgesLayer.appendChild(inner);
+    }
   }
-  return `M ${src.x} ${src.y} L ${tgt.x} ${tgt.y}`;
 }
 
 // ─── Node Events ───────────────────────────────────────────────────────────
 
 function attachNodeEvents(g, node) {
-  let dragging = false, didDrag = false, startX, startY, origX, origY;
+  let dragging = false, didDrag = false, startX, startY, origPositions;
 
   g.addEventListener('mousedown', (e) => {
     if (e.button !== 0) return;
-    if (state.mode === 'edge') { handleEdgeClick(node.id); e.stopPropagation(); return; }
+    if (state.mode === 'edge') { handlePathClick(node.id); e.stopPropagation(); return; }
     if (state.mode !== 'select') return;
+    if (isLayerLocked(node.layer)) { setStatus(`Layer "${getLayer(node.layer)?.name}" is locked.`); e.stopPropagation(); return; }
     e.stopPropagation();
+
+    // Selection logic
+    if (e.shiftKey) {
+      toggleInSelection('node', node.id);
+    } else if (!isSelected('node', node.id)) {
+      state.selected = [{ type: 'node', id: node.id }];
+    }
+
     dragging = true; didDrag = false;
     startX = e.clientX; startY = e.clientY;
-    origX = node.x; origY = node.y;
-    selectNode(node.id);
+
+    // Store original positions of ALL selected nodes for batch move
+    origPositions = {};
+    state.selected.forEach(s => {
+      if (s.type === 'node') {
+        const n = state.nodes.find(nd => nd.id === s.id);
+        if (n) origPositions[s.id] = { x: n.x, y: n.y };
+      }
+    });
+
+    updatePropertiesPanel();
+    renderAll();
 
     const onMove = (ev) => {
       if (!dragging) return;
       const dx = (ev.clientX - startX) / state.zoom;
       const dy = (ev.clientY - startY) / state.zoom;
       if (Math.abs(dx) > 2 || Math.abs(dy) > 2) didDrag = true;
-      node.x = snap(origX + dx);
-      node.y = snap(origY + dy);
+      // Move all selected nodes
+      for (const [id, orig] of Object.entries(origPositions)) {
+        const n = state.nodes.find(nd => nd.id === id);
+        if (n && !isLayerLocked(n.layer)) {
+          n.x = snap(orig.x + dx);
+          n.y = snap(orig.y + dy);
+        }
+      }
       renderAll();
     };
     const onUp = () => {
@@ -358,7 +501,7 @@ function attachNodeEvents(g, node) {
 
   g.addEventListener('contextmenu', (e) => {
     e.preventDefault(); e.stopPropagation();
-    selectNode(node.id);
+    if (!isSelected('node', node.id)) state.selected = [{ type: 'node', id: node.id }];
     showContextMenu(e, 'node', node);
   });
 }
@@ -382,8 +525,8 @@ function startInlineEdit(node) {
     left: `${sx - 50}px`, top: `${sy - 13}px`,
     width: '100px', height: '26px',
     textAlign: 'center', fontSize: '12px',
-    background: '#1a1e2e', color: '#e0e4ec',
-    border: '1px solid #818cf8', borderRadius: '4px',
+    background: 'var(--bg-input)', color: 'var(--text)',
+    border: '1px solid var(--border-active)', borderRadius: '4px',
     outline: 'none', zIndex: '1000', padding: '0 4px',
     fontFamily: 'inherit',
   });
@@ -394,7 +537,8 @@ function startInlineEdit(node) {
     node.label = input.value || node.label;
     input.remove();
     renderAll();
-    showNodeProperties(node);
+    const prim = primarySelection();
+    if (prim?.type === 'node') showNodeProperties(state.nodes.find(n => n.id === prim.id));
   };
 
   input.addEventListener('keydown', (e) => {
@@ -409,65 +553,212 @@ function startInlineEdit(node) {
 
 // ─── Selection ─────────────────────────────────────────────────────────────
 
-function selectNode(id) {
-  state.selected = { type: 'node', id };
+function selectNode(id, additive = false) {
+  if (additive) {
+    toggleInSelection('node', id);
+  } else {
+    state.selected = [{ type: 'node', id }];
+  }
+  updatePropertiesPanel();
   renderAll();
-  showNodeProperties(state.nodes.find(n => n.id === id));
   switchTab('props');
 }
 
-function selectEdge(id) {
-  state.selected = { type: 'edge', id };
+function selectPath(id, additive = false) {
+  if (additive) {
+    toggleInSelection('path', id);
+  } else {
+    state.selected = [{ type: 'path', id }];
+  }
+  updatePropertiesPanel();
   renderAll();
-  showEdgeProperties(state.edges.find(e => e.id === id));
   switchTab('props');
 }
 
 function clearSelection() {
-  state.selected = null;
+  state.selected = [];
   propPanel.innerHTML = '<p class="hint">Select a node or edge to edit properties.</p>';
   renderAll();
 }
 
-// ─── Edge Creation ─────────────────────────────────────────────────────────
-
-function handleEdgeClick(nodeId) {
-  if (!state.edgeSource) {
-    state.edgeSource = nodeId;
-    setStatus('Click a target node to connect.');
-    renderNodes();
-  } else if (state.edgeSource === nodeId) {
-    state.edgeSource = null;
-    setStatus('Edge cancelled. Click a source node.');
-    renderNodes();
+function updatePropertiesPanel() {
+  const prim = primarySelection();
+  if (prim?.type === 'node') {
+    showNodeProperties(state.nodes.find(n => n.id === prim.id));
+  } else if (prim?.type === 'path') {
+    showPathProperties(state.paths.find(p => p.id === prim.id));
+  } else if (state.selected.length > 1) {
+    showMultiSelectProperties();
   } else {
+    propPanel.innerHTML = '<p class="hint">Select a node or edge to edit properties.</p>';
+  }
+}
+
+function showMultiSelectProperties() {
+  const nodeCount = state.selected.filter(s => s.type === 'node').length;
+  const pathCount = state.selected.filter(s => s.type === 'path').length;
+  const parts = [];
+  if (nodeCount) parts.push(`${nodeCount} node${nodeCount > 1 ? 's' : ''}`);
+  if (pathCount) parts.push(`${pathCount} path${pathCount > 1 ? 's' : ''}`);
+
+  // Collect unique layers in selection
+  const layerIds = new Set();
+  state.selected.forEach(s => {
+    const item = s.type === 'node'
+      ? state.nodes.find(n => n.id === s.id)
+      : state.paths.find(p => p.id === s.id);
+    if (item) layerIds.add(item.layer);
+  });
+
+  const layerOpts = state.layers.map(l => `<option value="${l.id}">${l.name}</option>`).join('');
+
+  propPanel.innerHTML = `
+    <span class="multi-select-info">${parts.join(', ')} selected</span>
+    <p class="hint" style="margin-bottom:0.6rem">Shift+click to add/remove items. Drag to batch-move nodes.</p>
+
+    <details class="prop-group" open>
+      <summary>Batch Actions</summary>
+      <div class="prop-group-body">
+        <button class="batch-btn" id="batch-move-layer">Move to layer: </button>
+        <select id="batch-layer-target" style="font-size:0.68rem;padding:2px 4px;background:var(--bg-input);border:1px solid var(--border-input);color:var(--text);border-radius:3px;">
+          ${layerOpts}
+        </select>
+        <div style="margin-top:0.4rem">
+          <button class="batch-btn danger" id="batch-delete">Delete All Selected</button>
+        </div>
+      </div>
+    </details>
+  `;
+
+  document.getElementById('batch-delete')?.addEventListener('click', deleteSelected);
+  document.getElementById('batch-move-layer')?.addEventListener('click', () => {
+    const targetLayer = parseInt(document.getElementById('batch-layer-target').value);
     saveHistory();
-    const edge = defaultEdge(state.edgeSource, nodeId);
-    state.edges.push(edge);
-    state.edgeSource = null;
-    setStatus(`Edge: ${edge.sourceId} \u2192 ${edge.targetId}`);
+    state.selected.forEach(s => {
+      const item = s.type === 'node'
+        ? state.nodes.find(n => n.id === s.id)
+        : state.paths.find(p => p.id === s.id);
+      if (item) item.layer = targetLayer;
+    });
+    upd();
+    renderLayersPanel();
+    setStatus(`Moved ${state.selected.length} items to layer "${getLayer(targetLayer)?.name}".`);
+  });
+}
+
+// ─── Path Creation ─────────────────────────────────────────────────────────
+
+function handlePathClick(nodeId) {
+  if (state.pathBuilder.length === 0) {
+    state.pathBuilder = [nodeId];
+    setStatus('Path: click more nodes. Enter to finish, click first node to cycle.');
+    renderAll();
+  } else if (nodeId === state.pathBuilder[0] && state.pathBuilder.length >= 2) {
+    finishPath(true);
+  } else if (nodeId === state.pathBuilder[state.pathBuilder.length - 1]) {
+    finishPath(false);
+  } else {
+    state.pathBuilder.push(nodeId);
+    setStatus(`Path: ${state.pathBuilder.length} nodes. Enter to finish, click first node to cycle.`);
     renderAll();
   }
 }
 
-// ─── Canvas Events ─────────────────────────────────────────────────────────
+function finishPath(cycle) {
+  if (state.pathBuilder.length < 2) {
+    state.pathBuilder = [];
+    setStatus('Path cancelled (need at least 2 nodes).');
+    renderAll();
+    return;
+  }
+  saveHistory();
+  const p = defaultPath([...state.pathBuilder]);
+  p.cycle = cycle;
+  state.paths.push(p);
+  state.pathBuilder = [];
+  setStatus(`Path created: ${p.nodeIds.length} nodes${cycle ? ' (cycled)' : ''}.`);
+  selectPath(p.id);
+}
+
+function cancelPath() {
+  if (state.pathBuilder.length > 0) {
+    state.pathBuilder = [];
+    setStatus('Path cancelled.');
+    renderAll();
+  }
+}
+
+// ─── Canvas Events (with Marquee Selection) ───────────────────────────────
+
+let marquee = null;
 
 canvasArea.addEventListener('mousedown', (e) => {
   if (e.button === 0 && state.mode === 'node' && !e.target.closest('.tikz-node')) {
     const pt = screenToWorld(e.clientX, e.clientY);
+    if (isLayerLocked(state.activeLayer)) { setStatus(`Active layer is locked.`); return; }
     saveHistory();
     const node = defaultNode(snap(pt.x), snap(pt.y));
     state.nodes.push(node);
     selectNode(node.id);
-    setStatus(`Added "${node.label}".`);
+    hideTemplateGallery();
+    renderLayersPanel();
+    setStatus(`Added "${node.id}" on layer "${getLayer(state.activeLayer)?.name}".`);
     return;
   }
   if (e.button === 0 && state.mode === 'select') {
     const t = e.target;
-    if (t === svgCanvas || t === gridBg || t.closest('#world') === worldGroup && !t.closest('.tikz-node') && !t.closest('.tikz-edge')) {
-      clearSelection();
+    if (t === svgCanvas || t === gridBg || (t.closest('#world') === worldGroup && !t.closest('.tikz-node') && !t.closest('.tikz-edge'))) {
+      if (!e.shiftKey) clearSelection();
+      // Start marquee selection
+      const r = canvasArea.getBoundingClientRect();
+      marquee = {
+        startX: e.clientX - r.left,
+        startY: e.clientY - r.top,
+        x: e.clientX - r.left,
+        y: e.clientY - r.top,
+      };
     }
   }
+});
+
+canvasArea.addEventListener('mousemove', (e) => {
+  if (!marquee) return;
+  const r = canvasArea.getBoundingClientRect();
+  marquee.x = e.clientX - r.left;
+  marquee.y = e.clientY - r.top;
+  const left = Math.min(marquee.startX, marquee.x);
+  const top = Math.min(marquee.startY, marquee.y);
+  const width = Math.abs(marquee.x - marquee.startX);
+  const height = Math.abs(marquee.y - marquee.startY);
+  if (width > 3 || height > 3) {
+    marqueeEl.style.display = 'block';
+    marqueeEl.style.left = `${left}px`;
+    marqueeEl.style.top = `${top}px`;
+    marqueeEl.style.width = `${width}px`;
+    marqueeEl.style.height = `${height}px`;
+  }
+});
+
+canvasArea.addEventListener('mouseup', (e) => {
+  if (!marquee) return;
+  const width = Math.abs(marquee.x - marquee.startX);
+  const height = Math.abs(marquee.y - marquee.startY);
+  if (width > 5 || height > 5) {
+    // Convert marquee bounds to world coordinates
+    const r = canvasArea.getBoundingClientRect();
+    const wTL = screenToWorld(r.left + Math.min(marquee.startX, marquee.x), r.top + Math.min(marquee.startY, marquee.y));
+    const wBR = screenToWorld(r.left + Math.max(marquee.startX, marquee.x), r.top + Math.max(marquee.startY, marquee.y));
+    // Select nodes within bounds
+    state.nodes.forEach(n => {
+      if (isLayerVisible(n.layer) && n.x >= wTL.x && n.x <= wBR.x && n.y >= wTL.y && n.y <= wBR.y) {
+        addToSelection('node', n.id);
+      }
+    });
+    updatePropertiesPanel();
+    renderAll();
+  }
+  marqueeEl.style.display = 'none';
+  marquee = null;
 });
 
 canvasArea.addEventListener('contextmenu', (e) => {
@@ -482,25 +773,41 @@ function showContextMenu(e, type, item) {
   let items = [];
 
   if (type === 'node') {
+    const count = state.selected.length;
     items = [
       { label: 'Edit Label', key: 'Dbl-click', action: () => startInlineEdit(item) },
-      { label: 'Duplicate', key: 'Ctrl+D', action: () => duplicateNode(item) },
+      { label: 'Duplicate', key: 'Ctrl+D', action: () => duplicateSelected() },
       { sep: true },
-      { label: 'Delete', key: 'Del', action: deleteSelected, cls: 'danger' },
-    ];
-  } else if (type === 'edge') {
+      ...(count > 1 ? [{ label: `Delete ${count} items`, action: deleteSelected, cls: 'danger' }] : []),
+      { label: 'Delete', key: 'Del', action: deleteSelected, cls: count > 1 ? undefined : 'danger' },
+    ].filter((it, i, arr) => !(count > 1 && it.key === 'Del'));
+    if (count > 1) {
+      items = [
+        { label: `${count} items selected`, action: () => {} },
+        { sep: true },
+        { label: 'Duplicate All', key: 'Ctrl+D', action: () => duplicateSelected() },
+        { label: `Delete All (${count})`, action: deleteSelected, cls: 'danger' },
+      ];
+    }
+  } else if (type === 'path') {
     items = [
+      { label: item.cycle ? 'Remove Cycle' : 'Add Cycle', action: () => { item.cycle = !item.cycle; upd(); showPathProperties(item); } },
+      { sep: true },
       { label: 'Delete', key: 'Del', action: deleteSelected, cls: 'danger' },
     ];
   } else {
     items = [
       { label: 'Add Node Here', action: () => {
         const pt = screenToWorld(e.clientX, e.clientY);
+        if (isLayerLocked(state.activeLayer)) { setStatus('Active layer is locked.'); return; }
         saveHistory();
         const n = defaultNode(snap(pt.x), snap(pt.y));
         state.nodes.push(n);
         selectNode(n.id);
+        renderLayersPanel();
       }},
+      { sep: true },
+      { label: `Select All`, key: 'Ctrl+A', action: selectAll },
       { sep: true },
       { label: (state.showGrid ? '\u2713 ' : '  ') + 'Grid', key: 'G', action: toggleGrid },
       { label: (state.snapEnabled ? '\u2713 ' : '  ') + 'Snap to Grid', action: toggleSnap },
@@ -519,7 +826,6 @@ function showContextMenu(e, type, item) {
   contextMenu.style.left = `${e.clientX}px`;
   contextMenu.style.top = `${e.clientY}px`;
 
-  // Clamp to viewport
   requestAnimationFrame(() => {
     const rect = contextMenu.getBoundingClientRect();
     if (rect.right > window.innerWidth) contextMenu.style.left = `${window.innerWidth - rect.width - 4}px`;
@@ -535,51 +841,77 @@ function showContextMenu(e, type, item) {
 
 function hideContextMenu() { contextMenu.style.display = 'none'; }
 
+// ─── Select All ───────────────────────────────────────────────────────────
+
+function selectAll() {
+  state.selected = [];
+  state.nodes.forEach(n => { if (isLayerVisible(n.layer)) state.selected.push({ type: 'node', id: n.id }); });
+  state.paths.forEach(p => { if (isLayerVisible(p.layer)) state.selected.push({ type: 'path', id: p.id }); });
+  updatePropertiesPanel();
+  renderAll();
+  setStatus(`Selected ${state.selected.length} items.`);
+}
+
 // ─── Duplicate & Delete ────────────────────────────────────────────────────
 
-function duplicateNode(node) {
-  if (!node) {
-    if (!state.selected || state.selected.type !== 'node') return;
-    node = state.nodes.find(n => n.id === state.selected.id);
-    if (!node) return;
+function duplicateSelected() {
+  const nodesSel = state.selected.filter(s => s.type === 'node');
+  if (!nodesSel.length) {
+    // If single path selected, nothing to duplicate
+    return;
   }
   saveHistory();
-  const dup = JSON.parse(JSON.stringify(node));
-  dup.id = `n${state.nextNodeId++}`;
-  dup.label = node.label + ' copy';
-  dup.x += 30; dup.y += 30;
-  state.nodes.push(dup);
-  selectNode(dup.id);
-  setStatus(`Duplicated "${node.label}".`);
+  const newSelected = [];
+  nodesSel.forEach(s => {
+    const node = state.nodes.find(n => n.id === s.id);
+    if (!node) return;
+    const dup = JSON.parse(JSON.stringify(node));
+    dup.id = `n${state.nextNodeId++}`;
+    dup.label = node.label ? node.label + ' copy' : '';
+    dup.x += 30; dup.y += 30;
+    state.nodes.push(dup);
+    newSelected.push({ type: 'node', id: dup.id });
+  });
+  state.selected = newSelected;
+  updatePropertiesPanel();
+  renderAll();
+  renderLayersPanel();
+  setStatus(`Duplicated ${nodesSel.length} node(s).`);
 }
 
 function deleteSelected() {
-  if (!state.selected) return;
+  if (!state.selected.length) return;
   saveHistory();
-  if (state.selected.type === 'node') {
-    const id = state.selected.id;
-    state.nodes = state.nodes.filter(n => n.id !== id);
-    state.edges = state.edges.filter(e => e.sourceId !== id && e.targetId !== id);
-  } else {
-    state.edges = state.edges.filter(e => e.id !== state.selected.id);
-  }
+  const nodeIds = new Set(state.selected.filter(s => s.type === 'node').map(s => s.id));
+  const pathIds = new Set(state.selected.filter(s => s.type === 'path').map(s => s.id));
+
+  // Remove selected nodes
+  state.nodes = state.nodes.filter(n => !nodeIds.has(n.id));
+  // Remove selected paths AND paths that reference deleted nodes
+  state.paths = state.paths
+    .filter(p => !pathIds.has(p.id))
+    .map(p => ({ ...p, nodeIds: p.nodeIds.filter(nid => !nodeIds.has(nid)) }))
+    .filter(p => p.nodeIds.length >= 2);
+
   clearSelection();
+  renderLayersPanel();
   setStatus('Deleted.');
 }
 
 // ─── Mode & Toolbar ────────────────────────────────────────────────────────
 
 function setMode(mode) {
+  if (state.mode === 'edge' && mode !== 'edge' && state.pathBuilder.length >= 2) finishPath(false);
   state.mode = mode;
-  state.edgeSource = null;
+  state.pathBuilder = [];
   document.getElementById('btn-select').classList.toggle('active', mode === 'select');
   document.getElementById('btn-add-node').classList.toggle('active', mode === 'node');
   document.getElementById('btn-add-edge').classList.toggle('active', mode === 'edge');
   canvasArea.className = `mode-${mode}`;
   const msgs = {
-    select: 'Select mode: click to select, drag to move. Double-click to edit label.',
+    select: 'Select mode: click to select, shift+click multi-select, drag marquee. Double-click to edit label.',
     node: 'Node mode: click canvas to place a node.',
-    edge: 'Edge mode: click source, then target node.',
+    edge: 'Path mode: click nodes to build a path. Enter to finish, click first node to cycle.',
   };
   setStatus(msgs[mode]);
   renderNodes();
@@ -589,16 +921,20 @@ document.getElementById('btn-select').onclick = () => setMode('select');
 document.getElementById('btn-add-node').onclick = () => setMode('node');
 document.getElementById('btn-add-edge').onclick = () => setMode('edge');
 document.getElementById('btn-delete').onclick = deleteSelected;
-document.getElementById('btn-duplicate').onclick = () => duplicateNode(null);
+document.getElementById('btn-duplicate').onclick = () => duplicateSelected();
 document.getElementById('btn-undo').onclick = undo;
 document.getElementById('btn-redo').onclick = redo;
 
 document.getElementById('btn-clear').onclick = () => {
   if (!confirm('Clear all nodes and edges?')) return;
   saveHistory();
-  state.nodes = []; state.edges = [];
-  state.nextNodeId = 1; state.nextEdgeId = 1;
+  state.nodes = []; state.paths = [];
+  state.nextNodeId = 1; state.nextPathId = 1;
+  state.rawTikz = '';
+  if (rawTikzInput) rawTikzInput.value = '';
   clearSelection();
+  showTemplateGallery();
+  renderLayersPanel();
   setStatus('Canvas cleared.');
 };
 
@@ -610,12 +946,15 @@ document.addEventListener('keydown', (e) => {
 
   if ((e.ctrlKey || e.metaKey) && !e.shiftKey) {
     if (e.key === 'z') { e.preventDefault(); undo(); return; }
-    if (e.key === 'd') { e.preventDefault(); duplicateNode(null); return; }
+    if (e.key === 'd') { e.preventDefault(); duplicateSelected(); return; }
+    if (e.key === 'a') { e.preventDefault(); selectAll(); return; }
   }
   if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'z' || e.key === 'Z')) {
     e.preventDefault(); redo(); return;
   }
 
+  if (e.key === 'Enter' && state.mode === 'edge' && state.pathBuilder.length >= 2) { finishPath(false); return; }
+  if (e.key === 'Escape' && state.mode === 'edge' && state.pathBuilder.length > 0) { cancelPath(); return; }
   if (e.key === 'v' || e.key === 'V') setMode('select');
   if (e.key === 'n' || e.key === 'N') setMode('node');
   if (e.key === 'e' || e.key === 'E') setMode('edge');
@@ -693,6 +1032,10 @@ function bindBool(id, obj, key) {
   if (el) el.addEventListener('change', () => { obj[key] = el.checked; upd(); });
 }
 
+function layerSelect(currentLayer) {
+  return `<select id="p-layer">${state.layers.map(l => `<option value="${l.id}"${l.id === currentLayer ? ' selected' : ''}>${l.name}</option>`).join('')}</select>`;
+}
+
 // ─── Node Properties ───────────────────────────────────────────────────────
 
 function showNodeProperties(node) {
@@ -712,6 +1055,8 @@ function showNodeProperties(node) {
         ${propRow('Shape', `<select id="p-shape">${shapes.map(s=>`<option value="${s}"${node.shape===s?' selected':''}>${s}</option>`).join('')}</select>`)}
         ${propRow('X', `<input type="number" id="p-x" value="${node.x}" step="${state.gridSize}">`)}
         ${propRow('Y', `<input type="number" id="p-y" value="${node.y}" step="${state.gridSize}">`)}
+        ${propRow('Layer', layerSelect(node.layer))}
+        ${propRow('Comment', `<input type="text" id="p-comment" value="${(node.comment||'').replace(/"/g,'&quot;')}" placeholder="optional comment">`)}
       </div>
     </details>
 
@@ -809,39 +1154,237 @@ function showNodeProperties(node) {
   bindStr('p-dash', node, 'dashPattern');
   bindStr('p-pattern', node, 'pattern');
   bindStr('p-shading', node, 'shading');
+  bindStr('p-comment', node, 'comment');
+
+  const layerEl = document.getElementById('p-layer');
+  if (layerEl) layerEl.addEventListener('change', () => {
+    node.layer = parseInt(layerEl.value);
+    renderLayersPanel();
+    upd();
+  });
 }
 
-// ─── Edge Properties ───────────────────────────────────────────────────────
+// ─── Path Properties ───────────────────────────────────────────────────────
 
-function showEdgeProperties(edge) {
-  if (!edge) return;
-  const src = state.nodes.find(n => n.id === edge.sourceId);
-  const tgt = state.nodes.find(n => n.id === edge.targetId);
+function showPathProperties(p) {
+  if (!p) return;
+  const nodeNames = p.nodeIds.map(id => {
+    const n = state.nodes.find(nd => nd.id === id);
+    return n?.label || id;
+  }).join(' \u2192 ');
+
+  const dashOpts = ['', 'dashed', 'dotted', 'densely dashed', 'loosely dashed', 'dash dot'];
+  const capOpts = ['', 'butt', 'round', 'rect'];
+  const joinOpts = ['', 'miter', 'round', 'bevel'];
+  const decoOpts = ['', 'snake', 'zigzag', 'coil', 'bumps', 'saw'];
 
   propPanel.innerHTML = `
-    <span class="prop-node-id">Edge: ${edge.id}</span>
-    <p style="font-size:0.68rem;color:#4a4f62;margin:0 0 0.4rem;">${src?.label || edge.sourceId} \u2192 ${tgt?.label || edge.targetId}</p>
-    ${propRow('Color', `<input type="color" id="p-ecolor" value="${hexColor(edge.color)}">`)}
-    ${propRow('Line width', `<input type="number" id="p-elw" value="${edge.lineWidth}" min="0.5" step="0.5">`)}
-    ${propRow('Arrow', `<select id="p-earrow">
-      <option value="none"${edge.arrow==='none'?' selected':''}>None</option>
-      <option value="stealth"${edge.arrow==='stealth'?' selected':''}>Stealth</option>
-      <option value="to"${edge.arrow==='to'?' selected':''}>To</option>
-      <option value="latex"${edge.arrow==='latex'?' selected':''}>LaTeX</option>
-    </select>`)}
-    ${propRow('Bend left', `<input type="number" id="p-ebl" value="${edge.bendLeft}" min="-90" max="90" step="5">`)}
-    ${propRow('Bend right', `<input type="number" id="p-ebr" value="${edge.bendRight}" min="-90" max="90" step="5">`)}
+    <span class="prop-node-id">Path: ${p.id}</span>
+    <p style="font-size:0.68rem;color:var(--text-muted);margin:0 0 0.4rem;word-break:break-all;">${nodeNames}${p.cycle ? ' \u2192 cycle' : ''}</p>
+
+    <details class="prop-group" open>
+      <summary>Path</summary>
+      <div class="prop-group-body">
+        ${propRow('Cycle', `<input type="checkbox" id="p-pcycle"${p.cycle?' checked':''}>`)}
+        ${propRow('Arrow', `<select id="p-parrow">
+          <option value="none"${p.arrow==='none'?' selected':''}>None</option>
+          <option value="stealth"${p.arrow==='stealth'?' selected':''}>-Stealth</option>
+          <option value="to"${p.arrow==='to'?' selected':''}>-></option>
+          <option value="latex"${p.arrow==='latex'?' selected':''}>-latex</option>
+          <option value="stealth-stealth"${p.arrow==='stealth-stealth'?' selected':''}>Stealth-Stealth</option>
+        </select>`)}
+        ${propRow('Layer', layerSelect(p.layer))}
+        ${propRow('Comment', `<input type="text" id="p-comment" value="${(p.comment||'').replace(/"/g,'&quot;')}" placeholder="optional comment">`)}
+      </div>
+    </details>
+
+    <details class="prop-group" open>
+      <summary>Stroke</summary>
+      <div class="prop-group-body">
+        ${propRow('Color', `<input type="color" id="p-pcolor" value="${hexColor(p.color)}">`)}
+        ${propRow('Line width', `<input type="number" id="p-plw" value="${p.lineWidth}" min="0.5" step="0.5">`)}
+        ${propRow('Opacity', `<input type="number" id="p-popacity" value="${p.opacity??''}" min="0" max="1" step="0.05" placeholder="0\u20131">`)}
+        ${propRow('Draw opacity', `<input type="number" id="p-pdrawopacity" value="${p.drawOpacity??''}" min="0" max="1" step="0.05" placeholder="0\u20131">`)}
+      </div>
+    </details>
+
+    <details class="prop-group" open>
+      <summary>Fill</summary>
+      <div class="prop-group-body">
+        ${propRow('Fill', `<label class="color-none-wrap"><input type="checkbox" id="p-pfill-none"${!p.fill?' checked':''}>none</label><input type="color" id="p-pfill" value="${hexColor(p.fill)}"${!p.fill?' disabled':''}>`)}
+        ${propRow('Fill opacity', `<input type="number" id="p-pfillopacity" value="${p.fillOpacity??''}" min="0" max="1" step="0.05" placeholder="0\u20131">`)}
+      </div>
+    </details>
+
+    <details class="prop-group">
+      <summary>Line Style</summary>
+      <div class="prop-group-body">
+        ${propRow('Dash', `<select id="p-pdash">${dashOpts.map(d=>`<option value="${d}"${(p.dashPattern||'')===d?' selected':''}>${d||'solid'}</option>`).join('')}</select>`)}
+        ${propRow('Dash phase', `<input type="text" id="p-pdashphase" value="${p.dashPhase??''}" placeholder="e.g. 2pt">`)}
+        ${propRow('Line cap', `<select id="p-pcap">${capOpts.map(c=>`<option value="${c}"${(p.lineCap||'')===c?' selected':''}>${c||'---'}</option>`).join('')}</select>`)}
+        ${propRow('Line join', `<select id="p-pjoin">${joinOpts.map(j=>`<option value="${j}"${(p.lineJoin||'')===j?' selected':''}>${j||'---'}</option>`).join('')}</select>`)}
+        ${propRow('Rounded', `<input type="text" id="p-prounded" value="${p.roundedCorners??''}" placeholder="e.g. 5pt">`)}
+      </div>
+    </details>
+
+    <details class="prop-group">
+      <summary>Double Line</summary>
+      <div class="prop-group-body">
+        ${propRow('Double', `<input type="checkbox" id="p-pdouble"${p.double?' checked':''}>`)}
+        ${propRow('Distance', `<input type="text" id="p-pdoubledist" value="${p.doubleDistance??''}" placeholder="e.g. 2pt">`)}
+      </div>
+    </details>
+
+    <details class="prop-group">
+      <summary>Bending</summary>
+      <div class="prop-group-body">
+        ${propRow('Bend left', `<input type="number" id="p-pbendleft" value="${p.bendLeft??''}" step="5" placeholder="degrees">`)}
+        ${propRow('Bend right', `<input type="number" id="p-pbendright" value="${p.bendRight??''}" step="5" placeholder="degrees">`)}
+      </div>
+    </details>
+
+    <details class="prop-group">
+      <summary>Decoration</summary>
+      <div class="prop-group-body">
+        ${propRow('Type', `<select id="p-pdeco">${decoOpts.map(d=>`<option value="${d}"${(p.decoration||'')===d?' selected':''}>${d||'none'}</option>`).join('')}</select>`)}
+      </div>
+    </details>
   `;
 
   const bind = (id, key, parse = v => v) => {
     const el = document.getElementById(id);
-    if (el) el.addEventListener('input', () => { edge[key] = parse(el.value); upd(); });
+    if (el) el.addEventListener('input', () => { p[key] = parse(el.value); upd(); });
   };
-  bind('p-ecolor', 'color');
-  bind('p-elw', 'lineWidth', Number);
-  bind('p-earrow', 'arrow');
-  bind('p-ebl', 'bendLeft', Number);
-  bind('p-ebr', 'bendRight', Number);
+  bind('p-pcolor', 'color');
+  bind('p-plw', 'lineWidth', Number);
+  bind('p-parrow', 'arrow');
+  bindNum('p-popacity', p, 'opacity');
+  bindNum('p-pdrawopacity', p, 'drawOpacity');
+  bindStr('p-pdash', p, 'dashPattern');
+  bindStr('p-pdashphase', p, 'dashPhase');
+  bindStr('p-pcap', p, 'lineCap');
+  bindStr('p-pjoin', p, 'lineJoin');
+  bindStr('p-prounded', p, 'roundedCorners');
+  bindBool('p-pdouble', p, 'double');
+  bindStr('p-pdoubledist', p, 'doubleDistance');
+  bindNum('p-pbendleft', p, 'bendLeft');
+  bindNum('p-pbendright', p, 'bendRight');
+  bindStr('p-pdeco', p, 'decoration');
+  bindStr('p-comment', p, 'comment');
+
+  const cycleEl = document.getElementById('p-pcycle');
+  if (cycleEl) cycleEl.addEventListener('change', () => { p.cycle = cycleEl.checked; upd(); showPathProperties(p); });
+
+  bindColor('p-pfill-none', 'p-pfill', p, 'fill', '#4488cc');
+  bindNum('p-pfillopacity', p, 'fillOpacity');
+
+  const layerEl = document.getElementById('p-layer');
+  if (layerEl) layerEl.addEventListener('change', () => {
+    p.layer = parseInt(layerEl.value);
+    renderLayersPanel();
+    upd();
+  });
+}
+
+// ─── Layers Panel ──────────────────────────────────────────────────────────
+
+function renderLayersPanel() {
+  if (!layersPanel) return;
+
+  const rows = state.layers.map(l => {
+    const count = itemCountForLayer(l.id);
+    const isActive = l.id === state.activeLayer;
+    return `
+      <div class="layer-row${isActive ? ' active-layer' : ''}" data-layer-id="${l.id}">
+        <button class="layer-vis-btn${l.visible ? '' : ' hidden-layer'}" data-vis="${l.id}" title="Toggle visibility">${l.visible ? '\u{1F441}' : '\u{1F441}\u200D\u{1F5E8}'}</button>
+        <button class="layer-lock-btn${l.locked ? ' locked-layer' : ''}" data-lock="${l.id}" title="Toggle lock">${l.locked ? '\u{1F512}' : '\u{1F513}'}</button>
+        <span class="layer-name" data-rename="${l.id}">${l.name}</span>
+        <span class="layer-count">${count}</span>
+      </div>
+    `;
+  }).join('');
+
+  layersPanel.innerHTML = `
+    ${rows}
+    <div class="layer-actions">
+      <button class="layer-action-btn" id="layer-add">+ Add</button>
+      <button class="layer-action-btn" id="layer-rename">Rename</button>
+      <button class="layer-action-btn" id="layer-delete">Delete</button>
+    </div>
+  `;
+
+  // Click row to set active layer
+  layersPanel.querySelectorAll('.layer-row').forEach(row => {
+    row.addEventListener('click', (e) => {
+      if (e.target.closest('.layer-vis-btn') || e.target.closest('.layer-lock-btn')) return;
+      state.activeLayer = parseInt(row.dataset.layerId);
+      renderLayersPanel();
+      setStatus(`Active layer: "${getLayer(state.activeLayer)?.name}".`);
+    });
+  });
+
+  // Visibility toggles
+  layersPanel.querySelectorAll('.layer-vis-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const l = getLayer(parseInt(btn.dataset.vis));
+      if (l) { l.visible = !l.visible; renderLayersPanel(); renderAll(); }
+    });
+  });
+
+  // Lock toggles
+  layersPanel.querySelectorAll('.layer-lock-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const l = getLayer(parseInt(btn.dataset.lock));
+      if (l) { l.locked = !l.locked; renderLayersPanel(); }
+    });
+  });
+
+  // Add layer
+  document.getElementById('layer-add')?.addEventListener('click', () => {
+    saveHistory();
+    const newLayer = { id: state.nextLayerId++, name: `Layer ${state.layers.length}`, visible: true, locked: false };
+    state.layers.push(newLayer);
+    state.activeLayer = newLayer.id;
+    renderLayersPanel();
+    setStatus(`Added layer "${newLayer.name}".`);
+  });
+
+  // Rename layer
+  document.getElementById('layer-rename')?.addEventListener('click', () => {
+    const l = getLayer(state.activeLayer);
+    if (!l) return;
+    const name = prompt('Layer name:', l.name);
+    if (name && name.trim()) {
+      saveHistory();
+      l.name = name.trim();
+      renderLayersPanel();
+    }
+  });
+
+  // Delete layer
+  document.getElementById('layer-delete')?.addEventListener('click', () => {
+    if (state.layers.length <= 1) { setStatus('Cannot delete last layer.'); return; }
+    const l = getLayer(state.activeLayer);
+    if (!l) return;
+    const count = itemCountForLayer(l.id);
+    if (count > 0 && !confirm(`Delete layer "${l.name}" and its ${count} items?`)) return;
+    saveHistory();
+    // Remove items on this layer
+    state.nodes = state.nodes.filter(n => n.layer !== l.id);
+    state.paths = state.paths.filter(p => p.layer !== l.id);
+    // Also clean up paths referencing deleted nodes
+    const nodeIds = new Set(state.nodes.map(n => n.id));
+    state.paths = state.paths
+      .map(p => ({ ...p, nodeIds: p.nodeIds.filter(nid => nodeIds.has(nid)) }))
+      .filter(p => p.nodeIds.length >= 2);
+    state.layers = state.layers.filter(ly => ly.id !== l.id);
+    state.activeLayer = state.layers[0].id;
+    clearSelection();
+    renderLayersPanel();
+    setStatus(`Deleted layer "${l.name}".`);
+  });
 }
 
 // ─── Code Generation ───────────────────────────────────────────────────────
@@ -864,13 +1407,91 @@ function cssColorToLatex(hex) {
 }
 
 function arrowToTikz(arrow) {
-  return { stealth: '-Stealth', to: '->', latex: '-latex', none: '-' }[arrow] || '-';
+  return { stealth: '-Stealth', to: '->', latex: '-latex', 'stealth-stealth': 'Stealth-Stealth', none: '-' }[arrow] || '-';
+}
+
+function generateNodeCode(node) {
+  const { cx, cy } = worldToTikz(node.x, node.y);
+  const args = [`x=${cx}`, `y=${cy}`, `label="${node.id}"`];
+  if (node.label) args.push(`content="${node.label}"`);
+  if (node.fill && node.fill !== 'none') args.push(`fill="${node.id}_fill"`);
+  if (node.draw && node.draw !== 'none') args.push(`draw="${node.id}_draw"`);
+  if (node.shape !== 'rectangle') args.push(`shape="${node.shape}"`);
+  if (node.textColor) args.push(`text="${cssColorToLatex(node.textColor)}"`);
+  if (node.minWidth !== 40) args.push(`minimum_width="${(node.minWidth / PX_PER_UNIT).toFixed(1)}cm"`);
+  if (node.minHeight !== 40) args.push(`minimum_height="${(node.minHeight / PX_PER_UNIT).toFixed(1)}cm"`);
+  if (node.opacity != null) args.push(`opacity=${node.opacity}`);
+  if (node.fillOpacity != null) args.push(`fill_opacity=${node.fillOpacity}`);
+  if (node.drawOpacity != null) args.push(`draw_opacity=${node.drawOpacity}`);
+  if (node.minimumSize) args.push(`minimum_size="${node.minimumSize}"`);
+  if (node.innerSep) args.push(`inner_sep="${node.innerSep}"`);
+  if (node.outerSep) args.push(`outer_sep="${node.outerSep}"`);
+  if (node.nodeLineWidth) args.push(`line_width="${node.nodeLineWidth}"`);
+  if (node.font) args.push(`font="${node.font}"`);
+  if (node.textWidth) args.push(`text_width="${node.textWidth}"`);
+  if (node.align) args.push(`align="${node.align}"`);
+  if (node.anchor) args.push(`anchor="${node.anchor}"`);
+  if (node.rotate != null) args.push(`rotate=${node.rotate}`);
+  if (node.xshift) args.push(`xshift="${node.xshift}"`);
+  if (node.yshift) args.push(`yshift="${node.yshift}"`);
+  if (node.scale != null) args.push(`scale=${node.scale}`);
+  if (node.roundedCorners) args.push(`rounded_corners="${node.roundedCorners}"`);
+  if (node.doubleBorder) args.push(`double="none"`);
+  if (node.dashPattern) args.push(`dash_pattern="${node.dashPattern}"`);
+  if (node.pattern) args.push(`pattern="${node.pattern}"`);
+  if (node.shading) args.push(`shading="${node.shading}"`);
+  if (node.comment) args.push(`comment="${node.comment}"`);
+  return `fig.add_node(${args.join(', ')})`;
+}
+
+function generatePathCode(p) {
+  const nodeList = `[${p.nodeIds.map(id => `"${id}"`).join(', ')}]`;
+  const args = [nodeList];
+
+  // options (flag-style)
+  const opts = [];
+  if (p.arrow !== 'none') opts.push(`"${arrowToTikz(p.arrow)}"`);
+  if (p.dashPattern) opts.push(`"${p.dashPattern}"`);
+  if (p.decoration) opts.push(`"decorate"`, `"decoration=${p.decoration}"`);
+  if (opts.length) args.push(`options=[${opts.join(', ')}]`);
+
+  if (p.cycle) args.push(`cycle=True`);
+
+  if (p.color && p.color !== '#666666') {
+    const cl = cssColorToLatex(p.color);
+    if (cl && cl.startsWith('{rgb')) args.push(`color="${p.id}_color"`);
+    else if (cl) args.push(`color="${cl}"`);
+  }
+
+  const hasFill = p.fill && p.fill !== 'none';
+  if (hasFill) {
+    const fl = cssColorToLatex(p.fill);
+    if (fl && fl.startsWith('{rgb')) args.push(`fill="${p.id}_fill"`);
+    else if (fl) args.push(`fill="${fl}"`);
+  }
+
+  if (p.opacity != null) args.push(`opacity=${p.opacity}`);
+  if (p.drawOpacity != null) args.push(`draw_opacity=${p.drawOpacity}`);
+  if (p.fillOpacity != null && hasFill) args.push(`fill_opacity=${p.fillOpacity}`);
+  if (p.lineWidth !== 1) args.push(`line_width=${p.lineWidth}`);
+  if (p.dashPhase) args.push(`dash_phase="${p.dashPhase}"`);
+  if (p.lineCap) args.push(`line_cap="${p.lineCap}"`);
+  if (p.lineJoin) args.push(`line_join="${p.lineJoin}"`);
+  if (p.roundedCorners) args.push(`rounded_corners="${p.roundedCorners}"`);
+  if (p.double) args.push(`double="white"`);
+  if (p.doubleDistance) args.push(`double_distance="${p.doubleDistance}"`);
+  if (p.bendLeft != null) args.push(`bend_left=${p.bendLeft}`);
+  if (p.bendRight != null) args.push(`bend_right=${p.bendRight}`);
+  if (p.comment) args.push(`comment="${p.comment}"`);
+
+  return `fig.draw(${args.join(', ')})`;
 }
 
 function generatePythonCode() {
-  if (!state.nodes.length) return '# Add nodes to the canvas to generate code';
+  if (!state.nodes.length && !state.rawTikz) return '# Add nodes to the canvas to generate code';
   const lines = ['from tikzfigure import TikzFigure', '', 'fig = TikzFigure()'];
 
+  // Color definitions
   const colorDefs = [];
   state.nodes.forEach(node => {
     const fl = cssColorToLatex(node.fill);
@@ -878,52 +1499,68 @@ function generatePythonCode() {
     if (fl && fl.startsWith('{rgb')) colorDefs.push(`fig.colorlet("${node.id}_fill", "${fl.slice(1,-1)}")`);
     if (dl && dl.startsWith('{rgb')) colorDefs.push(`fig.colorlet("${node.id}_draw", "${dl.slice(1,-1)}")`);
   });
+  state.paths.forEach(p => {
+    const fl = cssColorToLatex(p.fill);
+    if (fl && fl.startsWith('{rgb')) colorDefs.push(`fig.colorlet("${p.id}_fill", "${fl.slice(1,-1)}")`);
+    const cl = cssColorToLatex(p.color);
+    if (cl && cl.startsWith('{rgb') && p.color !== '#666666') colorDefs.push(`fig.colorlet("${p.id}_color", "${cl.slice(1,-1)}")`);
+  });
   if (colorDefs.length) { lines.push(''); lines.push('# Define colors'); colorDefs.forEach(l => lines.push(l)); }
 
-  lines.push(''); lines.push('# Add nodes');
-  state.nodes.forEach(node => {
-    const { cx, cy } = worldToTikz(node.x, node.y);
-    const mw = (node.minWidth / PX_PER_UNIT).toFixed(1) + 'cm';
-    const mh = (node.minHeight / PX_PER_UNIT).toFixed(1) + 'cm';
-    const fillArg = node.fill && node.fill !== 'none' ? `, fill="${node.id}_fill"` : '';
-    const drawArg = node.draw && node.draw !== 'none' ? `, draw="${node.id}_draw"` : '';
-    const shapeArg = node.shape !== 'rectangle' ? `, shape="${node.shape}"` : '';
-    const textArg = node.textColor ? `, text="${cssColorToLatex(node.textColor)}"` : '';
-    const extra = [];
-    if (node.opacity != null) extra.push(`opacity=${node.opacity}`);
-    if (node.fillOpacity != null) extra.push(`fill_opacity=${node.fillOpacity}`);
-    if (node.drawOpacity != null) extra.push(`draw_opacity=${node.drawOpacity}`);
-    if (node.minimumSize) extra.push(`minimum_size="${node.minimumSize}"`);
-    if (node.innerSep) extra.push(`inner_sep="${node.innerSep}"`);
-    if (node.outerSep) extra.push(`outer_sep="${node.outerSep}"`);
-    if (node.nodeLineWidth) extra.push(`line_width="${node.nodeLineWidth}"`);
-    if (node.font) extra.push(`font="${node.font}"`);
-    if (node.textWidth) extra.push(`text_width="${node.textWidth}"`);
-    if (node.align) extra.push(`align="${node.align}"`);
-    if (node.anchor) extra.push(`anchor="${node.anchor}"`);
-    if (node.rotate != null) extra.push(`rotate=${node.rotate}`);
-    if (node.xshift) extra.push(`xshift="${node.xshift}"`);
-    if (node.yshift) extra.push(`yshift="${node.yshift}"`);
-    if (node.scale != null) extra.push(`scale=${node.scale}`);
-    if (node.roundedCorners) extra.push(`rounded_corners="${node.roundedCorners}"`);
-    if (node.doubleBorder) extra.push(`double="none"`);
-    if (node.dashPattern) extra.push(`dash_pattern="${node.dashPattern}"`);
-    if (node.pattern) extra.push(`pattern="${node.pattern}"`);
-    if (node.shading) extra.push(`shading="${node.shading}"`);
-    const extraStr = extra.length ? ', ' + extra.join(', ') : '';
-    lines.push(`fig.add_node(x=${cx}, y=${cy}, label="${node.id}", content="${node.label}"${fillArg}${drawArg}${shapeArg}${textArg}, minimum_width="${mw}", minimum_height="${mh}"${extraStr})`);
-  });
+  // Group items by layer
+  const hasMultipleLayers = state.layers.length > 1;
+  const usedLayers = new Set();
+  state.nodes.forEach(n => usedLayers.add(n.layer));
+  state.paths.forEach(p => usedLayers.add(p.layer));
+  const multiLayer = usedLayers.size > 1;
 
-  if (state.edges.length) {
-    lines.push(''); lines.push('# Add edges');
-    state.edges.forEach(edge => {
-      const arrowOpt = arrowToTikz(edge.arrow);
-      const colorArg = edge.color ? `, color="${cssColorToLatex(edge.color)}"` : '';
-      const lwArg = `, line_width="${edge.lineWidth}pt"`;
-      const blArg = edge.bendLeft !== 0 ? `, bend_left=${edge.bendLeft}` : '';
-      const brArg = edge.bendRight !== 0 ? `, bend_right=${edge.bendRight}` : '';
-      lines.push(`fig.draw(["${edge.sourceId}", "${edge.targetId}"]${colorArg}${lwArg}${blArg}${brArg}, options=["${arrowOpt}"])`);
+  if (multiLayer) {
+    // Render layer by layer
+    state.layers.forEach(layer => {
+      const layerNodes = state.nodes.filter(n => n.layer === layer.id);
+      const layerPaths = state.paths.filter(p => p.layer === layer.id);
+      if (!layerNodes.length && !layerPaths.length) return;
+
+      lines.push('');
+      lines.push(`# Layer: ${layer.name} (${layer.id})`);
+
+      if (layerNodes.length) {
+        layerNodes.forEach(node => {
+          const code = generateNodeCode(node);
+          // Add layer parameter
+          const insertPos = code.lastIndexOf(')');
+          lines.push(code.slice(0, insertPos) + `, layer=${layer.id}` + code.slice(insertPos));
+        });
+      }
+
+      if (layerPaths.length) {
+        layerPaths.forEach(p => {
+          const code = generatePathCode(p);
+          const insertPos = code.lastIndexOf(')');
+          lines.push(code.slice(0, insertPos) + `, layer=${layer.id}` + code.slice(insertPos));
+        });
+      }
     });
+  } else {
+    // Single layer — no layer parameter needed
+    if (state.nodes.length) {
+      lines.push(''); lines.push('# Add nodes');
+      state.nodes.forEach(node => lines.push(generateNodeCode(node)));
+    }
+
+    if (state.paths.length) {
+      lines.push(''); lines.push('# Add paths');
+      state.paths.forEach(p => lines.push(generatePathCode(p)));
+    }
+  }
+
+  // Raw TikZ
+  if (state.rawTikz.trim()) {
+    lines.push('');
+    lines.push('# Raw TikZ');
+    // Split into individual add_raw calls per line group
+    const rawLines = state.rawTikz.trim();
+    lines.push(`fig.add_raw("""${rawLines}""")`);
   }
 
   lines.push(''); lines.push('tikz_code = fig.generate_tikz()');
@@ -944,7 +1581,7 @@ function generateCode() {
 }
 
 async function runCodeGen() {
-  if (!state.pyodideReady || !state.nodes.length) return;
+  if (!state.pyodideReady || (!state.nodes.length && !state.rawTikz)) return;
   const pyCode = generatePythonCode();
   const fullCode = `
 import sys
@@ -974,8 +1611,9 @@ const tabState = {
     { id: 'props', label: 'Properties' },
     { id: 'code',  label: 'Code' },
     { id: 'pdf',   label: 'PDF' },
+    { id: 'layers', label: 'Layers' },
   ],
-  visible: new Set(['props', 'code', 'pdf']),
+  visible: new Set(['props', 'code', 'pdf', 'layers']),
   active: 'props',
 };
 
@@ -983,6 +1621,7 @@ function switchTab(id) {
   if (!tabState.visible.has(id)) tabState.visible.add(id);
   tabState.active = id;
   renderTabs();
+  if (id === 'layers') renderLayersPanel();
 }
 
 function renderTabs() {
@@ -1039,7 +1678,7 @@ document.getElementById('tab-bar').addEventListener('click', e => {
   }
   if (e.target.id === 'tab-restore-btn') { showRestoreMenu(e.target); return; }
   const btn = e.target.closest('.tab-btn[data-tab]');
-  if (btn) { tabState.active = btn.dataset.tab; renderTabs(); }
+  if (btn) { tabState.active = btn.dataset.tab; renderTabs(); if (btn.dataset.tab === 'layers') renderLayersPanel(); }
 });
 
 function showRestoreMenu(anchor) {
@@ -1085,6 +1724,15 @@ await micropip.install("tikzfigure")
 
 initPyodide();
 
+// ─── Raw TikZ Input ───────────────────────────────────────────────────────
+
+if (rawTikzInput) {
+  rawTikzInput.addEventListener('input', () => {
+    state.rawTikz = rawTikzInput.value;
+    upd();
+  });
+}
+
 // ─── Copy Helpers ──────────────────────────────────────────────────────────
 
 function copyCode(type) {
@@ -1101,15 +1749,29 @@ document.getElementById('btn-compile-toolbar').addEventListener('click', () => {
   else setStatus('No TikZ code ready \u2014 add nodes first.');
 });
 
+// ─── Export .tex ──────────────────────────────────────────────────────────
+
+document.getElementById('btn-export-tex')?.addEventListener('click', () => {
+  if (!state.standaloneLaTeX) {
+    setStatus('No LaTeX code ready. Add nodes and wait for Pyodide.');
+    return;
+  }
+  const blob = new Blob([state.standaloneLaTeX], { type: 'text/plain' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'figure.tex';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+  setStatus('Downloaded figure.tex');
+});
+
 // ─── PDF Compilation ───────────────────────────────────────────────────────
 
 const compileLogDetails = document.getElementById('compile-log-details');
 const compileLog        = document.getElementById('compile-log');
-
-if (typeof pdfjsLib !== 'undefined') {
-  pdfjsLib.GlobalWorkerOptions.workerSrc =
-    'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
-}
 
 function showLog(text, hasError) {
   if (!text) { compileLogDetails.style.display = 'none'; return; }
@@ -1125,25 +1787,6 @@ function showLog(text, hasError) {
 }
 
 function esc(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-
-async function renderPdfToCanvas(buf) {
-  if (typeof pdfjsLib === 'undefined') return false;
-  try {
-    const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
-    const page = await pdf.getPage(1);
-    const cw = pdfCanvas.parentElement?.clientWidth || 280;
-    const vp = page.getViewport({ scale: 1 });
-    const scale = (cw - 2) / vp.width;
-    const sv = page.getViewport({ scale });
-    pdfCanvas.width = sv.width; pdfCanvas.height = sv.height;
-    pdfCanvas.style.display = 'block';
-    await page.render({ canvasContext: pdfCanvas.getContext('2d'), viewport: sv }).promise;
-    return true;
-  } catch (err) {
-    console.error('PDF.js error:', err);
-    return false;
-  }
-}
 
 compileBtn.addEventListener('click', async () => {
   if (!state.standaloneLaTeX) { setStatus('No LaTeX to compile.'); return; }
@@ -1163,11 +1806,12 @@ compileBtn.addEventListener('click', async () => {
 
     if (resp.status === 201) {
       const buf = await resp.arrayBuffer();
-      await renderPdfToCanvas(buf);
       if (state._prevPdfUrl) URL.revokeObjectURL(state._prevPdfUrl);
       const blob = new Blob([buf], { type: 'application/pdf' });
       const url = URL.createObjectURL(blob);
       state._prevPdfUrl = url;
+      pdfViewer.src = url;
+      pdfViewer.style.display = 'block';
       pdfDl.href = url;
       pdfDl.style.display = 'inline-block';
       setStatus('PDF compiled successfully.');
@@ -1188,6 +1832,237 @@ compileBtn.addEventListener('click', async () => {
   }
 });
 
+// ─── Theme Toggle ─────────────────────────────────────────────────────────
+
+function toggleTheme() {
+  const isLight = document.body.classList.toggle('light');
+  document.getElementById('theme-icon-dark').style.display = isLight ? 'none' : '';
+  document.getElementById('theme-icon-light').style.display = isLight ? '' : 'none';
+  const dot = document.querySelector('#grid-dots circle');
+  if (dot) dot.setAttribute('fill', isLight ? '#d0d1d9' : '#282d3e');
+  localStorage.setItem('tikz-editor-theme', isLight ? 'light' : 'dark');
+}
+
+document.getElementById('btn-theme').onclick = toggleTheme;
+
+if (localStorage.getItem('tikz-editor-theme') === 'light') toggleTheme();
+
+// ─── Template Gallery ─────────────────────────────────────────────────────
+
+const TEMPLATES = [
+  {
+    name: 'Simple Graph',
+    desc: 'Nodes connected with arrows',
+    preview: '<svg viewBox="0 0 120 50"><circle cx="20" cy="25" r="8" fill="none" stroke="#818cf8" stroke-width="1.5"/><circle cx="60" cy="25" r="8" fill="none" stroke="#818cf8" stroke-width="1.5"/><circle cx="100" cy="25" r="8" fill="none" stroke="#818cf8" stroke-width="1.5"/><line x1="28" y1="25" x2="50" y2="25" stroke="#666" stroke-width="1.2" marker-end="url(#tpl-arrow)"/><line x1="68" y1="25" x2="90" y2="25" stroke="#666" stroke-width="1.2" marker-end="url(#tpl-arrow)"/><text x="20" y="28" text-anchor="middle" fill="#818cf8" font-size="8">A</text><text x="60" y="28" text-anchor="middle" fill="#818cf8" font-size="8">B</text><text x="100" y="28" text-anchor="middle" fill="#818cf8" font-size="8">C</text></svg>',
+    nodes: [
+      { x: 200, y: 260, label: 'A' },
+      { x: 400, y: 260, label: 'B' },
+      { x: 600, y: 260, label: 'C' },
+    ],
+    paths: [
+      { ni: [0, 1], arrow: 'stealth' },
+      { ni: [1, 2], arrow: 'stealth' },
+    ],
+  },
+  {
+    name: 'Triangle',
+    desc: 'Cycled path with fill',
+    preview: '<svg viewBox="0 0 120 70"><polygon points="60,8 20,58 100,58" fill="rgba(129,140,248,0.15)" stroke="#818cf8" stroke-width="1.5"/><circle cx="60" cy="8" r="4" fill="#818cf8"/><circle cx="20" cy="58" r="4" fill="#818cf8"/><circle cx="100" cy="58" r="4" fill="#818cf8"/></svg>',
+    nodes: [
+      { x: 400, y: 160, label: 'A' },
+      { x: 240, y: 400, label: 'B' },
+      { x: 560, y: 400, label: 'C' },
+    ],
+    paths: [
+      { ni: [0, 1, 2], cycle: true, fill: '#334488' },
+    ],
+  },
+  {
+    name: 'Flowchart',
+    desc: 'Decision flow with shapes',
+    preview: '<svg viewBox="0 0 120 70"><rect x="42" y="2" width="36" height="16" rx="8" fill="none" stroke="#818cf8" stroke-width="1.2"/><rect x="42" y="26" width="36" height="16" fill="none" stroke="#818cf8" stroke-width="1.2"/><polygon points="60,48 78,58 60,68 42,58" fill="none" stroke="#818cf8" stroke-width="1.2"/><line x1="60" y1="18" x2="60" y2="26" stroke="#666" stroke-width="1" marker-end="url(#tpl-arrow)"/><line x1="60" y1="42" x2="60" y2="48" stroke="#666" stroke-width="1" marker-end="url(#tpl-arrow)"/></svg>',
+    nodes: [
+      { x: 400, y: 120, label: 'Start', shape: 'ellipse', fill: '#1a3a2a' },
+      { x: 400, y: 260, label: 'Process', shape: 'rectangle', minWidth: 80, minHeight: 40 },
+      { x: 400, y: 420, label: '?', shape: 'diamond', minWidth: 60, minHeight: 60 },
+      { x: 600, y: 420, label: 'Yes' },
+      { x: 200, y: 420, label: 'No' },
+    ],
+    paths: [
+      { ni: [0, 1], arrow: 'stealth' },
+      { ni: [1, 2], arrow: 'stealth' },
+      { ni: [2, 3], arrow: 'stealth' },
+      { ni: [2, 4], arrow: 'stealth' },
+    ],
+  },
+  {
+    name: 'Network',
+    desc: 'Interconnected nodes',
+    preview: '<svg viewBox="0 0 120 70"><circle cx="25" cy="18" r="6" fill="none" stroke="#818cf8" stroke-width="1.2"/><circle cx="95" cy="18" r="6" fill="none" stroke="#818cf8" stroke-width="1.2"/><circle cx="25" cy="52" r="6" fill="none" stroke="#818cf8" stroke-width="1.2"/><circle cx="95" cy="52" r="6" fill="none" stroke="#818cf8" stroke-width="1.2"/><line x1="31" y1="18" x2="89" y2="18" stroke="#666" stroke-width="1"/><line x1="25" y1="24" x2="25" y2="46" stroke="#666" stroke-width="1"/><line x1="95" y1="24" x2="95" y2="46" stroke="#666" stroke-width="1"/><line x1="31" y1="52" x2="89" y2="52" stroke="#666" stroke-width="1"/><line x1="31" y1="22" x2="89" y2="48" stroke="#666" stroke-width="1" stroke-dasharray="3 2"/></svg>',
+    nodes: [
+      { x: 220, y: 180, label: 'A' },
+      { x: 540, y: 180, label: 'B' },
+      { x: 220, y: 380, label: 'C' },
+      { x: 540, y: 380, label: 'D' },
+    ],
+    paths: [
+      { ni: [0, 1] },
+      { ni: [0, 2] },
+      { ni: [1, 3] },
+      { ni: [2, 3] },
+      { ni: [0, 3], dashPattern: 'dashed' },
+    ],
+  },
+  {
+    name: 'State Machine',
+    desc: 'States with labeled transitions',
+    preview: '<svg viewBox="0 0 120 60"><circle cx="30" cy="30" r="12" fill="none" stroke="#818cf8" stroke-width="1.5"/><circle cx="90" cy="30" r="12" fill="none" stroke="#818cf8" stroke-width="1.5"/><line x1="42" y1="26" x2="76" y2="26" stroke="#666" stroke-width="1.2" marker-end="url(#tpl-arrow)"/><line x1="78" y1="34" x2="42" y2="34" stroke="#666" stroke-width="1.2" marker-end="url(#tpl-arrow)"/><text x="30" y="33" text-anchor="middle" fill="#818cf8" font-size="7">S0</text><text x="90" y="33" text-anchor="middle" fill="#818cf8" font-size="7">S1</text></svg>',
+    nodes: [
+      { x: 200, y: 280, label: 'S0', fill: '#1a2e3a' },
+      { x: 500, y: 280, label: 'S1', fill: '#1a2e3a' },
+      { x: 500, y: 440, label: 'S2', fill: '#1a2e3a' },
+    ],
+    paths: [
+      { ni: [0, 1], arrow: 'stealth' },
+      { ni: [1, 2], arrow: 'stealth' },
+      { ni: [2, 0], arrow: 'stealth', dashPattern: 'dashed' },
+    ],
+  },
+  {
+    name: 'Binary Tree',
+    desc: 'Hierarchical tree structure',
+    preview: '<svg viewBox="0 0 120 70"><circle cx="60" cy="10" r="6" fill="none" stroke="#818cf8" stroke-width="1.2"/><circle cx="30" cy="38" r="6" fill="none" stroke="#818cf8" stroke-width="1.2"/><circle cx="90" cy="38" r="6" fill="none" stroke="#818cf8" stroke-width="1.2"/><circle cx="15" cy="60" r="5" fill="none" stroke="#818cf8" stroke-width="1"/><circle cx="45" cy="60" r="5" fill="none" stroke="#818cf8" stroke-width="1"/><line x1="55" y1="15" x2="34" y2="33" stroke="#666" stroke-width="1"/><line x1="65" y1="15" x2="86" y2="33" stroke="#666" stroke-width="1"/><line x1="26" y1="43" x2="18" y2="55" stroke="#666" stroke-width="1"/><line x1="34" y1="43" x2="42" y2="55" stroke="#666" stroke-width="1"/></svg>',
+    nodes: [
+      { x: 400, y: 120, label: '1' },
+      { x: 260, y: 260, label: '2' },
+      { x: 540, y: 260, label: '3' },
+      { x: 190, y: 400, label: '4' },
+      { x: 330, y: 400, label: '5' },
+      { x: 470, y: 400, label: '6' },
+      { x: 610, y: 400, label: '7' },
+    ],
+    paths: [
+      { ni: [0, 1] },
+      { ni: [0, 2] },
+      { ni: [1, 3] },
+      { ni: [1, 4] },
+      { ni: [2, 5] },
+      { ni: [2, 6] },
+    ],
+  },
+  {
+    name: 'Neural Network',
+    desc: 'Layered network diagram',
+    preview: '<svg viewBox="0 0 120 70"><circle cx="20" cy="18" r="5" fill="none" stroke="#818cf8" stroke-width="1"/><circle cx="20" cy="35" r="5" fill="none" stroke="#818cf8" stroke-width="1"/><circle cx="20" cy="52" r="5" fill="none" stroke="#818cf8" stroke-width="1"/><circle cx="60" cy="24" r="5" fill="none" stroke="#f59e0b" stroke-width="1"/><circle cx="60" cy="46" r="5" fill="none" stroke="#f59e0b" stroke-width="1"/><circle cx="100" cy="35" r="5" fill="none" stroke="#6ee7b7" stroke-width="1"/><line x1="25" y1="18" x2="55" y2="24" stroke="#666" stroke-width="0.7"/><line x1="25" y1="18" x2="55" y2="46" stroke="#666" stroke-width="0.7"/><line x1="25" y1="35" x2="55" y2="24" stroke="#666" stroke-width="0.7"/><line x1="25" y1="35" x2="55" y2="46" stroke="#666" stroke-width="0.7"/><line x1="25" y1="52" x2="55" y2="24" stroke="#666" stroke-width="0.7"/><line x1="25" y1="52" x2="55" y2="46" stroke="#666" stroke-width="0.7"/><line x1="65" y1="24" x2="95" y2="35" stroke="#666" stroke-width="0.7"/><line x1="65" y1="46" x2="95" y2="35" stroke="#666" stroke-width="0.7"/></svg>',
+    nodes: [
+      { x: 160, y: 160, label: 'x1' },
+      { x: 160, y: 280, label: 'x2' },
+      { x: 160, y: 400, label: 'x3' },
+      { x: 380, y: 200, label: 'h1', draw: '#f59e0b' },
+      { x: 380, y: 340, label: 'h2', draw: '#f59e0b' },
+      { x: 600, y: 280, label: 'y', draw: '#6ee7b7' },
+    ],
+    paths: [
+      { ni: [0, 3] }, { ni: [0, 4] },
+      { ni: [1, 3] }, { ni: [1, 4] },
+      { ni: [2, 3] }, { ni: [2, 4] },
+      { ni: [3, 5], arrow: 'stealth' },
+      { ni: [4, 5], arrow: 'stealth' },
+    ],
+  },
+  {
+    name: 'Layered',
+    desc: 'Multi-layer demo (bg + fg)',
+    preview: '<svg viewBox="0 0 120 70"><rect x="10" y="10" width="100" height="50" rx="6" fill="rgba(129,140,248,0.1)" stroke="#818cf8" stroke-width="1" stroke-dasharray="3 2"/><circle cx="40" cy="35" r="10" fill="none" stroke="#f59e0b" stroke-width="1.5"/><circle cx="80" cy="35" r="10" fill="none" stroke="#6ee7b7" stroke-width="1.5"/><line x1="50" y1="35" x2="70" y2="35" stroke="#666" stroke-width="1.2" marker-end="url(#tpl-arrow)"/></svg>',
+    nodes: [
+      { x: 280, y: 260, label: 'A', draw: '#f59e0b', layer: 0 },
+      { x: 500, y: 260, label: 'B', draw: '#6ee7b7', layer: 0 },
+    ],
+    paths: [
+      { ni: [0, 1], arrow: 'stealth', layer: 0 },
+    ],
+    layers: [
+      { name: 'Background', items: 'bg' },
+      { name: 'Foreground', items: 'fg' },
+    ],
+    setup: (state) => {
+      // Add a second layer to demonstrate
+      if (state.layers.length === 1) {
+        state.layers.push({ id: state.nextLayerId++, name: 'Background', visible: true, locked: false });
+      }
+    },
+  },
+];
+
+function loadTemplate(tpl) {
+  saveHistory();
+  state.nodes = [];
+  state.paths = [];
+  state.nextNodeId = 1;
+  state.nextPathId = 1;
+
+  // Reset layers if template has custom setup
+  if (tpl.setup) tpl.setup(state);
+
+  tpl.nodes.forEach(n => {
+    const node = defaultNode(n.x, n.y);
+    if (n.label) node.label = n.label;
+    if (n.shape) node.shape = n.shape;
+    if (n.fill) node.fill = n.fill;
+    if (n.draw) node.draw = n.draw;
+    if (n.minWidth) node.minWidth = n.minWidth;
+    if (n.minHeight) node.minHeight = n.minHeight;
+    if (n.layer != null) node.layer = n.layer;
+    state.nodes.push(node);
+  });
+
+  tpl.paths.forEach(p => {
+    const nodeIds = p.ni.map(i => state.nodes[i].id);
+    const path = defaultPath(nodeIds);
+    if (p.arrow) path.arrow = p.arrow;
+    if (p.cycle) path.cycle = true;
+    if (p.fill) path.fill = p.fill;
+    if (p.dashPattern) path.dashPattern = p.dashPattern;
+    if (p.layer != null) path.layer = p.layer;
+    state.paths.push(path);
+  });
+
+  clearSelection();
+  hideTemplateGallery();
+  renderLayersPanel();
+  setStatus(`Loaded "${tpl.name}" template.`);
+}
+
+function showTemplateGallery() {
+  const el = document.getElementById('template-gallery');
+  el.classList.remove('hidden');
+  el.innerHTML = `
+    <div class="tpl-title">Start with a template</div>
+    <div class="tpl-subtitle">Or press N to add nodes manually</div>
+    <svg style="position:absolute;width:0;height:0">
+      <defs><marker id="tpl-arrow" markerWidth="6" markerHeight="5" refX="5" refY="2.5" orient="auto"><polygon points="0 0,6 2.5,0 5" fill="#666"/></marker></defs>
+    </svg>
+    <div class="tpl-grid">
+      ${TEMPLATES.map((t, i) => `
+        <button class="tpl-card" data-tpl="${i}">
+          ${t.preview}
+          <span class="tpl-card-name">${t.name}</span>
+          <span class="tpl-card-desc">${t.desc}</span>
+        </button>
+      `).join('')}
+    </div>
+  `;
+  el.querySelectorAll('.tpl-card').forEach(btn => {
+    btn.addEventListener('click', () => loadTemplate(TEMPLATES[parseInt(btn.dataset.tpl)]));
+  });
+}
+
+function hideTemplateGallery() {
+  document.getElementById('template-gallery').classList.add('hidden');
+}
+
 // ─── Init ──────────────────────────────────────────────────────────────────
 
 updateWorldTransform();
+renderLayersPanel();
+if (!state.nodes.length) showTemplateGallery();

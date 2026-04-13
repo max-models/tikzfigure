@@ -10,27 +10,6 @@
 
 <div id="toolbar">
   <span class="toolbar-brand">TikZ Editor</span>
-  <div class="toolbar-group">
-    <button class="tool-btn active" id="btn-select" title="Select / Move (V)">Select</button>
-    <button class="tool-btn" id="btn-add-node" title="Add Node (N)">Node</button>
-    <button class="tool-btn" id="btn-add-edge" title="Add Edge (E)">Edge</button>
-  </div>
-  <div class="toolbar-sep"></div>
-  <div class="toolbar-group">
-    <button class="tool-btn" id="btn-undo" title="Undo (Ctrl+Z)" disabled>Undo</button>
-    <button class="tool-btn" id="btn-redo" title="Redo (Ctrl+Shift+Z)" disabled>Redo</button>
-  </div>
-  <div class="toolbar-sep"></div>
-  <div class="toolbar-group">
-    <button class="tool-btn" id="btn-duplicate" title="Duplicate (Ctrl+D)">Duplicate</button>
-    <button class="tool-btn" id="btn-delete" title="Delete (Del)">Delete</button>
-    <button class="tool-btn" id="btn-clear" title="Clear all">Clear</button>
-  </div>
-  <div class="toolbar-sep"></div>
-  <div class="toolbar-group">
-    <button class="tool-btn toggle active" id="btn-grid" title="Toggle Grid (G)">Grid</button>
-    <button class="tool-btn toggle active" id="btn-snap" title="Toggle Snap">Snap</button>
-  </div>
   <div class="toolbar-sep"></div>
   <div class="toolbar-group zoom-group">
     <button class="tool-btn small" id="btn-zoom-out" title="Zoom Out">&minus;</button>
@@ -38,12 +17,57 @@
     <button class="tool-btn small" id="btn-zoom-in" title="Zoom In">+</button>
     <button class="tool-btn small" id="btn-zoom-reset" title="Reset View">Fit</button>
   </div>
+  <div class="toolbar-sep"></div>
+  <div class="toolbar-group">
+    <button class="tool-btn toggle active" id="btn-grid" title="Toggle Grid (G)">Grid</button>
+    <button class="tool-btn toggle active" id="btn-snap" title="Toggle Snap">Snap</button>
+  </div>
   <span class="toolbar-spacer"></span>
+  <button class="tool-btn" id="btn-theme" title="Toggle Light/Dark Mode">
+    <svg id="theme-icon-dark" viewBox="0 0 16 16" width="14" height="14"><path d="M8 1a7 7 0 100 14A7 7 0 008 1zm0 12.5a5.5 5.5 0 010-11v11z" fill="currentColor"/></svg>
+    <svg id="theme-icon-light" viewBox="0 0 16 16" width="14" height="14" style="display:none"><circle cx="8" cy="8" r="3.5" fill="currentColor"/><g stroke="currentColor" stroke-width="1.5"><line x1="8" y1="0.5" x2="8" y2="3"/><line x1="8" y1="13" x2="8" y2="15.5"/><line x1="0.5" y1="8" x2="3" y2="8"/><line x1="13" y1="8" x2="15.5" y2="8"/><line x1="2.7" y1="2.7" x2="4.5" y2="4.5"/><line x1="11.5" y1="11.5" x2="13.3" y2="13.3"/><line x1="2.7" y1="13.3" x2="4.5" y2="11.5"/><line x1="11.5" y1="4.5" x2="13.3" y2="2.7"/></g></svg>
+  </button>
   <button class="tool-btn compile-btn" id="btn-compile-toolbar" title="Compile to PDF">PDF</button>
+  <button class="tool-btn" id="btn-export-tex" title="Download .tex file">TEX</button>
   <span id="pyodide-status">Loading Pyodide...</span>
 </div>
 
 <div id="main">
+  <div id="left-toolbar">
+    <div class="lt-group">
+      <button class="lt-btn active" id="btn-select" title="Select / Move (V)">
+        <svg viewBox="0 0 16 16" width="16" height="16"><path d="M3 1l10 7-5 1-2 5z" fill="currentColor"/></svg>
+      </button>
+      <button class="lt-btn" id="btn-add-node" title="Add Node (N)">
+        <svg viewBox="0 0 16 16" width="16" height="16"><path d="M8 2v12M2 8h12" stroke="currentColor" stroke-width="2" fill="none"/></svg>
+      </button>
+      <button class="lt-btn" id="btn-add-edge" title="Draw Path (E)">
+        <svg viewBox="0 0 16 16" width="16" height="16"><path d="M2 14l3-1 8-8-2-2-8 8z" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="13" cy="3" r="1.5" fill="currentColor"/></svg>
+      </button>
+    </div>
+    <div class="lt-sep"></div>
+    <div class="lt-group">
+      <button class="lt-btn" id="btn-undo" title="Undo (Ctrl+Z)" disabled>
+        <svg viewBox="0 0 16 16" width="16" height="16"><path d="M5 7l-3-3 3-3" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M2 4h8a4 4 0 010 8H6" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
+      </button>
+      <button class="lt-btn" id="btn-redo" title="Redo (Ctrl+Shift+Z)" disabled>
+        <svg viewBox="0 0 16 16" width="16" height="16"><path d="M11 7l3-3-3-3" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M14 4H6a4 4 0 000 8h4" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
+      </button>
+    </div>
+    <div class="lt-sep"></div>
+    <div class="lt-group">
+      <button class="lt-btn" id="btn-duplicate" title="Duplicate (Ctrl+D)">
+        <svg viewBox="0 0 16 16" width="16" height="16"><rect x="5" y="5" width="8" height="8" rx="1" fill="none" stroke="currentColor" stroke-width="1.5"/><rect x="3" y="3" width="8" height="8" rx="1" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
+      </button>
+      <button class="lt-btn" id="btn-delete" title="Delete (Del)">
+        <svg viewBox="0 0 16 16" width="16" height="16"><path d="M4 4h8l-1 10H5zM3 4h10M6 2h4" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
+      </button>
+      <button class="lt-btn" id="btn-clear" title="Clear All">
+        <svg viewBox="0 0 16 16" width="16" height="16"><circle cx="8" cy="8" r="6" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M5.5 5.5l5 5M10.5 5.5l-5 5" stroke="currentColor" stroke-width="1.5"/></svg>
+      </button>
+    </div>
+  </div>
+
   <div id="canvas-area" class="mode-select">
     <svg id="svg-canvas">
       <defs>
@@ -63,6 +87,8 @@
         <g id="nodes-layer"></g>
       </g>
     </svg>
+    <div id="template-gallery"></div>
+    <div id="selection-marquee"></div>
   </div>
 
   <div id="resizer"></div>
@@ -85,18 +111,25 @@
             <summary>TikZ LaTeX <button class="copy-btn" onclick="event.stopPropagation();copyCode('tikz')">Copy</button></summary>
             <pre id="tikz-code">% TikZ code will appear here</pre>
           </details>
+          <details class="code-fold">
+            <summary>Raw TikZ Insert</summary>
+            <textarea id="raw-tikz-input" placeholder="Verbatim TikZ code (added via fig.add_raw)..." rows="3"></textarea>
+          </details>
         </div>
       </div>
       <div id="tab-pane-pdf" class="tab-pane">
         <div id="pdf-pane-inner">
           <button id="compile-btn" disabled>Compile to PDF (latex-on-http)</button>
           <a id="pdf-download" style="display:none;" download="figure.pdf">Download PDF</a>
-          <canvas id="pdf-canvas" style="display:none;"></canvas>
+          <iframe id="pdf-viewer" style="display:none;"></iframe>
           <details id="compile-log-details" style="display:none;">
             <summary>Compilation log</summary>
             <pre id="compile-log"></pre>
           </details>
         </div>
+      </div>
+      <div id="tab-pane-layers" class="tab-pane">
+        <div class="panel-body" id="layers-panel"></div>
       </div>
     </div>
   </div>
@@ -107,7 +140,6 @@
 <div id="status-bar">Ready. Press N to add nodes, E for edges, V to select. Scroll to zoom, middle-click to pan.</div>
 
 <script src="https://cdn.jsdelivr.net/pyodide/v0.25.0/full/pyodide.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
 <script src="/tikzfigure/tikz-editor.js"></script>
 </body>
 </html>
