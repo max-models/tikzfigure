@@ -11,7 +11,7 @@ from tikzfigure.core.axis import Axis2D
 from tikzfigure.core.base import TikzObject
 from tikzfigure.core.circle import Circle
 from tikzfigure.core.color import Color
-from tikzfigure.core.coordinate import TikzCoordinate
+from tikzfigure.core.coordinate import Coordinate, TikzCoordinate
 from tikzfigure.core.ellipse import Ellipse
 from tikzfigure.core.grid import Grid
 from tikzfigure.core.layer import LayerCollection
@@ -131,7 +131,7 @@ class TikzFigure:
         if not isinstance(nodes, list):
             raise ValueError("nodes parameter must be a list of node names.")
 
-        nodes_cleaned: list[Node | TikzCoordinate] = []
+        nodes_cleaned: list[Node | Coordinate | TikzCoordinate] = []
         node_anchors: list[str | None] = []
 
         for node in nodes:
@@ -477,21 +477,29 @@ class TikzFigure:
         for color_entry in d.get("colors", []):
             fig._colors.append((color_entry["name"], Color.from_dict(color_entry)))
 
-        # Build node lookup across all layers for path deserialization
+        # Build node/coordinate lookup across all layers for path deserialization
         layers_data: dict[Any, list[dict[str, Any]]] = d.get("layers", {})
-        node_lookup: dict[str, Node] = {}
+        node_lookup: dict[str, Node | Coordinate] = {}
         for items_data in layers_data.values():
             for item_data in items_data:
                 if item_data.get("type") == "Node":
                     node = Node.from_dict(item_data)
                     if node.label is not None:
                         node_lookup[node.label] = node
+                elif item_data.get("type") == "Coordinate":
+                    coord = Coordinate.from_dict(item_data)
+                    if coord.label:
+                        node_lookup[coord.label] = coord
 
         # Reconstruct layers in order
         for layer_label, items_data in layers_data.items():
             for item_data in items_data:
                 item_type = item_data.get("type")
                 if item_type == "Node":
+                    fig.layers.add_item(
+                        node_lookup[item_data["label"]], layer=layer_label
+                    )
+                elif item_type == "Coordinate":
                     fig.layers.add_item(
                         node_lookup[item_data["label"]], layer=layer_label
                     )
@@ -893,6 +901,75 @@ class TikzFigure:
             content=content,
             **kwargs,
         )
+
+    def add_coordinate(
+        self,
+        label: str,
+        x: float | str | None = None,
+        y: float | str | None = None,
+        at: str | None = None,
+        layer: int = 0,
+        comment: str | None = None,
+        verbose: bool = False,
+    ) -> Coordinate:
+        """Add a named coordinate point using ``\\coordinate``.
+
+        A coordinate is an invisible named point — lighter than a
+        :class:`~tikzfigure.core.node.Node` because it has no box, content,
+        or visible styling.  Use it to define reusable anchor points,
+        midpoints, or expression-based positions that you can reference in
+        paths and other commands.
+
+        Either provide numeric ``x`` and ``y`` values, or a raw TikZ
+        coordinate expression via ``at``.
+
+        Examples::
+
+            # Fixed point
+            fig.add_coordinate("origin", x=0, y=0)
+            fig.draw(["origin", "A"])
+
+            # Midpoint using calc (add "calc" to extra_packages)
+            fig.add_coordinate("mid", at="$(A)!0.5!(B)$")
+            fig.draw(["A", "mid", "B"])
+
+            # At a node anchor
+            fig.add_coordinate("atip", at="A.north")
+
+        Args:
+            label: TikZ name for this coordinate.  Used when referencing
+                it in path lists (e.g. ``["A", "mid", "B"]``).
+            x: X-coordinate value (numeric or PGF expression string).
+                Must be provided together with ``y``.  Mutually exclusive
+                with ``at``.
+            y: Y-coordinate value (numeric or PGF expression string).
+                Must be provided together with ``x``.  Mutually exclusive
+                with ``at``.
+            at: Raw TikZ coordinate expression.  Examples:
+
+                * ``"$(A)!0.5!(B)$"`` — midpoint via ``calc`` library
+                * ``"A.north"`` — at a node anchor
+                * ``"30:2cm"`` — polar coordinates
+
+                Parentheses are added automatically if absent.
+                Mutually exclusive with ``x``/``y``.
+            layer: Target layer index. Defaults to ``0``.
+            comment: Optional comment prepended in the TikZ output.
+            verbose: If ``True``, print a debug message after insertion.
+
+        Returns:
+            The newly created :class:`Coordinate` object.
+        """
+        coord = Coordinate(
+            label=label,
+            x=x,
+            y=y,
+            at=at,
+            layer=layer,
+            comment=comment,
+        )
+        self.layers.add_item(item=coord, layer=layer, verbose=verbose)
+        return coord
 
     def add_variable(
         self,

@@ -1,7 +1,7 @@
 from typing import Any
 
 from tikzfigure.core.base import TikzObject
-from tikzfigure.core.coordinate import TikzCoordinate
+from tikzfigure.core.coordinate import Coordinate, TikzCoordinate
 from tikzfigure.core.node import Node
 
 
@@ -89,8 +89,8 @@ class TikzPath(TikzObject):
         )
 
     @property
-    def nodes(self) -> list[Node | TikzCoordinate]:
-        """Ordered list of nodes or coordinates that define this path."""
+    def nodes(self) -> list[Node | Coordinate | TikzCoordinate]:
+        """Ordered list of nodes, named coordinates, or inline coordinates that define this path."""
         return self._nodes
 
     @property
@@ -213,17 +213,19 @@ class TikzPath(TikzObject):
         """Rendered TikZ reference strings for each node in this path.
 
         Per-node anchors (from :attr:`node_anchors`) take precedence over
-        the global :attr:`center` flag.
+        the global :attr:`center` flag.  :class:`Coordinate` objects are
+        referenced by label exactly like :class:`Node` objects.
 
         Returns:
-            A list of strings such as ``["(nodeA)", "(nodeB.center)"]`` or
-            coordinate tuples for :class:`TikzCoordinate` waypoints.
+            A list of strings such as ``["(nodeA)", "(nodeB.center)"]``,
+            ``["(coordA)"]``, or coordinate tuples for inline
+            :class:`TikzCoordinate` waypoints.
         """
         label_list = []
         for i, node in enumerate(self.nodes):
-            if isinstance(node, Node):
+            if isinstance(node, (Node, Coordinate)):
                 assert node.label != "", (
-                    "Trying to draw a path using a node without a label!"
+                    "Trying to draw a path using a node/coordinate without a label!"
                 )
                 anchor = (
                     self._node_anchors[i]
@@ -232,7 +234,7 @@ class TikzPath(TikzObject):
                 )
                 if anchor is not None:
                     label_list.append(f"({node.label}.{anchor})")
-                elif self.center:
+                elif self.center and isinstance(node, Node):
                     label_list.append(f"({node.label}.center)")
                 else:
                     label_list.append(f"({node.label})")
@@ -312,6 +314,8 @@ class TikzPath(TikzObject):
         for node in self._nodes:
             if isinstance(node, Node):
                 serialized_nodes.append({"type": "NodeRef", "label": node.label})
+            elif isinstance(node, Coordinate):
+                serialized_nodes.append({"type": "CoordinateRef", "label": node.label})
             elif isinstance(node, TikzCoordinate):
                 serialized_nodes.append(node.to_dict())
         d.update(
@@ -345,7 +349,7 @@ class TikzPath(TikzObject):
         node_lookup = node_lookup or {}
         nodes = []
         for node_data in d.get("nodes", []):
-            if node_data["type"] == "NodeRef":
+            if node_data["type"] in ("NodeRef", "CoordinateRef"):
                 nodes.append(node_lookup[node_data["label"]])
             elif node_data["type"] == "TikzCoordinate":
                 nodes.append(TikzCoordinate.from_dict(node_data))
