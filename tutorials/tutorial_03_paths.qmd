@@ -13,6 +13,9 @@ from lists of `(x, y)` coordinates.
 - node paths and `.center` anchors for correct fills
 - custom shapes (heart, star)
 - parametric curves with NumPy (spiral, sun)
+- `fill` for stroke-free fills and even-odd rule
+- `clip` for clipping regions
+- `path` for invisible named paths and mid-path labels
 
 ```{python}
 import numpy as np
@@ -409,6 +412,144 @@ for angle in np.linspace(0, 2 * np.pi, 12, endpoint=False):
     x1 = cx + (R + 0.7) * np.cos(angle)
     y1 = cy + (R + 0.7) * np.sin(angle)
     fig.draw([(x0, y0), (x1, y1)], line_width=2, color="orange")
+
+fig.show()
+```
+
+{{< include includes/tikz_code_callout.qmd >}}
+
+## Fill without stroke
+
+`fig.fill()` fills a closed path without drawing any outline — the equivalent of
+`\fill[...]` in TikZ.  Use it when you want pure flat colour with no border.
+
+```{python}
+fig = TikzFigure()
+
+# Three overlapping filled triangles — no outlines at all
+triangles = [
+    ([[1, 0], [4, 0], [2.5, 2.5]], "red!60"),
+    ([[2, 0], [5, 0], [3.5, 2.5]], "blue!50"),
+    ([[3, 0], [6, 0], [4.5, 2.5]], "green!60"),
+]
+for pts, color in triangles:
+    fig.fill(pts, cycle=True, fill=color, fill_opacity=0.6)
+
+fig.show()
+```
+
+{{< include includes/tikz_code_callout.qmd >}}
+
+The `even_odd_rule` flag corrects the fill for self-intersecting paths.
+Without it, TikZ fills the interior using the non-zero winding rule, which
+fills the overlapping centre region twice — visually it looks like a solid
+shape.  With `even_odd_rule=True` the centre hole is punched out correctly.
+
+```{python}
+fig = TikzFigure()
+
+# A five-pointed star is self-intersecting
+angles = np.linspace(np.pi / 2, np.pi / 2 + 4 * np.pi, 6)[:-1]
+star_pts = list(zip(np.cos(angles) * 2 + 2, np.sin(angles) * 2 + 2))
+
+# Default winding rule: centre is filled solid
+fig.fill(star_pts, cycle=True, fill="orange!80", fill_opacity=0.9)
+fig.add_node(2, -0.3, content="winding rule (default)", draw="none",
+             font=r"\small", anchor="center")
+
+# Even-odd rule: centre is hollow
+angles2 = np.linspace(np.pi / 2, np.pi / 2 + 4 * np.pi, 6)[:-1]
+star_pts2 = list(zip(np.cos(angles2) * 2 + 8, np.sin(angles2) * 2 + 2))
+fig.fill(star_pts2, cycle=True, fill="teal!70", fill_opacity=0.9,
+         even_odd_rule=True)
+fig.add_node(8, -0.3, content="even odd rule", draw="none",
+             font=r"\small", anchor="center")
+
+fig.show()
+```
+
+{{< include includes/tikz_code_callout.qmd >}}
+
+## Clip
+
+`fig.clip()` installs a clipping path — all subsequent drawing is masked to the
+given boundary.  Wrap the clip together with the clipped content inside a
+`\begin{scope}...\end{scope}` via `fig.add_raw()` so the clip doesn't leak into
+the rest of the figure.
+
+```{python}
+fig = TikzFigure()
+
+# Draw a full circle for reference (unclipped)
+fig.draw(
+    list(zip(np.cos(np.linspace(0, 2 * np.pi, 60)) * 2 + 2,
+             np.sin(np.linspace(0, 2 * np.pi, 60)) * 2 + 2)),
+    cycle=True, color="gray!40", line_width=1,
+)
+
+# Open a scope, clip to a rectangle, then draw a dense grid inside
+fig.add_raw(r"\begin{scope}")
+clip_rect = [[0.5, 0.5], [3.5, 0.5], [3.5, 3.5], [0.5, 3.5]]
+fig.clip(clip_rect, cycle=True)
+
+for i in np.linspace(0, 4, 20):
+    fig.draw([(0, i), (4, i)], color="blue!40", line_width=0.4)
+    fig.draw([(i, 0), (i, 4)], color="blue!40", line_width=0.4)
+
+fig.add_raw(r"\end{scope}")
+
+# Anything drawn after the scope is unclipped again
+fig.add_node(2, -0.5, content="clipped grid inside circle", draw="none",
+             font=r"\small", anchor="center")
+
+fig.show()
+```
+
+{{< include includes/tikz_code_callout.qmd >}}
+
+## Invisible path
+
+`fig.path()` traces a path without drawing or filling anything.  It has two
+common uses:
+
+**Named paths** — register a path under a name so the `intersections` TikZ
+library can compute where two paths cross.
+
+**Mid-path labels** — place a text node at a specific position along an
+invisible connector using `segment_options` with a `"node"` key.
+
+```{python}
+fig = TikzFigure()
+
+# Three nodes
+for label, x, y, color in [("A", 0, 0, "teal"), ("B", 5, 3, "orange"), ("C", 10, 0, "purple")]:
+    fig.add_node(x=x, y=y, label=label, shape="circle",
+                 fill=f"{color}!20", draw=f"{color}!70",
+                 minimum_size="1.2cm", content=f"${label}$")
+
+# Visible arrows
+fig.draw(["A.center", "B.center"], options=["->", "thick"], color="teal!70",
+         segment_options=[{"bend_left": 20}])
+fig.draw(["B.center", "C.center"], options=["->", "thick"], color="orange!80",
+         segment_options=[{"bend_right": 20}])
+
+# Invisible paths with mid-path labels
+fig.path(
+    ["A.center", "B.center"],
+    segment_options=[{
+        "node": {"content": r"$e_1$", "above": True, "sloped": True,
+                 "font": r"\small"},
+        "bend_left": 20,
+    }],
+)
+fig.path(
+    ["B.center", "C.center"],
+    segment_options=[{
+        "node": {"content": r"$e_2$", "above": True, "sloped": True,
+                 "font": r"\small"},
+        "bend_right": 20,
+    }],
+)
 
 fig.show()
 ```

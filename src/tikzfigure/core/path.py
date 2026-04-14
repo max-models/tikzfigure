@@ -49,13 +49,22 @@ class TikzPath(TikzObject):
                 string (e.g. ``"center"``, ``"north"``) or ``None`` to use
                 the default or global *center* flag.  When provided, a
                 per-node anchor takes precedence over *center*.
-            segment_options: Per-segment TikZ options for each ``to``
-                connector between consecutive nodes.  The list has at most
-                ``len(nodes) - 1`` entries.  Each entry is either ``None``
-                (plain ``to``), a raw options string, or a dict where the
-                special key ``"options"`` holds a list of flag-style options
-                and all other keys are keyword-style TikZ options
-                (underscores become spaces).
+            segment_options: Per-segment options for each connector between
+                consecutive nodes.  The list has at most ``len(nodes) - 1``
+                entries.  Each entry is ``None`` (plain ``to``), a raw
+                options string, or a dict recognising these special keys:
+
+                * ``"connector"`` — the TikZ path operation to use between
+                  the two waypoints.  Defaults to ``"to"``; other accepted
+                  values are ``"--"``, ``".."``, ``"|-"``, ``"-|"``,
+                  ``"sin"``, and ``"cos"``.  Only ``"to"`` supports bracket
+                  options.
+                * ``"node"`` — an inline node placed along the segment.
+                  Either a raw string suffix (e.g. ``"[above] {text}"``)
+                  or a dict with a ``"content"`` key and node-option keys.
+                * ``"options"`` — list of flag-style TikZ options for ``to``.
+                * Any other key is a keyword-style TikZ option for ``to``
+                  (underscores become spaces).
             options: Flag-style TikZ options (e.g. ``["->", "thick"]``).
             tikz_command: The TikZ drawing command to use, either ``"draw"``
                 or ``"filldraw"``. Defaults to ``"draw"``.
@@ -104,9 +113,21 @@ class TikzPath(TikzObject):
         """Per-segment TikZ options for each ``to`` connector, or ``None``."""
         return self._segment_options
 
+    #: Connector types that accept bracket options via ``to[...]``.
+    _TO_CONNECTORS: frozenset[str] = frozenset({"to"})
+
+    #: Connector types that are emitted as-is with no bracket options.
+    _PLAIN_CONNECTORS: frozenset[str] = frozenset(
+        {"--", "..", "|-", "-|", "sin", "cos"}
+    )
+
     @staticmethod
     def _format_segment_opts(opts: dict | str) -> str:
         """Render a segment-options entry as a TikZ options string.
+
+        Structural keys ``"connector"`` and ``"node"`` are skipped; they
+        control the connector type and inline node label respectively and
+        are not emitted as TikZ options.
 
         Args:
             opts: Either a raw string (used as-is) or a dict with an
@@ -120,15 +141,54 @@ class TikzPath(TikzObject):
         """
         if isinstance(opts, str):
             return opts
+        _skip = frozenset({"options", "connector", "node"})
         parts: list[str] = []
         flag_opts = opts.get("options", [])
         if flag_opts:
             parts.extend(flag_opts)
         for k, v in opts.items():
-            if k == "options":
+            if k in _skip:
                 continue
             parts.append(f"{k.replace('_', ' ')}={v}")
         return ", ".join(parts)
+
+    @staticmethod
+    def _format_path_node(node_spec: dict | str) -> str:
+        """Render a mid-path inline node specification.
+
+        In TikZ, nodes can be placed along a path segment::
+
+            \\draw (A) to node[above] {label} (B);
+
+        Args:
+            node_spec: Either a raw suffix string such as ``"[above] {text}"``
+                (prepended with ``node`` verbatim), or a dict with a
+                ``"content"`` key for the node text, an optional
+                ``"options"`` key for flag-style node options, and any
+                further keyword keys for TikZ node options.  Boolean values
+                of ``True`` are treated as flag-style options.
+
+        Returns:
+            A ``node[...] {content}`` string fragment for insertion into a
+            path command.
+        """
+        if isinstance(node_spec, str):
+            return f"node{node_spec}"
+        content = node_spec.get("content", "")
+        flag_opts: list[str] = list(node_spec.get("options", []))
+        kw_parts: list[str] = []
+        for k, v in node_spec.items():
+            if k in ("content", "options"):
+                continue
+            if v is True:
+                flag_opts.append(k.replace("_", " "))
+            else:
+                kw_parts.append(f"{k.replace('_', ' ')}={v}")
+        all_opts = flag_opts + kw_parts
+        opts_str = ", ".join(all_opts)
+        if opts_str:
+            return f"node[{opts_str}] {{{content}}}"
+        return f"node {{{content}}}"
 
     @property
     def tikz_options(self) -> str:
@@ -190,8 +250,9 @@ class TikzPath(TikzObject):
         """Generate the TikZ path command for this path.
 
         Returns:
-            A ``\\draw`` or ``\\filldraw`` command string ending with a
-            newline, optionally preceded by a comment line.
+            A ``\\draw``, ``\\fill``, ``\\clip``, ``\\path``, or
+            ``\\filldraw`` command string ending with a newline, optionally
+            preceded by a comment line.
         """
         options = self.tikz_options
         label_list = self.label_list
@@ -199,15 +260,32 @@ class TikzPath(TikzObject):
         if label_list:
             parts = [label_list[0]]
             for i in range(1, len(label_list)):
-                seg_opts = (
+                seg = (
                     self._segment_options[i - 1]
                     if self._segment_options and i - 1 < len(self._segment_options)
                     else None
                 )
-                if seg_opts is not None:
-                    parts.append(f"to[{self._format_segment_opts(seg_opts)}]")
+
+                # --- connector type ---
+                connector = "to"
+                if isinstance(seg, dict):
+                    connector = seg.get("connector", "to")
+
+                # --- TikZ options for this segment ---
+                if seg is not None and connector in self._TO_CONNECTORS:
+                    opts_str = self._format_segment_opts(seg)
+                    if opts_str:
+                        parts.append(f"to[{opts_str}]")
+                    else:
+                        parts.append("to")
                 else:
-                    parts.append("to")
+                    # plain connectors (--  ..  |-  -|  sin  cos) take no brackets
+                    parts.append(connector)
+
+                # --- optional inline node label ---
+                if isinstance(seg, dict) and "node" in seg:
+                    parts.append(self._format_path_node(seg["node"]))
+
                 parts.append(label_list[i])
             path_str = " ".join(parts)
         else:

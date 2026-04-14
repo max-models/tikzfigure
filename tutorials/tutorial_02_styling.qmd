@@ -195,27 +195,34 @@ for (cx, cy), color in ring_specs:
 d     = math.sqrt(1.25**2 + 1.25**2)
 alpha = math.degrees(math.acos(d / (2 * r)))   # ≈ 27.9°
 
-def arc_seg(cx, cy, phi_deg, color):
-    """Draw the arc of the ring at (cx, cy) spanning phi_deg ± alpha."""
-    a1 = phi_deg - alpha
-    a2 = phi_deg + alpha
-    sx = cx + r * math.cos(math.radians(a1))
-    sy = cy + r * math.sin(math.radians(a1))
-    fig.arc(start=(sx, sy), start_angle=a1, end_angle=a2,
-            radius=f"{r}cm", color=color, line_width=lw, layer=1)
+def arc_seg(center, radius, start_angle, end_angle, color):
+    """Draw an arc on the circle centered at `center`."""
+    cx, cy = center
+    sx = cx + radius * math.cos(math.radians(start_angle))
+    sy = cy + radius * math.sin(math.radians(start_angle))
+    fig.arc(
+        start=(sx, sy),
+        start_angle=start_angle,
+        end_angle=end_angle,
+        radius=f"{radius}cm",
+        color=color,
+        line_width=lw,
+        layer=1,
+    )
 
 # Weave order (front > back): Blue > Yellow > Black > Green > Red
 weaves = [
     ((0,    0),     "blue",            (1.25, -1.25)),  # Blue   over Yellow
-    ((1.25, -1.25), "yellow!80!black", (2.5,   0)),     # Yellow over Black
-    ((2.5,  0),     "black",           (3.75, -1.25)),  # Black  over Green
-    ((3.75, -1.25), "green!60!black",  (5,     0)),     # Green  over Red
+    # ((1.25, -1.25), "yellow!80!black", (2.5,   0)),     # Yellow over Black
+    # ((2.5,  0),     "black",           (3.75, -1.25)),  # Black  over Green
+    # ((3.75, -1.25), "green!60!black",  (5,     0)),     # Green  over Red
 ]
 
 for (fx, fy), fc, (bx, by) in weaves:
     phi = math.degrees(math.atan2(by - fy, bx - fx))  # direction: front → back
-    arc_seg(bx, by, phi + 180, "white")   # erase back ring's crossing arc
-    arc_seg(fx, fy, phi,       fc)         # redraw front ring's crossing arc
+    # arc_seg((bx, by), r, phi + 180 - alpha, phi + 180 + alpha, "white")
+    #     # erase back ring's crossing arc
+    arc_seg((fx, fy), r, phi - alpha, phi + alpha, fc)  # redraw front ring's crossing arc
 
 fig.show()
 ```

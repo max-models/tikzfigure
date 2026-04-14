@@ -2508,6 +2508,300 @@ class TikzFigure:
         )
         return path
 
+    def fill(
+        self,
+        nodes: list,
+        layer: int = 0,
+        comment: str | None = None,
+        center: bool = False,
+        verbose: bool = False,
+        # Path structure
+        options: list | str | None = None,
+        cycle: bool = False,
+        segment_options: list[dict | str | None] | None = None,
+        # Fill color / pattern
+        fill: str | None = None,
+        fill_opacity: float | None = None,
+        opacity: float | None = None,
+        # Pattern fills
+        pattern: _Pattern = None,
+        pattern_color: str | None = None,
+        # Shading
+        shading: _Shading = None,
+        shading_angle: float | None = None,
+        left_color: str | None = None,
+        right_color: str | None = None,
+        top_color: str | None = None,
+        bottom_color: str | None = None,
+        middle_color: str | None = None,
+        inner_color: str | None = None,
+        outer_color: str | None = None,
+        ball_color: str | None = None,
+        # Transformations
+        rotate: float | None = None,
+        xshift: str | None = None,
+        yshift: str | None = None,
+        scale: float | None = None,
+        xscale: float | None = None,
+        yscale: float | None = None,
+        # Even-odd rule
+        even_odd_rule: bool = False,
+        # Catch-all for unlisted TikZ options
+        **kwargs: Any,
+    ) -> TikzPath:
+        """Fill a closed path with no stroke using ``\\fill``.
+
+        Unlike :meth:`filldraw`, no outline is drawn.  This is equivalent
+        to ``filldraw(..., draw="none")`` but produces a cleaner
+        ``\\fill[...]`` command in the output.
+
+        Args:
+            nodes: List of :class:`Node` objects, node label strings, or
+                ``(x, y)`` coordinate tuples to connect.
+            layer: Target layer index. Defaults to ``0``.
+            comment: Optional comment prepended in the TikZ output.
+            center: If ``True``, connect through ``.center`` anchors.
+            verbose: If ``True``, print a debug message.
+            options: Flag-style TikZ options (e.g. ``["even odd rule"]``).
+            cycle: If ``True``, close the path with ``-- cycle``.
+            segment_options: Per-segment options (see :meth:`draw`).
+            fill: Fill color (e.g. ``"blue!30"``).
+            fill_opacity: Fill opacity (0–1).
+            opacity: Overall opacity (0–1).
+            pattern: Fill pattern name.
+            pattern_color: Pattern color.
+            shading: Shading type (``"axis"``, ``"radial"``, ``"ball"``).
+            shading_angle: Angle for axis shading.
+            left_color: Left color for axis shading.
+            right_color: Right color for axis shading.
+            top_color: Top color for axis shading.
+            bottom_color: Bottom color for axis shading.
+            middle_color: Middle color for axis shading.
+            inner_color: Inner color for radial shading.
+            outer_color: Outer color for radial shading.
+            ball_color: Ball color for ball shading.
+            rotate: Rotation angle in degrees.
+            xshift: Horizontal shift.
+            yshift: Vertical shift.
+            scale: Uniform scaling factor.
+            xscale: Horizontal scaling factor.
+            yscale: Vertical scaling factor.
+            even_odd_rule: If ``True``, add ``even odd rule`` to options for
+                correct filling of self-intersecting paths.
+            **kwargs: Additional TikZ options.
+
+        Returns:
+            The :class:`TikzPath` object that was added.
+        """
+        _params = locals().copy()
+        _non_tikz = {
+            "self",
+            "nodes",
+            "layer",
+            "comment",
+            "center",
+            "verbose",
+            "options",
+            "cycle",
+            "segment_options",
+            "even_odd_rule",
+            "kwargs",
+            "__class__",
+        }
+        tikz_kwargs = dict(kwargs)
+        tikz_kwargs.update(
+            {k: v for k, v in _params.items() if k not in _non_tikz and v is not None}
+        )
+        if isinstance(options, str):
+            options = [options]
+        if options is None:
+            options = []
+        if even_odd_rule:
+            options = list(options) + ["even odd rule"]
+        return self._add_path(
+            nodes=nodes,
+            layer=layer,
+            comment=comment,
+            center=center,
+            tikz_command="fill",
+            verbose=verbose,
+            options=options,
+            cycle=cycle,
+            segment_options=segment_options,
+            **tikz_kwargs,
+        )
+
+    def clip(
+        self,
+        nodes: list,
+        layer: int = 0,
+        comment: str | None = None,
+        center: bool = False,
+        verbose: bool = False,
+        # Path structure
+        options: list | str | None = None,
+        cycle: bool = False,
+        segment_options: list[dict | str | None] | None = None,
+        # Transformations (the most common clip options)
+        rotate: float | None = None,
+        xshift: str | None = None,
+        yshift: str | None = None,
+        scale: float | None = None,
+        rounded_corners: str | None = None,
+        # Catch-all for unlisted TikZ options
+        **kwargs: Any,
+    ) -> TikzPath:
+        """Add a clipping path using ``\\clip``.
+
+        All drawing commands that follow (within the same scope or layer)
+        are clipped to the given path.  Wrap the clip and the clipped
+        drawing in a ``\\begin{scope}...\\end{scope}`` via
+        :meth:`add_raw` to limit the clip's effect.
+
+        Args:
+            nodes: List of :class:`Node` objects, node label strings, or
+                ``(x, y)`` coordinate tuples forming the clipping boundary.
+            layer: Target layer index. Defaults to ``0``.
+            comment: Optional comment prepended in the TikZ output.
+            center: If ``True``, connect through ``.center`` anchors.
+            verbose: If ``True``, print a debug message.
+            options: Flag-style TikZ options.
+            cycle: If ``True``, close the clipping path with ``-- cycle``.
+            segment_options: Per-segment options (see :meth:`draw`).
+            rotate: Rotation angle in degrees.
+            xshift: Horizontal shift.
+            yshift: Vertical shift.
+            scale: Uniform scaling factor.
+            rounded_corners: Corner radius for rounded clip boundary.
+            **kwargs: Additional TikZ options.
+
+        Returns:
+            The :class:`TikzPath` object that was added.
+        """
+        _params = locals().copy()
+        _non_tikz = {
+            "self",
+            "nodes",
+            "layer",
+            "comment",
+            "center",
+            "verbose",
+            "options",
+            "cycle",
+            "segment_options",
+            "kwargs",
+            "__class__",
+        }
+        tikz_kwargs = dict(kwargs)
+        tikz_kwargs.update(
+            {k: v for k, v in _params.items() if k not in _non_tikz and v is not None}
+        )
+        return self._add_path(
+            nodes=nodes,
+            layer=layer,
+            comment=comment,
+            center=center,
+            tikz_command="clip",
+            verbose=verbose,
+            options=options,
+            cycle=cycle,
+            segment_options=segment_options,
+            **tikz_kwargs,
+        )
+
+    def path(
+        self,
+        nodes: list,
+        layer: int = 0,
+        comment: str | None = None,
+        center: bool = False,
+        verbose: bool = False,
+        # Path structure
+        options: list | str | None = None,
+        cycle: bool = False,
+        segment_options: list[dict | str | None] | None = None,
+        # Path naming (most common use of \path)
+        name_path: str | None = None,
+        # Positioning
+        pos: float | None = None,
+        # Transformations
+        rotate: float | None = None,
+        xshift: str | None = None,
+        yshift: str | None = None,
+        scale: float | None = None,
+        # Catch-all for unlisted TikZ options
+        **kwargs: Any,
+    ) -> TikzPath:
+        """Add an invisible path using ``\\path``.
+
+        ``\\path`` traces a path without drawing or filling it.  Common
+        uses:
+
+        * **Named paths** for the ``intersections`` library::
+
+              fig.path(["A", "B"], name_path="edge_AB")
+              # → \\path[name path=edge_AB] (A) to (B);
+
+        * **Bounding-box padding** — extend the figure's bounding box
+          without visible output.
+
+        * **Invisible node placement** — pass ``segment_options`` with a
+          ``"node"`` key to place a label node at a specific position along
+          the path.
+
+        Args:
+            nodes: List of :class:`Node` objects, node label strings, or
+                ``(x, y)`` coordinate tuples.
+            layer: Target layer index. Defaults to ``0``.
+            comment: Optional comment prepended in the TikZ output.
+            center: If ``True``, connect through ``.center`` anchors.
+            verbose: If ``True``, print a debug message.
+            options: Flag-style TikZ options.
+            cycle: If ``True``, close the path with ``-- cycle``.
+            segment_options: Per-segment options (see :meth:`draw`).
+            name_path: Register this path under a name for the
+                ``intersections`` library.
+            pos: Scalar position along the path (0–1).
+            rotate: Rotation angle in degrees.
+            xshift: Horizontal shift.
+            yshift: Vertical shift.
+            scale: Uniform scaling factor.
+            **kwargs: Additional TikZ options.
+
+        Returns:
+            The :class:`TikzPath` object that was added.
+        """
+        _params = locals().copy()
+        _non_tikz = {
+            "self",
+            "nodes",
+            "layer",
+            "comment",
+            "center",
+            "verbose",
+            "options",
+            "cycle",
+            "segment_options",
+            "kwargs",
+            "__class__",
+        }
+        tikz_kwargs = dict(kwargs)
+        tikz_kwargs.update(
+            {k: v for k, v in _params.items() if k not in _non_tikz and v is not None}
+        )
+        return self._add_path(
+            nodes=nodes,
+            layer=layer,
+            comment=comment,
+            center=center,
+            tikz_command="path",
+            verbose=verbose,
+            options=options,
+            cycle=cycle,
+            segment_options=segment_options,
+            **tikz_kwargs,
+        )
+
     def plot3d(
         self,
         x: list[float],
