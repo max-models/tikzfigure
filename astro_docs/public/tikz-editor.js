@@ -1676,14 +1676,12 @@ async function runCompile(includedLayerIds) {
     });
   }
 
-  const compileBtn = document.getElementById('compile-btn');
   compileBtn.disabled = true;
   compileBtn.textContent = 'Compiling\u2026';
   setStatus('Sending to latex.ytotech.com\u2026');
   showLog('', false);
 
   const pdfDl = document.getElementById('pdf-download');
-  const pdfViewer = document.getElementById('pdf-viewer');
 
   try {
     const resp = await fetch('https://latex.ytotech.com/builds/sync', {
