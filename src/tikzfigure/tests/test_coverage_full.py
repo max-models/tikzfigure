@@ -477,10 +477,9 @@ def test_show_jupyter_branch(monkeypatch):
     monkeypatch.setattr(
         fig,
         "savefig",
-        lambda filename,
-        verbose=False,
-        transparent=False,
-        use_web_compilation=False: None,
+        lambda filename, verbose=False, transparent=False, use_web_compilation=False: (
+            None
+        ),
     )
 
     fig.show(width=100, height=200, verbose=False)
@@ -531,7 +530,7 @@ def test_show_backends_and_errors(monkeypatch, capsys):
         dpi=300,
         verbose=False,
         transparent=False,
-        use_web_compilation=False: None,
+        use_web_compilation=False: (None),
     )
 
     fig._show_matplotlib(dpi=72, verbose=True)
@@ -577,7 +576,7 @@ def test_show_backends_and_errors(monkeypatch, capsys):
         dpi=300,
         verbose=False,
         transparent=False,
-        use_web_compilation=False: None,
+        use_web_compilation=False: (None),
     )
 
     fig._show_pillow(dpi=72, verbose=False)
