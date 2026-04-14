@@ -45,6 +45,7 @@ const pythonPre     = document.getElementById('python-code');
 const tikzPre       = document.getElementById('tikz-code');
 const compileBtn    = document.getElementById('compile-btn');
 const pdfViewer     = document.getElementById('pdf-viewer');
+const pdfDl         = document.getElementById('pdf-download');
 const pyodideStatus = document.getElementById('pyodide-status');
 const canvasResizer = document.getElementById('canvas-resizer');
 const contextMenu   = document.getElementById('context-menu');
@@ -54,6 +55,7 @@ const rawTikzInput  = document.getElementById('raw-tikz-input');
 const marqueeEl     = document.getElementById('selection-marquee');
 
 function setStatus(msg) { statusBar.textContent = msg; }
+function esc(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
 // ─── Selection Helpers ────────────────────────────────────────────────────
 
@@ -937,6 +939,7 @@ document.addEventListener('keydown', (e) => {
 
   if (e.key === 'Enter' && state.mode === 'edge' && state.pathBuilder.length >= 2) { finishPath(false); return; }
   if (e.key === 'Escape' && state.mode === 'edge' && state.pathBuilder.length > 0) { cancelPath(); return; }
+  if (e.key === 'Escape') { const overlay = document.getElementById('compile-dialog-overlay'); if (overlay && overlay.style.display !== 'none') { closeCompileDialog(); return; } }
   if (e.key === 'v' || e.key === 'V') setMode('select');
   if (e.key === 'n' || e.key === 'N') setMode('node');
   if (e.key === 'e' || e.key === 'E') setMode('edge');
@@ -1287,7 +1290,7 @@ function renderLayersPanel() {
       <div class="layer-row${isActive ? ' active-layer' : ''}" data-layer-id="${l.id}">
         <button class="layer-vis-btn${l.visible ? '' : ' hidden-layer'}" data-vis="${l.id}" title="Toggle visibility">${l.visible ? '\u{1F441}' : '\u{1F441}\u200D\u{1F5E8}'}</button>
         <button class="layer-lock-btn${l.locked ? ' locked-layer' : ''}" data-lock="${l.id}" title="Toggle lock">${l.locked ? '\u{1F512}' : '\u{1F513}'}</button>
-        <span class="layer-name" data-rename="${l.id}">${l.name}</span>
+        <span class="layer-name">${l.name}</span>
         <span class="layer-count">${count}</span>
       </div>
     `;
@@ -1681,8 +1684,6 @@ async function runCompile(includedLayerIds) {
   setStatus('Sending to latex.ytotech.com\u2026');
   showLog('', false);
 
-  const pdfDl = document.getElementById('pdf-download');
-
   try {
     const resp = await fetch('https://latex.ytotech.com/builds/sync', {
       method: 'POST',
@@ -1815,8 +1816,6 @@ function showLog(text, hasError) {
   compileLogDetails.style.display = '';
   compileLogDetails.open = hasError;
 }
-
-function esc(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
 // ─── Theme Toggle ─────────────────────────────────────────────────────────
 
