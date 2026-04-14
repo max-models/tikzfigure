@@ -253,10 +253,12 @@ class TikzFigure:
         # Grid layout parameters
         self._subfigure_rows: int | None = rows
         self._subfigure_cols: int | None = cols
-        # Grid stores: (Axis2D | TikzFigure, width, height_str?)
-        # For Axis2D: (axis, width)
-        # For TikzFigure: (subfig, width, height_str)
-        self._subfigure_grid: dict[tuple[int, int], tuple[Any, float, ...]] = {}
+        # Grid stores either an axis cell or a bare subfigure cell.
+        self._subfigure_grid: dict[
+            tuple[int, int],
+            tuple[Axis2D, float] | tuple["TikzFigure", float, str],
+        ] = {}
+        self._is_bare_subfigure: bool = False
         self._subfigure_position: int = 0
 
         # Validate grid parameters
@@ -870,25 +872,29 @@ class TikzFigure:
         Raises:
             ValueError: If either node lacks explicit numeric coordinates.
         """
-        if isinstance(node1, str):
-            node1 = self.layers.get_node(node1)
-        if isinstance(node2, str):
-            node2 = self.layers.get_node(node2)
+        node1_obj: Node | Coordinate = (
+            self.layers.get_node(node1) if isinstance(node1, str) else node1
+        )
+        node2_obj: Node | Coordinate = (
+            self.layers.get_node(node2) if isinstance(node2, str) else node2
+        )
 
-        if node1.x is None or node1.y is None:
+        if node1_obj.x is None or node1_obj.y is None:
             raise ValueError(
-                f"Node '{node1.label}' does not have explicit coordinates."
+                f"Node '{node1_obj.label}' does not have explicit coordinates."
             )
-        if node2.x is None or node2.y is None:
+        if node2_obj.x is None or node2_obj.y is None:
             raise ValueError(
-                f"Node '{node2.label}' does not have explicit coordinates."
+                f"Node '{node2_obj.label}' does not have explicit coordinates."
             )
 
-        mid_x = (node1.x + node2.x) / 2  # type: ignore[operator]
-        mid_y = (node1.y + node2.y) / 2  # type: ignore[operator]
+        mid_x = (node1_obj.x + node2_obj.x) / 2  # type: ignore[operator]
+        mid_y = (node1_obj.y + node2_obj.y) / 2  # type: ignore[operator]
 
-        if node1.ndim == 3 and node2.ndim == 3:
-            mid_z = (node1.z + node2.z) / 2  # type: ignore[operator]
+        if isinstance(node1_obj, Coordinate) or isinstance(node2_obj, Coordinate):
+            mid_z = None
+        elif node1_obj.ndim == 3 and node2_obj.ndim == 3:
+            mid_z = (node1_obj.z + node2_obj.z) / 2  # type: ignore[operator]
         else:
             mid_z = None
 
@@ -3080,6 +3086,7 @@ class TikzFigure:
                 "add_subfigure() can only be used with grid layout. "
                 "Create figure with rows and cols: TikzFigure(rows=2, cols=2)"
             )
+        assert self._subfigure_cols is not None  # Type narrowing for mypy
 
         # Check grid not full
         if self._subfigure_position >= self._subfigure_rows * self._subfigure_cols:
@@ -3224,8 +3231,8 @@ class TikzFigure:
             for col in range(num_cols):
                 if (row, col) in self._subfigure_grid:
                     item_data = self._subfigure_grid[(row, col)]
-                    axis = item_data[0]
-                    result += self._render_axis_in_groupplot(axis)
+                    if isinstance(item_data[0], Axis2D):
+                        result += self._render_axis_in_groupplot(item_data[0])
 
         result += "\\end{groupplot}\n"
         return result
@@ -3263,7 +3270,7 @@ class TikzFigure:
             for col in range(num_cols):
                 if (row, col) in self._subfigure_grid:
                     item_data = self._subfigure_grid[(row, col)]
-                    if len(item_data) == 3 and item_data[2] != "None":
+                    if isinstance(item_data[0], TikzFigure) and item_data[2] != "None":
                         h_str = str(item_data[2])
                         if h_str.endswith("cm"):
                             max_h = max(max_h, float(h_str[:-2]))
@@ -3282,11 +3289,15 @@ class TikzFigure:
                     continue
 
                 item_data = self._subfigure_grid[(row, col)]
-                if len(item_data) == 3:
-                    item, width, height_str = item_data
-                else:
-                    item, width = item_data
+                item: Axis2D | TikzFigure
+                if isinstance(item_data[0], Axis2D):
+                    item = item_data[0]
+                    width = item_data[1]
                     height_str = "None"
+                else:
+                    item = item_data[0]
+                    width = item_data[1]
+                    height_str = item_data[2]
 
                 x = x_offsets[col]
                 y = y_offsets[row]
