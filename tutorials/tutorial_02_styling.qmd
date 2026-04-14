@@ -157,28 +157,58 @@ fig.show()
 
 ## Putting it together: Olympic rings
 
-Five thick circles in the classic Olympic layout - a good exercise in
-combining coordinates, colors, and draw-only (no fill) paths.
+Five thick rings in the classic Olympic layout with correct interlocking
+overlaps. The weave order is Blue > Yellow > Black > Green > Red: at each
+crossing the "greater" ring appears in front.
+
+Two layers and a three-step trick per crossing:
+
+1. Draw all five complete rings (layer 0).
+2. **Erase** the back ring's crossing arc by overdrawing it in white (layer 1).
+3. **Redraw** the front ring's crossing arc in its own color (layer 1, after the erase).
+
+The crossing arc spans `phi ± alpha` where `phi` points from one ring center
+to the other and `alpha = arccos(d / 2r)` is the half-angle of the chord.
 
 ```{python}
-# TODO: Fix the layering
-import numpy as np
+import math
 
 fig = TikzFigure()
 
-theta = np.linspace(0, 2 * np.pi, 60)
+r  = 1.0    # ring radius (cm)
+lw = "5pt"  # line width
 
 ring_specs = [
-    ((0, 0), "blue"),
-    ((2.5, 0), "black"),
-    ((5, 0), "red"),
-    ((1.25, -1.25), "yellow!80!black"),
-    ((3.75, -1.25), "green!60!black"),
+    ((0,    0), (330, 360),    "blue"),
+    ((1.25, -1.25), (60,90), "yellow!80!black"),
+    ((2.5,  0), (330,360),  "black"),
+    ((3.75, -1.25), (60,90), "green!60!black"),
+    ((5,    0), (None, None),    "red"),
 ]
 
-for (cx, cy), color in ring_specs:
-    pts = list(zip(np.cos(theta) + cx, np.sin(theta) + cy))
-    fig.draw(pts, cycle=True, line_width=5, color=color, fill="none")
+
+def arc_seg(center, radius, start_angle, end_angle, color):
+    """Draw an arc on the circle centered at `center`."""
+    cx, cy = center
+    sx = cx + radius * math.cos(math.radians(start_angle))
+    sy = cy + radius * math.sin(math.radians(start_angle))
+    fig.arc(
+        start=(sx, sy),
+        start_angle=start_angle,
+        end_angle=end_angle,
+        radius=f"{radius}cm",
+        color=color,
+        line_width=lw,
+        layer=1,
+    )
+
+for (cx, cy), (start_angle, end_angle), color in ring_specs:
+    fig.circle(center=(cx, cy), radius=f"{r}cm", color=color, line_width=lw, layer=0)
+
+for (cx, cy), (start_angle, end_angle), color in ring_specs:
+    if start_angle is not None and end_angle is not None:
+        arc_seg((cx, cy), r, start_angle, end_angle, color)
+
 
 fig.show()
 ```

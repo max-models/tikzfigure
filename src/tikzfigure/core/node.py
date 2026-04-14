@@ -270,6 +270,11 @@ class Node(TikzObject):
         return self._ndim
 
     @property
+    def center(self) -> str:
+        """Anchor point for the center of the node."""
+        return f"{self.label}.center"
+
+    @property
     def content(self) -> str:
         """Text or LaTeX content displayed inside this node."""
         return self._content

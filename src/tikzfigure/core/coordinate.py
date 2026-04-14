@@ -3,6 +3,158 @@ from typing import Any
 from tikzfigure.core.base import TikzObject
 
 
+class Coordinate(TikzObject):
+    """A named TikZ coordinate declared with ``\\coordinate``.
+
+    Unlike a :class:`~tikzfigure.core.node.Node`, a coordinate has no
+    visible output — it simply registers a named point in the figure that
+    can be referenced in paths, calc expressions, or anywhere TikZ accepts a
+    node label.
+
+    Common uses:
+
+    * Defining fixed reference points::
+
+          fig.add_coordinate("origin", x=0, y=0)
+          fig.draw(["origin", "A"])
+
+    * Placing a point at the midpoint between two nodes (requires the
+      ``calc`` TikZ library)::
+
+          fig.add_coordinate("mid", at="$(A)!0.5!(B)$")
+          fig.draw(["A", "mid", "B"])
+
+    * Naming a point at a node anchor::
+
+          fig.add_coordinate("atip", at="A.north")
+
+    Attributes:
+        label: The TikZ name for this coordinate.
+        x: X value when using absolute positioning, or ``None``.
+        y: Y value when using absolute positioning, or ``None``.
+        at: Raw TikZ coordinate expression when using expression
+            positioning, or ``None``.
+    """
+
+    def __init__(
+        self,
+        label: str,
+        x: float | str | None = None,
+        y: float | str | None = None,
+        at: str | None = None,
+        layer: int = 0,
+        comment: str | None = None,
+    ) -> None:
+        """Initialize a Coordinate.
+
+        Provide either numeric ``x`` and ``y`` coordinates, or a raw TikZ
+        coordinate expression via ``at``.
+
+        Args:
+            label: TikZ name for this coordinate, used when referencing it
+                in path lists and other commands.
+            x: X-coordinate value (numeric or PGF expression string). Must
+                be provided together with ``y``. Mutually exclusive with
+                ``at``.
+            y: Y-coordinate value (numeric or PGF expression string). Must
+                be provided together with ``x``. Mutually exclusive with
+                ``at``.
+            at: Raw TikZ coordinate expression. Examples:
+
+                * ``"$(A)!0.5!(B)$"`` — midpoint via ``calc`` library
+                * ``"A.north"`` — at a node anchor
+                * ``"30:2cm"`` — polar coordinates
+
+                If the string does not begin with ``(``, parentheses are
+                added automatically. Mutually exclusive with ``x``/``y``.
+            layer: Layer index this coordinate belongs to. Defaults to ``0``.
+            comment: Optional comment prepended in the TikZ output.
+
+        Raises:
+            ValueError: If both ``at`` and ``x``/``y`` are supplied, or if
+                neither is supplied.
+        """
+        if at is not None and (x is not None or y is not None):
+            raise ValueError(
+                "Provide either x/y coordinates or an 'at' expression, not both."
+            )
+        if at is None and (x is None or y is None):
+            raise ValueError("Provide both x and y coordinates, or an 'at' expression.")
+
+        super().__init__(label=label, layer=layer, comment=comment)
+        self._x = x
+        self._y = y
+        self._at = at
+
+    @property
+    def x(self) -> float | str | None:
+        """X-coordinate value, or ``None`` if using an ``at`` expression."""
+        return self._x
+
+    @property
+    def y(self) -> float | str | None:
+        """Y-coordinate value, or ``None`` if using an ``at`` expression."""
+        return self._y
+
+    @property
+    def at(self) -> str | None:
+        """Raw TikZ coordinate expression, or ``None`` if using x/y."""
+        return self._at
+
+    def to_tikz(self) -> str:
+        """Generate the TikZ ``\\coordinate`` declaration.
+
+        Returns:
+            A ``\\coordinate (label) at (...);`` string ending with a
+            newline, optionally preceded by a comment line.
+        """
+        if self._at is not None:
+            at_str = self._at if self._at.startswith("(") else f"({self._at})"
+            coord_str = f"\\coordinate ({self.label}) at {at_str};\n"
+        else:
+            x_str = str(self._x)
+            y_str = str(self._y)
+            coord_str = f"\\coordinate ({self.label}) at ({{{x_str}}},{{{y_str}}});\n"
+        return self.add_comment(coord_str)
+
+    def to_dict(self) -> dict[str, Any]:
+        """Serialize this coordinate to a plain dictionary.
+
+        Returns:
+            A dictionary with ``type``, ``label``, ``x``, ``y``, ``at``,
+            ``layer``, and ``comment`` keys.
+        """
+        d = super().to_dict()
+        d.update(
+            {
+                "type": "Coordinate",
+                "x": self._x,
+                "y": self._y,
+                "at": self._at,
+            }
+        )
+        return d
+
+    @classmethod
+    def from_dict(cls, d: dict[str, Any]) -> "Coordinate":
+        """Reconstruct a Coordinate from a dictionary.
+
+        Args:
+            d: Dictionary as produced by :meth:`to_dict`.
+
+        Returns:
+            A new :class:`Coordinate` instance.
+        """
+        return cls(
+            label=d.get("label", ""),
+            x=d.get("x"),
+            y=d.get("y"),
+            at=d.get("at"),
+            layer=d.get("layer", 0),
+            comment=d.get("comment"),
+        )
+
+
 class TikzCoordinate(TikzObject):
     """A bare coordinate point (no drawn node) in a TikZ figure.
 

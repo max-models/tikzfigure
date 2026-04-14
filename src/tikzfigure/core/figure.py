@@ -11,7 +11,7 @@ from tikzfigure.core.axis import Axis2D
 from tikzfigure.core.base import TikzObject
 from tikzfigure.core.circle import Circle
 from tikzfigure.core.color import Color
-from tikzfigure.core.coordinate import TikzCoordinate
+from tikzfigure.core.coordinate import Coordinate, TikzCoordinate
 from tikzfigure.core.ellipse import Ellipse
 from tikzfigure.core.grid import Grid
 from tikzfigure.core.layer import LayerCollection
@@ -87,6 +87,7 @@ class TikzFigure:
         verbose: bool = False,
         options: list | str | None = None,
         cycle: bool = False,
+        segment_options: list[dict | str | None] | None = None,
         **kwargs: Any,
     ) -> TikzPath:
         """Internal helper that creates and registers a :class:`TikzPath`.
@@ -94,18 +95,29 @@ class TikzFigure:
         Resolves node labels to :class:`Node` objects and coordinate tuples
         to :class:`TikzCoordinate` objects before constructing the path.
 
+        Node label strings may include an anchor suffix using TikZ dot
+        notation (e.g. ``"n1.center"`` or ``"n1.north"``).  The suffix is
+        resolved by first trying the full string as a node label, and
+        falling back to splitting at the last ``.`` if no exact match is
+        found.
+
         Args:
             nodes: Items to connect. Each element may be a :class:`Node`,
-                a node label string, or an ``(x, y)`` / ``(x, y, z)``
-                coordinate tuple.
+                a node label string (optionally with a ``.anchor`` suffix),
+                or an ``(x, y)`` / ``(x, y, z)`` coordinate tuple.
             layer: Target layer index. Defaults to ``0``.
             comment: Optional comment prepended in the TikZ output.
-            center: If ``True``, connect through ``.center`` anchors.
+            center: If ``True``, connect all nodes through ``.center``
+                anchors (overridden per-node by dot-notation in *nodes*).
             tikz_command: TikZ drawing command (``"draw"`` or
                 ``"filldraw"``). Defaults to ``"draw"``.
             verbose: If ``True``, print the resolved node list.
             options: Flag-style TikZ options (string or list).
             cycle: If ``True``, close the path with ``-- cycle``.
+            segment_options: Per-segment TikZ options for each ``to``
+                connector.  At most ``len(nodes) - 1`` entries.  Each
+                entry is ``None`` (plain ``to``), a raw options string, or
+                a dict (see :class:`TikzPath` for the dict format).
             **kwargs: Keyword-style TikZ path options.
 
         Returns:
@@ -119,17 +131,30 @@ class TikzFigure:
         if not isinstance(nodes, list):
             raise ValueError("nodes parameter must be a list of node names.")
 
-        nodes_cleaned: list[Node | TikzCoordinate] = []
+        nodes_cleaned: list[Node | Coordinate | TikzCoordinate] = []
+        node_anchors: list[str | None] = []
 
         for node in nodes:
             if isinstance(node, Node):
                 nodes_cleaned.append(node)
+                node_anchors.append(None)
             elif isinstance(node, str):
-                # Find the node by its label
-                nodes_cleaned.append(self.layers.get_node(node))
+                # Try exact label first; if not found and the string
+                # contains a dot, split into label + anchor.
+                try:
+                    nodes_cleaned.append(self.layers.get_node(node))
+                    node_anchors.append(None)
+                except ValueError:
+                    if "." in node:
+                        label_part, anchor_part = node.rsplit(".", 1)
+                        nodes_cleaned.append(self.layers.get_node(label_part))
+                        node_anchors.append(anchor_part)
+                    else:
+                        raise
             elif isinstance(node, tuple) or isinstance(node, list):
                 coords = tuple(node)
                 nodes_cleaned.append(TikzCoordinate(*coords, layer=layer))  # type: ignore[misc]
+                node_anchors.append(None)
             else:
                 raise NotImplementedError(
                     f"{node =}, {type(node) =} is not a valid node type!",
@@ -141,10 +166,16 @@ class TikzFigure:
         if isinstance(options, str):
             options = [options]
 
+        resolved_anchors = (
+            node_anchors if any(a is not None for a in node_anchors) else None
+        )
+
         path = TikzPath(
             nodes=nodes_cleaned,
             comment=comment,
             center=center,
+            node_anchors=resolved_anchors,
+            segment_options=segment_options,
             tikz_command=tikz_command,
             options=options,
             cycle=cycle,
@@ -222,10 +253,12 @@ class TikzFigure:
         # Grid layout parameters
         self._subfigure_rows: int | None = rows
         self._subfigure_cols: int | None = cols
-        # Grid stores: (Axis2D | TikzFigure, width, height_str?)
-        # For Axis2D: (axis, width)
-        # For TikzFigure: (subfig, width, height_str)
-        self._subfigure_grid: dict[tuple[int, int], tuple[Any, float, ...]] = {}
+        # Grid stores either an axis cell or a bare subfigure cell.
+        self._subfigure_grid: dict[
+            tuple[int, int],
+            tuple[Axis2D, float] | tuple["TikzFigure", float, str],
+        ] = {}
+        self._is_bare_subfigure: bool = False
         self._subfigure_position: int = 0
 
         # Validate grid parameters
@@ -446,21 +479,29 @@ class TikzFigure:
         for color_entry in d.get("colors", []):
             fig._colors.append((color_entry["name"], Color.from_dict(color_entry)))
 
-        # Build node lookup across all layers for path deserialization
+        # Build node/coordinate lookup across all layers for path deserialization
         layers_data: dict[Any, list[dict[str, Any]]] = d.get("layers", {})
-        node_lookup: dict[str, Node] = {}
+        node_lookup: dict[str, Node | Coordinate] = {}
         for items_data in layers_data.values():
             for item_data in items_data:
                 if item_data.get("type") == "Node":
                     node = Node.from_dict(item_data)
                     if node.label is not None:
                         node_lookup[node.label] = node
+                elif item_data.get("type") == "Coordinate":
+                    coord = Coordinate.from_dict(item_data)
+                    if coord.label:
+                        node_lookup[coord.label] = coord
 
         # Reconstruct layers in order
         for layer_label, items_data in layers_data.items():
             for item_data in items_data:
                 item_type = item_data.get("type")
                 if item_type == "Node":
+                    fig.layers.add_item(
+                        node_lookup[item_data["label"]], layer=layer_label
+                    )
+                elif item_type == "Coordinate":
                     fig.layers.add_item(
                         node_lookup[item_data["label"]], layer=layer_label
                     )
@@ -831,25 +872,29 @@ class TikzFigure:
         Raises:
             ValueError: If either node lacks explicit numeric coordinates.
         """
-        if isinstance(node1, str):
-            node1 = self.layers.get_node(node1)
-        if isinstance(node2, str):
-            node2 = self.layers.get_node(node2)
+        node1_obj: Node | Coordinate = (
+            self.layers.get_node(node1) if isinstance(node1, str) else node1
+        )
+        node2_obj: Node | Coordinate = (
+            self.layers.get_node(node2) if isinstance(node2, str) else node2
+        )
 
-        if node1.x is None or node1.y is None:
+        if node1_obj.x is None or node1_obj.y is None:
             raise ValueError(
-                f"Node '{node1.label}' does not have explicit coordinates."
+                f"Node '{node1_obj.label}' does not have explicit coordinates."
             )
-        if node2.x is None or node2.y is None:
+        if node2_obj.x is None or node2_obj.y is None:
             raise ValueError(
-                f"Node '{node2.label}' does not have explicit coordinates."
+                f"Node '{node2_obj.label}' does not have explicit coordinates."
             )
 
-        mid_x = (node1.x + node2.x) / 2  # type: ignore[operator]
-        mid_y = (node1.y + node2.y) / 2  # type: ignore[operator]
+        mid_x = (node1_obj.x + node2_obj.x) / 2  # type: ignore[operator]
+        mid_y = (node1_obj.y + node2_obj.y) / 2  # type: ignore[operator]
 
-        if node1.ndim == 3 and node2.ndim == 3:
-            mid_z = (node1.z + node2.z) / 2  # type: ignore[operator]
+        if isinstance(node1_obj, Coordinate) or isinstance(node2_obj, Coordinate):
+            mid_z = None
+        elif node1_obj.ndim == 3 and node2_obj.ndim == 3:
+            mid_z = (node1_obj.z + node2_obj.z) / 2  # type: ignore[operator]
         else:
             mid_z = None
 
@@ -862,6 +907,75 @@ class TikzFigure:
             content=content,
             **kwargs,
         )
+
+    def add_coordinate(
+        self,
+        label: str,
+        x: float | str | None = None,
+        y: float | str | None = None,
+        at: str | None = None,
+        layer: int = 0,
+        comment: str | None = None,
+        verbose: bool = False,
+    ) -> Coordinate:
+        """Add a named coordinate point using ``\\coordinate``.
+
+        A coordinate is an invisible named point — lighter than a
+        :class:`~tikzfigure.core.node.Node` because it has no box, content,
+        or visible styling.  Use it to define reusable anchor points,
+        midpoints, or expression-based positions that you can reference in
+        paths and other commands.
+
+        Either provide numeric ``x`` and ``y`` values, or a raw TikZ
+        coordinate expression via ``at``.
+
+        Examples::
+
+            # Fixed point
+            fig.add_coordinate("origin", x=0, y=0)
+            fig.draw(["origin", "A"])
+
+            # Midpoint using calc (add "calc" to extra_packages)
+            fig.add_coordinate("mid", at="$(A)!0.5!(B)$")
+            fig.draw(["A", "mid", "B"])
+
+            # At a node anchor
+            fig.add_coordinate("atip", at="A.north")
+
+        Args:
+            label: TikZ name for this coordinate.  Used when referencing
+                it in path lists (e.g. ``["A", "mid", "B"]``).
+            x: X-coordinate value (numeric or PGF expression string).
+                Must be provided together with ``y``.  Mutually exclusive
+                with ``at``.
+            y: Y-coordinate value (numeric or PGF expression string).
+                Must be provided together with ``x``.  Mutually exclusive
+                with ``at``.
+            at: Raw TikZ coordinate expression.  Examples:
+
+                * ``"$(A)!0.5!(B)$"`` — midpoint via ``calc`` library
+                * ``"A.north"`` — at a node anchor
+                * ``"30:2cm"`` — polar coordinates
+
+                Parentheses are added automatically if absent.
+                Mutually exclusive with ``x``/``y``.
+            layer: Target layer index. Defaults to ``0``.
+            comment: Optional comment prepended in the TikZ output.
+            verbose: If ``True``, print a debug message after insertion.
+
+        Returns:
+            The newly created :class:`Coordinate` object.
+        """
+        coord = Coordinate(
+            label=label,
+            x=x,
+            y=y,
+            at=at,
+            layer=layer,
+            comment=comment,
+        )
+        self.layers.add_item(item=coord, layer=layer, verbose=verbose)
+        return coord
 
     def add_variable(
         self,
@@ -2113,6 +2227,7 @@ class TikzFigure:
         # Path structure
         options: list | str | None = None,
         cycle: bool = False,
+        segment_options: list[dict | str | None] | None = None,
         # Color
         color: str | None = None,
         fill: str | None = None,
@@ -2224,6 +2339,7 @@ class TikzFigure:
             "verbose",
             "options",
             "cycle",
+            "segment_options",
             "kwargs",
             "in_angle",
             "out_angle",
@@ -2247,6 +2363,7 @@ class TikzFigure:
             verbose=verbose,
             options=options,
             cycle=cycle,
+            segment_options=segment_options,
             **tikz_kwargs,
         )
         return path
@@ -2261,6 +2378,7 @@ class TikzFigure:
         # Path structure
         options: list | str | None = None,
         cycle: bool = False,
+        segment_options: list[dict | str | None] | None = None,
         # Color
         color: str | None = None,
         fill: str | None = None,
@@ -2440,6 +2558,7 @@ class TikzFigure:
             "verbose",
             "options",
             "cycle",
+            "segment_options",
             "kwargs",
             "in_angle",
             "out_angle",
@@ -2467,9 +2586,304 @@ class TikzFigure:
             verbose=verbose,
             options=options,
             cycle=cycle,
+            segment_options=segment_options,
             **tikz_kwargs,
         )
         return path
+
+    def fill(
+        self,
+        nodes: list,
+        layer: int = 0,
+        comment: str | None = None,
+        center: bool = False,
+        verbose: bool = False,
+        # Path structure
+        options: list | str | None = None,
+        cycle: bool = False,
+        segment_options: list[dict | str | None] | None = None,
+        # Fill color / pattern
+        fill: str | None = None,
+        fill_opacity: float | None = None,
+        opacity: float | None = None,
+        # Pattern fills
+        pattern: _Pattern = None,
+        pattern_color: str | None = None,
+        # Shading
+        shading: _Shading = None,
+        shading_angle: float | None = None,
+        left_color: str | None = None,
+        right_color: str | None = None,
+        top_color: str | None = None,
+        bottom_color: str | None = None,
+        middle_color: str | None = None,
+        inner_color: str | None = None,
+        outer_color: str | None = None,
+        ball_color: str | None = None,
+        # Transformations
+        rotate: float | None = None,
+        xshift: str | None = None,
+        yshift: str | None = None,
+        scale: float | None = None,
+        xscale: float | None = None,
+        yscale: float | None = None,
+        # Even-odd rule
+        even_odd_rule: bool = False,
+        # Catch-all for unlisted TikZ options
+        **kwargs: Any,
+    ) -> TikzPath:
+        """Fill a closed path with no stroke using ``\\fill``.
+
+        Unlike :meth:`filldraw`, no outline is drawn.  This is equivalent
+        to ``filldraw(..., draw="none")`` but produces a cleaner
+        ``\\fill[...]`` command in the output.
+
+        Args:
+            nodes: List of :class:`Node` objects, node label strings, or
+                ``(x, y)`` coordinate tuples to connect.
+            layer: Target layer index. Defaults to ``0``.
+            comment: Optional comment prepended in the TikZ output.
+            center: If ``True``, connect through ``.center`` anchors.
+            verbose: If ``True``, print a debug message.
+            options: Flag-style TikZ options (e.g. ``["even odd rule"]``).
+            cycle: If ``True``, close the path with ``-- cycle``.
+            segment_options: Per-segment options (see :meth:`draw`).
+            fill: Fill color (e.g. ``"blue!30"``).
+            fill_opacity: Fill opacity (0–1).
+            opacity: Overall opacity (0–1).
+            pattern: Fill pattern name.
+            pattern_color: Pattern color.
+            shading: Shading type (``"axis"``, ``"radial"``, ``"ball"``).
+            shading_angle: Angle for axis shading.
+            left_color: Left color for axis shading.
+            right_color: Right color for axis shading.
+            top_color: Top color for axis shading.
+            bottom_color: Bottom color for axis shading.
+            middle_color: Middle color for axis shading.
+            inner_color: Inner color for radial shading.
+            outer_color: Outer color for radial shading.
+            ball_color: Ball color for ball shading.
+            rotate: Rotation angle in degrees.
+            xshift: Horizontal shift.
+            yshift: Vertical shift.
+            scale: Uniform scaling factor.
+            xscale: Horizontal scaling factor.
+            yscale: Vertical scaling factor.
+            even_odd_rule: If ``True``, add ``even odd rule`` to options for
+                correct filling of self-intersecting paths.
+            **kwargs: Additional TikZ options.
+
+        Returns:
+            The :class:`TikzPath` object that was added.
+        """
+        _params = locals().copy()
+        _non_tikz = {
+            "self",
+            "nodes",
+            "layer",
+            "comment",
+            "center",
+            "verbose",
+            "options",
+            "cycle",
+            "segment_options",
+            "even_odd_rule",
+            "kwargs",
+            "__class__",
+        }
+        tikz_kwargs = dict(kwargs)
+        tikz_kwargs.update(
+            {k: v for k, v in _params.items() if k not in _non_tikz and v is not None}
+        )
+        if isinstance(options, str):
+            options = [options]
+        if options is None:
+            options = []
+        if even_odd_rule:
+            options = list(options) + ["even odd rule"]
+        return self._add_path(
+            nodes=nodes,
+            layer=layer,
+            comment=comment,
+            center=center,
+            tikz_command="fill",
+            verbose=verbose,
+            options=options,
+            cycle=cycle,
+            segment_options=segment_options,
+            **tikz_kwargs,
+        )
+
+    def clip(
+        self,
+        nodes: list,
+        layer: int = 0,
+        comment: str | None = None,
+        center: bool = False,
+        verbose: bool = False,
+        # Path structure
+        options: list | str | None = None,
+        cycle: bool = False,
+        segment_options: list[dict | str | None] | None = None,
+        # Transformations (the most common clip options)
+        rotate: float | None = None,
+        xshift: str | None = None,
+        yshift: str | None = None,
+        scale: float | None = None,
+        rounded_corners: str | None = None,
+        # Catch-all for unlisted TikZ options
+        **kwargs: Any,
+    ) -> TikzPath:
+        """Add a clipping path using ``\\clip``.
+
+        All drawing commands that follow (within the same scope or layer)
+        are clipped to the given path.  Wrap the clip and the clipped
+        drawing in a ``\\begin{scope}...\\end{scope}`` via
+        :meth:`add_raw` to limit the clip's effect.
+
+        Args:
+            nodes: List of :class:`Node` objects, node label strings, or
+                ``(x, y)`` coordinate tuples forming the clipping boundary.
+            layer: Target layer index. Defaults to ``0``.
+            comment: Optional comment prepended in the TikZ output.
+            center: If ``True``, connect through ``.center`` anchors.
+            verbose: If ``True``, print a debug message.
+            options: Flag-style TikZ options.
+            cycle: If ``True``, close the clipping path with ``-- cycle``.
+            segment_options: Per-segment options (see :meth:`draw`).
+            rotate: Rotation angle in degrees.
+            xshift: Horizontal shift.
+            yshift: Vertical shift.
+            scale: Uniform scaling factor.
+            rounded_corners: Corner radius for rounded clip boundary.
+            **kwargs: Additional TikZ options.
+
+        Returns:
+            The :class:`TikzPath` object that was added.
+        """
+        _params = locals().copy()
+        _non_tikz = {
+            "self",
+            "nodes",
+            "layer",
+            "comment",
+            "center",
+            "verbose",
+            "options",
+            "cycle",
+            "segment_options",
+            "kwargs",
+            "__class__",
+        }
+        tikz_kwargs = dict(kwargs)
+        tikz_kwargs.update(
+            {k: v for k, v in _params.items() if k not in _non_tikz and v is not None}
+        )
+        return self._add_path(
+            nodes=nodes,
+            layer=layer,
+            comment=comment,
+            center=center,
+            tikz_command="clip",
+            verbose=verbose,
+            options=options,
+            cycle=cycle,
+            segment_options=segment_options,
+            **tikz_kwargs,
+        )
+
+    def path(
+        self,
+        nodes: list,
+        layer: int = 0,
+        comment: str | None = None,
+        center: bool = False,
+        verbose: bool = False,
+        # Path structure
+        options: list | str | None = None,
+        cycle: bool = False,
+        segment_options: list[dict | str | None] | None = None,
+        # Path naming (most common use of \path)
+        name_path: str | None = None,
+        # Positioning
+        pos: float | None = None,
+        # Transformations
+        rotate: float | None = None,
+        xshift: str | None = None,
+        yshift: str | None = None,
+        scale: float | None = None,
+        # Catch-all for unlisted TikZ options
+        **kwargs: Any,
+    ) -> TikzPath:
+        """Add an invisible path using ``\\path``.
+
+        ``\\path`` traces a path without drawing or filling it.  Common
+        uses:
+
+        * **Named paths** for the ``intersections`` library::
+
+              fig.path(["A", "B"], name_path="edge_AB")
+              # → \\path[name path=edge_AB] (A) to (B);
+
+        * **Bounding-box padding** — extend the figure's bounding box
+          without visible output.
+
+        * **Invisible node placement** — pass ``segment_options`` with a
+          ``"node"`` key to place a label node at a specific position along
+          the path.
+
+        Args:
+            nodes: List of :class:`Node` objects, node label strings, or
+                ``(x, y)`` coordinate tuples.
+            layer: Target layer index. Defaults to ``0``.
+            comment: Optional comment prepended in the TikZ output.
+            center: If ``True``, connect through ``.center`` anchors.
+            verbose: If ``True``, print a debug message.
+            options: Flag-style TikZ options.
+            cycle: If ``True``, close the path with ``-- cycle``.
+            segment_options: Per-segment options (see :meth:`draw`).
+            name_path: Register this path under a name for the
+                ``intersections`` library.
+            pos: Scalar position along the path (0–1).
+            rotate: Rotation angle in degrees.
+            xshift: Horizontal shift.
+            yshift: Vertical shift.
+            scale: Uniform scaling factor.
+            **kwargs: Additional TikZ options.
+
+        Returns:
+            The :class:`TikzPath` object that was added.
+        """
+        _params = locals().copy()
+        _non_tikz = {
+            "self",
+            "nodes",
+            "layer",
+            "comment",
+            "center",
+            "verbose",
+            "options",
+            "cycle",
+            "segment_options",
+            "kwargs",
+            "__class__",
+        }
+        tikz_kwargs = dict(kwargs)
+        tikz_kwargs.update(
+            {k: v for k, v in _params.items() if k not in _non_tikz and v is not None}
+        )
+        return self._add_path(
+            nodes=nodes,
+            layer=layer,
+            comment=comment,
+            center=center,
+            tikz_command="path",
+            verbose=verbose,
+            options=options,
+            cycle=cycle,
+            segment_options=segment_options,
+            **tikz_kwargs,
+        )
 
     def plot3d(
         self,
@@ -2672,6 +3086,7 @@ class TikzFigure:
                 "add_subfigure() can only be used with grid layout. "
                 "Create figure with rows and cols: TikzFigure(rows=2, cols=2)"
             )
+        assert self._subfigure_cols is not None  # Type narrowing for mypy
 
         # Check grid not full
         if self._subfigure_position >= self._subfigure_rows * self._subfigure_cols:
@@ -2816,8 +3231,8 @@ class TikzFigure:
             for col in range(num_cols):
                 if (row, col) in self._subfigure_grid:
                     item_data = self._subfigure_grid[(row, col)]
-                    axis = item_data[0]
-                    result += self._render_axis_in_groupplot(axis)
+                    if isinstance(item_data[0], Axis2D):
+                        result += self._render_axis_in_groupplot(item_data[0])
 
         result += "\\end{groupplot}\n"
         return result
@@ -2855,7 +3270,7 @@ class TikzFigure:
             for col in range(num_cols):
                 if (row, col) in self._subfigure_grid:
                     item_data = self._subfigure_grid[(row, col)]
-                    if len(item_data) == 3 and item_data[2] != "None":
+                    if isinstance(item_data[0], TikzFigure) and item_data[2] != "None":
                         h_str = str(item_data[2])
                         if h_str.endswith("cm"):
                             max_h = max(max_h, float(h_str[:-2]))
@@ -2874,11 +3289,15 @@ class TikzFigure:
                     continue
 
                 item_data = self._subfigure_grid[(row, col)]
-                if len(item_data) == 3:
-                    item, width, height_str = item_data
-                else:
-                    item, width = item_data
+                item: Axis2D | TikzFigure
+                if isinstance(item_data[0], Axis2D):
+                    item = item_data[0]
+                    width = item_data[1]
                     height_str = "None"
+                else:
+                    item = item_data[0]
+                    width = item_data[1]
+                    height_str = item_data[2]
 
                 x = x_offsets[col]
                 y = y_offsets[row]
