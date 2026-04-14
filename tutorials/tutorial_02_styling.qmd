@@ -179,21 +179,13 @@ r  = 1.0    # ring radius (cm)
 lw = "5pt"  # line width
 
 ring_specs = [
-    ((0,    0),     "blue"),
-    ((2.5,  0),     "black"),
-    ((5,    0),     "red"),
-    ((1.25, -1.25), "yellow!80!black"),
-    ((3.75, -1.25), "green!60!black"),
+    ((0,    0), (330, 360),    "blue"),
+    ((1.25, -1.25), (60,90), "yellow!80!black"),
+    ((2.5,  0), (330,360),  "black"),
+    ((3.75, -1.25), (60,90), "green!60!black"),
+    ((5,    0), (None, None),    "red"),
 ]
 
-# Layer 0: all five complete rings
-for (cx, cy), color in ring_specs:
-    fig.circle(center=(cx, cy), radius=f"{r}cm", color=color, line_width=lw, layer=0)
-
-# Half-angle of the arc that one ring cuts through the other.
-# Adjacent center distance = sqrt(1.25^2 + 1.25^2).
-d     = math.sqrt(1.25**2 + 1.25**2)
-alpha = math.degrees(math.acos(d / (2 * r)))   # ≈ 27.9°
 
 def arc_seg(center, radius, start_angle, end_angle, color):
     """Draw an arc on the circle centered at `center`."""
@@ -210,19 +202,13 @@ def arc_seg(center, radius, start_angle, end_angle, color):
         layer=1,
     )
 
-# Weave order (front > back): Blue > Yellow > Black > Green > Red
-weaves = [
-    ((0,    0),     "blue",            (1.25, -1.25)),  # Blue   over Yellow
-    # ((1.25, -1.25), "yellow!80!black", (2.5,   0)),     # Yellow over Black
-    # ((2.5,  0),     "black",           (3.75, -1.25)),  # Black  over Green
-    # ((3.75, -1.25), "green!60!black",  (5,     0)),     # Green  over Red
-]
+for (cx, cy), (start_angle, end_angle), color in ring_specs:
+    fig.circle(center=(cx, cy), radius=f"{r}cm", color=color, line_width=lw, layer=0)
 
-for (fx, fy), fc, (bx, by) in weaves:
-    phi = math.degrees(math.atan2(by - fy, bx - fx))  # direction: front → back
-    # arc_seg((bx, by), r, phi + 180 - alpha, phi + 180 + alpha, "white")
-    #     # erase back ring's crossing arc
-    arc_seg((fx, fy), r, phi - alpha, phi + alpha, fc)  # redraw front ring's crossing arc
+for (cx, cy), (start_angle, end_angle), color in ring_specs:
+    if start_angle is not None and end_angle is not None:
+        arc_seg((cx, cy), r, start_angle, end_angle, color)
+
 
 fig.show()
 ```
