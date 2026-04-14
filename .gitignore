@@ -193,6 +193,7 @@ junit/
 tutorials/*_files/
 
 # trash
+.worktrees/
 .claude/
 .omc/
 CLAUDE.md

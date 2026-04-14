@@ -11,6 +11,20 @@
 <div id="toolbar">
   <span class="toolbar-brand">TikZ Editor</span>
   <div class="toolbar-sep"></div>
+  <div class="toolbar-group">
+    <button class="tool-btn compile-btn" id="btn-compile-toolbar" title="Compile to PDF">PDF</button>
+    <button class="tool-btn" id="btn-export-tex" title="Download .tex file">TEX</button>
+  </div>
+  <div class="toolbar-sep"></div>
+  <div class="toolbar-group">
+    <button class="tool-btn" id="btn-undo" title="Undo (Ctrl+Z)" disabled>
+      <svg viewBox="0 0 16 16" width="14" height="14"><path d="M5 7l-3-3 3-3" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M2 4h8a4 4 0 010 8H6" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
+    </button>
+    <button class="tool-btn" id="btn-redo" title="Redo (Ctrl+Shift+Z)" disabled>
+      <svg viewBox="0 0 16 16" width="14" height="14"><path d="M11 7l3-3-3-3" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M14 4H6a4 4 0 000 8h4" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
+    </button>
+  </div>
+  <div class="toolbar-sep"></div>
   <div class="toolbar-group zoom-group">
     <button class="tool-btn small" id="btn-zoom-out" title="Zoom Out">&minus;</button>
     <span id="zoom-level">100%</span>
@@ -27,8 +41,6 @@
     <svg id="theme-icon-dark" viewBox="0 0 16 16" width="14" height="14"><path d="M8 1a7 7 0 100 14A7 7 0 008 1zm0 12.5a5.5 5.5 0 010-11v11z" fill="currentColor"/></svg>
     <svg id="theme-icon-light" viewBox="0 0 16 16" width="14" height="14" style="display:none"><circle cx="8" cy="8" r="3.5" fill="currentColor"/><g stroke="currentColor" stroke-width="1.5"><line x1="8" y1="0.5" x2="8" y2="3"/><line x1="8" y1="13" x2="8" y2="15.5"/><line x1="0.5" y1="8" x2="3" y2="8"/><line x1="13" y1="8" x2="15.5" y2="8"/><line x1="2.7" y1="2.7" x2="4.5" y2="4.5"/><line x1="11.5" y1="11.5" x2="13.3" y2="13.3"/><line x1="2.7" y1="13.3" x2="4.5" y2="11.5"/><line x1="11.5" y1="4.5" x2="13.3" y2="2.7"/></g></svg>
   </button>
-  <button class="tool-btn compile-btn" id="btn-compile-toolbar" title="Compile to PDF">PDF</button>
-  <button class="tool-btn" id="btn-export-tex" title="Download .tex file">TEX</button>
   <span id="pyodide-status">Loading Pyodide...</span>
 </div>
 
@@ -45,63 +57,41 @@
         <svg viewBox="0 0 16 16" width="16" height="16"><path d="M2 14l3-1 8-8-2-2-8 8z" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="13" cy="3" r="1.5" fill="currentColor"/></svg>
       </button>
     </div>
-    <div class="lt-sep"></div>
-    <div class="lt-group">
-      <button class="lt-btn" id="btn-undo" title="Undo (Ctrl+Z)" disabled>
-        <svg viewBox="0 0 16 16" width="16" height="16"><path d="M5 7l-3-3 3-3" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M2 4h8a4 4 0 010 8H6" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
-      </button>
-      <button class="lt-btn" id="btn-redo" title="Redo (Ctrl+Shift+Z)" disabled>
-        <svg viewBox="0 0 16 16" width="16" height="16"><path d="M11 7l3-3-3-3" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M14 4H6a4 4 0 000 8h4" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
-      </button>
-    </div>
-    <div class="lt-sep"></div>
-    <div class="lt-group">
-      <button class="lt-btn" id="btn-duplicate" title="Duplicate (Ctrl+D)">
-        <svg viewBox="0 0 16 16" width="16" height="16"><rect x="5" y="5" width="8" height="8" rx="1" fill="none" stroke="currentColor" stroke-width="1.5"/><rect x="3" y="3" width="8" height="8" rx="1" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
-      </button>
-      <button class="lt-btn" id="btn-delete" title="Delete (Del)">
-        <svg viewBox="0 0 16 16" width="16" height="16"><path d="M4 4h8l-1 10H5zM3 4h10M6 2h4" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
-      </button>
-      <button class="lt-btn" id="btn-clear" title="Clear All">
-        <svg viewBox="0 0 16 16" width="16" height="16"><circle cx="8" cy="8" r="6" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M5.5 5.5l5 5M10.5 5.5l-5 5" stroke="currentColor" stroke-width="1.5"/></svg>
-      </button>
-    </div>
   </div>
 
-  <div id="canvas-area" class="mode-select">
-    <svg id="svg-canvas">
-      <defs>
-        <pattern id="grid-dots" width="20" height="20" patternUnits="userSpaceOnUse">
-          <circle cx="10" cy="10" r="0.6" fill="#282d3e"/>
-        </pattern>
-        <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
-          <polygon points="0 0, 10 3.5, 0 7" fill="context-stroke"/>
-        </marker>
-        <marker id="arrowhead-sel" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
-          <polygon points="0 0, 10 3.5, 0 7" fill="#818cf8"/>
-        </marker>
-      </defs>
-      <g id="world">
-        <rect id="grid-bg" x="-5000" y="-5000" width="10000" height="10000" fill="url(#grid-dots)"/>
-        <g id="edges-layer"></g>
-        <g id="nodes-layer"></g>
-      </g>
-    </svg>
-    <div id="template-gallery"></div>
-    <div id="selection-marquee"></div>
-  </div>
+  <div id="canvas-column">
+    <div id="canvas-area" class="mode-select">
+      <svg id="svg-canvas">
+        <defs>
+          <pattern id="grid-dots" width="20" height="20" patternUnits="userSpaceOnUse">
+            <circle cx="10" cy="10" r="0.6" fill="#282d3e"/>
+          </pattern>
+          <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+            <polygon points="0 0, 10 3.5, 0 7" fill="context-stroke"/>
+          </marker>
+          <marker id="arrowhead-sel" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+            <polygon points="0 0, 10 3.5, 0 7" fill="#818cf8"/>
+          </marker>
+        </defs>
+        <g id="world">
+          <rect id="grid-bg" x="-5000" y="-5000" width="10000" height="10000" fill="url(#grid-dots)"/>
+          <g id="edges-layer"></g>
+          <g id="nodes-layer"></g>
+        </g>
+      </svg>
+      <div id="template-gallery"></div>
+      <div id="selection-marquee"></div>
+    </div>
 
-  <div id="resizer"></div>
+    <div id="canvas-resizer"></div>
 
-  <div id="right-panel">
-    <div id="tab-bar"></div>
-    <div id="tab-content">
-      <div id="tab-pane-props" class="tab-pane">
-        <div class="panel-body" id="properties-panel">
-          <p class="hint">Select a node or edge to edit properties.</p>
-        </div>
+    <div id="drawer">
+      <div id="drawer-tabs">
+        <button class="drawer-tab active" data-section="code">Code</button>
+        <button class="drawer-tab" data-section="rawtikz">Raw TikZ</button>
+        <button class="drawer-tab" data-section="log">Log</button>
       </div>
-      <div id="tab-pane-code" class="tab-pane">
+      <div id="drawer-section-code" class="drawer-section">
         <div id="code-output">
           <details class="code-fold" open>
             <summary>Python (tikzfigure) <button class="copy-btn" onclick="event.stopPropagation();copyCode('python')">Copy</button></summary>
@@ -111,27 +101,46 @@
             <summary>TikZ LaTeX <button class="copy-btn" onclick="event.stopPropagation();copyCode('tikz')">Copy</button></summary>
             <pre id="tikz-code">% TikZ code will appear here</pre>
           </details>
-          <details class="code-fold">
-            <summary>Raw TikZ Insert</summary>
-            <textarea id="raw-tikz-input" placeholder="Verbatim TikZ code (added via fig.add_raw)..." rows="3"></textarea>
-          </details>
         </div>
       </div>
-      <div id="tab-pane-pdf" class="tab-pane">
+      <div id="drawer-section-rawtikz" class="drawer-section" style="display:none">
+        <textarea id="raw-tikz-input" placeholder="Verbatim TikZ code (added via fig.add_raw)..." rows="4"></textarea>
+      </div>
+      <div id="drawer-section-log" class="drawer-section" style="display:none">
         <div id="pdf-pane-inner">
           <button id="compile-btn" disabled>Compile to PDF (latex-on-http)</button>
-          <a id="pdf-download" style="display:none;" download="figure.pdf">Download PDF</a>
-          <iframe id="pdf-viewer" style="display:none;"></iframe>
           <details id="compile-log-details" style="display:none;">
             <summary>Compilation log</summary>
             <pre id="compile-log"></pre>
           </details>
         </div>
       </div>
-      <div id="tab-pane-layers" class="tab-pane">
-        <div class="panel-body" id="layers-panel"></div>
-      </div>
     </div>
+  </div>
+
+  <div id="right-resizer"></div>
+  <div id="right-panel">
+    <details class="inspector-card" id="card-props" open>
+      <summary class="inspector-card-header">Properties</summary>
+      <div class="inspector-card-body">
+        <div id="properties-panel">
+          <p class="hint">Select a node or edge to edit properties.</p>
+        </div>
+      </div>
+    </details>
+    <details class="inspector-card" id="card-layers" open>
+      <summary class="inspector-card-header">Layers</summary>
+      <div class="inspector-card-body">
+        <div id="layers-panel"></div>
+      </div>
+    </details>
+    <details class="inspector-card" id="card-preview">
+      <summary class="inspector-card-header">Preview</summary>
+      <div class="inspector-card-body" id="preview-card-body">
+        <a id="pdf-download" style="display:none;" download="figure.pdf">Download PDF</a>
+        <iframe id="pdf-viewer" style="display:none;"></iframe>
+      </div>
+    </details>
   </div>
 </div>
 

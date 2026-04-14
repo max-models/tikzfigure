@@ -9,6 +9,8 @@ from lists of `(x, y)` coordinates.
 - drawing open and closed coordinate paths
 - `filldraw` for filled closed shapes
 - rounded corners
+- per-segment styling with `segment_options`
+- node paths and `.center` anchors for correct fills
 - custom shapes (heart, star)
 - parametric curves with NumPy (spiral, sun)
 
@@ -82,6 +84,243 @@ for i, radius in enumerate([0, 5, 15, 30]):
         rounded_corners=f"{radius}pt",
     )
     fig.add_node(x0 + 1, -0.5, content=f"{radius}pt", draw="none")
+
+fig.show()
+```
+
+{{< include includes/tikz_code_callout.qmd >}}
+
+## Per-segment styling
+
+`segment_options` accepts a list of per-connector option dicts, one for each `to`
+step in the path. Each dict uses keyword-style TikZ options (underscores become
+spaces) plus an optional `"options"` key for flag-style items like `"dashed"` or
+`"->".
+
+Here four segments are given different colors and styles in a single `draw` call:
+
+```{python}
+fig = TikzFigure()
+
+waypoints = [[0, 0], [2, 2], [4, 0], [6, 2], [8, 0]]
+
+fig.draw(
+    waypoints,
+    line_width=2,
+    segment_options=[
+        {"color": "red"},
+        {"color": "blue", "options": ["dashed"], "line_width": 1.5},
+        {"color": "green!60!black", "line_width": 3},
+        {"color": "purple", "options": ["dotted"], "line_width": 2},
+    ],
+)
+
+fig.show()
+```
+
+{{< include includes/tikz_code_callout.qmd >}}
+
+Per-segment bending works the same way. Here three nodes are connected with
+arrows where each segment curves in a different direction:
+
+```{python}
+fig = TikzFigure()
+
+specs = [("src", 0, 1, "teal"), ("mid", 4, 3, "orange"), ("dst", 8, 1, "purple")]
+for label, x, y, color in specs:
+    fig.add_node(
+        x=x, y=y, label=label, shape="circle",
+        fill=f"{color}!25", draw=f"{color}!70",
+        minimum_size="1cm", content=label.upper(),
+    )
+
+fig.draw(
+    ["src.center", "mid.center", "dst.center"],
+    options=["->", "thick"],
+    segment_options=[
+        {"bend_left": 30},   # src → mid curves upward-left
+        {"bend_right": 25},  # mid → dst curves downward-right
+    ],
+)
+
+fig.show()
+```
+
+{{< include includes/tikz_code_callout.qmd >}}
+
+Use `"out"` and `"in"` keys for explicit departure and arrival angles (in degrees).
+This gives precise control over how each segment enters and leaves its endpoints —
+useful when `bend_left`/`bend_right` doesn't give you the exact shape you need:
+
+```{python}
+fig = TikzFigure()
+
+for label, x, y, color in [
+    ("A",  0, 2, "blue"),
+    ("B",  5, 4, "orange"),
+    ("C", 10, 2, "purple"),
+]:
+    fig.add_node(
+        x=x, y=y, label=label, shape="circle",
+        fill=f"{color}!20", draw=f"{color}!70",
+        minimum_size="1.2cm", content=f"${label}$",
+    )
+
+fig.draw(
+    ["A.center", "B.center", "C.center"],
+    options=["->", "thick"],
+    segment_options=[
+        {"out": 45,  "in": 195},   # A→B: leave at 45°, arrive at 195°
+        {"out": -15, "in": 135},   # B→C: leave at -15°, arrive at 135°
+    ],
+)
+
+fig.show()
+```
+
+{{< include includes/tikz_code_callout.qmd >}}
+
+`looseness` scales how far the control handles extend, making the same bend
+either tighter (`looseness < 1`) or more exaggerated (`looseness > 1`).
+Here the two segments of the same symmetric path use opposite looseness values:
+
+```{python}
+fig = TikzFigure()
+
+for label, x, y in [("A", 0, 2), ("B", 5, 2), ("C", 10, 2)]:
+    fig.add_node(
+        x=x, y=y, label=label, shape="circle",
+        fill="gray!15", draw="gray!60",
+        minimum_size="1cm", content=f"${label}$",
+    )
+
+fig.draw(
+    ["A.center", "B.center", "C.center"],
+    options=["->", "thick"],
+    segment_options=[
+        {"bend_left": 50, "looseness": 2.5},   # A→B: wide exaggerated arc
+        {"bend_right": 50, "looseness": 0.5},  # B→C: tight compressed arc
+    ],
+)
+
+fig.show()
+```
+
+{{< include includes/tikz_code_callout.qmd >}}
+
+All segment options can be combined freely. Here each segment gets its own
+color, line style, and curve geometry in a single `draw` call:
+
+```{python}
+fig = TikzFigure()
+
+for label, x, y, color in [
+    ("A", 0, 0, "teal"),
+    ("B", 4, 3,  "red"),
+    ("C", 8, 0, "blue"),
+]:
+    fig.add_node(
+        x=x, y=y, label=label, shape="circle",
+        fill=f"{color}!20", draw=f"{color}!60",
+        minimum_size="1.2cm", content=f"${label}$",
+    )
+
+fig.draw(
+    ["A.center", "B.center", "C.center"],
+    segment_options=[
+        {                                            # A→B
+            "options": ["->"],
+            "color": "teal!80",
+            "line_width": 2,
+            "out": 60, "in": 240,
+        },
+        {                                            # B→C
+            "options": ["->", "dashed"],
+            "color": "red!70",
+            "line_width": 1.5,
+            "out": -60, "in": 120,
+        },
+    ],
+)
+
+fig.show()
+```
+
+{{< include includes/tikz_code_callout.qmd >}}
+
+## Node paths and `.center` anchors
+
+When you fill a closed path that goes through named nodes, TikZ routes to each
+node's *border* by default. For circular nodes this means the filled area has
+indented corners — it doesn't look like a triangle.
+
+Appending `.center` to a node label in the path list routes the segment through
+the node's geometric center instead. The path then bounds a proper filled polygon.
+
+```{python}
+fig = TikzFigure()
+
+node_specs = [
+    ("top", 3,   4,   "blue",   r"$v_1$"),
+    ("bl",  0,   0,   "blue",   r"$v_2$"),
+    ("br",  6,   0,   "blue",   r"$v_3$"),
+]
+for label, x, y, color, text in node_specs:
+    fig.add_node(
+        x=x, y=y, label=label, shape="circle",
+        draw=f"{color}!60", fill="white",
+        minimum_size="1.4cm", content=text,
+    )
+
+# Border anchors: the fill "leaks" under the node circles
+fig.draw(
+    ["top", "bl", "br"],
+    cycle=True, fill="red!25", draw="red!60",
+    line_width=1, fill_opacity=0.6,
+)
+
+# .center anchors: fills the exact triangle spanned by node centres
+fig.draw(
+    ["top.center", "bl.center", "br.center"],
+    cycle=True, fill="blue!30", draw="blue!70",
+    line_width=1.5, fill_opacity=0.7,
+)
+
+# Labels outside the shapes
+fig.add_node(x=7.5, y=2, content=r"\textcolor{red!60}{border anchors}", draw="none", anchor="west", font=r"\small")
+fig.add_node(x=7.5, y=1, content=r"\textcolor{blue!70}{.center anchors}", draw="none", anchor="west", font=r"\small")
+
+fig.show()
+```
+
+{{< include includes/tikz_code_callout.qmd >}}
+
+You can mix anchors: only the nodes that need a specific anchor require the dot suffix.
+Any TikZ anchor string works — `"north"`, `"south east"`, `"west"`, etc.
+
+```{python}
+fig = TikzFigure()
+
+fig.add_node(x=0, y=0, label="A", shape="rectangle", draw="black", fill="gray!15",
+             minimum_width="2cm", minimum_height="1cm", content="A")
+fig.add_node(x=5, y=2, label="B", shape="rectangle", draw="black", fill="gray!15",
+             minimum_width="2cm", minimum_height="1cm", content="B")
+fig.add_node(x=10, y=0, label="C", shape="rectangle", draw="black", fill="gray!15",
+             minimum_width="2cm", minimum_height="1cm", content="C")
+
+# Connect from the east side of A, enter B from the west, leave from east, arrive at C.west
+fig.draw(
+    ["A.east", "B.west"],
+    options=["->", "thick"],
+    color="teal",
+    segment_options=[{"bend_left": 15}],
+)
+fig.draw(
+    ["B.east", "C.west"],
+    options=["->", "thick"],
+    color="orange",
+    segment_options=[{"bend_right": 15}],
+)
 
 fig.show()
 ```

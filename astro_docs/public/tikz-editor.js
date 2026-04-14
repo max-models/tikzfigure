@@ -45,9 +45,11 @@ const pythonPre     = document.getElementById('python-code');
 const tikzPre       = document.getElementById('tikz-code');
 const compileBtn    = document.getElementById('compile-btn');
 const pdfViewer     = document.getElementById('pdf-viewer');
+const pdfDl         = document.getElementById('pdf-download');
 const pyodideStatus = document.getElementById('pyodide-status');
-const resizer       = document.getElementById('resizer');
-const rightPanelEl  = document.getElementById('right-panel');
+const canvasResizer = document.getElementById('canvas-resizer');
+const rightResizer  = document.getElementById('right-resizer');
+const rightPanel    = document.getElementById('right-panel');
 const contextMenu   = document.getElementById('context-menu');
 const zoomLabel     = document.getElementById('zoom-level');
 const layersPanel   = document.getElementById('layers-panel');
@@ -55,6 +57,7 @@ const rawTikzInput  = document.getElementById('raw-tikz-input');
 const marqueeEl     = document.getElementById('selection-marquee');
 
 function setStatus(msg) { statusBar.textContent = msg; }
+function esc(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
 // ─── Selection Helpers ────────────────────────────────────────────────────
 
@@ -187,6 +190,7 @@ function defaultPath(nodeIds) {
     decoration: null,
     lineCap: null,
     lineJoin: null,
+    center: false,
     layer: state.activeLayer,
     comment: null,
   };
@@ -561,7 +565,6 @@ function selectNode(id, additive = false) {
   }
   updatePropertiesPanel();
   renderAll();
-  switchTab('props');
 }
 
 function selectPath(id, additive = false) {
@@ -572,7 +575,6 @@ function selectPath(id, additive = false) {
   }
   updatePropertiesPanel();
   renderAll();
-  switchTab('props');
 }
 
 function clearSelection() {
@@ -920,23 +922,8 @@ function setMode(mode) {
 document.getElementById('btn-select').onclick = () => setMode('select');
 document.getElementById('btn-add-node').onclick = () => setMode('node');
 document.getElementById('btn-add-edge').onclick = () => setMode('edge');
-document.getElementById('btn-delete').onclick = deleteSelected;
-document.getElementById('btn-duplicate').onclick = () => duplicateSelected();
 document.getElementById('btn-undo').onclick = undo;
 document.getElementById('btn-redo').onclick = redo;
-
-document.getElementById('btn-clear').onclick = () => {
-  if (!confirm('Clear all nodes and edges?')) return;
-  saveHistory();
-  state.nodes = []; state.paths = [];
-  state.nextNodeId = 1; state.nextPathId = 1;
-  state.rawTikz = '';
-  if (rawTikzInput) rawTikzInput.value = '';
-  clearSelection();
-  showTemplateGallery();
-  renderLayersPanel();
-  setStatus('Canvas cleared.');
-};
 
 // ─── Keyboard Shortcuts ────────────────────────────────────────────────────
 
@@ -963,13 +950,42 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') { setMode('select'); clearSelection(); hideContextMenu(); }
 });
 
-// ─── Resizer ───────────────────────────────────────────────────────────────
+// ─── Drawer Resize ─────────────────────────────────────────────────────────
 
-resizer.addEventListener('mousedown', (e) => {
+canvasResizer.addEventListener('mousedown', (e) => {
+  e.preventDefault();
+  const startY = e.clientY;
+  const drawer = document.getElementById('drawer');
+  const startH = drawer.offsetHeight;
+  const canvasCol = document.getElementById('canvas-column');
+
+  const onMove = (ev) => {
+    const delta = startY - ev.clientY;
+    const newH = Math.max(80, Math.min(canvasCol.offsetHeight - 200, startH + delta));
+    drawer.style.height = `${newH}px`;
+  };
+  const onUp = () => {
+    document.removeEventListener('mousemove', onMove);
+    document.removeEventListener('mouseup', onUp);
+    document.body.style.cursor = '';
+    document.body.style.userSelect = '';
+  };
+  document.body.style.cursor = 'row-resize';
+  document.body.style.userSelect = 'none';
+  document.addEventListener('mousemove', onMove);
+  document.addEventListener('mouseup', onUp);
+});
+
+rightResizer.addEventListener('mousedown', (e) => {
   e.preventDefault();
   const startX = e.clientX;
-  const startWidth = rightPanelEl.offsetWidth;
-  const onMove = (ev) => rightPanelEl.style.width = `${Math.max(180, startWidth + (startX - ev.clientX))}px`;
+  const startW = rightPanel.offsetWidth;
+
+  const onMove = (ev) => {
+    const delta = startX - ev.clientX;
+    const newW = Math.max(160, Math.min(500, startW + delta));
+    rightPanel.style.width = `${newW}px`;
+  };
   const onUp = () => {
     document.removeEventListener('mousemove', onMove);
     document.removeEventListener('mouseup', onUp);
@@ -1016,16 +1032,17 @@ function bindNumReq(id, obj, key) {
   const el = document.getElementById(id);
   if (el) el.addEventListener('input', () => { const v = parseFloat(el.value); if (!isNaN(v)) { obj[key] = v; upd(); } });
 }
-function bindColor(noneId, colorId, obj, key, def = '#000000') {
-  const noneEl = document.getElementById(noneId);
+function bindColor(clearId, colorId, obj, key, def = '#000000') {
+  const clearEl = document.getElementById(clearId);
   const colorEl = document.getElementById(colorId);
-  if (!noneEl || !colorEl) return;
-  noneEl.addEventListener('change', () => {
-    if (noneEl.checked) { obj[key] = null; colorEl.disabled = true; }
-    else { obj[key] = colorEl.value || def; colorEl.disabled = false; }
-    upd();
-  });
-  colorEl.addEventListener('input', () => { obj[key] = colorEl.value; upd(); });
+  if (!colorEl) return;
+  const wrap = colorEl.closest('.color-row-wrap');
+  const setNone = (isNone) => {
+    wrap?.classList.toggle('is-none', isNone);
+    if (clearEl) clearEl.textContent = isNone ? '—' : '✕';
+  };
+  colorEl.addEventListener('input', () => { obj[key] = colorEl.value; setNone(false); upd(); });
+  if (clearEl) clearEl.addEventListener('click', () => { obj[key] = null; setNone(true); upd(); });
 }
 function bindBool(id, obj, key) {
   const el = document.getElementById(id);
@@ -1063,9 +1080,9 @@ function showNodeProperties(node) {
     <details class="prop-group" open>
       <summary>Colors</summary>
       <div class="prop-group-body">
-        ${propRow('Fill', `<label class="color-none-wrap"><input type="checkbox" id="p-fill-none"${!node.fill?' checked':''}>none</label><input type="color" id="p-fill" value="${hexColor(node.fill)}"${!node.fill?' disabled':''}>`)}
-        ${propRow('Border', `<label class="color-none-wrap"><input type="checkbox" id="p-draw-none"${!node.draw?' checked':''}>none</label><input type="color" id="p-draw" value="${hexColor(node.draw)}"${!node.draw?' disabled':''}>`)}
-        ${propRow('Text', `<label class="color-none-wrap"><input type="checkbox" id="p-text-none"${!node.textColor?' checked':''}>none</label><input type="color" id="p-text" value="${hexColor(node.textColor)}"${!node.textColor?' disabled':''}>`)}
+        ${propRow('Fill', `<div class="color-row-wrap${!node.fill?' is-none':''}"><input type="color" id="p-fill" value="${hexColor(node.fill)}"><button class="color-none-btn" id="p-fill-none">${!node.fill?'—':'✕'}</button></div>`)}
+        ${propRow('Border', `<div class="color-row-wrap${!node.draw?' is-none':''}"><input type="color" id="p-draw" value="${hexColor(node.draw)}"><button class="color-none-btn" id="p-draw-none">${!node.draw?'—':'✕'}</button></div>`)}
+        ${propRow('Text', `<div class="color-row-wrap${!node.textColor?' is-none':''}"><input type="color" id="p-text" value="${hexColor(node.textColor)}"><button class="color-none-btn" id="p-text-none">${!node.textColor?'—':'✕'}</button></div>`)}
         ${propRow('Opacity', `<input type="number" id="p-opacity" value="${node.opacity??''}" min="0" max="1" step="0.05" placeholder="0\u20131">`)}
         ${propRow('Fill opacity', `<input type="number" id="p-fillopacity" value="${node.fillOpacity??''}" min="0" max="1" step="0.05" placeholder="0\u20131">`)}
         ${propRow('Draw opacity', `<input type="number" id="p-drawopacity" value="${node.drawOpacity??''}" min="0" max="1" step="0.05" placeholder="0\u20131">`)}
@@ -1211,7 +1228,7 @@ function showPathProperties(p) {
     <details class="prop-group" open>
       <summary>Fill</summary>
       <div class="prop-group-body">
-        ${propRow('Fill', `<label class="color-none-wrap"><input type="checkbox" id="p-pfill-none"${!p.fill?' checked':''}>none</label><input type="color" id="p-pfill" value="${hexColor(p.fill)}"${!p.fill?' disabled':''}>`)}
+        ${propRow('Fill', `<div class="color-row-wrap${!p.fill?' is-none':''}"><input type="color" id="p-pfill" value="${hexColor(p.fill)}"><button class="color-none-btn" id="p-pfill-none">${!p.fill?'—':'✕'}</button></div>`)}
         ${propRow('Fill opacity', `<input type="number" id="p-pfillopacity" value="${p.fillOpacity??''}" min="0" max="1" step="0.05" placeholder="0\u20131">`)}
       </div>
     </details>
@@ -1298,7 +1315,7 @@ function renderLayersPanel() {
       <div class="layer-row${isActive ? ' active-layer' : ''}" data-layer-id="${l.id}">
         <button class="layer-vis-btn${l.visible ? '' : ' hidden-layer'}" data-vis="${l.id}" title="Toggle visibility">${l.visible ? '\u{1F441}' : '\u{1F441}\u200D\u{1F5E8}'}</button>
         <button class="layer-lock-btn${l.locked ? ' locked-layer' : ''}" data-lock="${l.id}" title="Toggle lock">${l.locked ? '\u{1F512}' : '\u{1F513}'}</button>
-        <span class="layer-name" data-rename="${l.id}">${l.name}</span>
+        <span class="layer-name">${l.name}</span>
         <span class="layer-count">${count}</span>
       </div>
     `;
@@ -1456,6 +1473,7 @@ function generatePathCode(p) {
   if (opts.length) args.push(`options=[${opts.join(', ')}]`);
 
   if (p.cycle) args.push(`cycle=True`);
+  if (p.center) args.push(`center=True`);
 
   if (p.color && p.color !== '#666666') {
     const cl = cssColorToLatex(p.color);
@@ -1604,100 +1622,101 @@ standalone_result = fig.generate_standalone()
   }
 }
 
-// ─── Tab System ────────────────────────────────────────────────────────────
+// ─── Drawer Section Switcher ───────────────────────────────────────────────
 
-const tabState = {
-  tabs: [
-    { id: 'props', label: 'Properties' },
-    { id: 'code',  label: 'Code' },
-    { id: 'pdf',   label: 'PDF' },
-    { id: 'layers', label: 'Layers' },
-  ],
-  visible: new Set(['props', 'code', 'pdf', 'layers']),
-  active: 'props',
-};
+const drawerState = { section: 'code' };
 
-function switchTab(id) {
-  if (!tabState.visible.has(id)) tabState.visible.add(id);
-  tabState.active = id;
-  renderTabs();
-  if (id === 'layers') renderLayersPanel();
-}
-
-function renderTabs() {
-  const tabBar = document.getElementById('tab-bar');
-  const visible = tabState.tabs.filter(t => tabState.visible.has(t.id));
-  const hidden  = tabState.tabs.filter(t => !tabState.visible.has(t.id));
-
-  if (tabState.active && !tabState.visible.has(tabState.active))
-    tabState.active = visible[0]?.id ?? null;
-
-  tabBar.innerHTML = visible.map(t => `
-    <button class="tab-btn${t.id === tabState.active ? ' active' : ''}" data-tab="${t.id}" draggable="true">
-      ${t.label}<span class="tab-hide-btn" data-hide="${t.id}">\u00d7</span>
-    </button>
-  `).join('') + (hidden.length ? '<button id="tab-restore-btn" title="Restore hidden tabs">+</button>' : '');
-
-  tabState.tabs.forEach(t => {
-    const pane = document.getElementById(`tab-pane-${t.id}`);
-    if (!pane) return;
-    const show = t.id === tabState.active;
-    pane.style.display = show ? 'flex' : 'none';
-    pane.classList.toggle('active-pane', show);
+function switchDrawerSection(section) {
+  drawerState.section = section;
+  document.querySelectorAll('.drawer-tab').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.section === section);
   });
-
-  tabBar.querySelectorAll('.tab-btn[draggable]').forEach(btn => {
-    const id = btn.dataset.tab;
-    btn.addEventListener('dragstart', e => { e.dataTransfer.setData('text/plain', id); btn.classList.add('dragging'); });
-    btn.addEventListener('dragend', () => btn.classList.remove('dragging'));
-    btn.addEventListener('dragover', e => { e.preventDefault(); btn.classList.add('drag-over'); });
-    btn.addEventListener('dragleave', () => btn.classList.remove('drag-over'));
-    btn.addEventListener('drop', e => {
-      e.preventDefault(); btn.classList.remove('drag-over');
-      const from = e.dataTransfer.getData('text/plain'), to = id;
-      if (from === to) return;
-      const fi = tabState.tabs.findIndex(t => t.id === from);
-      const ti = tabState.tabs.findIndex(t => t.id === to);
-      const [moved] = tabState.tabs.splice(fi, 1);
-      tabState.tabs.splice(ti, 0, moved);
-      renderTabs();
-    });
+  document.querySelectorAll('.drawer-section').forEach(el => {
+    el.style.display = el.id === `drawer-section-${section}` ? '' : 'none';
   });
 }
 
-document.getElementById('tab-bar').addEventListener('click', e => {
-  const hide = e.target.closest('[data-hide]');
-  if (hide) {
-    e.stopPropagation();
-    const id = hide.dataset.hide;
-    tabState.visible.delete(id);
-    if (tabState.active === id)
-      tabState.active = tabState.tabs.find(t => tabState.visible.has(t.id))?.id ?? null;
-    renderTabs();
-    return;
-  }
-  if (e.target.id === 'tab-restore-btn') { showRestoreMenu(e.target); return; }
-  const btn = e.target.closest('.tab-btn[data-tab]');
-  if (btn) { tabState.active = btn.dataset.tab; renderTabs(); if (btn.dataset.tab === 'layers') renderLayersPanel(); }
+document.getElementById('drawer-tabs').addEventListener('click', (e) => {
+  const btn = e.target.closest('.drawer-tab');
+  if (btn) switchDrawerSection(btn.dataset.section);
 });
 
-function showRestoreMenu(anchor) {
-  document.getElementById('tab-restore-menu')?.remove();
-  const hidden = tabState.tabs.filter(t => !tabState.visible.has(t.id));
-  if (!hidden.length) return;
-  const menu = document.createElement('div');
-  menu.id = 'tab-restore-menu';
-  hidden.forEach(tab => {
-    const b = document.createElement('button');
-    b.textContent = tab.label;
-    b.onclick = ev => { ev.stopPropagation(); tabState.visible.add(tab.id); tabState.active = tab.id; renderTabs(); menu.remove(); };
-    menu.appendChild(b);
-  });
-  document.getElementById('tab-bar').appendChild(menu);
-  setTimeout(() => document.addEventListener('click', () => menu.remove(), { once: true }), 0);
+// ─── Compile ───────────────────────────────────────────────────────────────
+
+function openCompileDialog() {
+  if (!state.standaloneLaTeX) {
+    setStatus('No LaTeX code ready — add nodes and wait for Pyodide.');
+    return;
+  }
+  runCompile(new Set(state.layers.map(l => l.id)));
 }
 
-renderTabs();
+async function runCompile(includedLayerIds) {
+  if (!state.standaloneLaTeX) { setStatus('No LaTeX to compile.'); return; }
+
+  const allIncluded = state.layers.every(l => includedLayerIds.has(l.id));
+  let latexToCompile = state.standaloneLaTeX;
+
+  if (!allIncluded) {
+    const excludedNames = state.layers
+      .filter(l => !includedLayerIds.has(l.id))
+      .map(l => l.name);
+    excludedNames.forEach(name => {
+      const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const re = new RegExp(
+        `\\\\begin\\{pgfonlayer\\}\\{${escaped}\\}[\\s\\S]*?\\\\end\\{pgfonlayer\\}`,
+        'g'
+      );
+      latexToCompile = latexToCompile.replace(re, '');
+    });
+  }
+
+  compileBtn.disabled = true;
+  compileBtn.textContent = 'Compiling\u2026';
+  setStatus('Sending to latex.ytotech.com\u2026');
+  showLog('', false);
+
+  try {
+    const resp = await fetch('https://latex.ytotech.com/builds/sync', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        compiler: 'pdflatex',
+        resources: [{ main: true, content: latexToCompile }],
+      }),
+    });
+
+    if (resp.status === 201) {
+      const buf = await resp.arrayBuffer();
+      if (state._prevPdfUrl) URL.revokeObjectURL(state._prevPdfUrl);
+      const blob = new Blob([buf], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+      state._prevPdfUrl = url;
+      pdfViewer.src = url;
+      pdfViewer.style.display = 'block';
+      pdfDl.href = url;
+      pdfDl.style.display = 'inline-block';
+      setStatus('PDF compiled successfully.');
+      showLog('Compilation successful.', false);
+      document.getElementById('card-preview').open = true;
+    } else {
+      const json = await resp.json().catch(() => ({}));
+      const log = (json.log_files || {})['__main_document__.log'] || JSON.stringify(json);
+      showLog(log, true);
+      const errLine = log.split('\n').find(l => l.startsWith('!') || /TeX capacity exceeded/i.test(l)) || `HTTP ${resp.status}`;
+      setStatus(`Compilation error: ${errLine.trim()}`);
+      switchDrawerSection('log');
+    }
+  } catch (err) {
+    setStatus(`Network error: ${err.message}`);
+    showLog(err.message, true);
+  } finally {
+    compileBtn.disabled = false;
+    compileBtn.textContent = 'Compile to PDF (latex-on-http)';
+  }
+}
+
+document.getElementById('compile-btn').addEventListener('click', () => openCompileDialog());
 
 // ─── Pyodide ───────────────────────────────────────────────────────────────
 
@@ -1744,10 +1763,7 @@ function copyCode(type) {
 }
 window.copyCode = copyCode;
 
-document.getElementById('btn-compile-toolbar').addEventListener('click', () => {
-  if (!compileBtn.disabled) compileBtn.click();
-  else setStatus('No TikZ code ready \u2014 add nodes first.');
-});
+document.getElementById('btn-compile-toolbar').addEventListener('click', () => openCompileDialog());
 
 // ─── Export .tex ──────────────────────────────────────────────────────────
 
@@ -1785,52 +1801,6 @@ function showLog(text, hasError) {
   compileLogDetails.style.display = '';
   compileLogDetails.open = hasError;
 }
-
-function esc(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-
-compileBtn.addEventListener('click', async () => {
-  if (!state.standaloneLaTeX) { setStatus('No LaTeX to compile.'); return; }
-
-  compileBtn.disabled = true;
-  compileBtn.textContent = 'Compiling\u2026';
-  setStatus('Sending to latex.ytotech.com\u2026');
-  showLog('', false);
-
-  const pdfDl = document.getElementById('pdf-download');
-  try {
-    const resp = await fetch('https://latex.ytotech.com/builds/sync', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ compiler: 'pdflatex', resources: [{ main: true, content: state.standaloneLaTeX }] }),
-    });
-
-    if (resp.status === 201) {
-      const buf = await resp.arrayBuffer();
-      if (state._prevPdfUrl) URL.revokeObjectURL(state._prevPdfUrl);
-      const blob = new Blob([buf], { type: 'application/pdf' });
-      const url = URL.createObjectURL(blob);
-      state._prevPdfUrl = url;
-      pdfViewer.src = url;
-      pdfViewer.style.display = 'block';
-      pdfDl.href = url;
-      pdfDl.style.display = 'inline-block';
-      setStatus('PDF compiled successfully.');
-      showLog('Compilation successful.', false);
-    } else {
-      const json = await resp.json().catch(() => ({}));
-      const log = (json.log_files || {})['__main_document__.log'] || JSON.stringify(json);
-      showLog(log, true);
-      const errLine = log.split('\n').find(l => l.startsWith('!') || /TeX capacity exceeded/i.test(l)) || `HTTP ${resp.status}`;
-      setStatus(`Compilation error: ${errLine.trim()}`);
-    }
-  } catch (err) {
-    setStatus(`Network error: ${err.message}`);
-    showLog(err.message, true);
-  } finally {
-    compileBtn.disabled = false;
-    compileBtn.textContent = 'Compile to PDF (latex-on-http)';
-  }
-});
 
 // ─── Theme Toggle ─────────────────────────────────────────────────────────
 
@@ -1874,7 +1844,7 @@ const TEMPLATES = [
       { x: 560, y: 400, label: 'C' },
     ],
     paths: [
-      { ni: [0, 1, 2], cycle: true, fill: '#334488' },
+      { ni: [0, 1, 2], cycle: true, fill: '#334488', center: true },
     ],
   },
   {
@@ -2021,6 +1991,7 @@ function loadTemplate(tpl) {
     const path = defaultPath(nodeIds);
     if (p.arrow) path.arrow = p.arrow;
     if (p.cycle) path.cycle = true;
+    if (p.center) path.center = true;
     if (p.fill) path.fill = p.fill;
     if (p.dashPattern) path.dashPattern = p.dashPattern;
     if (p.layer != null) path.layer = p.layer;

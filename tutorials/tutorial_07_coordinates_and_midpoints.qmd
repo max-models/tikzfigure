@@ -18,6 +18,27 @@ This tutorial covers:
 from tikzfigure import TikzFigure
 ```
 
+
+```{python}
+fig = TikzFigure()
+
+A = fig.add_node(
+    0, 0, label="A", content="$A$", shape="circle", fill="blue!20", draw="blue"
+)
+B = fig.add_node(
+    6, 0, label="B", content="$B$", shape="circle", fill="blue!20", draw="blue"
+)
+C = fig.add_node(
+    2, 4, label="C", content="$C$", shape="circle", fill="blue!20", draw="blue"
+)
+
+fig.draw([A.center, "B", "C"],
+    center=True, cycle=True, color="blue", fill="blue!10", line_width="1.5pt")
+
+fig.show()
+```
+
+
 ## Basic midpoint
 
 Pass two nodes (or label strings) and any additional node kwargs.
@@ -149,7 +170,8 @@ C = fig.add_node(
     2, 4, label="C", content="$C$", shape="circle", fill="blue!20", draw="blue"
 )
 
-fig.draw([A, B, C], cycle=True, color="blue")
+fig.draw([A.center, "B", "C"],
+    center=True, cycle=True, color="blue", fill="blue!10", line_width="1.5pt")
 
 # Midpoint of BC - used to draw the median from A
 mid_BC = fig.midpoint(

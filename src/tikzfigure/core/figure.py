@@ -87,6 +87,7 @@ class TikzFigure:
         verbose: bool = False,
         options: list | str | None = None,
         cycle: bool = False,
+        segment_options: list[dict | str | None] | None = None,
         **kwargs: Any,
     ) -> TikzPath:
         """Internal helper that creates and registers a :class:`TikzPath`.
@@ -94,18 +95,29 @@ class TikzFigure:
         Resolves node labels to :class:`Node` objects and coordinate tuples
         to :class:`TikzCoordinate` objects before constructing the path.
 
+        Node label strings may include an anchor suffix using TikZ dot
+        notation (e.g. ``"n1.center"`` or ``"n1.north"``).  The suffix is
+        resolved by first trying the full string as a node label, and
+        falling back to splitting at the last ``.`` if no exact match is
+        found.
+
         Args:
             nodes: Items to connect. Each element may be a :class:`Node`,
-                a node label string, or an ``(x, y)`` / ``(x, y, z)``
-                coordinate tuple.
+                a node label string (optionally with a ``.anchor`` suffix),
+                or an ``(x, y)`` / ``(x, y, z)`` coordinate tuple.
             layer: Target layer index. Defaults to ``0``.
             comment: Optional comment prepended in the TikZ output.
-            center: If ``True``, connect through ``.center`` anchors.
+            center: If ``True``, connect all nodes through ``.center``
+                anchors (overridden per-node by dot-notation in *nodes*).
             tikz_command: TikZ drawing command (``"draw"`` or
                 ``"filldraw"``). Defaults to ``"draw"``.
             verbose: If ``True``, print the resolved node list.
             options: Flag-style TikZ options (string or list).
             cycle: If ``True``, close the path with ``-- cycle``.
+            segment_options: Per-segment TikZ options for each ``to``
+                connector.  At most ``len(nodes) - 1`` entries.  Each
+                entry is ``None`` (plain ``to``), a raw options string, or
+                a dict (see :class:`TikzPath` for the dict format).
             **kwargs: Keyword-style TikZ path options.
 
         Returns:
@@ -120,16 +132,29 @@ class TikzFigure:
             raise ValueError("nodes parameter must be a list of node names.")
 
         nodes_cleaned: list[Node | TikzCoordinate] = []
+        node_anchors: list[str | None] = []
 
         for node in nodes:
             if isinstance(node, Node):
                 nodes_cleaned.append(node)
+                node_anchors.append(None)
             elif isinstance(node, str):
-                # Find the node by its label
-                nodes_cleaned.append(self.layers.get_node(node))
+                # Try exact label first; if not found and the string
+                # contains a dot, split into label + anchor.
+                try:
+                    nodes_cleaned.append(self.layers.get_node(node))
+                    node_anchors.append(None)
+                except ValueError:
+                    if "." in node:
+                        label_part, anchor_part = node.rsplit(".", 1)
+                        nodes_cleaned.append(self.layers.get_node(label_part))
+                        node_anchors.append(anchor_part)
+                    else:
+                        raise
             elif isinstance(node, tuple) or isinstance(node, list):
                 coords = tuple(node)
                 nodes_cleaned.append(TikzCoordinate(*coords, layer=layer))  # type: ignore[misc]
+                node_anchors.append(None)
             else:
                 raise NotImplementedError(
                     f"{node =}, {type(node) =} is not a valid node type!",
@@ -141,10 +166,16 @@ class TikzFigure:
         if isinstance(options, str):
             options = [options]
 
+        resolved_anchors = (
+            node_anchors if any(a is not None for a in node_anchors) else None
+        )
+
         path = TikzPath(
             nodes=nodes_cleaned,
             comment=comment,
             center=center,
+            node_anchors=resolved_anchors,
+            segment_options=segment_options,
             tikz_command=tikz_command,
             options=options,
             cycle=cycle,
@@ -2113,6 +2144,7 @@ class TikzFigure:
         # Path structure
         options: list | str | None = None,
         cycle: bool = False,
+        segment_options: list[dict | str | None] | None = None,
         # Color
         color: str | None = None,
         fill: str | None = None,
@@ -2224,6 +2256,7 @@ class TikzFigure:
             "verbose",
             "options",
             "cycle",
+            "segment_options",
             "kwargs",
             "in_angle",
             "out_angle",
@@ -2247,6 +2280,7 @@ class TikzFigure:
             verbose=verbose,
             options=options,
             cycle=cycle,
+            segment_options=segment_options,
             **tikz_kwargs,
         )
         return path
@@ -2261,6 +2295,7 @@ class TikzFigure:
         # Path structure
         options: list | str | None = None,
         cycle: bool = False,
+        segment_options: list[dict | str | None] | None = None,
         # Color
         color: str | None = None,
         fill: str | None = None,
@@ -2440,6 +2475,7 @@ class TikzFigure:
             "verbose",
             "options",
             "cycle",
+            "segment_options",
             "kwargs",
             "in_angle",
             "out_angle",
@@ -2467,6 +2503,7 @@ class TikzFigure:
             verbose=verbose,
             options=options,
             cycle=cycle,
+            segment_options=segment_options,
             **tikz_kwargs,
         )
         return path
