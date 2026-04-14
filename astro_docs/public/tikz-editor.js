@@ -1627,7 +1627,7 @@ function openCompileDialog() {
     ? state.layers.map(l => `
         <label class="dialog-layer-row">
           <input type="checkbox" data-layer-id="${l.id}" checked>
-          ${l.name}
+          ${esc(l.name)}
         </label>
       `).join('')
     : '<label class="dialog-layer-row"><input type="checkbox" data-layer-id="0" checked> Default</label>';
@@ -1637,7 +1637,7 @@ function openCompileDialog() {
     compileDialogBtn.disabled = !anyChecked;
     compileDialogBtn.title = anyChecked ? '' : 'Select at least one layer.';
   };
-  layersContainer.addEventListener('change', updateCompileBtn);
+  layersContainer.onchange = updateCompileBtn;
   updateCompileBtn();
 
   overlay.style.display = 'flex';
