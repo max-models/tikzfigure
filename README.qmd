@@ -25,7 +25,6 @@ Generate a simple TikZ figure with nodes and arrows, see @fig-tikzfigure.
 ```{python}
 #| label: fig-tikzfigure
 #| fig-cap: "Simple figure with nodes and arrows"
-
 from tikzfigure import TikzFigure
 
 fig = TikzFigure()
@@ -44,7 +43,8 @@ fig.draw(
 fig.show()
 ```
 
-For segment-local TikZ options, you can also build paths fluently with `Node.to(...)` and keep path-wide styling on `fig.draw(...)`.
+For segment-local TikZ options, you can also build paths fluently with
+`Node.to(...)` and keep path-wide styling on `fig.draw(...)`.
 
 You can also save the figure as a `.tikz` file or print the LaTeX code:
 
@@ -52,19 +52,22 @@ You can also save the figure as a `.tikz` file or print the LaTeX code:
 print(fig)
 ```
 
-
-Note that to visualize the plots in a popup or in jupyterlab, install with `pip install "tikzfigure[vis]"`
+Note that to visualize the plots in a popup or in jupyterlab, install with
+`pip install "tikzfigure[vis]"`
 
 ## IPython Magic Commands
 
-tikzfigure includes IPython magic commands for compiling TikZ figures directly in Jupyter notebooks!
+tikzfigure includes IPython magic commands for compiling TikZ figures directly
+in Jupyter notebooks!
 
 Load the extension:
+
 ```python
 %load_ext tikzfigure.ipython
 ```
 
 Then use the `%%tikz` cell magic:
+
 ```tikz
 %%tikz
 \begin{tikzpicture}
@@ -73,4 +76,5 @@ Then use the `%%tikz` cell magic:
 \end{tikzpicture}
 ```
 
-See [tutorials](https://max-models.github.io/tikzfigure/tutorials) for more examples!
+See [tutorials](https://max-models.github.io/tikzfigure/tutorials) for more
+examples!

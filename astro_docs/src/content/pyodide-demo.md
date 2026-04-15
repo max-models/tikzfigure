@@ -5,7 +5,9 @@ description: Try Tikzfigure interactively in your browser using Pyodide and WebA
 
 # Tikzfigure in the Browser (Pyodide Demo)
 
-This page lets you generate TikZ code using the [tikzfigure](https://github.com/max-models/tikzfigure) Python library, running entirely in your browser via [Pyodide](https://pyodide.org/).
+This page lets you generate TikZ code using the
+[tikzfigure](https://github.com/max-models/tikzfigure) Python library, running
+entirely in your browser via [Pyodide](https://pyodide.org/).
 
 - Write Python code using the TikzFigure API in the left box.
 - Click **Generate** to see the resulting TikZ code on the right.
@@ -18,9 +20,11 @@ This page lets you generate TikZ code using the [tikzfigure](https://github.com/
 ## How does it work?
 
 - The code runs in your browser using Pyodide (Python compiled to WebAssembly).
-- The [tikzfigure](https://pypi.org/project/tikzfigure/) package is installed dynamically from PyPI.
+- The [tikzfigure](https://pypi.org/project/tikzfigure/) package is installed
+  dynamically from PyPI.
 - No code or data is sent to any server.
 
 ---
 
-**Tip:** You can copy the generated TikZ code and use it in your LaTeX documents!
+**Tip:** You can copy the generated TikZ code and use it in your LaTeX
+documents!
