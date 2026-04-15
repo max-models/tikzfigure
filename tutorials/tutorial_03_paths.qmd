@@ -147,8 +147,6 @@ fig.draw(
 )
 
 fig.show()
-print(fig)
-
 ```
 
 {{< include includes/tikz_code_callout.qmd >}}
