@@ -151,6 +151,43 @@ fig.show()
 
 {{< include includes/tikz_code_callout.qmd >}}
 
+## Fluent node chaining
+
+If you're connecting named nodes, `.to(...)` is a concise alternative to
+building `segment_options` by hand. Options passed to `.to(...)` affect only
+that connector.
+
+```{python}
+fig = TikzFigure()
+
+A = fig.add_node(
+    x=0, y=1, label="A", shape="circle",
+    fill="teal!25", draw="teal!70",
+    minimum_size="1cm", content="A",
+)
+B = fig.add_node(
+    x=4, y=3, label="B", shape="circle",
+    fill="orange!25", draw="orange!70",
+    minimum_size="1cm", content="B",
+)
+C = fig.add_node(
+    x=8, y=1, label="C", shape="circle",
+    fill="purple!25", draw="purple!70",
+    minimum_size="1cm", content="C",
+)
+
+fig.draw(
+    A.to(B).to(C, options=["bend left"]),
+    arrows="->",
+    thick=True,
+    color="teal!70",
+)
+
+fig.show()
+```
+
+{{< include includes/tikz_code_callout.qmd >}}
+
 Use `"out"` and `"in"` keys for explicit departure and arrival angles (in degrees).
 This gives precise control over how each segment enters and leaves its endpoints —
 useful when `bend_left`/`bend_right` doesn't give you the exact shape you need:
