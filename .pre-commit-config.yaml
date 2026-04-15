@@ -19,3 +19,8 @@ repos:
       - id: ruff
         args: [--fix, --select, I]
       - id: ruff-format
+  - repo: https://github.com/jolars/panache
+    rev: v2.16.0 # Use the latest version
+    hooks:
+      - id: panache-format # Format files
+      - id: panache-lint # Lint and auto-fix issues
