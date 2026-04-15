@@ -370,23 +370,23 @@ fig.show()
 
 ## Heart shape
 
-A heart drawn from seven control points with rounded corners.
+A heart with circular lobes drawn by `fig.arc()` and a pointed bottom built from
+a chained path.
 
 ```{python}
+
+width, height = 1.75, 2.0
+
 fig = TikzFigure()
 
 fig.colorlet("lightred", "red!40!white")
 
-heart = [[2, 0], [0, 3.5], [1, 4.5], [2, 3.0], [3, 4.5], [4, 3.5], [3, 2]]
+A = fig.add_node(-width, height)
+B = fig.add_node(0, 0)
+C = fig.add_node(width, height)
+D = fig.add_node(0, height)
 
-fig.draw(
-    heart,
-    rounded_corners="20pt",
-    line_width=4,
-    cycle=True,
-    color="red",
-    fill="lightred",
-)
+fig.draw(A.to(B, options=["out=-90, in=135"]).to(C, options=["out=45, in=-90"]).to(D, options=["in=80, out=100"]).to(A, options=["in=80, out=100"]), color="red", line_width=4, cycle=True, center=True, fill="lightred")
 
 fig.show()
 ```
