@@ -3,14 +3,13 @@ title: "Layers"
 jupyter: python3
 ---
 
-By default TikZ draws objects in the order they appear in the source, so later objects
-appear on top of earlier ones. tikzfigure exposes a **layer** system (backed by
-`pgfonlayer`) that lets you control the stacking order independently of code order.
+By default TikZ draws objects in the order they appear in the source, so later
+objects appear on top of earlier ones. tikzfigure exposes a **layer** system
+(backed by `pgfonlayer`) that lets you control the stacking order independently
+of code order.
 
-This tutorial shows:
-- why layers matter
-- how to assign elements to numbered layers
-- a practical example combining filled shapes and curves
+This tutorial shows: - why layers matter - how to assign elements to numbered
+layers - a practical example combining filled shapes and curves
 
 ```{python}
 import numpy as np
@@ -41,8 +40,8 @@ fig.show()
 # With layers - blue on layer 2 even though it is drawn first in code
 fig = TikzFigure()
 
-fig.add_node(0.25, 1, minimum_size="2cm", shape="circle", fill="blue", layer = 2)
-fig.add_node(-0.25, 1, minimum_size="2cm", shape="circle", fill="red", layer = 1)
+fig.add_node(0.25, 1, minimum_size="2cm", shape="circle", fill="blue", layer=2)
+fig.add_node(-0.25, 1, minimum_size="2cm", shape="circle", fill="red", layer=1)
 
 fig.add_node(0.0, -0.3, content="blue on top (layer=2)", draw="none")
 fig.show()
@@ -52,8 +51,8 @@ fig.show()
 
 ## Letters and a sine wave
 
-A more elaborate example: the letters **M**, **T**, and **L** are filled polygons
-drawn on different layers, with a sine wave winding between them.
+A more elaborate example: the letters **M**, **T**, and **L** are filled
+polygons drawn on different layers, with a sine wave winding between them.
 
 - **M** and **T** on layer 0 (background)
 - sine wave on layer 1 (middle)

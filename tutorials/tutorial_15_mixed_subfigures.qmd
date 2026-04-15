@@ -8,7 +8,8 @@ from tikzfigure import TikzFigure
 
 # Mixed Subfigures: Combining Plots and Diagrams
 
-Create sophisticated figures that combine axis-based plots with custom TikZ diagrams (nodes, paths, shapes). Mix them freely in grid layouts.
+Create sophisticated figures that combine axis-based plots with custom TikZ
+diagrams (nodes, paths, shapes). Mix them freely in grid layouts.
 
 ## Side-by-Side: Plot and Diagram
 
@@ -39,10 +40,9 @@ fig.show()
 
 {{< include includes/tikz_code_callout.qmd >}}
 
-**Key API:**
-- `fig.subfigure_axis()` — Create an axis-based subplot
-- `fig.add_subfigure()` — Create a bare TikZ diagram subplot
-- Both return objects you can populate with plots or drawings
+**Key API:** - `fig.subfigure_axis()` — Create an axis-based subplot -
+`fig.add_subfigure()` — Create a bare TikZ diagram subplot - Both return objects
+you can populate with plots or drawings
 
 ## 2×2 Grid: Mix Freely
 
@@ -63,19 +63,41 @@ ax2.set_legend()
 
 # Bottom-left: Diagram - simple flowchart
 flowchart = fig.add_subfigure(width=0.45, height=5)
-start = flowchart.add_node(1.5, 3, label="start", content="Start", shape="circle", fill="green!40")
-process = flowchart.add_node(1.5, 1.5, label="process", content="Process", shape="rectangle", fill="yellow!40")
-end = flowchart.add_node(1.5, 0, label="end", content="End", shape="circle", fill="red!40")
+start = flowchart.add_node(
+    1.5, 3, label="start", content="Start", shape="circle", fill="green!40"
+)
+process = flowchart.add_node(
+    1.5, 1.5, label="process", content="Process", shape="rectangle", fill="yellow!40"
+)
+end = flowchart.add_node(
+    1.5, 0, label="end", content="End", shape="circle", fill="red!40"
+)
 flowchart.draw([start, process], arrows="->")
 flowchart.draw([process, end], arrows="->")
 
 # Bottom-right: Diagram - network
 network = fig.add_subfigure(width=0.45, height=5)
-center = network.add_node(1.5, 1.5, label="center", content="Hub", shape="circle", fill="purple!40", minimum_size="15pt")
-n1 = network.add_node(0.5, 2.5, label="n1", content="Node 1", shape="circle", fill="cyan!40")
-n2 = network.add_node(2.5, 2.5, label="n2", content="Node 2", shape="circle", fill="cyan!40")
-n3 = network.add_node(0.5, 0.5, label="n3", content="Node 3", shape="circle", fill="cyan!40")
-n4 = network.add_node(2.5, 0.5, label="n4", content="Node 4", shape="circle", fill="cyan!40")
+center = network.add_node(
+    1.5,
+    1.5,
+    label="center",
+    content="Hub",
+    shape="circle",
+    fill="purple!40",
+    minimum_size="15pt",
+)
+n1 = network.add_node(
+    0.5, 2.5, label="n1", content="Node 1", shape="circle", fill="cyan!40"
+)
+n2 = network.add_node(
+    2.5, 2.5, label="n2", content="Node 2", shape="circle", fill="cyan!40"
+)
+n3 = network.add_node(
+    0.5, 0.5, label="n3", content="Node 3", shape="circle", fill="cyan!40"
+)
+n4 = network.add_node(
+    2.5, 0.5, label="n4", content="Node 4", shape="circle", fill="cyan!40"
+)
 network.draw([center, n1], options=["thick"])
 network.draw([center, n2], options=["thick"])
 network.draw([center, n3], options=["thick"])
@@ -104,13 +126,27 @@ ax.set_legend()
 flowchart = fig.add_subfigure(width=0.9, height=7)
 
 # Build flowchart nodes
-start = flowchart.add_node(2, 4.5, label="start", content="Initialize", shape="circle", fill="green!40")
-input_node = flowchart.add_node(2, 3.5, label="input", content="Set Parameters", shape="rectangle", fill="cyan!40")
-check_iter = flowchart.add_node(2, 2.5, label="check_iter", content="Iterations < Max?", shape="diamond")
-compute = flowchart.add_node(4, 2.5, label="compute", content="Compute Step", shape="rectangle", fill="yellow!40")
-check_conv = flowchart.add_node(4, 1.5, label="check_conv", content="Converged?", shape="diamond")
-output = flowchart.add_node(2, 0.5, label="output", content="Output Result", shape="rectangle", fill="cyan!40")
-end = flowchart.add_node(2, -0.5, label="end", content="End", shape="circle", fill="red!40")
+start = flowchart.add_node(
+    2, 4.5, label="start", content="Initialize", shape="circle", fill="green!40"
+)
+input_node = flowchart.add_node(
+    2, 3.5, label="input", content="Set Parameters", shape="rectangle", fill="cyan!40"
+)
+check_iter = flowchart.add_node(
+    2, 2.5, label="check_iter", content="Iterations < Max?", shape="diamond"
+)
+compute = flowchart.add_node(
+    4, 2.5, label="compute", content="Compute Step", shape="rectangle", fill="yellow!40"
+)
+check_conv = flowchart.add_node(
+    4, 1.5, label="check_conv", content="Converged?", shape="diamond"
+)
+output = flowchart.add_node(
+    2, 0.5, label="output", content="Output Result", shape="rectangle", fill="cyan!40"
+)
+end = flowchart.add_node(
+    2, -0.5, label="end", content="End", shape="circle", fill="red!40"
+)
 
 # Draw paths
 flowchart.draw([start, input_node], arrows="->")
@@ -149,9 +185,33 @@ ax.set_legend()
 states = fig.add_subfigure(width=0.5, height=6)
 
 # Create state nodes
-s1 = states.add_node(0.5, 2, label="s1", content="State 1", shape="circle", fill="red!40", minimum_size="12pt")
-s2 = states.add_node(2, 2, label="s2", content="State 2", shape="circle", fill="yellow!40", minimum_size="12pt")
-s3 = states.add_node(3.5, 2, label="s3", content="State 3", shape="circle", fill="green!40", minimum_size="12pt")
+s1 = states.add_node(
+    0.5,
+    2,
+    label="s1",
+    content="State 1",
+    shape="circle",
+    fill="red!40",
+    minimum_size="12pt",
+)
+s2 = states.add_node(
+    2,
+    2,
+    label="s2",
+    content="State 2",
+    shape="circle",
+    fill="yellow!40",
+    minimum_size="12pt",
+)
+s3 = states.add_node(
+    3.5,
+    2,
+    label="s3",
+    content="State 3",
+    shape="circle",
+    fill="green!40",
+    minimum_size="12pt",
+)
 
 # Draw transitions
 states.draw([s1, s2], arrows="->", label="a")
@@ -167,22 +227,19 @@ fig.show()
 
 ## Tips and Tricks
 
-**Coordinate Systems:**
-- Both axes and diagrams use their own coordinate systems
-- Axes: determined by data (x/y limits)
-- Diagrams: you control node positions directly (e.g., `add_node(0, 2, ...)` places at position (0, 2))
+**Coordinate Systems:** - Both axes and diagrams use their own coordinate
+systems - Axes: determined by data (x/y limits) - Diagrams: you control node
+positions directly (e.g., `add_node(0, 2, ...)` places at position (0, 2))
 
-**Dimensions:**
-- Use `height` to control vertical space: `add_subfigure(width=0.45, height=6)`
-- Both axis and diagram subfigures respect width/height parameters
+**Dimensions:** - Use `height` to control vertical space:
+`add_subfigure(width=0.45, height=6)` - Both axis and diagram subfigures respect
+width/height parameters
 
-**Styling:**
-- Node fills: `fill="cyan!40"`, `fill="red!20"`, etc.
-- Shapes: `"circle"`, `"rectangle"`, `"diamond"`, etc.
-- Path options: `["->"]`, `["<->"]`, `["dashed"]`, `["thick"]`, etc.
-- Bends: `bend_left=20`, `bend_right=30` for curved paths
+**Styling:** - Node fills: `fill="cyan!40"`, `fill="red!20"`, etc. - Shapes:
+`"circle"`, `"rectangle"`, `"diamond"`, etc. - Path options: `["->"]`,
+`["<->"]`, `["dashed"]`, `["thick"]`, etc. - Bends: `bend_left=20`,
+`bend_right=30` for curved paths
 
-**Mixing in Grids:**
-- Call `subfigure_axis()` and `add_subfigure()` in any order
-- They auto-fill left-to-right, top-to-bottom
-- Both types render correctly in pgfplots groupplot environment
+**Mixing in Grids:** - Call `subfigure_axis()` and `add_subfigure()` in any
+order - They auto-fill left-to-right, top-to-bottom - Both types render
+correctly in pgfplots groupplot environment

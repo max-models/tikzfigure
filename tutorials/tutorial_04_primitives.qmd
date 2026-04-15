@@ -20,19 +20,42 @@ from tikzfigure import TikzFigure
 
 ## Arcs
 
-An arc is defined by a starting point, start and end angles (in degrees), and a radius.
+An arc is defined by a starting point, start and end angles (in degrees), and a
+radius.
 
 ```{python}
 fig = TikzFigure()
 
 # Quarter circle arc
-fig.arc(start=(0, 0), start_angle=0, end_angle=90, radius="2cm", color="red", line_width="2pt")
+fig.arc(
+    start=(0, 0),
+    start_angle=0,
+    end_angle=90,
+    radius="2cm",
+    color="red",
+    line_width="2pt",
+)
 
 # Three-quarter circle arc
-fig.arc(start=(4, 0), start_angle=90, end_angle=360, radius="1.5cm", color="blue", line_width="2pt")
+fig.arc(
+    start=(4, 0),
+    start_angle=90,
+    end_angle=360,
+    radius="1.5cm",
+    color="blue",
+    line_width="2pt",
+)
 
 # Arc with arrow
-fig.arc(start=(8, 0), start_angle=0, end_angle=180, radius="2cm", arrows="->", color="green", line_width="2pt")
+fig.arc(
+    start=(8, 0),
+    start_angle=0,
+    end_angle=180,
+    radius="2cm",
+    arrows="->",
+    color="green",
+    line_width="2pt",
+)
 
 fig.show()
 ```
@@ -53,7 +76,13 @@ fig.circle(center=(0, 0), radius="1cm", color="blue", line_width="2pt")
 fig.circle(center=(3, 0), radius="1cm", fill="yellow", color="orange", line_width="2pt")
 
 # Dashed circle
-fig.circle(center=(6, 0), radius="1cm", color="purple", dash_pattern="on 2pt off 2pt", line_width="2pt")
+fig.circle(
+    center=(6, 0),
+    radius="1cm",
+    color="purple",
+    dash_pattern="on 2pt off 2pt",
+    line_width="2pt",
+)
 
 fig.show()
 ```
@@ -62,7 +91,8 @@ fig.show()
 
 ## Clock face
 
-A practical example: a clock face using a circle and line segments for hour markers.
+A practical example: a clock face using a circle and line segments for hour
+markers.
 
 ```{python}
 fig = TikzFigure()
@@ -81,7 +111,7 @@ for hour in range(12):
     fig.draw(
         [(x_inner, y_inner), (x_inner * 1.1, y_inner * 1.1)],
         line_width="1.5pt",
-        color="black"
+        color="black",
     )
 
     # Hour numbers
@@ -111,7 +141,14 @@ fig.rectangle((0, 0), (2, 1), color="blue", line_width="2pt")
 fig.rectangle((3, 0), (5, 1), fill="yellow", color="orange", line_width="2pt")
 
 # Rectangle with rounded corners
-fig.rectangle((6, 0), (8, 1), fill="green!30", color="green", rounded_corners="5pt", line_width="2pt")
+fig.rectangle(
+    (6, 0),
+    (8, 1),
+    fill="green!30",
+    color="green",
+    rounded_corners="5pt",
+    line_width="2pt",
+)
 
 fig.show()
 ```
@@ -132,7 +169,14 @@ fig.ellipse((0, 0), x_radius="1cm", y_radius="1cm", color="red", line_width="2pt
 fig.ellipse((4, 0), x_radius="1.5cm", y_radius="0.75cm", color="blue", line_width="2pt")
 
 # Filled ellipse
-fig.ellipse((8, 0), x_radius="1.2cm", y_radius="0.8cm", fill="purple!40", color="purple", line_width="2pt")
+fig.ellipse(
+    (8, 0),
+    x_radius="1.2cm",
+    y_radius="0.8cm",
+    fill="purple!40",
+    color="purple",
+    line_width="2pt",
+)
 
 fig.show()
 ```
@@ -219,8 +263,14 @@ print(f"Lines intersect at: {intersection}")
 
 # Draw intersection point
 if intersection:
-    fig.add_node(intersection[0], intersection[1], shape="circle",
-                 fill="black", minimum_size="0.15cm", draw="none")
+    fig.add_node(
+        intersection[0],
+        intersection[1],
+        shape="circle",
+        fill="black",
+        minimum_size="0.15cm",
+        draw="none",
+    )
 
 fig.show()
 ```
@@ -229,7 +279,8 @@ fig.show()
 
 ## Regular polygons
 
-Draw regular polygons (triangle, square, pentagon, etc.) with specified center and radius.
+Draw regular polygons (triangle, square, pentagon, etc.) with specified center
+and radius.
 
 ```{python}
 fig = TikzFigure()
@@ -261,8 +312,7 @@ fig = TikzFigure()
 # Squares with different rotations
 rotations = [0, 22.5, 45]
 for i, rot in enumerate(rotations):
-    fig.square((i * 3, 1), radius=0.8, rotation=rot,
-               color="purple", fill="purple!30")
+    fig.square((i * 3, 1), radius=0.8, rotation=rot, color="purple", fill="purple!30")
     fig.add_node(i * 3, -0.3, content=f"{rot}\\textdegree", draw="none")
 
 # Triangles pointing in different directions

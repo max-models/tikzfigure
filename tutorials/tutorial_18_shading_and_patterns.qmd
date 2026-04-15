@@ -3,8 +3,8 @@ title: "Shading and Patterns"
 jupyter: python3
 ---
 
-TikZ supports rich fill styles beyond solid colors: smooth color gradients (shadings)
-and repeating geometric fill patterns. This tutorial covers:
+TikZ supports rich fill styles beyond solid colors: smooth color gradients
+(shadings) and repeating geometric fill patterns. This tutorial covers:
 
 - axis shading on nodes: horizontal and vertical gradients
 - radial shading: glowing circles
@@ -13,8 +13,8 @@ and repeating geometric fill patterns. This tutorial covers:
 - fill patterns: hatching, dots, crosshatch, checkerboard
 - combining shadings and patterns in one figure
 
-All shading examples require `\usetikzlibrary{shadings}` and all pattern examples
-require `\usetikzlibrary{patterns}`, both passed via `document_setup`.
+All shading examples require `\usetikzlibrary{shadings}` and all pattern
+examples require `\usetikzlibrary{patterns}`, both passed via `document_setup`.
 
 ```{python}
 from tikzfigure import TikzFigure
@@ -22,8 +22,8 @@ from tikzfigure import TikzFigure
 
 ## Axis shading: horizontal and vertical gradients
 
-`shading="axis"` produces a linear gradient. Use `left_color`/`right_color` for a
-horizontal gradient, or `top_color`/`bottom_color` for a vertical one.
+`shading="axis"` produces a linear gradient. Use `left_color`/`right_color` for
+a horizontal gradient, or `top_color`/`bottom_color` for a vertical one.
 
 ```{python}
 fig = TikzFigure(document_setup=r"\usetikzlibrary{shadings}")
@@ -48,8 +48,9 @@ for i, (lc, rc) in enumerate(pairs):
         minimum_height="1.2cm",
         draw="gray!50",
     )
-    fig.add_node(i * 3, 0.5, content=f"{lc} → {rc}",
-                 draw="none", font=r"\tiny", anchor="center")
+    fig.add_node(
+        i * 3, 0.5, content=f"{lc} → {rc}", draw="none", font=r"\tiny", anchor="center"
+    )
 
 # Vertical gradients
 vert_pairs = [
@@ -70,8 +71,9 @@ for i, (tc, bc) in enumerate(vert_pairs):
         minimum_height="1.2cm",
         draw="gray!50",
     )
-    fig.add_node(i * 3, -2, content=f"{tc} ↕ {bc}",
-                 draw="none", font=r"\tiny", anchor="center")
+    fig.add_node(
+        i * 3, -2, content=f"{tc} ↕ {bc}", draw="none", font=r"\tiny", anchor="center"
+    )
 
 fig.show()
 ```
@@ -80,8 +82,8 @@ fig.show()
 
 ## Radial shading: glowing circles
 
-`shading="radial"` paints from `inner_color` at the center outward to `outer_color`.
-This gives a convincing glow effect.
+`shading="radial"` paints from `inner_color` at the center outward to
+`outer_color`. This gives a convincing glow effect.
 
 ```{python}
 fig = TikzFigure(document_setup=r"\usetikzlibrary{shadings}")
@@ -139,8 +141,8 @@ fig.show()
 
 ## Axis shading on a closed path
 
-Shading is not limited to nodes — you can apply it to any filled closed path using
-`fig.draw(pts, cycle=True, shading="axis", ...)`.
+Shading is not limited to nodes — you can apply it to any filled closed path
+using `fig.draw(pts, cycle=True, shading="axis", ...)`.
 
 ```{python}
 import math
@@ -182,9 +184,9 @@ fig.show()
 
 ## Fill patterns on nodes
 
-Patterns are repeating geometric fills. Common patterns include `"north east lines"`,
-`"dots"`, `"crosshatch"`, `"grid"`, and `"checkerboard"`. Use `pattern_color` to
-set the pattern ink color.
+Patterns are repeating geometric fills. Common patterns include
+`"north east lines"`, `"dots"`, `"crosshatch"`, `"grid"`, and `"checkerboard"`.
+Use `pattern_color` to set the pattern ink color.
 
 ```{python}
 fig = TikzFigure(document_setup=r"\usetikzlibrary{patterns}")
@@ -192,10 +194,10 @@ fig = TikzFigure(document_setup=r"\usetikzlibrary{patterns}")
 patterns = [
     ("north east lines", "blue!60"),
     ("north west lines", "red!60"),
-    ("dots",             "black"),
-    ("crosshatch",       "teal"),
-    ("grid",             "orange!80"),
-    ("checkerboard",     "purple!60"),
+    ("dots", "black"),
+    ("crosshatch", "teal"),
+    ("grid", "orange!80"),
+    ("checkerboard", "purple!60"),
 ]
 
 for i, (pat, pc) in enumerate(patterns):
@@ -233,7 +235,8 @@ sit on top, demonstrating how shadings and patterns can coexist in one figure.
 ```{python}
 fig = TikzFigure(
     document_setup=(
-        r"\usetikzlibrary{shadings}" "\n"
+        r"\usetikzlibrary{shadings}"
+        "\n"
         r"\usetikzlibrary{patterns}"
     )
 )
@@ -263,11 +266,13 @@ fig.add_node(
 )
 
 # Patterned foreground nodes
-for i, (pat, fc) in enumerate([
-    ("north east lines", "red!40"),
-    ("dots",             "green!40"),
-    ("crosshatch",       "orange!40"),
-]):
+for i, (pat, fc) in enumerate(
+    [
+        ("north east lines", "red!40"),
+        ("dots", "green!40"),
+        ("crosshatch", "orange!40"),
+    ]
+):
     fig.add_node(
         x=2 + i * 2,
         y=1,

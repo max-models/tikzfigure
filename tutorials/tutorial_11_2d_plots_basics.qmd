@@ -18,7 +18,8 @@ from tikzfigure import TikzFigure
 
 ## Your first 2D plot
 
-A 2D plot starts with creating an axis via `axis2d()`, then adding data with `add_plot()`.
+A 2D plot starts with creating an axis via `axis2d()`, then adding data with
+`add_plot()`.
 
 ```{python}
 fig = TikzFigure()
@@ -48,7 +49,7 @@ ax = fig.axis2d(
     ylabel="Distance (meters)",
     xlim=(0, 5),
     ylim=(0, 30),
-    grid=True
+    grid=True,
 )
 
 time = [0, 1, 2, 3, 4, 5]
@@ -70,11 +71,7 @@ A single axis can hold multiple plots for comparisons:
 ```{python}
 fig = TikzFigure()
 
-ax = fig.axis2d(
-    xlabel="X", ylabel="Y",
-    xlim=(0, 10), ylim=(0, 10),
-    grid=True
-)
+ax = fig.axis2d(xlabel="X", ylabel="Y", xlim=(0, 10), ylim=(0, 10), grid=True)
 
 ax.add_plot([0, 2, 4, 6, 8, 10], [0, 2, 4, 6, 8, 10], label="$y = x$")
 ax.add_plot([0, 1, 2, 3], [0, 1, 4, 9], label="$y = x^2$")
@@ -94,11 +91,13 @@ Override the default sizing with explicit `width` and `height`:
 fig = TikzFigure()
 
 ax = fig.axis2d(
-    xlabel="X", ylabel="Y",
-    xlim=(0, 10), ylim=(0, 10),
-    width='8cm',
-    height='4cm',
-    grid=True
+    xlabel="X",
+    ylabel="Y",
+    xlim=(0, 10),
+    ylim=(0, 10),
+    width="8cm",
+    height="4cm",
+    grid=True,
 )
 
 ax.add_plot(x=[0, 5, 10], y=[0, 5, 10], label="Linear", color="blue")
@@ -122,19 +121,27 @@ Call `axis2d()` multiple times for separate plots rendered in sequence:
 fig = TikzFigure()
 
 ax1 = fig.axis2d(
-    xlabel="Hour", ylabel="Temperature",
-    xlim=(0, 24), ylim=(10, 30), grid=True
+    xlabel="Hour", ylabel="Temperature", xlim=(0, 24), ylim=(10, 30), grid=True
 )
-ax1.add_plot([0, 6, 12, 18, 24], [12, 14, 28, 26, 18],
-             label="Temperature", color="orange", mark="*")
+ax1.add_plot(
+    [0, 6, 12, 18, 24],
+    [12, 14, 28, 26, 18],
+    label="Temperature",
+    color="orange",
+    mark="*",
+)
 ax1.set_legend(position="north east")
 
 ax2 = fig.axis2d(
-    xlabel="Hour", ylabel="Humidity (%)",
-    xlim=(0, 24), ylim=(30, 90), grid=True
+    xlabel="Hour", ylabel="Humidity (%)", xlim=(0, 24), ylim=(30, 90), grid=True
 )
-ax2.add_plot([0, 6, 12, 18, 24], [70, 65, 40, 35, 55],
-             label="Humidity", color="cyan", mark="square")
+ax2.add_plot(
+    [0, 6, 12, 18, 24],
+    [70, 65, 40, 35, 55],
+    label="Humidity",
+    color="cyan",
+    mark="square",
+)
 ax2.set_legend(position="south east")
 
 fig.show()
