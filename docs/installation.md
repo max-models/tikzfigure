@@ -3,7 +3,8 @@
 ## Requirements
 
 - Python >= 3.8
-- A working `pdflatex` installation (e.g. [TeX Live](https://tug.org/texlive/) or [MiKTeX](https://miktex.org/))
+- A working `pdflatex` installation (e.g. [TeX Live](https://tug.org/texlive/)
+  or [MiKTeX](https://miktex.org/))
 
 ## Install from PyPI
 

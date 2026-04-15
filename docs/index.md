@@ -1,6 +1,8 @@
 # tikzfigure
 
-**tikzfigure** is a Python library that provides a programmatic interface to generate readable [TikZ](https://tikz.dev/) (LaTeX) figures. Build figures through a clean Python API, then export to LaTeX, PDF, or PNG/JPG.
+**tikzfigure** is a Python library that provides a programmatic interface to
+generate readable [TikZ](https://tikz.dev/) (LaTeX) figures. Build figures
+through a clean Python API, then export to LaTeX, PDF, or PNG/JPG.
 
 ## Quick start
 

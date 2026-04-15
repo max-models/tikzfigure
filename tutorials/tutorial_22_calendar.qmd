@@ -6,8 +6,8 @@ jupyter: python3
 This showcase tutorial builds a full A3-style **2026 calendar** combining:
 
 - Python's `calendar` / `datetime` modules for date arithmetic
-- an external REST API ([openholidaysapi.org](https://openholidaysapi.org)) for
-  public-holiday data across multiple countries (Sweden, Germany, France,
+- an external REST API ([openholidaysapi.org](https://openholidaysapi.org))
+  for public-holiday data across multiple countries (Sweden, Germany, France,
   Lebanon)
 - a nested Python loop that lays out months × days as a grid of filled
   rectangles
