@@ -188,6 +188,30 @@ fig.show()
 Changing `fig.add_variable("radius", 5)` would scale the entire circle without
 touching any node code.
 
+## Heart shape
+
+Remember the heart shape from the [styling tutorial](tutorial_03_paths.qmd#heart-shape)? It can be drawn with a single `\draw` command
+
+```{python}
+
+width, height = 1.75, 2.0
+
+fig = TikzFigure()
+
+fig.colorlet("lightred", "red!40!white")
+fig.add_variable("width", 1.75)
+fig.add_variable("height", 2.0)
+
+A = fig.add_node(r"-\width", r"\height")
+B = fig.add_node(0, 0)
+C = fig.add_node(r"\width", r"\height")
+D = fig.add_node(0, r"\height")
+
+fig.draw(A.to(B, options=["out=-90, in=135"]).to(C, options=["out=45, in=-90"]).to(D, options=["in=80, out=100"]).to(A, options=["in=80, out=100"]), color="red", line_width=4, cycle=True, center=True, fill="lightred")
+
+fig.show()
+```
+
 ## Practical example: a chain of labelled boxes
 
 A common diagram pattern is a horizontal chain of labelled boxes connected by arrows.
