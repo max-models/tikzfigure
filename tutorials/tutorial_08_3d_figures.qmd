@@ -93,7 +93,7 @@ states = odeint(lorenz, y0=[1.0, 1.0, 1.0], t=t) * 0.25
 fig = TikzFigure(ndim=3)
 
 fig.plot3d(
-    states[:, 0], states[:, 1], states[:, 2], options=["color=black", "thick"], layer=0
+    states[:, 0], states[:, 1], states[:, 2], color="black", thick=True, layer=0
 )
 
 fig.add_node(

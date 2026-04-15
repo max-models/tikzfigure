@@ -189,7 +189,7 @@ mid_BC = fig.midpoint(
     draw="gray",
     inner_sep="0pt",
 )
-fig.draw([A, mid_BC], options=["dashed"], color="gray")
+fig.draw([A, mid_BC], dashed=True, color="gray")
 
 # Centroid = midpoint(midpoint(A, B), C)
 centroid = fig.midpoint(
@@ -228,8 +228,8 @@ fig.add_coordinate("left",  x=0, y=2)
 # Draw a diamond outline and its diagonals
 fig.draw(["top", "right", "bot", "left"], cycle=True,
          color="teal", line_width=2)
-fig.draw(["top", "bot"], options=["dashed"], color="gray")
-fig.draw(["left", "right"], options=["dashed"], color="gray")
+fig.draw(["top", "bot"], dashed=True, color="gray")
+fig.draw(["left", "right"], dashed=True, color="gray")
 
 # A visible centre node for reference
 fig.add_node(3, 2, content="centre", draw="none", font=r"\small")
@@ -259,7 +259,7 @@ fig.add_node(5, 3, label="dst", shape="rectangle",
 fig.add_coordinate("corner", x=5, y=0)
 
 fig.draw(["src.east", "corner", "dst.south"],
-         options=["->", "thick"], color="purple",
+         arrows="->", thick=True, color="purple",
          segment_options=[
              {"connector": "--"},   # horizontal segment: straight line
              {"connector": "--"},   # vertical segment: straight line

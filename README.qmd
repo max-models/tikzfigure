@@ -20,11 +20,11 @@ pip install tikzfigure
 
 ## Generate tikz-figures with Python API
 
-Generate two nodes connected by an arrow, see @fig-tikzfigure.
+Generate a simple TikZ figure with nodes and arrows, see @fig-tikzfigure.
 
 ```{python}
 #| label: fig-tikzfigure
-#| fig-cap: "Two nodes connected by an arrow"
+#| fig-cap: "Simple figure with nodes and arrows"
 
 from tikzfigure import TikzFigure
 
@@ -35,8 +35,16 @@ n2 = fig.add_node(2, 0, shape="circle", fill="purple!40!orange", content="Figure
 
 fig.draw([n1, n2], line_width=2, arrows="->", color="gray")
 
+n3 = fig.add_node(4, 0, shape="circle", fill="orange!50", content="Chain")
+fig.draw(
+    n1.to(n2).to(n3, options=["bend left"], looseness=1.2),
+    color="blue",
+)
+
 fig.show()
 ```
+
+For segment-local TikZ options, you can also build paths fluently with `Node.to(...)` and keep path-wide styling on `fig.draw(...)`.
 
 You can also save the figure as a `.tikz` file or print the LaTeX code:
 

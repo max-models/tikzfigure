@@ -225,9 +225,9 @@ nB = fig.add_node(4, 0, label="B", shape="circle", fill="teal!40",
 nC = fig.add_node(2, 3, label="C", shape="circle", fill="purple!40",
                   minimum_size="1cm", content="C", pin="below left:origin")
 
-fig.draw([nA, nB], options=["->"])
-fig.draw([nA, nC], options=["->"])
-fig.draw([nB, nC], options=["->"])
+fig.draw([nA, nB], arrows="->")
+fig.draw([nA, nC], arrows="->")
+fig.draw([nB, nC], arrows="->")
 
 fig.show()
 ```

@@ -38,8 +38,8 @@ C = fig.add_node(4, 0, label="C", content="C")
 D = fig.add_node(1, 2, label="D", content="D")
 E = fig.add_node(3, 2, label="E", content="E")
 
-fig.draw([A, B], options=["->"])
-fig.draw([D, E], options=["->"])
+fig.draw([A, B], arrows="->")
+fig.draw([D, E], arrows="->")
 
 fig.show()
 ```
@@ -66,7 +66,7 @@ for i, label in enumerate(nodes):
     fig.add_node(i * 3, 0, content=label)
 
 for i in range(len(nodes) - 1):
-    fig.draw([(i * 3 + 1.0, 0), (i * 3 + 2.0, 0)], options=["->"], color="gray!70")
+    fig.draw([(i * 3 + 1.0, 0), (i * 3 + 2.0, 0)], arrows="->", color="gray!70")
 
 fig.show()
 ```
@@ -84,8 +84,8 @@ fig = TikzFigure(grid=True)
 n1 = fig.add_node(0, 0, shape="circle", fill="red!40", content="A", minimum_size="0.8cm")
 n2 = fig.add_node(3, 2, shape="circle", fill="blue!40", content="B", minimum_size="0.8cm")
 n3 = fig.add_node(5, 0, shape="circle", fill="green!40", content="C", minimum_size="0.8cm")
-fig.draw([n1, n2], options=["->"])
-fig.draw([n2, n3], options=["->"])
+fig.draw([n1, n2], arrows="->")
+fig.draw([n2, n3], arrows="->")
 
 fig.show()
 ```
@@ -131,7 +131,7 @@ fig.add_node(label="right_node", content="Right",
              right_of="root", node_distance="2.5cm")
 
 for label in ["above_node", "below_node", "left_node", "right_node"]:
-    fig.draw(["root", label], options=["->"], color="gray")
+    fig.draw(["root", label], arrows="->", color="gray")
 
 fig.show()
 ```
@@ -194,9 +194,9 @@ A = fig.add_node(0, 1, label="A", content="A", shape="circle", fill="cyan!40")
 B = fig.add_node(3, 1, label="B", content="B", shape="circle", fill="cyan!40")
 C = fig.add_node(1.5, -1, label="C", content="C", shape="circle", fill="cyan!40")
 
-fig.draw([A, B], options=["->"])
-fig.draw([A, C], options=["->"])
-fig.draw([B, C], options=["->"])
+fig.draw([A, B], arrows="->")
+fig.draw([A, C], arrows="->")
+fig.draw([B, C], arrows="->")
 
 print(fig.generate_tikz())
 ```

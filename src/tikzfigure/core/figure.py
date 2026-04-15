@@ -20,6 +20,7 @@ from tikzfigure.core.loop import Loop
 from tikzfigure.core.node import Node
 from tikzfigure.core.parabola import Parabola
 from tikzfigure.core.path import TikzPath
+from tikzfigure.core.path_builder import NodePathBuilder
 from tikzfigure.core.plot import Plot3D
 from tikzfigure.core.polygon import Polygon, Square, Triangle
 from tikzfigure.core.raw import RawTikz
@@ -76,6 +77,21 @@ class TikzFigure:
 
     # ------------------------------------------------------------- #
     # Private methods
+
+    @staticmethod
+    def _coerce_path_input(
+        nodes: list[Any] | NodePathBuilder,
+        segment_options: list[dict | str | None] | None = None,
+    ) -> tuple[list[Any], list[dict | str | None] | None]:
+        """Normalize draw/filldraw path input to nodes + segment options."""
+        if isinstance(nodes, NodePathBuilder):
+            if segment_options is not None:
+                raise ValueError(
+                    "segment_options cannot be passed to draw()/filldraw() "
+                    "when using a NodePathBuilder."
+                )
+            return nodes.nodes, nodes.segment_options
+        return nodes, segment_options
 
     def _add_path(
         self,
@@ -2219,7 +2235,7 @@ class TikzFigure:
 
     def filldraw(
         self,
-        nodes: list,
+        nodes: list | NodePathBuilder,
         layer: int = 0,
         comment: str | None = None,
         center: bool = False,
@@ -2329,6 +2345,7 @@ class TikzFigure:
         Returns:
             The :class:`TikzPath` object that was added.
         """
+        nodes, segment_options = self._coerce_path_input(nodes, segment_options)
         _params = locals().copy()
         _non_tikz = {
             "self",
@@ -2370,7 +2387,7 @@ class TikzFigure:
 
     def draw(
         self,
-        nodes: list,
+        nodes: list | NodePathBuilder,
         layer: int = 0,
         comment: str | None = None,
         center: bool = False,
@@ -2545,6 +2562,7 @@ class TikzFigure:
         Returns:
             The :class:`TikzPath` object that was added.
         """
+        nodes, segment_options = self._coerce_path_input(nodes, segment_options)
         # Snapshot explicit params before creating any locals
         _params = locals().copy()
 

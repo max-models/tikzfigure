@@ -1,7 +1,10 @@
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from tikzfigure.core.base import TikzObject
 from tikzfigure.core.types import _Align, _Anchor, _Pattern, _Shading, _Shape
+
+if TYPE_CHECKING:
+    from tikzfigure.core.path_builder import NodePathBuilder
 
 
 class Node(TikzObject):
@@ -278,6 +281,23 @@ class Node(TikzObject):
     def content(self) -> str:
         """Text or LaTeX content displayed inside this node."""
         return self._content
+
+    def to(
+        self,
+        target: "Node",
+        options: list[str] | str | None = None,
+        **kwargs: Any,
+    ) -> "NodePathBuilder":
+        """Create a path builder for a segment from this node to ``target``.
+
+        The returned builder always starts with ``self`` and records the segment
+        options for the edge from ``self`` to ``target``. Chain additional
+        ``.to(...)`` calls on the builder to add more node-to-node segments.
+        Only :class:`Node` targets are accepted in this API.
+        """
+        from tikzfigure.core.path_builder import NodePathBuilder
+
+        return NodePathBuilder(self).to(target, options=options, **kwargs)
 
     def to_tikz(self) -> str:
         """Generate the TikZ ``\\node`` command for this node.

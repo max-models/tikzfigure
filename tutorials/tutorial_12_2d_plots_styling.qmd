@@ -55,7 +55,7 @@ y1 = [0, 1, 4, 9, 16, 25, 36, 49, 64, 81, 100]
 y2 = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20]
 
 ax.add_plot(x, y1, label="Thick solid", color="red", line_width="2pt")
-ax.add_plot(x, y2, label="Thin dashed", color="blue", options=["dashed"])
+ax.add_plot(x, y2, label="Thin dashed", color="blue", dashed=True)
 
 ax.set_legend()
 fig.show()

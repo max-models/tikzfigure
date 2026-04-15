@@ -28,10 +28,10 @@ A = diagram.add_node(0, 2, label="A", content="A", shape="circle", fill="cyan!40
 B = diagram.add_node(3, 2, label="B", content="B", shape="circle", fill="cyan!40")
 C = diagram.add_node(0, 0, label="C", content="C", shape="circle", fill="cyan!40")
 D = diagram.add_node(3, 0, label="D", content="D", shape="circle", fill="cyan!40")
-diagram.draw([A, B], options=["->"])
-diagram.draw([A, C], options=["->"])
-diagram.draw([B, D], options=["->"])
-diagram.draw([C, D], options=["->"])
+diagram.draw([A, B], arrows="->")
+diagram.draw([A, C], arrows="->")
+diagram.draw([B, D], arrows="->")
+diagram.draw([C, D], arrows="->")
 diagram.draw([A, D], options=["->", "dashed"], bend_left=20, color="gray")
 
 fig.show()
@@ -66,8 +66,8 @@ flowchart = fig.add_subfigure(width=0.45, height=5)
 start = flowchart.add_node(1.5, 3, label="start", content="Start", shape="circle", fill="green!40")
 process = flowchart.add_node(1.5, 1.5, label="process", content="Process", shape="rectangle", fill="yellow!40")
 end = flowchart.add_node(1.5, 0, label="end", content="End", shape="circle", fill="red!40")
-flowchart.draw([start, process], options=["->"])
-flowchart.draw([process, end], options=["->"])
+flowchart.draw([start, process], arrows="->")
+flowchart.draw([process, end], arrows="->")
 
 # Bottom-right: Diagram - network
 network = fig.add_subfigure(width=0.45, height=5)
@@ -113,14 +113,14 @@ output = flowchart.add_node(2, 0.5, label="output", content="Output Result", sha
 end = flowchart.add_node(2, -0.5, label="end", content="End", shape="circle", fill="red!40")
 
 # Draw paths
-flowchart.draw([start, input_node], options=["->"])
-flowchart.draw([input_node, check_iter], options=["->"])
-flowchart.draw([check_iter, compute], options=["->"], label="yes")
-flowchart.draw([compute, check_conv], options=["->"])
-flowchart.draw([check_iter, output], options=["->"], label="no")
-flowchart.draw([check_conv, compute], options=["->"], label="no", bend_left=30)
-flowchart.draw([check_conv, output], options=["->"], label="yes")
-flowchart.draw([output, end], options=["->"])
+flowchart.draw([start, input_node], arrows="->")
+flowchart.draw([input_node, check_iter], arrows="->")
+flowchart.draw([check_iter, compute], arrows="->", label="yes")
+flowchart.draw([compute, check_conv], arrows="->")
+flowchart.draw([check_iter, output], arrows="->", label="no")
+flowchart.draw([check_conv, compute], arrows="->", label="no", bend_left=30)
+flowchart.draw([check_conv, output], arrows="->", label="yes")
+flowchart.draw([output, end], arrows="->")
 
 fig.show()
 ```
@@ -154,11 +154,11 @@ s2 = states.add_node(2, 2, label="s2", content="State 2", shape="circle", fill="
 s3 = states.add_node(3.5, 2, label="s3", content="State 3", shape="circle", fill="green!40", minimum_size="12pt")
 
 # Draw transitions
-states.draw([s1, s2], options=["->"], label="a")
-states.draw([s2, s3], options=["->"], label="b")
-states.draw([s2, s1], options=["->"], label="c", bend_left=20)
-states.draw([s3, s1], options=["->"], label="d", bend_left=-20)
-states.draw([s1, s1], options=["->"], label="loop", bend_right=30, color="blue")
+states.draw([s1, s2], arrows="->", label="a")
+states.draw([s2, s3], arrows="->", label="b")
+states.draw([s2, s1], arrows="->", label="c", bend_left=20)
+states.draw([s3, s1], arrows="->", label="d", bend_left=-20)
+states.draw([s1, s1], arrows="->", label="loop", bend_right=30, color="blue")
 
 fig.show()
 ```

@@ -59,7 +59,7 @@ fig.draw([
     (sin(45), cos(45)),
     (sin(90), cos(90)),
     (sin(180), cos(180)),
-], options=["->"], color="gray", line_width=1.5)
+], arrows="->", color="gray", line_width=1.5)
 
 fig.show()
 ```
@@ -100,7 +100,7 @@ node_a = fig.add_node(x=Var("radius"), y=0, label="A", content="(r, 0)", fill="b
 node_b = fig.add_node(x=0, y=Var("radius"), label="B", content="(0, r)", fill="red!30", shape="circle")
 
 # Draw using the variable
-fig.draw([(Var("radius"), 0), (0, Var("radius"))], options=["->"], color="gray")
+fig.draw([(Var("radius"), 0), (0, Var("radius"))], arrows="->", color="gray")
 
 fig.show()
 ```
@@ -130,7 +130,7 @@ fig.add_node(x=Var("distance"), y=0, label="distance", content="distance", fill=
 fig.add_node(x=Var("scaled"), y=0, label="scaled", content="scaled", fill="purple!30", shape="circle")
 
 # Draw a line from origin to (x, y)
-fig.draw([(0, 0), (Var("x"), Var("y"))], options=["->"], color="gray")
+fig.draw([(0, 0), (Var("x"), Var("y"))], arrows="->", color="gray")
 
 fig.show()
 ```

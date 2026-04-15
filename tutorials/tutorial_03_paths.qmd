@@ -139,11 +139,48 @@ for label, x, y, color in specs:
 
 fig.draw(
     ["src.center", "mid.center", "dst.center"],
-    options=["->", "thick"],
+    arrows="->", thick=True,
     segment_options=[
         {"bend_left": 30},   # src → mid curves upward-left
         {"bend_right": 25},  # mid → dst curves downward-right
     ],
+)
+
+fig.show()
+```
+
+{{< include includes/tikz_code_callout.qmd >}}
+
+## Fluent node chaining
+
+If you're connecting named nodes, `.to(...)` is a concise alternative to
+building `segment_options` by hand. Options passed to `.to(...)` affect only
+that connector.
+
+```{python}
+fig = TikzFigure()
+
+A = fig.add_node(
+    x=0, y=1, label="A", shape="circle",
+    fill="teal!25", draw="teal!70",
+    minimum_size="1cm", content="A",
+)
+B = fig.add_node(
+    x=4, y=3, label="B", shape="circle",
+    fill="orange!25", draw="orange!70",
+    minimum_size="1cm", content="B",
+)
+C = fig.add_node(
+    x=8, y=1, label="C", shape="circle",
+    fill="purple!25", draw="purple!70",
+    minimum_size="1cm", content="C",
+)
+
+fig.draw(
+    A.to(B).to(C, options=["bend left"]),
+    arrows="->",
+    thick=True,
+    color="teal!70",
 )
 
 fig.show()
@@ -171,7 +208,8 @@ for label, x, y, color in [
 
 fig.draw(
     ["A.center", "B.center", "C.center"],
-    options=["->", "thick"],
+    arrows="->",
+    thick=True,
     segment_options=[
         {"out": 45,  "in": 195},   # A→B: leave at 45°, arrive at 195°
         {"out": -15, "in": 135},   # B→C: leave at -15°, arrive at 135°
@@ -199,7 +237,7 @@ for label, x, y in [("A", 0, 2), ("B", 5, 2), ("C", 10, 2)]:
 
 fig.draw(
     ["A.center", "B.center", "C.center"],
-    options=["->", "thick"],
+    arrows="->", thick=True,
     segment_options=[
         {"bend_left": 50, "looseness": 2.5},   # A→B: wide exaggerated arc
         {"bend_right": 50, "looseness": 0.5},  # B→C: tight compressed arc
@@ -314,13 +352,13 @@ fig.add_node(x=10, y=0, label="C", shape="rectangle", draw="black", fill="gray!1
 # Connect from the east side of A, enter B from the west, leave from east, arrive at C.west
 fig.draw(
     ["A.east", "B.west"],
-    options=["->", "thick"],
+    arrows="->", thick=True,
     color="teal",
     segment_options=[{"bend_left": 15}],
 )
 fig.draw(
     ["B.east", "C.west"],
-    options=["->", "thick"],
+    arrows="->", thick=True,
     color="orange",
     segment_options=[{"bend_right": 15}],
 )
@@ -528,9 +566,9 @@ for label, x, y, color in [("A", 0, 0, "teal"), ("B", 5, 3, "orange"), ("C", 10,
                  minimum_size="1.2cm", content=f"${label}$")
 
 # Visible arrows
-fig.draw(["A.center", "B.center"], options=["->", "thick"], color="teal!70",
+fig.draw(["A.center", "B.center"], arrows="->", thick=True, color="teal!70",
          segment_options=[{"bend_left": 20}])
-fig.draw(["B.center", "C.center"], options=["->", "thick"], color="orange!80",
+fig.draw(["B.center", "C.center"], arrows="->", thick=True, color="orange!80",
          segment_options=[{"bend_right": 20}])
 
 # Invisible paths with mid-path labels

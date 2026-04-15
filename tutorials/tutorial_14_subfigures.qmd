@@ -151,8 +151,8 @@ process = flowchart.add_node(1.5, 2, label="process", content="Iterate",
                              shape="rectangle", fill="yellow!40")
 end = flowchart.add_node(1.5, 0.5, label="end", content="Done",
                          shape="circle", fill="red!40")
-flowchart.draw([start, process], options=["->"])
-flowchart.draw([process, end], options=["->"])
+flowchart.draw([start, process], arrows="->")
+flowchart.draw([process, end], arrows="->")
 
 fig.show()
 ```
