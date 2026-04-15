@@ -1,0 +1,188 @@
+---
+title: "Mixed Subfigures: Plots and Diagrams"
+---
+
+```{python}
+from tikzfigure import TikzFigure
+```
+
+# Mixed Subfigures: Combining Plots and Diagrams
+
+Create sophisticated figures that combine axis-based plots with custom TikZ diagrams (nodes, paths, shapes). Mix them freely in grid layouts.
+
+## Side-by-Side: Plot and Diagram
+
+The simplest case: an axis-based plot next to a TikZ diagram.
+
+```{python}
+fig = TikzFigure(rows=1, cols=2)
+
+# Left: Axis with plot
+ax = fig.subfigure_axis(xlabel="x", ylabel="y", width=0.5)
+ax.add_plot([0, 1, 2], [0, 1, 4], label="$y=x^2$", marker="o")
+ax.set_legend()
+
+# Right: TikZ diagram with nodes and paths
+diagram = fig.add_subfigure(width=0.5)
+A = diagram.add_node(0, 2, label="A", content="A", shape="circle", fill="cyan!40")
+B = diagram.add_node(3, 2, label="B", content="B", shape="circle", fill="cyan!40")
+C = diagram.add_node(0, 0, label="C", content="C", shape="circle", fill="cyan!40")
+D = diagram.add_node(3, 0, label="D", content="D", shape="circle", fill="cyan!40")
+diagram.draw([A, B], arrows="->")
+diagram.draw([A, C], arrows="->")
+diagram.draw([B, D], arrows="->")
+diagram.draw([C, D], arrows="->")
+diagram.draw([A, D], options=["->", "dashed"], bend_left=20, color="gray")
+
+fig.show()
+```
+
+{{< include includes/tikz_code_callout.qmd >}}
+
+**Key API:**
+- `fig.subfigure_axis()` — Create an axis-based subplot
+- `fig.add_subfigure()` — Create a bare TikZ diagram subplot
+- Both return objects you can populate with plots or drawings
+
+## 2×2 Grid: Mix Freely
+
+Create a 2×2 grid with plots and diagrams in any arrangement.
+
+```{python}
+fig = TikzFigure(rows=2, cols=2)
+
+# Top-left: Linear plot
+ax1 = fig.subfigure_axis(xlabel="x", ylabel="y", width=0.45)
+ax1.add_plot([0, 1, 2, 3], [0, 1, 2, 3], label="Linear", marker="o")
+ax1.set_legend()
+
+# Top-right: Quadratic plot
+ax2 = fig.subfigure_axis(xlabel="x", ylabel="y", width=0.45)
+ax2.add_plot([0, 1, 2, 3], [0, 1, 4, 9], label="Quadratic", marker="s")
+ax2.set_legend()
+
+# Bottom-left: Diagram - simple flowchart
+flowchart = fig.add_subfigure(width=0.45, height=5)
+start = flowchart.add_node(1.5, 3, label="start", content="Start", shape="circle", fill="green!40")
+process = flowchart.add_node(1.5, 1.5, label="process", content="Process", shape="rectangle", fill="yellow!40")
+end = flowchart.add_node(1.5, 0, label="end", content="End", shape="circle", fill="red!40")
+flowchart.draw([start, process], arrows="->")
+flowchart.draw([process, end], arrows="->")
+
+# Bottom-right: Diagram - network
+network = fig.add_subfigure(width=0.45, height=5)
+center = network.add_node(1.5, 1.5, label="center", content="Hub", shape="circle", fill="purple!40", minimum_size="15pt")
+n1 = network.add_node(0.5, 2.5, label="n1", content="Node 1", shape="circle", fill="cyan!40")
+n2 = network.add_node(2.5, 2.5, label="n2", content="Node 2", shape="circle", fill="cyan!40")
+n3 = network.add_node(0.5, 0.5, label="n3", content="Node 3", shape="circle", fill="cyan!40")
+n4 = network.add_node(2.5, 0.5, label="n4", content="Node 4", shape="circle", fill="cyan!40")
+network.draw([center, n1], options=["thick"])
+network.draw([center, n2], options=["thick"])
+network.draw([center, n3], options=["thick"])
+network.draw([center, n4], options=["thick"])
+
+fig.show()
+```
+
+{{< include includes/tikz_code_callout.qmd >}}
+
+## Flowchart with Data Comparison
+
+Combine an algorithm flowchart with performance data.
+
+```{python}
+fig = TikzFigure(rows=2, cols=1)
+
+# Top: Convergence comparison
+ax = fig.subfigure_axis(xlabel="Iteration", ylabel="Error", width=0.9)
+x = [0, 1, 2, 3, 4, 5]
+ax.add_plot(x, [1.0, 0.5, 0.25, 0.125, 0.06, 0.03], label="Fast", marker="o")
+ax.add_plot(x, [1.0, 0.9, 0.8, 0.7, 0.6, 0.5], label="Slow", marker="s")
+ax.set_legend()
+
+# Bottom: Algorithm flowchart
+flowchart = fig.add_subfigure(width=0.9, height=7)
+
+# Build flowchart nodes
+start = flowchart.add_node(2, 4.5, label="start", content="Initialize", shape="circle", fill="green!40")
+input_node = flowchart.add_node(2, 3.5, label="input", content="Set Parameters", shape="rectangle", fill="cyan!40")
+check_iter = flowchart.add_node(2, 2.5, label="check_iter", content="Iterations < Max?", shape="diamond")
+compute = flowchart.add_node(4, 2.5, label="compute", content="Compute Step", shape="rectangle", fill="yellow!40")
+check_conv = flowchart.add_node(4, 1.5, label="check_conv", content="Converged?", shape="diamond")
+output = flowchart.add_node(2, 0.5, label="output", content="Output Result", shape="rectangle", fill="cyan!40")
+end = flowchart.add_node(2, -0.5, label="end", content="End", shape="circle", fill="red!40")
+
+# Draw paths
+flowchart.draw([start, input_node], arrows="->")
+flowchart.draw([input_node, check_iter], arrows="->")
+flowchart.draw([check_iter, compute], arrows="->", label="yes")
+flowchart.draw([compute, check_conv], arrows="->")
+flowchart.draw([check_iter, output], arrows="->", label="no")
+flowchart.draw([check_conv, compute], arrows="->", label="no", bend_left=30)
+flowchart.draw([check_conv, output], arrows="->", label="yes")
+flowchart.draw([output, end], arrows="->")
+
+fig.show()
+```
+
+{{< include includes/tikz_code_callout.qmd >}}
+
+## State Machine Diagram with Benchmark Data
+
+Show a state machine alongside benchmark timing data.
+
+```{python}
+fig = TikzFigure(figsize=(10, 5), rows=1, cols=2)
+
+# Left: Timing benchmark
+ax = fig.subfigure_axis(xlabel="Input Size", ylabel="Time (ms)", width=0.5)
+sizes = [10, 20, 30, 40, 50]
+time_state1 = [5, 10, 15, 20, 25]
+time_state2 = [2, 3, 4, 5, 6]
+time_state3 = [1, 1.5, 2, 2.5, 3]
+ax.add_plot(sizes, time_state1, label="State 1", marker="o", plot_style="solid")
+ax.add_plot(sizes, time_state2, label="State 2", marker="s", plot_style="dashed")
+ax.add_plot(sizes, time_state3, label="State 3", marker="^", plot_style="dotted")
+ax.set_legend()
+
+# Right: State machine diagram
+states = fig.add_subfigure(width=0.5, height=6)
+
+# Create state nodes
+s1 = states.add_node(0.5, 2, label="s1", content="State 1", shape="circle", fill="red!40", minimum_size="12pt")
+s2 = states.add_node(2, 2, label="s2", content="State 2", shape="circle", fill="yellow!40", minimum_size="12pt")
+s3 = states.add_node(3.5, 2, label="s3", content="State 3", shape="circle", fill="green!40", minimum_size="12pt")
+
+# Draw transitions
+states.draw([s1, s2], arrows="->", label="a")
+states.draw([s2, s3], arrows="->", label="b")
+states.draw([s2, s1], arrows="->", label="c", bend_left=20)
+states.draw([s3, s1], arrows="->", label="d", bend_left=-20)
+states.draw([s1, s1], arrows="->", label="loop", bend_right=30, color="blue")
+
+fig.show()
+```
+
+{{< include includes/tikz_code_callout.qmd >}}
+
+## Tips and Tricks
+
+**Coordinate Systems:**
+- Both axes and diagrams use their own coordinate systems
+- Axes: determined by data (x/y limits)
+- Diagrams: you control node positions directly (e.g., `add_node(0, 2, ...)` places at position (0, 2))
+
+**Dimensions:**
+- Use `height` to control vertical space: `add_subfigure(width=0.45, height=6)`
+- Both axis and diagram subfigures respect width/height parameters
+
+**Styling:**
+- Node fills: `fill="cyan!40"`, `fill="red!20"`, etc.
+- Shapes: `"circle"`, `"rectangle"`, `"diamond"`, etc.
+- Path options: `["->"]`, `["<->"]`, `["dashed"]`, `["thick"]`, etc.
+- Bends: `bend_left=20`, `bend_right=30` for curved paths
+
+**Mixing in Grids:**
+- Call `subfigure_axis()` and `add_subfigure()` in any order
+- They auto-fill left-to-right, top-to-bottom
+- Both types render correctly in pgfplots groupplot environment

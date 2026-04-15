@@ -1,5 +1,6 @@
 from typing import Any
 
+from tikzfigure.core.coordinate import Coordinate
 from tikzfigure.core.node import Node
 from tikzfigure.core.path import TikzPath
 
@@ -161,21 +162,22 @@ class LayerCollection:
 
         return item
 
-    def get_node(self, node_label: str) -> Node:
-        """Retrieve a node by its label, searching all layers.
+    def get_node(self, node_label: str) -> "Node | Coordinate":
+        """Retrieve a node or coordinate by its label, searching all layers.
 
         Args:
-            node_label: The label of the node to find.
+            node_label: The label of the node or coordinate to find.
 
         Returns:
-            The :class:`Node` with the specified label.
+            The :class:`Node` or :class:`Coordinate` with the specified label.
 
         Raises:
-            ValueError: If no node with the given label exists in any layer.
+            ValueError: If no node or coordinate with the given label exists
+                in any layer.
         """
         for layer in self.layers.values():
             for item in layer.items:
-                if isinstance(item, Node) and item.label == node_label:
+                if isinstance(item, (Node, Coordinate)) and item.label == node_label:
                     return item
         raise ValueError(f"Node with label {node_label} not found in any layer!")
 

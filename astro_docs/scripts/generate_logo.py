@@ -6,6 +6,7 @@ Run from root of the repository with:
 """
 
 from pathlib import Path
+from typing import Any
 
 from tikzfigure import TikzFigure
 
@@ -23,7 +24,7 @@ def main() -> None:
     )
 
     # Nodes
-    opts = dict(
+    opts: dict[str, Any] = dict(
         draw="none",
         minimum_size="1.2cm",
         font=r"\bfseries\ttfamily",

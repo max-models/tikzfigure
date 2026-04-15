@@ -267,7 +267,7 @@ class TestEdgeCasesInGeneration:
 
     def test_generate_tikz_with_repr(self):
         """Test that generate_tikz works and __repr__ uses it."""
-        fig = TikzFigure(label="fig:test", caption="Test Figure")
+        fig = TikzFigure(label="fig:test")
         fig.add_node(x=0, y=0, label="A")
         fig.add_node(x=1, y=1, label="B")
         fig.draw(["A", "B"])
@@ -276,7 +276,6 @@ class TestEdgeCasesInGeneration:
         repr_code = repr(fig)
 
         assert "\\label{fig:test}" in tikz_code
-        assert "\\caption{Test Figure}" in tikz_code
         assert repr_code == tikz_code
         assert "\\begin{figure}" in tikz_code
 

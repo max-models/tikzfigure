@@ -31,7 +31,7 @@ fig = TikzFigure()
 n1 = fig.add_node(0, 0, shape="circle", color="white", fill="blue", content="Hello!")
 n2 = fig.add_node(5, 0, shape="circle", color="white", fill="red", content="Hi!")
 
-fig.draw([n1, n2], options=["->"], line_width=2, color="gray")
+fig.draw([n1, n2], arrows="->", line_width=2, color="gray")
 
 fig.show(use_web_compilation=True)
 ```
@@ -64,7 +64,7 @@ n2 = Node(5, 0, label="node2", shape="circle", color="white", fill="red", conten
 
 fig2.add([n1, n2])
 # Note that we can use the node labels to refer to them when drawing edges
-fig2.draw(["node1", n2], options=["<-"], line_width=2, color="gray")
+fig2.draw(["node1", n2], arrows="<-", line_width=2, color="gray")
 
 fig2.show()
 ```
@@ -84,11 +84,11 @@ B = fig.add_node(3, 2, label="B", content="B", shape="circle", fill="cyan!40")
 C = fig.add_node(0, 0, label="C", content="C", shape="circle", fill="cyan!40")
 D = fig.add_node(3, 0, label="D", content="D", shape="circle", fill="cyan!40")
 
-fig.draw([A, B], options=["->"])
-fig.draw([A, C], options=["->"])
-fig.draw([B, D], options=["->"])
-fig.draw([C, D], options=["->"])
-fig.draw([A, D], options=["->", "dashed"], bend_left=20, color="gray")
+fig.draw([A, B], arrows="->")
+fig.draw([A, C], arrows="->")
+fig.draw([B, D], arrows="->")
+fig.draw([C, D], arrows="->")
+fig.draw([A, D], arrows="->", dashed=True, bend_left=20, color="gray")
 
 fig.show()
 ```

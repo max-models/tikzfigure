@@ -23,6 +23,8 @@ class Axis2D(TikzObject):
         label: str = "",
         comment: str | None = None,
         layer: int = 0,
+        width: str | int | float | None = None,
+        height: str | int | float | None = None,
         options: list | None = None,
         **kwargs: Any,
     ) -> None:
@@ -37,6 +39,10 @@ class Axis2D(TikzObject):
             label: Unique identifier (inherited from TikzObject).
             comment: Optional comment prepended in output.
             layer: Layer index. Defaults to 0.
+            width: Width of the axis as a string (e.g., "8cm"), number in cm,
+                or None for auto. Defaults to None.
+            height: Height of the axis as a string (e.g., "6cm"), number in cm,
+                or None for auto. Defaults to None.
             options: Flag-style pgfplots options.
             **kwargs: Keyword-style pgfplots options.
         """
@@ -60,9 +66,50 @@ class Axis2D(TikzObject):
         self._xlim = xlim
         self._ylim = ylim
         self._grid = grid
+        self._width: str | None = self._normalize_dimension(width, "width")
+        self._height: str | None = self._normalize_dimension(height, "height")
         self._plots: list[Plot2D] = []
         self._ticks: dict[str, tuple[list[float], list[str] | None]] = {}
         self._legend_pos: str | None = None
+
+    @staticmethod
+    def _normalize_dimension(
+        value: str | int | float | None, param_name: str
+    ) -> str | None:
+        """Normalize dimension input to pgfplots format string.
+
+        Args:
+            value: String (e.g., "8cm"), number (e.g., 8), or None
+            param_name: Name of parameter ("width", "height") for error messages
+
+        Returns:
+            Normalized string (e.g., "8cm") or None
+
+        Raises:
+            TypeError: If value is invalid type
+            ValueError: If string format invalid or number out of range
+        """
+        if value is None:
+            return None
+
+        if isinstance(value, str):
+            # Validate: must contain a unit suffix
+            valid_units = ["cm", "pt", "mm", "ex", "in"]
+            if not any(value.endswith(unit) for unit in valid_units):
+                raise ValueError(
+                    f'{param_name} string must include a unit (e.g., "8cm"), got "{value}"'
+                )
+            return value
+
+        if isinstance(value, (int, float)):
+            # Validate: must be positive
+            if value <= 0:
+                raise ValueError(f"{param_name} must be positive, got {value}")
+            return f"{value}cm"
+
+        raise TypeError(
+            f"{param_name} must be a string, number, or None, got {type(value).__name__}"
+        )
 
     def _validate_limits(self, limits: tuple[float, float] | None, name: str) -> None:
         """Validate axis limits format.
@@ -106,6 +153,16 @@ class Axis2D(TikzObject):
     def grid(self) -> bool:
         """Whether grid is enabled."""
         return self._grid
+
+    @property
+    def width(self) -> str | None:
+        """Return the axis width as a pgfplots-compatible string."""
+        return self._width
+
+    @property
+    def height(self) -> str | None:
+        """Return the axis height as a pgfplots-compatible string."""
+        return self._height
 
     @property
     def plots(self) -> list[Plot2D]:
@@ -253,6 +310,12 @@ class Axis2D(TikzObject):
         # Add grid setting
         axis_opts.append(f"grid={'true' if self._grid else 'false'}")
 
+        # Add width and height if specified
+        if self._width:
+            axis_opts.append(f"width={self._width}")
+        if self._height:
+            axis_opts.append(f"height={self._height}")
+
         # Add legend position if set
         if self._legend_pos is not None:
             axis_opts.append(f"legend pos={self._legend_pos}")
@@ -310,6 +373,8 @@ class Axis2D(TikzObject):
             "xlim": self._xlim,
             "ylim": self._ylim,
             "grid": self._grid,
+            "width": self._width,
+            "height": self._height,
             "plots": [plot.to_dict() for plot in self._plots],
             "ticks": self._ticks,
             "legend_pos": self._legend_pos,
@@ -333,6 +398,8 @@ class Axis2D(TikzObject):
             xlim=d.get("xlim"),
             ylim=d.get("ylim"),
             grid=d.get("grid", True),
+            width=d.get("width"),
+            height=d.get("height"),
             options=d.get("options"),
             **d.get("kwargs", {}),
         )

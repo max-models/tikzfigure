@@ -60,7 +60,6 @@ def test_tikzfigure_to_dict_from_dict_roundtrip():
         label="fig1",
         grid=True,
         figsize=(8, 5),
-        caption="Test",
         description="desc",
         extra_packages=["pgfplots"],
         document_setup="\\usepackage{xcolor}",
@@ -87,7 +86,6 @@ def test_tikzfigure_to_dict_from_dict_roundtrip():
     assert d["label"] == "fig1"
     assert d["grid"] is True
     assert d["figsize"] == [8, 5]
-    assert d["caption"] == "Test"
     assert d["extra_packages"] == ["pgfplots"]
     assert len(d["variables"]) == 1
     assert d["variables"][0]["value"] == 42
@@ -101,7 +99,6 @@ def test_tikzfigure_to_dict_from_dict_roundtrip():
     assert fig2._label == "fig1"
     assert fig2._grid is True
     assert fig2._figsize == (8, 5)
-    assert fig2._caption == "Test"
     assert fig2._extra_packages == ["pgfplots"]
     assert len(fig2._variables) == 1
     assert fig2._variables[0].value == 42
@@ -215,7 +212,6 @@ def test_figure_generate_tikz_features_and_ordering():
         ndim=3,
         grid=True,
         figure_setup="scale=0.5",
-        caption="Cap",
         label="fig:1",
         description="desc",
     )
@@ -252,7 +248,6 @@ def test_figure_generate_tikz_features_and_ordering():
     assert "\\colorlet{mycolor}{red!50}" in tikz
     assert "\\pgfsetlayers{0,1,2}" in tikz
     assert "\\begin{figure}" in tikz
-    assert "\\caption{Cap}" in tikz
     assert "\\label{fig:1}" in tikz
 
     pos_layer_0 = tikz.find("% Layer 0")
@@ -482,10 +477,9 @@ def test_show_jupyter_branch(monkeypatch):
     monkeypatch.setattr(
         fig,
         "savefig",
-        lambda filename,
-        verbose=False,
-        transparent=False,
-        use_web_compilation=False: None,
+        lambda filename, verbose=False, transparent=False, use_web_compilation=False: (
+            None
+        ),
     )
 
     fig.show(width=100, height=200, verbose=False)
@@ -536,7 +530,7 @@ def test_show_backends_and_errors(monkeypatch, capsys):
         dpi=300,
         verbose=False,
         transparent=False,
-        use_web_compilation=False: None,
+        use_web_compilation=False: (None),
     )
 
     fig._show_matplotlib(dpi=72, verbose=True)
@@ -582,7 +576,7 @@ def test_show_backends_and_errors(monkeypatch, capsys):
         dpi=300,
         verbose=False,
         transparent=False,
-        use_web_compilation=False: None,
+        use_web_compilation=False: (None),
     )
 
     fig._show_pillow(dpi=72, verbose=False)

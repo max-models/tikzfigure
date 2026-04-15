@@ -100,6 +100,49 @@ class TestPlot2D:
 
 
 class TestAxis2D:
+    def test_normalize_dimension_string_valid(self):
+        """Test that valid LaTeX length strings are accepted."""
+        assert Axis2D._normalize_dimension("8cm", "width") == "8cm"
+        assert Axis2D._normalize_dimension("10pt", "height") == "10pt"
+        assert Axis2D._normalize_dimension("5mm", "width") == "5mm"
+        assert Axis2D._normalize_dimension("12ex", "height") == "12ex"
+        assert Axis2D._normalize_dimension("2in", "width") == "2in"
+
+    def test_normalize_dimension_string_invalid(self):
+        """Test that strings without units are rejected."""
+        with pytest.raises(ValueError, match="must include a unit"):
+            Axis2D._normalize_dimension("8", "width")
+
+        with pytest.raises(ValueError, match="must include a unit"):
+            Axis2D._normalize_dimension("invalid", "height")
+
+    def test_normalize_dimension_number_valid(self):
+        """Test that numeric inputs are converted to cm strings."""
+        assert Axis2D._normalize_dimension(8, "width") == "8cm"
+        assert Axis2D._normalize_dimension(10.5, "height") == "10.5cm"
+        assert Axis2D._normalize_dimension(1, "width") == "1cm"
+
+    def test_normalize_dimension_number_invalid(self):
+        """Test that zero and negative numbers are rejected."""
+        with pytest.raises(ValueError, match="must be positive"):
+            Axis2D._normalize_dimension(0, "width")
+
+        with pytest.raises(ValueError, match="must be positive"):
+            Axis2D._normalize_dimension(-5, "height")
+
+    def test_normalize_dimension_none(self):
+        """Test that None returns None."""
+        assert Axis2D._normalize_dimension(None, "width") is None
+        assert Axis2D._normalize_dimension(None, "height") is None
+
+    def test_normalize_dimension_invalid_type(self):
+        """Test that invalid types are rejected."""
+        with pytest.raises(TypeError, match="must be a string, number, or None"):
+            Axis2D._normalize_dimension([8, 6], "width")
+
+        with pytest.raises(TypeError, match="must be a string, number, or None"):
+            Axis2D._normalize_dimension({"width": 8}, "width")
+
     def test_axis2d_basic_construction(self):
         """Test Axis2D constructor and basic properties."""
         axis = Axis2D(
@@ -355,6 +398,49 @@ class TestAxis2D:
         assert "{x^2}" in tikz
         assert "\\legend{data, function}" in tikz
 
+    def test_axis2d_width_height_initialization(self):
+        """Test that Axis2D stores width and height correctly."""
+        axis = Axis2D(xlabel="X", ylabel="Y", width=8, height=6)
+        assert axis.width == "8cm"
+        assert axis.height == "6cm"
+
+    def test_axis2d_width_height_string(self):
+        """Test that Axis2D accepts string dimensions."""
+        axis = Axis2D(xlabel="X", width="10cm", height="7pt")
+        assert axis.width == "10cm"
+        assert axis.height == "7pt"
+
+    def test_axis2d_width_height_none(self):
+        """Test that Axis2D handles None dimensions."""
+        axis = Axis2D(xlabel="X")
+        assert axis.width is None
+        assert axis.height is None
+
+    def test_axis2d_to_tikz_with_width(self):
+        """Test that Axis2D.to_tikz() includes width in axis options."""
+        axis = Axis2D(xlabel="X", ylabel="Y", width=8)
+        axis.add_plot([0, 1], [0, 1])
+
+        tikz = axis.to_tikz()
+        assert "width=8cm" in tikz
+
+    def test_axis2d_to_tikz_with_height(self):
+        """Test that Axis2D.to_tikz() includes height in axis options."""
+        axis = Axis2D(xlabel="X", ylabel="Y", height=6)
+        axis.add_plot([0, 1], [0, 1])
+
+        tikz = axis.to_tikz()
+        assert "height=6cm" in tikz
+
+    def test_axis2d_to_tikz_with_width_and_height(self):
+        """Test that Axis2D.to_tikz() includes both dimensions."""
+        axis = Axis2D(xlabel="X", ylabel="Y", width=8, height=6)
+        axis.add_plot([0, 1], [0, 1])
+
+        tikz = axis.to_tikz()
+        assert "width=8cm" in tikz
+        assert "height=6cm" in tikz
+
 
 class TestAxis2DSerialization:
     def test_axis2d_to_dict(self):
@@ -422,6 +508,91 @@ class TestAxis2DSerialization:
         assert axis2.grid == axis1.grid
         assert len(axis2.plots) == len(axis1.plots)
 
+    def test_axis2d_to_dict_with_dimensions(self):
+        """Test that Axis2D.to_dict() includes width and height."""
+        axis = Axis2D(xlabel="X", ylabel="Y", width=8, height=6)
+        axis.add_plot([0, 1], [0, 1])
+
+        d = axis.to_dict()
+        assert d["width"] == "8cm"
+        assert d["height"] == "6cm"
+
+    def test_axis2d_from_dict_with_dimensions(self):
+        """Test that Axis2D.from_dict() restores width and height."""
+        d = {
+            "type": "Axis2D",
+            "xlabel": "X",
+            "ylabel": "Y",
+            "width": "8cm",
+            "height": "6cm",
+            "xlim": None,
+            "ylim": None,
+            "grid": True,
+            "label": "",
+            "plots": [],
+            "ticks": {},
+            "legend_position": None,
+        }
+        axis = Axis2D.from_dict(d)
+        assert axis.width == "8cm"
+        assert axis.height == "6cm"
+
+    def test_axis2d_round_trip_with_dimensions(self):
+        """Test that Axis2D serialization round-trip preserves dimensions."""
+        axis1 = Axis2D(xlabel="X", ylabel="Y", width=8, height=6)
+        axis1.add_plot([0, 1], [0, 1])
+
+        d = axis1.to_dict()
+        axis2 = Axis2D.from_dict(d)
+
+        assert axis2.width == axis1.width
+        assert axis2.height == axis1.height
+
+
+class TestTikzFigure:
+    def test_tikzfigure_grid_init(self):
+        """Test that TikzFigure can be initialized with grid dimensions."""
+        fig = TikzFigure(rows=2, cols=2)
+        assert fig._subfigure_rows == 2
+        assert fig._subfigure_cols == 2
+        assert fig._subfigure_grid == {}
+        assert fig._subfigure_position == 0
+
+    def test_tikzfigure_grid_default(self):
+        """Test that TikzFigure defaults to no grid (backward compatible)."""
+        fig = TikzFigure()
+        assert fig._subfigure_rows is None
+        assert fig._subfigure_cols is None
+
+    def test_tikzfigure_grid_validation_rows_without_cols(self):
+        """Test that specifying only rows raises error."""
+        with pytest.raises(
+            ValueError, match="Both rows and cols must be specified together"
+        ):
+            TikzFigure(rows=2)
+
+    def test_tikzfigure_grid_validation_cols_without_rows(self):
+        """Test that specifying only cols raises error."""
+        with pytest.raises(
+            ValueError, match="Both rows and cols must be specified together"
+        ):
+            TikzFigure(cols=2)
+
+    def test_tikzfigure_grid_validation_zero_rows(self):
+        """Test that zero rows raises error."""
+        with pytest.raises(ValueError, match="rows and cols must be positive integers"):
+            TikzFigure(rows=0, cols=2)
+
+    def test_tikzfigure_grid_validation_zero_cols(self):
+        """Test that zero cols raises error."""
+        with pytest.raises(ValueError, match="rows and cols must be positive integers"):
+            TikzFigure(rows=2, cols=0)
+
+    def test_tikzfigure_grid_validation_negative_rows(self):
+        """Test that negative rows raises error."""
+        with pytest.raises(ValueError, match="rows and cols must be positive integers"):
+            TikzFigure(rows=-1, cols=2)
+
 
 class TestTikzFigureAxis2D:
     def test_tikzfigure_axis2d_method(self):
@@ -434,6 +605,19 @@ class TestTikzFigureAxis2D:
         assert axis.ylabel == "Y"
         assert len(fig.axes) == 1
         assert fig.axes[0] is axis
+
+    def test_tikzfigure_axis2d_dimensions_in_output(self):
+        """Test that dimensions specified in axis2d() appear in TikZ output."""
+        fig = TikzFigure()
+        ax = fig.axis2d(xlabel="X", ylabel="Y", width=8, height=6)
+        ax.add_plot([0, 1, 2], [0, 1, 2])
+
+        tikz = fig.generate_tikz()
+
+        # Verify dimensions are in pgfplots output
+        assert "width=8cm" in tikz
+        assert "height=6cm" in tikz
+        assert "\\begin{axis}" in tikz
 
     def test_tikzfigure_multiple_axes(self):
         """Test TikzFigure can hold multiple axes."""
@@ -500,6 +684,14 @@ class TestTikzFigureAxis2D:
         assert "\\begin{axis}" in tikz
         assert "xlabel=X" in tikz
 
+    def test_tikzfigure_axis2d_with_dimensions(self):
+        """Test that TikzFigure.axis2d() passes dimensions to Axis2D."""
+        fig = TikzFigure()
+        ax = fig.axis2d(xlabel="X", ylabel="Y", width=8, height=6)
+
+        assert ax.width == "8cm"
+        assert ax.height == "6cm"
+
 
 class TestTikzFigureSerialization:
     def test_tikzfigure_to_dict_with_axes(self):
@@ -528,8 +720,58 @@ class TestTikzFigureSerialization:
         assert len(fig2.axes[0].plots) == 1
         assert fig2.axes[0].plots[0].label == "sensor1"
 
+    def test_grid_to_dict(self):
+        """Test that grid parameters are saved to dict."""
+        fig = TikzFigure(rows=2, cols=3)
+        d = fig.to_dict()
+        assert d["subfigure_rows"] == 2
+        assert d["subfigure_cols"] == 3
+
+    def test_grid_from_dict(self):
+        """Test that grid parameters are restored from dict."""
+        d = {
+            "type": "TikzFigure",
+            "ndim": 2,
+            "label": None,
+            "grid": False,
+            "figsize": [10, 6],
+            "subfigure_rows": 2,
+            "subfigure_cols": 3,
+            "description": None,
+            "show_axes": False,
+            "extra_packages": None,
+            "document_setup": None,
+            "figure_setup": None,
+            "layers": {},
+            "variables": [],
+            "colors": [],
+            "axes": [],
+        }
+        fig = TikzFigure.from_dict(d)
+        assert fig._subfigure_rows == 2
+        assert fig._subfigure_cols == 3
+
 
 class TestSubfigures:
+    def test_subfigure_axis_with_height(self):
+        """Test that subfigure_axis() accepts height parameter."""
+        fig = TikzFigure()
+        ax1 = fig.subfigure_axis(xlabel="X", width=0.45, height=4)
+        ax2 = fig.subfigure_axis(xlabel="Y", width=0.45, height=6)
+
+        assert ax1.height == "4cm"
+        assert ax2.height == "6cm"
+
+    def test_subfigure_axis_width_validation(self):
+        """Test that subfigure_axis() validates width is in (0.0, 1.0]."""
+        fig = TikzFigure()
+
+        with pytest.raises(ValueError, match="width must be in range"):
+            fig.subfigure_axis(width=0)
+
+        with pytest.raises(ValueError, match="width must be in range"):
+            fig.subfigure_axis(width=1.5)
+
     def test_generate_subfigures_basic(self):
         """Test basic subfigure generation with two figures."""
         fig1 = TikzFigure()
@@ -548,23 +790,6 @@ class TestSubfigures:
         assert subfig_code.count("\\end{subfigure}") == 2
         assert "\\hspace" in subfig_code
 
-    def test_generate_subfigures_with_captions(self):
-        """Test subfigure generation with captions."""
-        fig1 = TikzFigure()
-        ax1 = fig1.axis2d()
-        ax1.add_plot([0, 1], [0, 1])
-
-        fig2 = TikzFigure()
-        ax2 = fig2.axis2d()
-        ax2.add_plot([0, 1], [0, 1])
-
-        captions = ["Caption One", "Caption Two"]
-        subfig_code = TikzFigure.generate_subfigures([fig1, fig2], captions=captions)
-
-        assert "Caption One" in subfig_code
-        assert "Caption Two" in subfig_code
-        assert subfig_code.count("\\caption") == 2
-
     def test_generate_subfigures_with_labels(self):
         """Test subfigure generation with labels."""
         fig1 = TikzFigure()
@@ -576,9 +801,7 @@ class TestSubfigures:
         ax2.add_plot([0, 1], [0, 1])
 
         labels = ["fig:one", "fig:two"]
-        subfig_code = TikzFigure.generate_subfigures(
-            [fig1, fig2], captions=["A", "B"], labels=labels
-        )
+        subfig_code = TikzFigure.generate_subfigures([fig1, fig2], labels=labels)
 
         assert "\\label{fig:one}" in subfig_code
         assert "\\label{fig:two}" in subfig_code
@@ -625,19 +848,6 @@ class TestSubfigures:
         assert subfig_code.count("\\begin{subfigure}") == 3
         assert subfig_code.count("\\hspace") == 2  # Two spacings for three figs
 
-    def test_generate_subfigures_mismatched_captions(self):
-        """Test error when captions length doesn't match figures length."""
-        fig1 = TikzFigure()
-        ax1 = fig1.axis2d()
-        ax1.add_plot([0, 1], [0, 1])
-
-        fig2 = TikzFigure()
-        ax2 = fig2.axis2d()
-        ax2.add_plot([0, 1], [0, 1])
-
-        with pytest.raises(ValueError, match="captions length"):
-            TikzFigure.generate_subfigures([fig1, fig2], captions=["Only one"])
-
     def test_generate_subfigures_mismatched_labels(self):
         """Test error when labels length doesn't match figures length."""
         fig1 = TikzFigure()
@@ -668,6 +878,100 @@ class TestSubfigures:
         """Test error when figures list is empty."""
         with pytest.raises(ValueError, match="at least one figure"):
             TikzFigure.generate_subfigures([])
+
+    def test_subfigure_axis_dimensions_in_output(self):
+        """Test that subfigure dimensions appear correctly in TikZ output."""
+        fig = TikzFigure()
+
+        ax1 = fig.subfigure_axis(xlabel="Sin", width=0.45, height=4)
+        ax1.add_plot(func="sin(x)", label="sin(x)")
+
+        ax2 = fig.subfigure_axis(xlabel="Cos", width=0.45, height=5)
+        ax2.add_plot(func="cos(x)", label="cos(x)")
+
+        tikz = fig.generate_tikz()
+
+        # Verify both subfigures have their heights in output
+        assert "height=4cm" in tikz
+        assert "height=5cm" in tikz
+        assert "\\begin{groupplot}" in tikz
+
+    def test_subfigure_grid_positioning(self):
+        """Test that axes are positioned correctly in grid."""
+        fig = TikzFigure(rows=2, cols=2)
+        ax1 = fig.subfigure_axis(xlabel="1")
+        ax2 = fig.subfigure_axis(xlabel="2")
+        ax3 = fig.subfigure_axis(xlabel="3")
+        ax4 = fig.subfigure_axis(xlabel="4")
+
+        # Verify all axes are stored in grid
+        assert (0, 0) in fig._subfigure_grid
+        assert (0, 1) in fig._subfigure_grid
+        assert (1, 0) in fig._subfigure_grid
+        assert (1, 1) in fig._subfigure_grid
+
+        # Verify position counter
+        assert fig._subfigure_position == 4
+
+    def test_subfigure_grid_partial(self):
+        """Test that partial grids work (not full)."""
+        fig = TikzFigure(rows=2, cols=2)
+        ax1 = fig.subfigure_axis(xlabel="1")
+        ax2 = fig.subfigure_axis(xlabel="2")
+
+        # Only 2 of 4 cells filled
+        assert len(fig._subfigure_grid) == 2
+        assert fig._subfigure_position == 2
+
+    def test_subfigure_grid_overflow(self):
+        """Test that adding too many axes raises error."""
+        fig = TikzFigure(rows=2, cols=2)
+        fig.subfigure_axis(xlabel="1")
+        fig.subfigure_axis(xlabel="2")
+        fig.subfigure_axis(xlabel="3")
+        fig.subfigure_axis(xlabel="4")
+
+        # 5th axis should fail
+        with pytest.raises(ValueError, match="Subfigure grid .* is full"):
+            fig.subfigure_axis(xlabel="5")
+
+    def test_grid_tikz_group_size(self):
+        """Test that groupplot has correct group size."""
+        fig = TikzFigure(rows=2, cols=2)
+        ax1 = fig.subfigure_axis(xlabel="1")
+        ax1.add_plot([0, 1], [0, 1])
+        ax2 = fig.subfigure_axis(xlabel="2")
+        ax2.add_plot([0, 1], [0, 1])
+
+        tikz = fig.generate_tikz()
+        assert "group size=2 by 2" in tikz
+
+    def test_grid_tikz_axes_count(self):
+        """Test that grid renders correct number of axes."""
+        fig = TikzFigure(rows=2, cols=2)
+        ax1 = fig.subfigure_axis(xlabel="1")
+        ax1.add_plot([0, 1], [0, 1])
+        ax2 = fig.subfigure_axis(xlabel="2")
+        ax2.add_plot([0, 1], [0, 1])
+        ax3 = fig.subfigure_axis(xlabel="3")
+        ax3.add_plot([0, 1], [0, 1])
+
+        tikz = fig.generate_tikz()
+        # Count \nextgroupplot occurrences (should be 3)
+        assert tikz.count("\\nextgroupplot") >= 3
+
+    def test_grid_single_row_compat(self):
+        """Test that single-row grid works (backward compat)."""
+        fig = TikzFigure(rows=1, cols=3)
+        ax1 = fig.subfigure_axis(xlabel="1")
+        ax1.add_plot([0, 1], [0, 1])
+        ax2 = fig.subfigure_axis(xlabel="2")
+        ax2.add_plot([0, 1], [0, 1])
+        ax3 = fig.subfigure_axis(xlabel="3")
+        ax3.add_plot([0, 1], [0, 1])
+
+        tikz = fig.generate_tikz()
+        assert "group size=3 by 1" in tikz
 
 
 class TestAxis2DIntegration:
@@ -738,3 +1042,195 @@ class TestAxis2DIntegration:
 
         # Should not have legend command since no plot labels
         assert "\\legend" not in tikz
+
+    def test_grid_large_dimensions(self):
+        """Test that large grids work."""
+        fig = TikzFigure(rows=10, cols=10)
+        for i in range(5):
+            ax = fig.subfigure_axis()
+            ax.add_plot([0, 1], [0, 1])
+        assert len(fig._subfigure_grid) == 5
+
+    def test_grid_with_regular_axes(self):
+        """Test that regular axes and grid coexist in same figure."""
+        fig = TikzFigure()
+
+        # Add regular axes
+        ax_reg = fig.axis2d(xlabel="Regular1")
+        ax_reg.add_plot([0, 1], [0, 1])
+
+        ax_reg2 = fig.axis2d(xlabel="Regular2")
+        ax_reg2.add_plot([0, 1], [0, 1])
+
+        tikz = fig.generate_tikz()
+        # Regular axes should appear in output
+        assert "Regular1" in tikz
+        assert "Regular2" in tikz
+        assert "\\begin{axis}" in tikz
+
+    def test_grid_empty_grid(self):
+        """Test that empty grid (no axes) works."""
+        fig = TikzFigure(rows=2, cols=2)
+        # Don't add any axes
+        tikz = fig.generate_tikz()
+        # Should not crash, just render empty
+        assert "tikzpicture" in tikz
+
+    def test_subfigure_backward_compat_single_row(self):
+        """Test that default subfigure behavior is unchanged."""
+        fig = TikzFigure()  # No rows/cols
+        ax1 = fig.subfigure_axis(xlabel="1")
+        ax1.add_plot([0, 1], [0, 1])
+        ax2 = fig.subfigure_axis(xlabel="2")
+        ax2.add_plot([0, 1], [0, 1])
+
+        tikz = fig.generate_tikz()
+        # Should use single-row layout (group size=2 by 1)
+        assert "group size=2 by 1" in tikz
+
+    def test_grid_dimensions_with_axes(self):
+        """Test that width/height parameters work in grid."""
+        fig = TikzFigure(rows=2, cols=2)
+        ax1 = fig.subfigure_axis(width=0.45, height=6)
+        ax1.add_plot([0, 1], [0, 1])
+
+        # Check that dimensions are stored
+        assert (0, 0) in fig._subfigure_grid
+        axis, width = fig._subfigure_grid[(0, 0)]
+        assert width == 0.45
+        assert axis.height == "6cm"
+
+    def test_add_subfigure_basic(self):
+        """Test that add_subfigure() returns a TikzFigure."""
+        fig = TikzFigure(rows=2, cols=2)
+
+        # Add a subfigure
+        subfig = fig.add_subfigure(width=0.45)
+
+        # Verify it's a TikzFigure
+        assert isinstance(subfig, TikzFigure)
+        assert (0, 0) in fig._subfigure_grid
+
+    def test_add_subfigure_with_nodes(self):
+        """Test that subfigure can use add_node() API."""
+        fig = TikzFigure(rows=2, cols=2)
+
+        # Create subfigure and add nodes
+        subfig = fig.add_subfigure(width=0.45)
+        A = subfig.add_node(0, 1, label="A", content="A", shape="circle")
+        B = subfig.add_node(2, 1, label="B", content="B", shape="circle")
+        subfig.draw([A, B], options=["->"])
+
+        # Verify subfigure has nodes
+        assert len(subfig._layers.layers[0].items) > 0
+
+    def test_add_subfigure_with_height(self):
+        """Test that add_subfigure() stores height parameter."""
+        fig = TikzFigure(rows=2, cols=2)
+
+        # Add subfigure with height
+        subfig = fig.add_subfigure(width=0.45, height=5)
+
+        # Verify it's in the grid
+        item, width, height_str = fig._subfigure_grid[(0, 0)]
+        assert isinstance(item, TikzFigure)
+        assert width == 0.45
+        assert height_str == "5cm"
+
+    def test_add_subfigure_positioning(self):
+        """Test that add_subfigure() positions correctly in grid."""
+        fig = TikzFigure(rows=2, cols=2)
+
+        # Add in order: Subfig, Axis, Subfig, Axis
+        subfig1 = fig.add_subfigure(width=0.45)
+        A = subfig1.add_node(0, 0, label="A", content="A")
+
+        ax1 = fig.subfigure_axis(xlabel="x")
+        ax1.add_plot([0, 1], [0, 1])
+
+        subfig2 = fig.add_subfigure(width=0.45)
+        B = subfig2.add_node(0, 0, label="B", content="B")
+
+        ax2 = fig.subfigure_axis(xlabel="x")
+        ax2.add_plot([0, 1], [1, 0])
+
+        # Verify positions
+        assert (0, 0) in fig._subfigure_grid  # Subfig
+        assert (0, 1) in fig._subfigure_grid  # Axis
+        assert (1, 0) in fig._subfigure_grid  # Subfig
+        assert (1, 1) in fig._subfigure_grid  # Axis
+
+    def test_add_subfigure_without_grid(self):
+        """Test that add_subfigure() requires grid mode."""
+        fig = TikzFigure()  # No rows/cols
+
+        with pytest.raises(ValueError, match="add_subfigure.*grid layout"):
+            fig.add_subfigure(width=0.45)
+
+    def test_add_subfigure_width_validation(self):
+        """Test that add_subfigure() validates width."""
+        fig = TikzFigure(rows=2, cols=2)
+
+        # Width out of range
+        with pytest.raises(ValueError, match="width must be in range"):
+            fig.add_subfigure(width=1.5)
+
+        with pytest.raises(ValueError, match="width must be in range"):
+            fig.add_subfigure(width=0)
+
+    def test_add_subfigure_height_validation(self):
+        """Test that add_subfigure() validates height."""
+        fig = TikzFigure(rows=2, cols=2)
+
+        # Height without unit
+        with pytest.raises(ValueError, match="must include a unit"):
+            fig.add_subfigure(height="5")
+
+        # Negative height
+        with pytest.raises(ValueError, match="must be positive"):
+            fig.add_subfigure(height=-5)
+
+    def test_add_subfigure_overflow(self):
+        """Test that add_subfigure() detects grid overflow."""
+        fig = TikzFigure(rows=2, cols=2)
+
+        # Fill all 4 cells
+        for i in range(4):
+            fig.add_subfigure(width=0.45)
+
+        # 5th should fail
+        with pytest.raises(ValueError, match="grid.*is full"):
+            fig.add_subfigure(width=0.45)
+
+    def test_mixed_axis_and_subfig_rendering(self):
+        """Test that mixed axis and subfigure renders correctly."""
+        fig = TikzFigure(rows=2, cols=2)
+
+        # Add mixed content
+        ax1 = fig.subfigure_axis(xlabel="x")
+        ax1.add_plot([0, 1], [0, 1])
+
+        subfig1 = fig.add_subfigure(width=0.45)
+        A = subfig1.add_node(0, 1, label="A", content="A", shape="circle")
+        B = subfig1.add_node(2, 1, label="B", content="B", shape="circle")
+        subfig1.draw([A, B], options=["->"])
+
+        ax2 = fig.subfigure_axis(xlabel="x")
+        ax2.add_plot([0, 1], [1, 0])
+
+        subfig2 = fig.add_subfigure(width=0.45)
+        C = subfig2.add_node(1, 1, label="C", content="C")
+
+        # Generate TikZ
+        tikz = fig.generate_tikz()
+
+        # Mixed mode uses scope-based positioning, not groupplot
+        assert "\\begin{scope}" in tikz
+        assert "groupplot" not in tikz
+        # Verify axis content is present
+        assert "\\begin{axis}" in tikz
+        assert tikz.count("\\begin{axis}") == 2
+        # Verify diagram content is present (no axis wrapper)
+        assert "\\node[shape=circle] (A)" in tikz
+        assert "\\draw[->] (A) to (B)" in tikz
+        assert "\\node (C)" in tikz

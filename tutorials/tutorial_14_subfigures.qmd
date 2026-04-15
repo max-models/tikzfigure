@@ -1,0 +1,162 @@
+---
+title: "Subfigures and Grid Layouts"
+jupyter: python3
+---
+
+Arrange multiple plots side-by-side or in grid layouts using `subfigure_axis()`
+and `add_subfigure()`.
+
+```{python}
+import math
+from tikzfigure import TikzFigure
+```
+
+## Side-by-side subfigures
+
+Create horizontally arranged plots with `subfigure_axis()`:
+
+```{python}
+fig = TikzFigure()
+
+ax1 = fig.subfigure_axis(
+    xlabel="x", ylabel="y",
+    xlim=(0, 360), ylim=(-1.5, 1.5),
+    grid=True, width=0.45
+)
+ax1.add_plot(func="sin(x)", label="sin(x)", color="red", line_width="1.5pt")
+ax1.set_legend(position="north east")
+
+ax2 = fig.subfigure_axis(
+    xlabel="x", ylabel="y",
+    xlim=(0, 360), ylim=(-1.5, 1.5),
+    grid=True, width=0.45
+)
+ax2.add_plot(func="cos(x)", label="cos(x)", color="blue", line_width="1.5pt")
+ax2.set_legend(position="north east")
+
+fig.show()
+```
+
+{{< include includes/tikz_code_callout.qmd >}}
+
+Call `subfigure_axis()` multiple times to add more. Use `width` (0.0-1.0) to control
+sizing (typically 0.3-0.45 for 2-3 plots).
+
+## Grid layouts
+
+Specify `rows` and `cols` when creating the figure for multi-row layouts:
+
+```{python}
+fig = TikzFigure(rows=2, cols=2)
+
+ax1 = fig.subfigure_axis(xlabel="x", ylabel="y", width=0.45)
+ax1.add_plot([0, 1], [0, 1], label="linear")
+ax1.set_legend()
+
+ax2 = fig.subfigure_axis(xlabel="x", ylabel="y", width=0.45)
+ax2.add_plot([0, 1], [1, 0], label="inverse")
+ax2.set_legend()
+
+ax3 = fig.subfigure_axis(xlabel="x", ylabel="y", width=0.45)
+ax3.add_plot([0, 1], [0, 2], label="double")
+ax3.set_legend()
+
+# Bottom-right left empty (partial grids are OK)
+fig.show()
+```
+
+{{< include includes/tikz_code_callout.qmd >}}
+
+Axes fill **left-to-right, top-to-bottom** automatically.
+
+## Partial grids
+
+Leave some grid cells empty by not filling all positions:
+
+```{python}
+fig = TikzFigure(rows=2, cols=3)
+
+ax1 = fig.subfigure_axis(xlabel="Linear", ylabel="$y$", width=0.3)
+ax1.add_plot([0, 1], [0, 1])
+
+ax2 = fig.subfigure_axis(xlabel="Quadratic", ylabel="$y$", width=0.3)
+ax2.add_plot([0, 1], [0, 1], plot_style="dashed")
+
+ax3 = fig.subfigure_axis(xlabel="Cubic", ylabel="$y$", width=0.3)
+ax3.add_plot([0, 1], [0, 1], plot_style="dotted")
+
+ax4 = fig.subfigure_axis(xlabel="Square Root", ylabel="$y$", width=0.3)
+x_vals = [0, 0.5, 1]
+y_vals = [x**0.5 for x in x_vals]
+ax4.add_plot(x_vals, y_vals)
+
+# Bottom-right 2 cells are empty
+fig.show()
+```
+
+{{< include includes/tikz_code_callout.qmd >}}
+
+## Grid data comparison
+
+A practical 2x2 comparison:
+
+```{python}
+fig = TikzFigure(rows=2, cols=2)
+
+# Linear
+ax1 = fig.subfigure_axis(xlabel="Time", ylabel="Value", width=0.45)
+ax1.add_plot([0, 1, 2, 3, 4], [0, 2, 4, 6, 8], label="Linear", marker="*")
+ax1.set_legend()
+
+# Exponential
+ax2 = fig.subfigure_axis(xlabel="Time", ylabel="Value", width=0.45)
+ax2.add_plot([0, 1, 2, 3, 4], [1, 2, 4, 8, 16], label="Exponential", marker="o")
+ax2.set_legend()
+
+# Sine wave
+ax3 = fig.subfigure_axis(xlabel="Time", ylabel="Amplitude", width=0.45)
+x = [i*0.2 for i in range(26)]
+ax3.add_plot(x, [math.sin(xi) for xi in x], label="Sine")
+ax3.set_legend()
+
+# All together
+ax4 = fig.subfigure_axis(xlabel="Time", ylabel="Value", width=0.45)
+ax4.add_plot([0, 1, 2, 3, 4], [0, 2, 4, 6, 8], label="Linear")
+ax4.add_plot([0, 1, 2, 3], [1, 2, 4, 8], label="Exponential")
+ax4.set_legend()
+
+fig.show()
+```
+
+{{< include includes/tikz_code_callout.qmd >}}
+
+## Mixing plots and diagrams
+
+Use `add_subfigure()` to place bare TikZ diagrams alongside axis-based plots.
+The returned object supports `add_node()`, `draw()`, and all TikZ API methods:
+
+```{python}
+fig = TikzFigure(rows=1, cols=2)
+
+# Left: axis with plot
+ax = fig.subfigure_axis(xlabel="Iteration", ylabel="Error", width=0.4)
+ax.add_plot([1, 2, 3, 4, 5], [0.8, 0.4, 0.2, 0.1, 0.05], marker="o", label="Convergence")
+ax.set_legend()
+
+# Right: algorithm flowchart
+flowchart = fig.add_subfigure(width=0.4, height=6)
+start = flowchart.add_node(1.5, 3.5, label="start", content="Start",
+                           shape="circle", fill="green!40")
+process = flowchart.add_node(1.5, 2, label="process", content="Iterate",
+                             shape="rectangle", fill="yellow!40")
+end = flowchart.add_node(1.5, 0.5, label="end", content="Done",
+                         shape="circle", fill="red!40")
+flowchart.draw([start, process], arrows="->")
+flowchart.draw([process, end], arrows="->")
+
+fig.show()
+```
+
+{{< include includes/tikz_code_callout.qmd >}}
+
+See [Mixed Subfigures](tutorial_15_mixed_subfigures.qmd) for more detailed examples.
