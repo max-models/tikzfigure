@@ -3,21 +3,19 @@ title: "3D Figures"
 jupyter: python3
 ---
 
-tikzfigure supports 3-D plots via `fig.plot3d(xvec, yvec, zvec)`. Pass
-`ndim=3` when creating the figure to switch to pgfplots' `\begin{axis}` environment
-with a default perspective of `view={20}{30}`.
+tikzfigure supports 3-D plots via `fig.plot3d(xvec, yvec, zvec)`. Pass `ndim=3`
+when creating the figure to switch to pgfplots' `\begin{axis}` environment with
+a default perspective of `view={20}{30}`.
 
-Key facts:
-- Multiple `plot3d` calls on the same figure stack as separate curves.
-- `add_node(x, y, z=z, ...)` places a marker in 3-D space.
-- `show_axes=True` adds labelled axis lines and a grid.
+Key facts: - Multiple `plot3d` calls on the same figure stack as separate
+curves. - `add_node(x, y, z=z, ...)` places a marker in 3-D space. -
+`show_axes=True` adds labelled axis lines and a grid.
 
-This tutorial covers:
-- **Simple helix** - the minimal 3-D setup
-- **Torus knot** - a parametric knot wound on a torus surface
-- **Double helix** - two interleaved helices with connecting rungs
-- **Sphere wireframe** - a sphere assembled from many short `plot3d` curves
-- **Butterfly effect** - two nearby Lorenz trajectories diverging over time
+This tutorial covers: - **Simple helix** - the minimal 3-D setup - **Torus
+knot** - a parametric knot wound on a torus surface - **Double helix** - two
+interleaved helices with connecting rungs - **Sphere wireframe** - a sphere
+assembled from many short `plot3d` curves - **Butterfly effect** - two nearby
+Lorenz trajectories diverging over time
 
 ```{python}
 import numpy as np
@@ -28,8 +26,8 @@ from tikzfigure import TikzFigure
 
 ## A simple 3-D helix
 
-Before tackling the Lorenz system, here is a simple parametric helix to illustrate
-the 3-D setup.
+Before tackling the Lorenz system, here is a simple parametric helix to
+illustrate the 3-D setup.
 
 ```{python}
 fig = TikzFigure(ndim=3)
@@ -62,11 +60,10 @@ fig.add_node(
 fig.show(width=400)
 ```
 
-
-
 ## Lorenz attractor
 
-The Lorenz system is the ODE, based on [this example](https://github.com/ltrujello/Tikz-Python/blob/main/examples/lorenz/lorenz.py):
+The Lorenz system is the ODE, based on [this
+example](https://github.com/ltrujello/Tikz-Python/blob/main/examples/lorenz/lorenz.py):
 
 $$
 \dot x = \sigma(y - x), \quad \dot y = x(\rho - z) - y, \quad \dot z = xy - \beta z
@@ -92,9 +89,7 @@ states = odeint(lorenz, y0=[1.0, 1.0, 1.0], t=t) * 0.25
 
 fig = TikzFigure(ndim=3)
 
-fig.plot3d(
-    states[:, 0], states[:, 1], states[:, 2], color="black", thick=True, layer=0
-)
+fig.plot3d(states[:, 0], states[:, 1], states[:, 2], color="black", thick=True, layer=0)
 
 fig.add_node(
     x=states[0, 0],
@@ -116,15 +111,14 @@ fig.add_node(
 fig.show(width=500)
 ```
 
-
-
 ## Torus knot
 
-A $(p, q)$ torus knot winds $p$ times around the torus in the longitudinal direction
-and $q$ times in the meridional direction. The parametric equations are:
+A $(p, q)$ torus knot winds $p$ times around the torus in the longitudinal
+direction and $q$ times in the meridional direction. The parametric equations
+are:
 
 $$
-  x(t) = (R + r\cos(qt))\cos(pt), \quad
+x(t) = (R + r\cos(qt))\cos(pt), \quad
   y(t) = (R + r\cos(qt))\sin(pt), \quad
   z(t) = r\sin(qt)
 $$

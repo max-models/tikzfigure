@@ -3,9 +3,10 @@ title: "Getting Started"
 jupyter: python3
 ---
 
-**tikzfigure** is a Python library for building TikZ (LaTeX) figures programmatically.
-You describe your drawing with Python objects and method calls; tikzfigure turns them into
-LaTeX/TikZ code that can be compiled to PDF or rendered to PNG.
+**tikzfigure** is a Python library for building TikZ (LaTeX) figures
+programmatically. You describe your drawing with Python objects and method
+calls; tikzfigure turns them into LaTeX/TikZ code that can be compiled to PDF or
+rendered to PNG.
 
 This first tutorial covers the absolute basics:
 
@@ -22,8 +23,8 @@ from tikzfigure import Node, TikzFigure
 ## Your first figure
 
 A `TikzFigure` is the canvas. Nodes are placed on it with `add_node(x, y, ...)`,
-and connections are drawn with `draw([node_a, node_b], ...)`. Call `show()` to compile
-and display the result inline.
+and connections are drawn with `draw([node_a, node_b], ...)`. Call `show()` to
+compile and display the result inline.
 
 ```{python}
 fig = TikzFigure()
@@ -40,8 +41,8 @@ fig.show(use_web_compilation=True)
 
 ## Inspecting the generated TikZ code
 
-`generate_tikz()` returns the raw LaTeX/TikZ string. This is useful for debugging
-or for pasting code directly into a `.tex` file.
+`generate_tikz()` returns the raw LaTeX/TikZ string. This is useful for
+debugging or for pasting code directly into a `.tex` file.
 
 ```{python}
 print(fig)
@@ -49,10 +50,11 @@ print(fig)
 
 ## Alternative: create nodes independently
 
-You can also construct `Node` objects directly and then register them with `fig.add()`,
-which is handy when building nodes in a loop or helper function.
+You can also construct `Node` objects directly and then register them with
+`fig.add()`, which is handy when building nodes in a loop or helper function.
 
-Note that when drawing the arrow, we can either reference the node with the node instance (`n1`) or its label (`node1`).
+Note that when drawing the arrow, we can either reference the node with the node
+instance (`n1`) or its label (`node1`).
 
 ```{python}
 fig2 = TikzFigure()
@@ -73,8 +75,8 @@ fig2.show()
 
 ## A simple directed graph
 
-Here we place four nodes and connect them with arrows.
-`bend_left` curves the arrow - positive values bend it left relative to the direction of travel.
+Here we place four nodes and connect them with arrows. `bend_left` curves the
+arrow - positive values bend it left relative to the direction of travel.
 
 ```{python}
 fig = TikzFigure()

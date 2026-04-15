@@ -4,22 +4,21 @@ jupyter: python3
 ---
 
 TikZ decorations transform the appearance of paths: a straight line can become a
-zigzag, a snake wave, a coil spring, or a brace bracket. This tutorial covers the
-decorations available through `tikzfigure`'s `decoration` parameter:
+zigzag, a snake wave, a coil spring, or a brace bracket. This tutorial covers
+the decorations available through `tikzfigure`'s `decoration` parameter:
 
 - `"zigzag"`, `"snake"`, `"coil"`, `"bumps"` — path morphing decorations
 - side-by-side gallery of all morphing decorations
 - `"brace"` — bracket annotations (requires a second library)
 - combining decorations with colors and line widths
 
-**Important:** You must always pass `options=["decorate"]` alongside `decoration=`
-to actually activate the decoration. The `decoration=` kwarg sets *which* decoration
-to use; `decorate` is the flag that switches it on.
+**Important:** You must always pass `options=["decorate"]` alongside
+`decoration=` to actually activate the decoration. The `decoration=` kwarg sets
+*which* decoration to use; `decorate` is the flag that switches it on.
 
 All morphing decoration examples require
-`document_setup=r"\usetikzlibrary{decorations.pathmorphing}"`.
-The brace decoration additionally requires
-`\usetikzlibrary{decorations.pathreplacing}`.
+`document_setup=r"\usetikzlibrary{decorations.pathmorphing}"`. The brace
+decoration additionally requires `\usetikzlibrary{decorations.pathreplacing}`.
 
 ```{python}
 from tikzfigure import TikzFigure
@@ -118,9 +117,9 @@ fig = TikzFigure(document_setup=r"\usetikzlibrary{decorations.pathmorphing}")
 
 decorations = [
     ("zigzag", "red"),
-    ("snake",  "blue"),
-    ("coil",   "teal"),
-    ("bumps",  "orange"),
+    ("snake", "blue"),
+    ("coil", "teal"),
+    ("bumps", "orange"),
 ]
 
 for i, (dec, color) in enumerate(decorations):
@@ -133,7 +132,8 @@ for i, (dec, color) in enumerate(decorations):
         color=color,
     )
     fig.add_node(
-        5.3, y,
+        5.3,
+        y,
         content=f"\\texttt{{{dec}}}",
         draw="none",
         anchor="west",
@@ -150,20 +150,23 @@ fig.show()
 The `"brace"` decoration draws a curly bracket spanning two points. It requires
 the `decorations.pathreplacing` library.
 
-Use a brace to annotate the width or height of a region in your diagram. Draw the
-brace from right to left (or bottom to top) so the bracket opens toward the region.
+Use a brace to annotate the width or height of a region in your diagram. Draw
+the brace from right to left (or bottom to top) so the bracket opens toward the
+region.
 
 ```{python}
 fig = TikzFigure(
     document_setup=(
-        r"\usetikzlibrary{decorations.pathmorphing}" "\n"
+        r"\usetikzlibrary{decorations.pathmorphing}"
+        "\n"
         r"\usetikzlibrary{decorations.pathreplacing}"
     )
 )
 
 # The region being annotated
 fig.add_node(
-    x=2, y=1,
+    x=2,
+    y=1,
     shape="rectangle",
     fill="blue!15",
     draw="blue!50",
@@ -180,8 +183,9 @@ fig.draw(
     line_width=1.5,
     color="blue!70",
 )
-fig.add_node(2, -0.45, content="4 cm wide", draw="none",
-             color="blue!70", font=r"\small")
+fig.add_node(
+    2, -0.45, content="4 cm wide", draw="none", color="blue!70", font=r"\small"
+)
 
 # Vertical brace on the right side (bottom-to-top so the brace opens rightward)
 fig.draw(
@@ -191,8 +195,15 @@ fig.draw(
     line_width=1.5,
     color="red!70",
 )
-fig.add_node(5.0, 1.0, content="1.5 cm", draw="none",
-             color="red!70", font=r"\small", anchor="west")
+fig.add_node(
+    5.0,
+    1.0,
+    content="1.5 cm",
+    draw="none",
+    color="red!70",
+    font=r"\small",
+    anchor="west",
+)
 
 fig.show()
 ```
@@ -201,41 +212,76 @@ fig.show()
 
 ## Combining decorations with colors and line widths
 
-Decorations become more expressive when combined with thick lines and vivid colors.
-Here is a physics-style figure with springs, a snake rope, and a bumpy road.
+Decorations become more expressive when combined with thick lines and vivid
+colors. Here is a physics-style figure with springs, a snake rope, and a bumpy
+road.
 
 ```{python}
 fig = TikzFigure(
     document_setup=(
-        r"\usetikzlibrary{decorations.pathmorphing}" "\n"
+        r"\usetikzlibrary{decorations.pathmorphing}"
+        "\n"
         r"\usetikzlibrary{decorations.pathreplacing}"
     )
 )
 
 # Ground line (zigzag = rough terrain)
-fig.draw([(0, 0), (8, 0)], options=["decorate"],
-         decoration="zigzag", line_width=2, color="brown!70")
+fig.draw(
+    [(0, 0), (8, 0)],
+    options=["decorate"],
+    decoration="zigzag",
+    line_width=2,
+    color="brown!70",
+)
 
 # Springs connecting ground to ceiling
-fig.draw([(1, 0), (1, 3)], options=["decorate"],
-         decoration="coil", line_width=2, color="gray!70")
-fig.draw([(7, 0), (7, 3)], options=["decorate"],
-         decoration="coil", line_width=2, color="gray!70")
+fig.draw(
+    [(1, 0), (1, 3)],
+    options=["decorate"],
+    decoration="coil",
+    line_width=2,
+    color="gray!70",
+)
+fig.draw(
+    [(7, 0), (7, 3)],
+    options=["decorate"],
+    decoration="coil",
+    line_width=2,
+    color="gray!70",
+)
 
 # Snake rope across the top
-fig.draw([(1, 3), (7, 3)], options=["decorate"],
-         decoration="snake", line_width=2.5, color="orange!80")
+fig.draw(
+    [(1, 3), (7, 3)],
+    options=["decorate"],
+    decoration="snake",
+    line_width=2.5,
+    color="orange!80",
+)
 
 # Bumpy road in the middle
-fig.draw([(2, 1.5), (6, 1.5)], options=["decorate"],
-         decoration="bumps", line_width=2, color="teal")
+fig.draw(
+    [(2, 1.5), (6, 1.5)],
+    options=["decorate"],
+    decoration="bumps",
+    line_width=2,
+    color="teal",
+)
 
 # Anchor nodes
 for x in [1, 7]:
-    fig.add_node(x, 3, shape="circle", fill="gray!50", draw="gray",
-                 minimum_size="0.3cm")
-    fig.add_node(x, 0, shape="rectangle", fill="brown!40", draw="brown",
-                 minimum_width="0.4cm", minimum_height="0.2cm")
+    fig.add_node(
+        x, 3, shape="circle", fill="gray!50", draw="gray", minimum_size="0.3cm"
+    )
+    fig.add_node(
+        x,
+        0,
+        shape="rectangle",
+        fill="brown!40",
+        draw="brown",
+        minimum_width="0.4cm",
+        minimum_height="0.2cm",
+    )
 
 fig.show()
 ```

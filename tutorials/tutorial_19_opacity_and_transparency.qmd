@@ -19,11 +19,11 @@ from tikzfigure import TikzFigure
 
 ## `opacity` on nodes
 
-`opacity` controls the overall transparency of a node (both fill and stroke together).
-A value of `1.0` is fully opaque; `0.0` is invisible.
+`opacity` controls the overall transparency of a node (both fill and stroke
+together). A value of `1.0` is fully opaque; `0.0` is invisible.
 
-The circles below overlap so you can see how lower opacity lets underlying content
-show through.
+The circles below overlap so you can see how lower opacity lets underlying
+content show through.
 
 ```{python}
 fig = TikzFigure()
@@ -55,9 +55,9 @@ fig.show()
 
 ## `fill_opacity` vs `draw_opacity`
 
-`fill_opacity` and `draw_opacity` let you control the fill and stroke independently.
-Here every node has an opaque border but a translucent fill — a common styling
-choice for overlapping regions.
+`fill_opacity` and `draw_opacity` let you control the fill and stroke
+independently. Here every node has an opaque border but a translucent fill — a
+common styling choice for overlapping regions.
 
 ```{python}
 fig = TikzFigure()
@@ -84,15 +84,15 @@ fig.show()
 
 ## `opacity` on paths
 
-Paths support the same `opacity` parameter. Below, three filled triangles overlap
-with decreasing opacity.
+Paths support the same `opacity` parameter. Below, three filled triangles
+overlap with decreasing opacity.
 
 ```{python}
 fig = TikzFigure()
 
 triangles = [
-    ([(0, 0), (3, 0), (1.5, 2.5)], "red",   0.9),
-    ([(1, 0), (4, 0), (2.5, 2.5)], "blue",  0.7),
+    ([(0, 0), (3, 0), (1.5, 2.5)], "red", 0.9),
+    ([(1, 0), (4, 0), (2.5, 2.5)], "blue", 0.7),
     ([(2, 0), (5, 0), (3.5, 2.5)], "green!60!black", 0.5),
 ]
 
@@ -144,15 +144,26 @@ By default `show()` and `savefig()` produce a **transparent** PNG background
 documents where the background color matters.
 
 Passing `transparent=False` gives a **white** background — useful when the
-rendering environment does not support transparency. Note that setting `transparent=False`
-does not affect PDF output, which is always vector and relies on the viewer for background rendering.
-It also does not affect the Tikz code itself, which does not include any background rectangle by default.
+rendering environment does not support transparency. Note that setting
+`transparent=False` does not affect PDF output, which is always vector and
+relies on the viewer for background rendering. It also does not affect the Tikz
+code itself, which does not include any background rectangle by default.
 
 ```{python}
 fig = TikzFigure()
 
-fig.add_node(0, 0, shape="circle", fill="orange!60", content="Hello!", minimum_size="2cm")
-fig.add_node(3, 0, shape="rectangle", fill="teal!40", content="World!", minimum_width="2.5cm", minimum_height="1.2cm")
+fig.add_node(
+    0, 0, shape="circle", fill="orange!60", content="Hello!", minimum_size="2cm"
+)
+fig.add_node(
+    3,
+    0,
+    shape="rectangle",
+    fill="teal!40",
+    content="World!",
+    minimum_width="2.5cm",
+    minimum_height="1.2cm",
+)
 
 # Default: transparent PNG background (default transparent=True)
 fig.show()
@@ -176,28 +187,32 @@ the background transparency is determined by the viewer.
 
 ## Practical example: Venn diagram
 
-A classic Venn diagram uses `fill_opacity` so the overlapping region inherits both
-colors visually.
+A classic Venn diagram uses `fill_opacity` so the overlapping region inherits
+both colors visually.
 
 ```{python}
 import math
 
 fig = TikzFigure()
 
-R = 1.5   # circle radius
-d = 1.2   # distance between centers
+R = 1.5  # circle radius
+d = 1.2  # distance between centers
 
 # Left circle
 theta = [2 * math.pi * k / 80 for k in range(80)]
-left  = [(-d / 2 + R * math.cos(t), R * math.sin(t)) for t in theta]
-right = [( d / 2 + R * math.cos(t), R * math.sin(t)) for t in theta]
+left = [(-d / 2 + R * math.cos(t), R * math.sin(t)) for t in theta]
+right = [(d / 2 + R * math.cos(t), R * math.sin(t)) for t in theta]
 
-fig.draw(left,  cycle=True, fill="blue",  draw="blue!80",  fill_opacity=0.4, line_width=2)
-fig.draw(right, cycle=True, fill="red",   draw="red!80",   fill_opacity=0.4, line_width=2)
+fig.draw(left, cycle=True, fill="blue", draw="blue!80", fill_opacity=0.4, line_width=2)
+fig.draw(right, cycle=True, fill="red", draw="red!80", fill_opacity=0.4, line_width=2)
 
 # Labels
-fig.add_node(-d / 2 - 0.6, 0, content="Set A", draw="none", font=r"\bfseries", color="blue!80")
-fig.add_node( d / 2 + 0.6, 0, content="Set B", draw="none", font=r"\bfseries", color="red!80")
+fig.add_node(
+    -d / 2 - 0.6, 0, content="Set A", draw="none", font=r"\bfseries", color="blue!80"
+)
+fig.add_node(
+    d / 2 + 0.6, 0, content="Set B", draw="none", font=r"\bfseries", color="red!80"
+)
 fig.add_node(0, 0, content=r"$A \cap B$", draw="none", font=r"\small")
 
 fig.show()

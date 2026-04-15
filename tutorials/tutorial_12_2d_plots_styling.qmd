@@ -16,10 +16,7 @@ pgfplots supports named colors and various marker types:
 ```{python}
 fig = TikzFigure()
 
-ax = fig.axis2d(
-    xlabel="Month", ylabel="Temperature",
-    xlim=(0, 13), grid=True
-)
+ax = fig.axis2d(xlabel="Month", ylabel="Temperature", xlim=(0, 13), grid=True)
 
 months = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
 temp_seattle = [-5, -4, 0, 5, 10, 15, 18, 17, 12, 6, 0, -4]
@@ -34,9 +31,11 @@ fig.show()
 
 {{< include includes/tikz_code_callout.qmd >}}
 
-**Available markers:** `o` (circle), `*` (star), `square`, `triangle`, `diamond`, `x`, `+`
+**Available markers:** `o` (circle), `*` (star), `square`, `triangle`,
+`diamond`, `x`, `+`
 
-**Available colors:** `red`, `blue`, `green`, `black`, plus mixing like `blue!50!red`
+**Available colors:** `red`, `blue`, `green`, `black`, plus mixing like
+`blue!50!red`
 
 ## Line styles and thickness
 
@@ -45,10 +44,7 @@ Customize line appearance with `options` and `line_width`:
 ```{python}
 fig = TikzFigure()
 
-ax = fig.axis2d(
-    xlabel="$X$", ylabel="$Y$",
-    xlim=(0, 10), grid=True
-)
+ax = fig.axis2d(xlabel="$X$", ylabel="$Y$", xlim=(0, 10), grid=True)
 
 x = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 y1 = [0, 1, 4, 9, 16, 25, 36, 49, 64, 81, 100]
@@ -63,7 +59,8 @@ fig.show()
 
 {{< include includes/tikz_code_callout.qmd >}}
 
-`options` accepts pgfplots flags: `"dashed"`, `"dotted"`, `"densely dashed"`, `"only marks"`.
+`options` accepts pgfplots flags: `"dashed"`, `"dotted"`, `"densely dashed"`,
+`"only marks"`.
 
 ## Custom ticks and labels
 
@@ -72,10 +69,7 @@ Control tick positions and labels:
 ```{python}
 fig = TikzFigure()
 
-ax = fig.axis2d(
-    xlabel="Grade", ylabel="Count",
-    xlim=(0.5, 4.5), ylim=(0, 30)
-)
+ax = fig.axis2d(xlabel="Grade", ylabel="Count", xlim=(0.5, 4.5), ylim=(0, 30))
 
 ax.add_plot([1, 2, 3, 4], [5, 12, 18, 10], label="Students", color="green", mark="*")
 
@@ -98,10 +92,7 @@ Use `options=["only marks"]` to show only markers without connecting lines:
 ```{python}
 fig = TikzFigure()
 
-ax = fig.axis2d(
-    xlabel="X", ylabel="Y",
-    xlim=(-1, 5), ylim=(-2, 10), grid=True
-)
+ax = fig.axis2d(xlabel="X", ylabel="Y", xlim=(-1, 5), ylim=(-2, 10), grid=True)
 
 # Noisy data points
 x_data = [0, 1, 1.5, 2, 2.5, 3, 4]
@@ -111,8 +102,15 @@ y_data = [0, 0.9, 2.2, 3.8, 4.5, 6.2, 8.1]
 x_fit = [i * 0.1 for i in range(50)]
 y_fit = [2 * x + 0.5 for x in x_fit]
 
-ax.add_plot(x_data, y_data, label="Data", color="red", mark="o",
-            mark_size="2pt", options=["only marks"])
+ax.add_plot(
+    x_data,
+    y_data,
+    label="Data",
+    color="red",
+    mark="o",
+    mark_size="2pt",
+    options=["only marks"],
+)
 ax.add_plot(x_fit, y_fit, label="Fit: y = 2x + 0.5", color="blue")
 
 ax.set_legend(position="north west")
@@ -133,13 +131,28 @@ ax.add_plot([0, 1, 2, 3, 4, 5], [0, 1, 2, 3, 4, 5], label="data", color="red")
 ax.set_legend(position="north west")
 
 # Background shape on layer 0
-fig.add_node(2.5, 2.5, label="bg", content="Background",
-             shape="circle", minimum_size="4cm", fill="gray!20",
-             draw="none", layer=0)
+fig.add_node(
+    2.5,
+    2.5,
+    label="bg",
+    content="Background",
+    shape="circle",
+    minimum_size="4cm",
+    fill="gray!20",
+    draw="none",
+    layer=0,
+)
 
 # Foreground annotation on layer 2
-fig.add_node(4, 4, label="fg", content="Foreground!",
-             shape="rectangle", fill="yellow!30", layer=2)
+fig.add_node(
+    4,
+    4,
+    label="fg",
+    content="Foreground!",
+    shape="rectangle",
+    fill="yellow!30",
+    layer=2,
+)
 
 fig.show()
 ```

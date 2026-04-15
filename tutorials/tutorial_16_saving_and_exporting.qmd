@@ -89,12 +89,13 @@ fig.show(use_web_compilation=True)
 fig.savefig("output.png", use_web_compilation=True)
 ```
 
-This sends the LaTeX to a remote API for compilation, no local TeX installation needed.
+This sends the LaTeX to a remote API for compilation, no local TeX installation
+needed.
 
 ## Display size in Jupyter
 
-The `figsize` parameter controls how large the figure appears in Jupyter notebooks.
-It does not affect the LaTeX output or saved files:
+The `figsize` parameter controls how large the figure appears in Jupyter
+notebooks. It does not affect the LaTeX output or saved files:
 
 ```{python}
 # Small display

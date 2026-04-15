@@ -3,10 +3,11 @@ title: "Figure Configuration"
 jupyter: python3
 ---
 
-`TikzFigure` accepts several constructor parameters that control how the figure is
-set up in LaTeX. This tutorial covers:
+`TikzFigure` accepts several constructor parameters that control how the figure
+is set up in LaTeX. This tutorial covers:
 
-- `figure_setup`: global TikZ options applied to the entire `tikzpicture` environment
+- `figure_setup`: global TikZ options applied to the entire `tikzpicture`
+  environment
 - `grid`: debug grid overlay
 - `document_setup`: raw LaTeX preamble additions (for `\usetikzlibrary` etc.)
 - `extra_packages`: additional LaTeX packages
@@ -24,8 +25,8 @@ The `figure_setup` string is placed inside `\begin{tikzpicture}[HERE]`. Anything
 you would normally write in the `tikzpicture` options block goes here.
 
 A particularly useful technique is `every node/.append style={...}` — it applies
-a style to every node in the figure without repeating the options on each individual
-`add_node` call.
+a style to every node in the figure without repeating the options on each
+individual `add_node` call.
 
 ```{python}
 fig = TikzFigure(
@@ -46,8 +47,8 @@ fig.show()
 
 {{< include includes/tikz_code_callout.qmd >}}
 
-Every node gets a border and blue tint automatically — no per-node `draw=` or `fill=`
-needed.
+Every node gets a border and blue tint automatically — no per-node `draw=` or
+`fill=` needed.
 
 ```{python}
 # A more elaborate example: uniform rounded rectangles in a flow diagram
@@ -81,9 +82,15 @@ positioning aid when you are still working out coordinates.
 ```{python}
 fig = TikzFigure(grid=True)
 
-n1 = fig.add_node(0, 0, shape="circle", fill="red!40", content="A", minimum_size="0.8cm")
-n2 = fig.add_node(3, 2, shape="circle", fill="blue!40", content="B", minimum_size="0.8cm")
-n3 = fig.add_node(5, 0, shape="circle", fill="green!40", content="C", minimum_size="0.8cm")
+n1 = fig.add_node(
+    0, 0, shape="circle", fill="red!40", content="A", minimum_size="0.8cm"
+)
+n2 = fig.add_node(
+    3, 2, shape="circle", fill="blue!40", content="B", minimum_size="0.8cm"
+)
+n3 = fig.add_node(
+    5, 0, shape="circle", fill="green!40", content="C", minimum_size="0.8cm"
+)
 fig.draw([n1, n2], arrows="->")
 fig.draw([n2, n3], arrows="->")
 
@@ -92,43 +99,72 @@ fig.show()
 
 {{< include includes/tikz_code_callout.qmd >}}
 
-The grid makes it easy to read off exact coordinates and spot misalignments before
-removing `grid=True` for the final figure.
+The grid makes it easy to read off exact coordinates and spot misalignments
+before removing `grid=True` for the final figure.
 
 ## `document_setup`: raw LaTeX preamble additions
 
-`document_setup` is a raw LaTeX string inserted into the standalone document preamble.
-It is the correct place for `\usetikzlibrary{...}` calls and any other preamble
-additions that the figure needs.
+`document_setup` is a raw LaTeX string inserted into the standalone document
+preamble. It is the correct place for `\usetikzlibrary{...}` calls and any other
+preamble additions that the figure needs.
 
-A common use is loading the `positioning` library, which enables relative placement
-keywords such as `above_of`, `below_of`, `left_of`, `right_of`, and the
-`node_distance` parameter.
+A common use is loading the `positioning` library, which enables relative
+placement keywords such as `above_of`, `below_of`, `left_of`, `right_of`, and
+the `node_distance` parameter.
 
 ```{python}
-fig = TikzFigure(
-    document_setup=r"\usetikzlibrary{positioning}"
+fig = TikzFigure(document_setup=r"\usetikzlibrary{positioning}")
+
+root = fig.add_node(
+    0,
+    0,
+    label="root",
+    content="Root",
+    shape="rectangle",
+    fill="purple!30",
+    minimum_size="1cm",
 )
 
-root = fig.add_node(0, 0, label="root", content="Root", shape="rectangle",
-                    fill="purple!30", minimum_size="1cm")
-
 # Relative positioning: omit x/y so no 'at (...)' is emitted
-fig.add_node(label="above_node", content="Above",
-             shape="rectangle", fill="cyan!30", minimum_size="1cm",
-             above_of="root", node_distance="1.8cm")
+fig.add_node(
+    label="above_node",
+    content="Above",
+    shape="rectangle",
+    fill="cyan!30",
+    minimum_size="1cm",
+    above_of="root",
+    node_distance="1.8cm",
+)
 
-fig.add_node(label="below_node", content="Below",
-             shape="rectangle", fill="cyan!30", minimum_size="1cm",
-             below_of="root", node_distance="1.8cm")
+fig.add_node(
+    label="below_node",
+    content="Below",
+    shape="rectangle",
+    fill="cyan!30",
+    minimum_size="1cm",
+    below_of="root",
+    node_distance="1.8cm",
+)
 
-fig.add_node(label="left_node", content="Left",
-             shape="rectangle", fill="orange!30", minimum_size="1cm",
-             left_of="root", node_distance="2.5cm")
+fig.add_node(
+    label="left_node",
+    content="Left",
+    shape="rectangle",
+    fill="orange!30",
+    minimum_size="1cm",
+    left_of="root",
+    node_distance="2.5cm",
+)
 
-fig.add_node(label="right_node", content="Right",
-             shape="rectangle", fill="orange!30", minimum_size="1cm",
-             right_of="root", node_distance="2.5cm")
+fig.add_node(
+    label="right_node",
+    content="Right",
+    shape="rectangle",
+    fill="orange!30",
+    minimum_size="1cm",
+    right_of="root",
+    node_distance="2.5cm",
+)
 
 for label in ["above_node", "below_node", "left_node", "right_node"]:
     fig.draw(["root", label], arrows="->", color="gray")
@@ -148,13 +184,27 @@ figure content uses macros from packages like `amsmath` or `xcolor`.
 fig = TikzFigure(extra_packages=["amsmath", "xcolor"])
 
 # amsmath lets us use \dfrac inside node content
-fig.add_node(0, 2, content=r"$\dfrac{a}{b} + \sqrt{c}$",
-             shape="rectangle", fill="yellow!20", draw="orange",
-             minimum_width="3cm", minimum_height="1.2cm")
+fig.add_node(
+    0,
+    2,
+    content=r"$\dfrac{a}{b} + \sqrt{c}$",
+    shape="rectangle",
+    fill="yellow!20",
+    draw="orange",
+    minimum_width="3cm",
+    minimum_height="1.2cm",
+)
 
-fig.add_node(0, 0, content=r"$\sum_{k=1}^{n} k = \dfrac{n(n+1)}{2}$",
-             shape="rectangle", fill="green!20", draw="teal",
-             minimum_width="4cm", minimum_height="1.2cm")
+fig.add_node(
+    0,
+    0,
+    content=r"$\sum_{k=1}^{n} k = \dfrac{n(n+1)}{2}$",
+    shape="rectangle",
+    fill="green!20",
+    draw="teal",
+    minimum_width="4cm",
+    minimum_height="1.2cm",
+)
 
 fig.show()
 ```
@@ -163,9 +213,9 @@ fig.show()
 
 ## `generate_standalone()`: inspecting the full document
 
-`generate_standalone()` returns a complete compilable LaTeX document including the
-preamble. This shows exactly how `document_setup` and `extra_packages` are woven
-into the output.
+`generate_standalone()` returns a complete compilable LaTeX document including
+the preamble. This shows exactly how `document_setup` and `extra_packages` are
+woven into the output.
 
 ```{python}
 fig = TikzFigure(
@@ -183,7 +233,8 @@ print(fig.generate_standalone())
 ## `label`: wrapping in a figure environment
 
 When `label` is set, tikzfigure wraps the `tikzpicture` in a
-`\begin{figure}...\end{figure}` environment and adds `\label{...}` for cross-referencing.
+`\begin{figure}...\end{figure}` environment and adds `\label{...}` for
+cross-referencing.
 
 ```{python}
 fig = TikzFigure(
@@ -207,14 +258,17 @@ Notice that `generate_tikz()` now includes the `\begin{figure}` wrapper.
 
 ## `figsize`: Jupyter display-size hint
 
-`figsize=(width, height)` controls how large the compiled image appears in Jupyter.
-It is purely a display hint — it does not affect the LaTeX output or the saved file.
+`figsize=(width, height)` controls how large the compiled image appears in
+Jupyter. It is purely a display hint — it does not affect the LaTeX output or
+the saved file.
 
 ```{python}
 fig = TikzFigure(figsize=(4, 2))
 
 fig.add_node(0, 0, shape="circle", fill="red!40", content="Small", minimum_size="1.5cm")
-fig.add_node(3, 0, shape="circle", fill="blue!40", content="display", minimum_size="1.5cm")
+fig.add_node(
+    3, 0, shape="circle", fill="blue!40", content="display", minimum_size="1.5cm"
+)
 
 fig.show()
 ```
@@ -226,7 +280,9 @@ fig.show()
 fig = TikzFigure(figsize=(8, 4))
 
 fig.add_node(0, 0, shape="circle", fill="red!40", content="Large", minimum_size="1.5cm")
-fig.add_node(3, 0, shape="circle", fill="blue!40", content="display", minimum_size="1.5cm")
+fig.add_node(
+    3, 0, shape="circle", fill="blue!40", content="display", minimum_size="1.5cm"
+)
 
 fig.show()
 ```

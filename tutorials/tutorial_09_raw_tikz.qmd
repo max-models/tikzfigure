@@ -3,19 +3,16 @@ title: "Raw TikZ"
 jupyter: python3
 ---
 
-tikzfigure covers the most common TikZ operations through its Python API, but TikZ is
-a vast language. `fig.add_raw(string)` injects an arbitrary LaTeX/TikZ snippet
-directly into the generated code - giving you a full escape hatch.
+tikzfigure covers the most common TikZ operations through its Python API, but
+TikZ is a vast language. `fig.add_raw(string)` injects an arbitrary LaTeX/TikZ
+snippet directly into the generated code - giving you a full escape hatch.
 
 A key pattern: create nodes with the Python API (to get auto-generated labels),
 then reference them in raw TikZ commands via `{node.label}`.
 
-This tutorial covers:
-- basic raw insertion
-- flowcharts with decision diamonds
-- mathematical annotations and axis drawing
-- network graphs with curved edges
-- timeline visualizations
+This tutorial covers: - basic raw insertion - flowcharts with decision diamonds
+- mathematical annotations and axis drawing - network graphs with curved edges -
+timeline visualizations
 
 ```{python}
 import math
@@ -50,7 +47,8 @@ fig.show()
 
 ## Flowchart
 
-Flowcharts need `diamond` decision nodes and labelled arrows - both easy with raw TikZ.
+Flowcharts need `diamond` decision nodes and labelled arrows - both easy with
+raw TikZ.
 
 ```{python}
 fig = TikzFigure()
@@ -80,8 +78,8 @@ fig.show()
 
 ## Mathematical annotations and coordinate axes
 
-Raw TikZ handles axis arrows, tick marks, parabolas, and LaTeX math
-(`$...$`) naturally.
+Raw TikZ handles axis arrows, tick marks, parabolas, and LaTeX math (`$...$`)
+naturally.
 
 ```{python}
 fig = TikzFigure()

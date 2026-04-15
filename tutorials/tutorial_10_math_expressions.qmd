@@ -3,11 +3,13 @@ title: "Mathematical Expressions"
 jupyter: python3
 ---
 
-**tikzfigure** includes a `math` module that lets you build PGF mathematical expressions in Python.
-This is useful for creating parametric or symbolic geometries without manually writing TikZ syntax.
+**tikzfigure** includes a `math` module that lets you build PGF mathematical
+expressions in Python. This is useful for creating parametric or symbolic
+geometries without manually writing TikZ syntax.
 
-Instead of hardcoding coordinates like `(1.5, 2.0)`, you can write `(sin(60), cos(60))` or
-`(Var("radius") * 2, Var("angle"))` — all as Python code, with full composability and operator support.
+Instead of hardcoding coordinates like `(1.5, 2.0)`, you can write
+`(sin(60), cos(60))` or `(Var("radius") * 2, Var("angle"))` — all as Python
+code, with full composability and operator support.
 
 This tutorial covers:
 
@@ -24,8 +26,8 @@ from tikzfigure.math import sin, cos, sqrt, Var, pi, max, min
 
 ## Your first expression
 
-Any PGF math function is available as a Python function. Calling it returns an `Expr` object
-that knows how to render itself into valid PGF syntax.
+Any PGF math function is available as a Python function. Calling it returns an
+`Expr` object that knows how to render itself into valid PGF syntax.
 
 ```{python}
 # Basic expressions
@@ -38,7 +40,8 @@ print(f"cos(45) → {expr2}")
 print(f"sqrt(2) → {expr3}")
 ```
 
-When you pass an `Expr` to a TikZ method, it's automatically converted to a string via `__str__`.
+When you pass an `Expr` to a TikZ method, it's automatically converted to a
+string via `__str__`.
 
 ## Using expressions as node coordinates
 
@@ -48,18 +51,51 @@ Any coordinate parameter (`x`, `y`, or in a tuple) accepts expressions:
 fig = TikzFigure(figsize=(10, 8))
 
 # Place nodes at trigonometric coordinates
-fig.add_node(x=sin(0), y=cos(0), label="P0", content="(sin 0°, cos 0°)", fill="red!30", shape="circle")
-fig.add_node(x=sin(45), y=cos(45), label="P45", content="(sin 45°, cos 45°)", fill="blue!30", shape="circle")
-fig.add_node(x=sin(90), y=cos(90), label="P90", content="(sin 90°, cos 90°)", fill="green!30", shape="circle")
-fig.add_node(x=sin(180), y=cos(180), label="P180", content="(sin 180°, cos 180°)", fill="yellow!30", shape="circle")
+fig.add_node(
+    x=sin(0),
+    y=cos(0),
+    label="P0",
+    content="(sin 0°, cos 0°)",
+    fill="red!30",
+    shape="circle",
+)
+fig.add_node(
+    x=sin(45),
+    y=cos(45),
+    label="P45",
+    content="(sin 45°, cos 45°)",
+    fill="blue!30",
+    shape="circle",
+)
+fig.add_node(
+    x=sin(90),
+    y=cos(90),
+    label="P90",
+    content="(sin 90°, cos 90°)",
+    fill="green!30",
+    shape="circle",
+)
+fig.add_node(
+    x=sin(180),
+    y=cos(180),
+    label="P180",
+    content="(sin 180°, cos 180°)",
+    fill="yellow!30",
+    shape="circle",
+)
 
 # Draw a path using expressions
-fig.draw([
-    (sin(0), cos(0)),
-    (sin(45), cos(45)),
-    (sin(90), cos(90)),
-    (sin(180), cos(180)),
-], arrows="->", color="gray", line_width=1.5)
+fig.draw(
+    [
+        (sin(0), cos(0)),
+        (sin(45), cos(45)),
+        (sin(90), cos(90)),
+        (sin(180), cos(180)),
+    ],
+    arrows="->",
+    color="gray",
+    line_width=1.5,
+)
 
 fig.show()
 ```
@@ -68,15 +104,15 @@ fig.show()
 
 ## Operators and composition
 
-Expressions support Python's arithmetic operators (`+`, `-`, `*`, `/`) and exponentiation (`**`).
-The operators are translated to valid PGF syntax:
+Expressions support Python's arithmetic operators (`+`, `-`, `*`, `/`) and
+exponentiation (`**`). The operators are translated to valid PGF syntax:
 
 ```{python}
 # Build complex expressions using operators
 expr_sum = sin(60) + cos(60)
 expr_product = sin(60) * 2
 expr_power = sin(45) ** 2  # Note: ** becomes ^ in PGF
-expr_composed = (sin(45)**2 + cos(45)**2) / Var("scale")
+expr_composed = (sin(45) ** 2 + cos(45) ** 2) / Var("scale")
 
 print(f"sin(60) + cos(60) = {expr_sum}")
 print(f"sin(60) * 2 = {expr_product}")
@@ -86,8 +122,8 @@ print(f"(sin(45)^2 + cos(45)^2) / scale = {expr_composed}")
 
 ## Variable references with `Var()`
 
-Use `Var(name)` to reference a PGF variable by name. This is useful when you define variables
-with `add_variable()` and want to use them in expressions:
+Use `Var(name)` to reference a PGF variable by name. This is useful when you
+define variables with `add_variable()` and want to use them in expressions:
 
 ```{python}
 fig = TikzFigure()
@@ -96,8 +132,12 @@ fig = TikzFigure()
 fig.add_variable("radius", 3.5)
 
 # Use it in node coordinates
-node_a = fig.add_node(x=Var("radius"), y=0, label="A", content="(r, 0)", fill="blue!30", shape="circle")
-node_b = fig.add_node(x=0, y=Var("radius"), label="B", content="(0, r)", fill="red!30", shape="circle")
+node_a = fig.add_node(
+    x=Var("radius"), y=0, label="A", content="(r, 0)", fill="blue!30", shape="circle"
+)
+node_b = fig.add_node(
+    x=0, y=Var("radius"), label="B", content="(0, r)", fill="red!30", shape="circle"
+)
 
 # Draw using the variable
 fig.draw([(Var("radius"), 0), (0, Var("radius"))], arrows="->", color="gray")
@@ -109,8 +149,8 @@ fig.show()
 
 ## Expressions in variables
 
-You can pass expressions directly to `add_variable()`. This is powerful for defining
-derived or computed values at compile time:
+You can pass expressions directly to `add_variable()`. This is powerful for
+defining derived or computed values at compile time:
 
 ```{python}
 fig = TikzFigure()
@@ -120,14 +160,35 @@ fig.add_variable("x", 3)
 fig.add_variable("y", 4)
 
 # Compute distance from origin and angle
-fig.add_variable("distance", sqrt(Var("x")**2 + Var("y")**2))
+fig.add_variable("distance", sqrt(Var("x") ** 2 + Var("y") ** 2))
 fig.add_variable("angle", "atan2(\\y, \\x)")  # PGF math: angle in radians
 fig.add_variable("scaled", Var("distance") * 2)
 
 # Place nodes at (x, y), (distance, 0), and (scaled, 0)
-fig.add_node(x=Var("x"), y=Var("y"), label="(x, y)", content="(x, y)", fill="blue!20", shape="circle")
-fig.add_node(x=Var("distance"), y=0, label="distance", content="distance", fill="green!30", shape="circle")
-fig.add_node(x=Var("scaled"), y=0, label="scaled", content="scaled", fill="purple!30", shape="circle")
+fig.add_node(
+    x=Var("x"),
+    y=Var("y"),
+    label="(x, y)",
+    content="(x, y)",
+    fill="blue!20",
+    shape="circle",
+)
+fig.add_node(
+    x=Var("distance"),
+    y=0,
+    label="distance",
+    content="distance",
+    fill="green!30",
+    shape="circle",
+)
+fig.add_node(
+    x=Var("scaled"),
+    y=0,
+    label="scaled",
+    content="scaled",
+    fill="purple!30",
+    shape="circle",
+)
 
 # Draw a line from origin to (x, y)
 fig.draw([(0, 0), (Var("x"), Var("y"))], arrows="->", color="gray")
@@ -137,14 +198,15 @@ fig.show()
 
 {{< include includes/tikz_code_callout.qmd >}}
 
-Note: the generated TikZ emits `\pgfmathsetmacro` commands with the expression as-is.
-PGF evaluates these at compile time.
+Note: the generated TikZ emits `\pgfmathsetmacro` commands with the expression
+as-is. PGF evaluates these at compile time.
 
 ## Mathematical functions
 
 The `math` module includes 60+ PGF functions:
 
-**Trigonometric:** `sin`, `cos`, `tan`, `asin`, `acos`, `atan`, `atan2`, `sec`, `cosec`, `cot`, `sinh`, `cosh`, `tanh`
+**Trigonometric:** `sin`, `cos`, `tan`, `asin`, `acos`, `atan`, `atan2`, `sec`,
+`cosec`, `cot`, `sinh`, `cosh`, `tanh`
 
 **Rounding:** `abs`, `ceil`, `floor`, `round` (⚠️ shadows Python built-ins)
 
@@ -160,15 +222,24 @@ The `math` module includes 60+ PGF functions:
 
 **Geometry:** `width`, `height`, `depth`, `veclen`
 
-**Other:** `deg`, `rad`, `int_`, `real`, `scalar`, `bin_`, `oct_`, `hex_`, `ifthenelse`
+**Other:** `deg`, `rad`, `int_`, `real`, `scalar`, `bin_`, `oct_`, `hex_`,
+`ifthenelse`
 
 ```{python}
 from tikzfigure.math import (
-    sin, cos, sqrt, max, min,      # Common ones
-    ln, log10,                      # Logarithms
-    deg, rad,                        # Angle conversion
-    gcd, factorial,                 # Arithmetic
-    iseven, isodd                   # Logic
+    sin,
+    cos,
+    sqrt,
+    max,
+    min,  # Common ones
+    ln,
+    log10,  # Logarithms
+    deg,
+    rad,  # Angle conversion
+    gcd,
+    factorial,  # Arithmetic
+    iseven,
+    isodd,  # Logic
 )
 
 # Examples
@@ -189,14 +260,15 @@ from tikzfigure.math import pi, e, rnd, rand, true, false
 
 print(f"pi = {pi}")
 print(f"e = {e}")
-print(f"rnd = {rnd}")   # Random [0, 1)
+print(f"rnd = {rnd}")  # Random [0, 1)
 print(f"true = {true}")
 print(f"false = {false}")
 ```
 
 ## A practical example: plotting a circle
 
-Here's a complete example using expressions to parametrically place points around a circle:
+Here's a complete example using expressions to parametrically place points
+around a circle:
 
 ```{python}
 from tikzfigure.math import sin, cos, pi, Var
@@ -219,7 +291,7 @@ for i in range(num_points):
         content=str(i),
         shape="circle",
         fill="blue!40",
-        minimum_size="0.5cm"
+        minimum_size="0.5cm",
     )
 
 # Draw the circle by connecting consecutive points
@@ -240,13 +312,15 @@ fig.show()
 
 {{< include includes/tikz_code_callout.qmd >}}
 
-The expressions are evaluated by PGF at compile time, not Python, so the generated
-LaTeX is clean and readable — not a long list of hardcoded coordinates.
+The expressions are evaluated by PGF at compile time, not Python, so the
+generated LaTeX is clean and readable — not a long list of hardcoded
+coordinates.
 
 ## Advanced: combining loops with expressions
 
-For parametric figures like grids or circles, you can combine TikZ `\foreach` loops
-(from [tutorial 6](tutorial_06_loops.qmd)) with math expressions for even more compact code:
+For parametric figures like grids or circles, you can combine TikZ `\foreach`
+loops (from [tutorial 6](tutorial_06_loops.qmd)) with math expressions for even
+more compact code:
 
 ```{python}
 from tikzfigure.math import sin, cos, Var
@@ -269,7 +343,7 @@ with fig.add_loop("i", range(8), comment="Circle with 8 points") as loop:
         content=r"\i",
         shape="circle",
         fill="blue!40",
-        minimum_size="0.6cm"
+        minimum_size="0.6cm",
     )
 
 # Add center
@@ -279,8 +353,8 @@ fig.show()
 
 {{< include includes/tikz_code_callout.qmd >}}
 
-Notice how the loop variable `\i` is embedded in the math expressions.
-TikZ evaluates `\i * 45` at each iteration, then passes it to `cos()` and `sin()`.
+Notice how the loop variable `\i` is embedded in the math expressions. TikZ
+evaluates `\i * 45` at each iteration, then passes it to `cos()` and `sin()`.
 
 ## Warning: shadowing Python built-ins
 
@@ -291,14 +365,17 @@ Some PGF functions have names that match Python built-ins:
 This is intentional and fine when using targeted imports:
 
 ```python
-from tikzfigure.math import sin, cos    # No shadowing
-from tikzfigure.math import abs, max    # Shadows Python built-ins in this scope
+from tikzfigure.math import sin, cos  # No shadowing
+from tikzfigure.math import abs, max  # Shadows Python built-ins in this scope
 ```
 
-To avoid confusion, avoid `from tikzfigure.math import *` (which would shadow globally).
+To avoid confusion, avoid `from tikzfigure.math import *` (which would shadow
+globally).
 
 ## Next steps
 
 - Combine expressions with [loops](tutorial_06_loops.qmd) for parametric grids
-- Use expressions in [styling and transformations](tutorial_21_advanced_styling.qmd)
-- See the [PGF manual](https://ctan.org/pkg/pgf) for the full list of functions and their behavior
+- Use expressions in [styling and
+  transformations](tutorial_21_advanced_styling.qmd)
+- See the [PGF manual](https://ctan.org/pkg/pgf) for the full list of functions
+  and their behavior

@@ -3,12 +3,9 @@ title: "Styling: Colors, Shapes, and Line Styles"
 jupyter: python3
 ---
 
-This tutorial explores the visual styling options available in tikzfigure:
-- node shapes
-- colors and color mixing
-- line styles and widths
-- arrow types
-- node anchors
+This tutorial explores the visual styling options available in tikzfigure: -
+node shapes - colors and color mixing - line styles and widths - arrow types -
+node anchors
 
 ```{python}
 from tikzfigure import TikzFigure
@@ -17,8 +14,8 @@ from tikzfigure import TikzFigure
 ## Node shapes
 
 The `shape` parameter accepts any TikZ node shape. Common built-in shapes are
-`circle`, `rectangle`, `ellipse`, and `diamond`.
-The `minimum_size` / `minimum_width` / `minimum_height` options control the node size.
+`circle`, `rectangle`, `ellipse`, and `diamond`. The `minimum_size` /
+`minimum_width` / `minimum_height` options control the node size.
 
 ```{python}
 fig = TikzFigure()
@@ -68,8 +65,8 @@ fig.show()
 
 ## Line styles
 
-Paths accept TikZ style keywords as `options`: `dashed`, `dotted`, `thick`, `ultra thick`, etc.
-`line_width` maps to TikZ `line width=<value>pt`.
+Paths accept TikZ style keywords as `options`: `dashed`, `dotted`, `thick`,
+`ultra thick`, etc. `line_width` maps to TikZ `line width=<value>pt`.
 
 ```{python}
 fig = TikzFigure()
@@ -94,9 +91,9 @@ fig.show()
 
 ## Arrow types
 
-Arrow direction and style are controlled via options. Standard TikZ arrow specs work:
-`->`, `<-`, `<->`, `-stealth`, `|->`, etc.
-`bend_left` / `bend_right` curve the path.
+Arrow direction and style are controlled via options. Standard TikZ arrow specs
+work: `->`, `<-`, `<->`, `-stealth`, `|->`, etc. `bend_left` / `bend_right`
+curve the path.
 
 ```{python}
 fig = TikzFigure()
@@ -122,9 +119,9 @@ fig.show()
 ## Node anchors
 
 When placing a node at a coordinate, the `anchor` option controls which part of
-the node sits at that point. The default is `center`.
-Useful values: `center`, `north`, `south`, `east`, `west`,
-`north west`, `north east`, `south east`, `south west`.
+the node sits at that point. The default is `center`. Useful values: `center`,
+`north`, `south`, `east`, `west`, `north west`, `north east`, `south east`,
+`south west`.
 
 ```{python}
 # Let's try to reproduce this: https://rmwu.github.io/tutorial/latex/2019/11/21/positioning/
@@ -162,22 +159,23 @@ overlaps. The weave order is Blue > Yellow > Black > Green > Red: at each
 crossing the "greater" ring appears in front.
 
 - 1. The full rings are drawn in layer 0.
-- 2. The overlapping crossings are drawn as arcs on top of the full rings in layer 1.
+- 2. The overlapping crossings are drawn as arcs on top of the full rings in
+  layer 1.
 
 ```{python}
 import math
 
 fig = TikzFigure()
 
-r  = 1.0    # ring radius (cm)
+r = 1.0  # ring radius (cm)
 lw = "5pt"  # line width
 
 ring_specs = [
-    ((0,    0), (330, 360),    "blue"),
-    ((1.25, -1.25), (60,90), "yellow!80!black"),
-    ((2.5,  0), (330,360),  "black"),
-    ((3.75, -1.25), (60,90), "green!60!black"),
-    ((5,    0), (None, None),    "red"),
+    ((0, 0), (330, 360), "blue"),
+    ((1.25, -1.25), (60, 90), "yellow!80!black"),
+    ((2.5, 0), (330, 360), "black"),
+    ((3.75, -1.25), (60, 90), "green!60!black"),
+    ((5, 0), (None, None), "red"),
 ]
 
 
@@ -195,6 +193,7 @@ def arc_seg(center, radius, start_angle, end_angle, color):
         line_width=lw,
         layer=1,
     )
+
 
 for (cx, cy), (start_angle, end_angle), color in ring_specs:
     fig.circle(center=(cx, cy), radius=f"{r}cm", color=color, line_width=lw, layer=0)

@@ -7,14 +7,16 @@ This showcase tutorial builds a full A3-style **2026 calendar** combining:
 
 - Python's `calendar` / `datetime` modules for date arithmetic
 - an external REST API ([openholidaysapi.org](https://openholidaysapi.org)) for
-  public-holiday data across multiple countries (Sweden, Germany, France, Lebanon)
-- a nested Python loop that lays out months × days as a grid of filled rectangles
-- conditional cell coloring: white for weekdays, light red for Saturdays, darker red
-  for Sundays, orange for public holidays
+  public-holiday data across multiple countries (Sweden, Germany, France,
+  Lebanon)
+- a nested Python loop that lays out months × days as a grid of filled
+  rectangles
+- conditional cell coloring: white for weekdays, light red for Saturdays, darker
+  red for Sundays, orange for public holidays
 - the LaTeX `worldflags` package for national flag icons
 
-It is a good example of how tikzfigure can integrate with external data sources to
-produce publication-quality figures.
+It is a good example of how tikzfigure can integrate with external data sources
+to produce publication-quality figures.
 
 > **Note:** The cell that fetches holiday data requires an internet connection.
 > If you are offline, you can skip it and the calendar will still render with
@@ -45,8 +47,8 @@ padding = 0.05
 
 ## Fetch public holidays
 
-The [Open Holidays API](https://openholidaysapi.org) provides public holiday data
-for many countries in a simple REST format.
+The [Open Holidays API](https://openholidaysapi.org) provides public holiday
+data for many countries in a simple REST format.
 
 ```{python}
 def fetch_holidays(country_code, year):
@@ -156,8 +158,8 @@ def get_flag_content(month: int, day: int) -> str:
 
 ## Render the calendar
 
-We iterate over months (columns) and days (rows), drawing a colored rectangle for
-each cell plus a day-number label and optional flag icons.
+We iterate over months (columns) and days (rows), drawing a colored rectangle
+for each cell plus a day-number label and optional flag icons.
 
 ```{python}
 document_setup = r"""

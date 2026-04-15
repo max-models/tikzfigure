@@ -10,6 +10,7 @@ import os
 import re
 import shutil
 import subprocess
+import sys
 import tempfile
 from multiprocessing import Pool
 from pathlib import Path
@@ -19,6 +20,7 @@ TUTORIALS_SRC = ASTRO_ROOT.parent / "tutorials"
 CONTENT_DST = ASTRO_ROOT / "src" / "content" / "docs" / "tutorials"
 PUBLIC_DST = ASTRO_ROOT / "public" / "tutorials"
 BASE_PATH = "/tikzfigure"
+SRC_ROOT = ASTRO_ROOT.parent / "src"
 
 
 def extract_title(content: str, fallback: str) -> str:
@@ -196,7 +198,16 @@ def process_qmd(qmd_path: Path) -> None:
             shutil.copytree(includes_src, includes_dst, dirs_exist_ok=True)
         out_dir = tmp_dir / "out"
         out_dir.mkdir()
-        env = {**os.environ, "TMPDIR": tmp}
+        pythonpath_parts = [str(SRC_ROOT)]
+        existing_pythonpath = os.environ.get("PYTHONPATH")
+        if existing_pythonpath:
+            pythonpath_parts.append(existing_pythonpath)
+        env = {
+            **os.environ,
+            "TMPDIR": tmp,
+            "PYTHONPATH": os.pathsep.join(pythonpath_parts),
+            "QUARTO_PYTHON": sys.executable,
+        }
         subprocess.run(
             [
                 "quarto",
@@ -236,6 +247,7 @@ def process_notebook(nb_path: Path) -> None:
                 "nbconvert",
                 "--to",
                 "markdown",
+                # "--PythonExporter.preprocessors=\"black.nbconvert.BlackPreprocessor\"",
                 "--execute",
                 str(nb_path),
                 "--output-dir",

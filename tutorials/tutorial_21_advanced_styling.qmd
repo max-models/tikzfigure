@@ -3,8 +3,8 @@ title: "Advanced Styling"
 jupyter: python3
 ---
 
-This tutorial covers advanced visual styling options that go beyond basic colors and
-line widths:
+This tutorial covers advanced visual styling options that go beyond basic colors
+and line widths:
 
 - `double` and `double_distance` for double-bordered nodes and paths
 - `dash_pattern` and `dash_phase` for custom dash sequences
@@ -29,7 +29,8 @@ fig = TikzFigure()
 
 # Double-bordered node with white gap (railway style)
 fig.add_node(
-    x=0, y=0,
+    x=0,
+    y=0,
     shape="rectangle",
     draw="black",
     fill="gray!10",
@@ -43,7 +44,8 @@ fig.add_node(
 
 # Double-bordered with black inner line
 fig.add_node(
-    x=4, y=0,
+    x=4,
+    y=0,
     shape="rectangle",
     draw="blue!70",
     fill="blue!10",
@@ -57,7 +59,8 @@ fig.add_node(
 
 # Double on a circle
 fig.add_node(
-    x=8, y=0,
+    x=8,
+    y=0,
     shape="circle",
     draw="red!70",
     fill="red!10",
@@ -76,8 +79,9 @@ fig.draw(
     line_width=2,
     color="black",
 )
-fig.add_node(4, -2.3, content="railway track (double path)",
-             draw="none", font=r"\small\itshape")
+fig.add_node(
+    4, -2.3, content="railway track (double path)", draw="none", font=r"\small\itshape"
+)
 
 fig.show()
 ```
@@ -86,18 +90,18 @@ fig.show()
 
 ## `dash_pattern` and `dash_phase`: custom dash sequences
 
-`dash_pattern` accepts a TikZ dash specification string such as `"on 5pt off 3pt"`.
-You can combine multiple on/off segments for complex patterns. `dash_phase` shifts
-the starting position within the pattern.
+`dash_pattern` accepts a TikZ dash specification string such as
+`"on 5pt off 3pt"`. You can combine multiple on/off segments for complex
+patterns. `dash_phase` shifts the starting position within the pattern.
 
 ```{python}
 fig = TikzFigure()
 
 patterns = [
-    ("on 3pt off 2pt",              0,  "on 3 off 2"),
+    ("on 3pt off 2pt", 0, "on 3 off 2"),
     ("on 1pt off 1pt on 5pt off 1pt", 0, "on 1 off 1 on 5 off 1"),
     ("on 6pt off 2pt on 1pt off 2pt", 0, "on 6 off 2 on 1 off 2"),
-    ("on 2pt off 2pt",              3,  "on 2 off 2, phase=3pt"),
+    ("on 2pt off 2pt", 3, "on 2 off 2, phase=3pt"),
 ]
 
 for i, (dp, phase, label) in enumerate(patterns):
@@ -109,8 +113,14 @@ for i, (dp, phase, label) in enumerate(patterns):
         line_width=2,
         color="black",
     )
-    fig.add_node(6.2, y, content=f"\\texttt{{{label}}}",
-                 draw="none", anchor="west", font=r"\tiny")
+    fig.add_node(
+        6.2,
+        y,
+        content=f"\\texttt{{{label}}}",
+        draw="none",
+        anchor="west",
+        font=r"\tiny",
+    )
 
 fig.show()
 ```
@@ -119,9 +129,9 @@ fig.show()
 
 ## `line_cap`: end-cap styles
 
-`line_cap` controls how the ends of thick open paths are rendered.
-`"butt"` cuts flat at the endpoint, `"rect"` extends a half-linewidth rectangle
-past the endpoint, and `"round"` caps with a semicircle.
+`line_cap` controls how the ends of thick open paths are rendered. `"butt"` cuts
+flat at the endpoint, `"rect"` extends a half-linewidth rectangle past the
+endpoint, and `"round"` caps with a semicircle.
 
 ```{python}
 fig = TikzFigure()
@@ -139,8 +149,9 @@ for i, cap in enumerate(caps):
     # Thin reference line to show exact endpoint
     fig.draw([(0.5, y - 0.5), (0.5, y + 0.5)], line_width=0.5, color="red")
     fig.draw([(4.5, y - 0.5), (4.5, y + 0.5)], line_width=0.5, color="red")
-    fig.add_node(5.2, y, content=f"\\texttt{{{cap}}}",
-                 draw="none", anchor="west", font=r"\small")
+    fig.add_node(
+        5.2, y, content=f"\\texttt{{{cap}}}", draw="none", anchor="west", font=r"\small"
+    )
 
 fig.show()
 ```
@@ -161,8 +172,9 @@ for i, join in enumerate(joins):
     x0 = i * 4
     zigzag = [(x0 + 0, 0), (x0 + 1, 2), (x0 + 2, 0), (x0 + 3, 2)]
     fig.draw(zigzag, line_join=join, line_width=8, color="teal!70")
-    fig.add_node(x0 + 1.5, -0.6, content=f"\\texttt{{{join}}}",
-                 draw="none", font=r"\small")
+    fig.add_node(
+        x0 + 1.5, -0.6, content=f"\\texttt{{{join}}}", draw="none", font=r"\small"
+    )
 
 fig.show()
 ```
@@ -178,10 +190,10 @@ The `shadows` library adds drop shadows to nodes. Control the shadow offset with
 fig = TikzFigure(document_setup=r"\usetikzlibrary{shadows}")
 
 shadow_specs = [
-    ("gray!60",  "3pt",  "-3pt", "gray shadow"),
-    ("blue!40",  "4pt",  "-2pt", "blue shadow"),
-    ("red!50",   "2pt",  "-4pt", "red shadow"),
-    ("black!30", "5pt",  "-5pt", "deep shadow"),
+    ("gray!60", "3pt", "-3pt", "gray shadow"),
+    ("blue!40", "4pt", "-2pt", "blue shadow"),
+    ("red!50", "2pt", "-4pt", "red shadow"),
+    ("black!30", "5pt", "-5pt", "deep shadow"),
 ]
 
 for i, (sc, sx, sy, label) in enumerate(shadow_specs):
@@ -194,7 +206,7 @@ for i, (sc, sx, sy, label) in enumerate(shadow_specs):
         minimum_width="2cm",
         minimum_height="1cm",
         content=label,
-        options=["drop shadow"],   # activate the drop shadow style
+        options=["drop shadow"],  # activate the drop shadow style
         shadow_xshift=sx,
         shadow_yshift=sy,
         shadow_color=sc,
@@ -216,14 +228,38 @@ specification string: `"above:text"`, `"right:text"`, `"below left:text"`, etc.
 fig = TikzFigure()
 
 # Three nodes with pins in different directions
-nA = fig.add_node(0, 0, label="A", shape="circle", fill="orange!40",
-                  minimum_size="1cm", content="A", pin="above:measured here")
+nA = fig.add_node(
+    0,
+    0,
+    label="A",
+    shape="circle",
+    fill="orange!40",
+    minimum_size="1cm",
+    content="A",
+    pin="above:measured here",
+)
 
-nB = fig.add_node(4, 0, label="B", shape="circle", fill="teal!40",
-                  minimum_size="1cm", content="B", pin="right:peak value")
+nB = fig.add_node(
+    4,
+    0,
+    label="B",
+    shape="circle",
+    fill="teal!40",
+    minimum_size="1cm",
+    content="B",
+    pin="right:peak value",
+)
 
-nC = fig.add_node(2, 3, label="C", shape="circle", fill="purple!40",
-                  minimum_size="1cm", content="C", pin="below left:origin")
+nC = fig.add_node(
+    2,
+    3,
+    label="C",
+    shape="circle",
+    fill="purple!40",
+    minimum_size="1cm",
+    content="C",
+    pin="below left:origin",
+)
 
 fig.draw([nA, nB], arrows="->")
 fig.draw([nA, nC], arrows="->")
@@ -236,15 +272,16 @@ fig.show()
 
 ## Special shapes: star, regular polygon, cylinder
 
-The `shapes.geometric` library provides additional node shapes beyond the built-in
-`circle`, `rectangle`, and `ellipse`.
+The `shapes.geometric` library provides additional node shapes beyond the
+built-in `circle`, `rectangle`, and `ellipse`.
 
 ```{python}
 fig = TikzFigure(document_setup=r"\usetikzlibrary{shapes.geometric}")
 
 # Five-pointed star
 fig.add_node(
-    x=0, y=0,
+    x=0,
+    y=0,
     shape="star",
     star_points=5,
     star_point_ratio=0.45,
@@ -258,7 +295,8 @@ fig.add_node(
 
 # Six-pointed star
 fig.add_node(
-    x=3, y=0,
+    x=3,
+    y=0,
     shape="star",
     star_points=6,
     star_point_ratio=0.5,
@@ -272,7 +310,8 @@ fig.add_node(
 
 # Regular hexagon
 fig.add_node(
-    x=6, y=0,
+    x=6,
+    y=0,
     shape="regular polygon",
     regular_polygon_sides=6,
     fill="green!40",
@@ -285,7 +324,8 @@ fig.add_node(
 
 # Regular triangle (3 sides)
 fig.add_node(
-    x=9, y=0,
+    x=9,
+    y=0,
     shape="regular polygon",
     regular_polygon_sides=3,
     fill="red!30",
@@ -298,7 +338,8 @@ fig.add_node(
 
 # Cylinder
 fig.add_node(
-    x=12, y=0,
+    x=12,
+    y=0,
     shape="cylinder",
     fill="purple!30",
     draw="purple!70",

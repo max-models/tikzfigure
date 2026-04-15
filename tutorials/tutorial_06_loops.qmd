@@ -3,23 +3,19 @@ title: "Loops"
 jupyter: python3
 ---
 
-Repetitive structures — grids, chains, matrices of nodes — can be created in two ways:
-with **Python loops** that call `add_node` / `draw` many times, or with **native TikZ
-`\foreach` loops** via `fig.add_loop()`, which embeds the loop directly in the generated
-LaTeX instead of unrolling it in Python.
+Repetitive structures — grids, chains, matrices of nodes — can be created in two
+ways: with **Python loops** that call `add_node` / `draw` many times, or with
+**native TikZ `\foreach` loops** via `fig.add_loop()`, which embeds the loop
+directly in the generated LaTeX instead of unrolling it in Python.
 
-Benefits of TikZ `\foreach` loops:
-- the generated `.tex` file is much shorter and more readable
-- loop variable values are available as TikZ expressions (e.g. `\i`) at compile time
-- loops can be nested
+Benefits of TikZ `\foreach` loops: - the generated `.tex` file is much shorter
+and more readable - loop variable values are available as TikZ expressions (e.g.
+`\i`) at compile time - loops can be nested
 
-This tutorial covers:
-- Python loop vs TikZ `\foreach` — side-by-side comparison
-- basic `add_loop` usage
-- loop variable in colour expressions
-- nested loops for a grid
-- `add_variable` for reusable TikZ constants
-- a practical chain-of-boxes diagram
+This tutorial covers: - Python loop vs TikZ `\foreach` — side-by-side comparison
+- basic `add_loop` usage - loop variable in colour expressions - nested loops
+for a grid - `add_variable` for reusable TikZ constants - a practical
+chain-of-boxes diagram
 
 ```{python}
 from tikzfigure import TikzFigure
@@ -29,7 +25,8 @@ from tikzfigure import TikzFigure
 
 Both approaches produce the same visual output: a row of five circles. The key
 difference is in the generated LaTeX. The Python loop unrolls every node into a
-separate `\node` command, while `add_loop` emits a single compact `\foreach` block.
+separate `\node` command, while `add_loop` emits a single compact `\foreach`
+block.
 
 **Python loop version:**
 
@@ -75,9 +72,10 @@ Notice how `\foreach \i in {0,1,2,3,4}` replaces five separate `\node` commands.
 
 ## Basic loop: a row of circles
 
-`fig.add_loop(var, iterable)` returns a context manager. Inside the `with` block,
-use `loop.add_node()` and `loop.draw()`. The loop variable `\i` (or whatever
-name you choose) is available in any string passed as a coordinate or option.
+`fig.add_loop(var, iterable)` returns a context manager. Inside the `with`
+block, use `loop.add_node()` and `loop.draw()`. The loop variable `\i` (or
+whatever name you choose) is available in any string passed as a coordinate or
+option.
 
 ```{python}
 fig = TikzFigure()
@@ -99,9 +97,9 @@ fig.show()
 
 ## Loop variable in colour expressions
 
-TikZ colour mixing expressions like `blue!\i0!red` interpolate between two colours.
-Here `\i` ranges from 1 to 9, so `\i0` gives 10, 20, … 90 — a smooth gradient from
-blue to red.
+TikZ colour mixing expressions like `blue!\i0!red` interpolate between two
+colours. Here `\i` ranges from 1 to 9, so `\i0` gives 10, 20, … 90 — a smooth
+gradient from blue to red.
 
 ```{python}
 fig = TikzFigure()
@@ -125,8 +123,8 @@ fig.show()
 
 ## Nested loops: a 5x4 grid of nodes
 
-Use a second `loop.add_loop()` inside the first to create a 2-D grid.
-The inner loop variable `\j` is independent of the outer `\i`.
+Use a second `loop.add_loop()` inside the first to create a 2-D grid. The inner
+loop variable `\j` is independent of the outer `\i`.
 
 ```{python}
 fig = TikzFigure()
@@ -152,9 +150,9 @@ separate `\node` commands would look like.
 
 ## `add_variable`: reusable TikZ constants
 
-`fig.add_variable(name, value)` emits a `\pgfmathsetmacro` declaration at the top
-of the picture. Use it to store a radius, spacing, or any numeric constant that
-you want to be able to change in one place.
+`fig.add_variable(name, value)` emits a `\pgfmathsetmacro` declaration at the
+top of the picture. Use it to store a radius, spacing, or any numeric constant
+that you want to be able to change in one place.
 
 Here 12 nodes are placed on a circle of radius `\radius`. Python computes the
 trigonometric coefficients; TikZ multiplies them by `\radius` at compile time.
@@ -190,10 +188,11 @@ touching any node code.
 
 ## Heart shape
 
-Remember the heart shape from the [styling tutorial](tutorial_03_paths.qmd#heart-shape)? It can be drawn with a single `\draw` command
+Remember the heart shape from the [styling
+tutorial](tutorial_03_paths.qmd#heart-shape)? It can be drawn with a single
+`\draw` command
 
 ```{python}
-
 width, height = 1.75, 2.0
 
 fig = TikzFigure()
@@ -207,15 +206,25 @@ B = fig.add_node(0, 0)
 C = fig.add_node(r"\width", r"\height")
 D = fig.add_node(0, r"\height")
 
-fig.draw(A.to(B, options=["out=-90, in=135"]).to(C, options=["out=45, in=-90"]).to(D, options=["in=80, out=100"]).to(A, options=["in=80, out=100"]), color="red", line_width=4, cycle=True, center=True, fill="lightred")
+fig.draw(
+    A.to(B, options=["out=-90, in=135"])
+    .to(C, options=["out=45, in=-90"])
+    .to(D, options=["in=80, out=100"])
+    .to(A, options=["in=80, out=100"]),
+    color="red",
+    line_width=4,
+    cycle=True,
+    center=True,
+    fill="lightred",
+)
 
 fig.show()
 ```
 
 ## Practical example: a chain of labelled boxes
 
-A common diagram pattern is a horizontal chain of labelled boxes connected by arrows.
-Using a `\foreach` loop keeps the LaTeX concise even for long chains.
+A common diagram pattern is a horizontal chain of labelled boxes connected by
+arrows. Using a `\foreach` loop keeps the LaTeX concise even for long chains.
 
 ```{python}
 steps = ["Load", "Clean", "Transform", "Model", "Evaluate"]

@@ -5,23 +5,18 @@ jupyter: python3
 
 tikzfigure can compute new node positions geometrically from existing ones.
 `fig.midpoint(node_a, node_b)` places a new node exactly halfway between two
-existing nodes.  For a lighter alternative with no visible output, use
+existing nodes. For a lighter alternative with no visible output, use
 `fig.add_coordinate(label, x, y)` to define a named invisible waypoint.
 
-This tutorial covers:
-- basic midpoint usage
-- using label strings as references
-- edge labels on a triangle
-- recursive bisection
-- computing a triangle's centroid via iterated midpoints
-- named coordinates as invisible path waypoints
-- routing paths via intermediate coordinates
-- expression-based coordinates with the `calc` library
+This tutorial covers: - basic midpoint usage - using label strings as references
+- edge labels on a triangle - recursive bisection - computing a triangle's
+centroid via iterated midpoints - named coordinates as invisible path waypoints
+- routing paths via intermediate coordinates - expression-based coordinates with
+the `calc` library
 
 ```{python}
 from tikzfigure import TikzFigure
 ```
-
 
 ```{python}
 fig = TikzFigure()
@@ -36,17 +31,22 @@ C = fig.add_node(
     2, 4, label="C", content="$C$", shape="circle", fill="blue!20", draw="blue"
 )
 
-fig.draw([A.center, "B", "C"],
-    center=True, cycle=True, color="blue", fill="blue!10", line_width="1.5pt")
+fig.draw(
+    [A.center, "B", "C"],
+    center=True,
+    cycle=True,
+    color="blue",
+    fill="blue!10",
+    line_width="1.5pt",
+)
 
 fig.show()
 ```
 
-
 ## Basic midpoint
 
-Pass two nodes (or label strings) and any additional node kwargs.
-The returned node has `.x` and `.y` set to the computed midpoint.
+Pass two nodes (or label strings) and any additional node kwargs. The returned
+node has `.x` and `.y` set to the computed midpoint.
 
 ```{python}
 fig = TikzFigure()
@@ -71,7 +71,8 @@ fig.show()
 
 ## Using label strings
 
-You can refer to any node by its label string instead of keeping the Python object.
+You can refer to any node by its label string instead of keeping the Python
+object.
 
 ```{python}
 fig = TikzFigure()
@@ -120,8 +121,8 @@ fig.show()
 
 ## Recursive bisection
 
-Repeatedly calling `midpoint` bisects a segment.
-Here we produce three levels of binary subdivision.
+Repeatedly calling `midpoint` bisects a segment. Here we produce three levels of
+binary subdivision.
 
 ```{python}
 fig = TikzFigure()
@@ -155,11 +156,11 @@ fig.show()
 
 ## Triangle centroid via iterated midpoints
 
-The centroid $G$ of a triangle satisfies $G = \frac{A+B+C}{3}$.
-We can reach it with two midpoint calls:
-$G = \text{midpoint}(\text{midpoint}(A, B),\; C)$
+The centroid $G$ of a triangle satisfies $G = \frac{A+B+C}{3}$. We can reach it
+with two midpoint calls: $G = \text{midpoint}(\text{midpoint}(A, B),\; C)$
 
-(This is equivalent to taking 2/3 along the median from $C$ to the midpoint of $AB$.)
+(This is equivalent to taking 2/3 along the median from $C$ to the midpoint of
+$AB$.)
 
 ```{python}
 fig = TikzFigure()
@@ -174,8 +175,14 @@ C = fig.add_node(
     2, 4, label="C", content="$C$", shape="circle", fill="blue!20", draw="blue"
 )
 
-fig.draw([A.center, "B", "C"],
-    center=True, cycle=True, color="blue", fill="blue!10", line_width="1.5pt")
+fig.draw(
+    [A.center, "B", "C"],
+    center=True,
+    cycle=True,
+    color="blue",
+    fill="blue!10",
+    line_width="1.5pt",
+)
 
 # Midpoint of BC - used to draw the median from A
 mid_BC = fig.midpoint(
@@ -209,25 +216,24 @@ fig.show()
 
 ## Named coordinates as path waypoints
 
-`fig.add_coordinate(label, x, y)` plants an invisible named point — no box,
-no content, no border.  It emits `\coordinate (label) at (x,y);` in TikZ and
-can be referenced in any path list just like a node label.
+`fig.add_coordinate(label, x, y)` plants an invisible named point — no box, no
+content, no border. It emits `\coordinate (label) at (x,y);` in TikZ and can be
+referenced in any path list just like a node label.
 
-This is lighter than `add_node` when you only need a reusable geometric
-anchor, not a visible element.
+This is lighter than `add_node` when you only need a reusable geometric anchor,
+not a visible element.
 
 ```{python}
 fig = TikzFigure()
 
 # Four invisible corners of a diamond
-fig.add_coordinate("top",   x=3, y=4)
+fig.add_coordinate("top", x=3, y=4)
 fig.add_coordinate("right", x=6, y=2)
-fig.add_coordinate("bot",   x=3, y=0)
-fig.add_coordinate("left",  x=0, y=2)
+fig.add_coordinate("bot", x=3, y=0)
+fig.add_coordinate("left", x=0, y=2)
 
 # Draw a diamond outline and its diagonals
-fig.draw(["top", "right", "bot", "left"], cycle=True,
-         color="teal", line_width=2)
+fig.draw(["top", "right", "bot", "left"], cycle=True, color="teal", line_width=2)
 fig.draw(["top", "bot"], dashed=True, color="gray")
 fig.draw(["left", "right"], dashed=True, color="gray")
 
@@ -241,29 +247,49 @@ fig.show()
 
 ## Routing paths via intermediate coordinates
 
-A common TikZ pattern is bending a connection around an obstacle by routing
-it through an invisible corner coordinate.  Here two nodes are connected with
-an L-shaped arrow: the path goes horizontally to a corner, then vertically up.
+A common TikZ pattern is bending a connection around an obstacle by routing it
+through an invisible corner coordinate. Here two nodes are connected with an
+L-shaped arrow: the path goes horizontally to a corner, then vertically up.
 
 ```{python}
 fig = TikzFigure()
 
-fig.add_node(0, 0, label="src", shape="rectangle",
-             draw="blue!70", fill="blue!15",
-             minimum_width="1.8cm", minimum_height="0.8cm", content="source")
-fig.add_node(5, 3, label="dst", shape="rectangle",
-             draw="orange!80", fill="orange!15",
-             minimum_width="1.8cm", minimum_height="0.8cm", content="dest")
+fig.add_node(
+    0,
+    0,
+    label="src",
+    shape="rectangle",
+    draw="blue!70",
+    fill="blue!15",
+    minimum_width="1.8cm",
+    minimum_height="0.8cm",
+    content="source",
+)
+fig.add_node(
+    5,
+    3,
+    label="dst",
+    shape="rectangle",
+    draw="orange!80",
+    fill="orange!15",
+    minimum_width="1.8cm",
+    minimum_height="0.8cm",
+    content="dest",
+)
 
 # Corner at the same column as dst, same row as src
 fig.add_coordinate("corner", x=5, y=0)
 
-fig.draw(["src.east", "corner", "dst.south"],
-         arrows="->", thick=True, color="purple",
-         segment_options=[
-             {"connector": "--"},   # horizontal segment: straight line
-             {"connector": "--"},   # vertical segment: straight line
-         ])
+fig.draw(
+    ["src.east", "corner", "dst.south"],
+    arrows="->",
+    thick=True,
+    color="purple",
+    segment_options=[
+        {"connector": "--"},  # horizontal segment: straight line
+        {"connector": "--"},  # vertical segment: straight line
+    ],
+)
 
 fig.show()
 ```
@@ -272,22 +298,43 @@ fig.show()
 
 ## Coordinates from expressions (`calc` library)
 
-When you add `\usetikzlibrary{calc}` via `document_setup`, the `at` parameter
-of `add_coordinate` accepts full calc expressions.  The `$(A)!t!(B)$` syntax
-places a point a fraction `t` of the way from `A` to `B`.
+When you add `\usetikzlibrary{calc}` via `document_setup`, the `at` parameter of
+`add_coordinate` accepts full calc expressions. The `$(A)!t!(B)$` syntax places
+a point a fraction `t` of the way from `A` to `B`.
 
 ```{python}
 fig = TikzFigure(document_setup=r"\usetikzlibrary{calc}")
 
-fig.add_node(0, 0, label="A", shape="circle",
-             fill="blue!20", draw="blue!70",
-             minimum_size="1cm", content="$A$")
-fig.add_node(8, 0, label="B", shape="circle",
-             fill="red!20", draw="red!70",
-             minimum_size="1cm", content="$B$")
-fig.add_node(4, 5, label="C", shape="circle",
-             fill="green!20", draw="green!70",
-             minimum_size="1cm", content="$C$")
+fig.add_node(
+    0,
+    0,
+    label="A",
+    shape="circle",
+    fill="blue!20",
+    draw="blue!70",
+    minimum_size="1cm",
+    content="$A$",
+)
+fig.add_node(
+    8,
+    0,
+    label="B",
+    shape="circle",
+    fill="red!20",
+    draw="red!70",
+    minimum_size="1cm",
+    content="$B$",
+)
+fig.add_node(
+    4,
+    5,
+    label="C",
+    shape="circle",
+    fill="green!20",
+    draw="green!70",
+    minimum_size="1cm",
+    content="$C$",
+)
 
 # Invisible midpoints of each edge using calc expressions
 fig.add_coordinate("mAB", at="$(A)!0.5!(B)$")
@@ -295,12 +342,19 @@ fig.add_coordinate("mBC", at="$(B)!0.5!(C)$")
 fig.add_coordinate("mCA", at="$(C)!0.5!(A)$")
 
 # Outline triangle
-fig.draw(["A.center", "B.center", "C.center"], cycle=True,
-         color="gray!50", line_width=1)
+fig.draw(
+    ["A.center", "B.center", "C.center"], cycle=True, color="gray!50", line_width=1
+)
 
 # Medial triangle connecting the three edge midpoints
-fig.draw(["mAB", "mBC", "mCA"], cycle=True,
-         color="purple", line_width=2, fill="purple!10", fill_opacity=0.5)
+fig.draw(
+    ["mAB", "mBC", "mCA"],
+    cycle=True,
+    color="purple",
+    line_width=2,
+    fill="purple!10",
+    fill_opacity=0.5,
+)
 
 fig.show()
 ```
