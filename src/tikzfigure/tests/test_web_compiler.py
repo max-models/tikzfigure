@@ -1,5 +1,6 @@
 """Tests for web-based LaTeX compilation via latex-on-http API."""
 
+import os
 import subprocess
 import tempfile
 from pathlib import Path
@@ -125,6 +126,32 @@ class TestWebCompiler:
             # Verify the output file was created
             assert output_pdf.exists()
 
+    def test_compile_pdf_env_forces_web_compilation(self, tmp_path):
+        """Environment variable should force web compilation without pdflatex."""
+        from tikzfigure import TikzFigure
+
+        fig = TikzFigure()
+        fig.node("test", content="Test Node")
+        output_pdf = tmp_path / "test_output.pdf"
+
+        with (
+            patch.dict(
+                os.environ, {"TIKZFIGURE_USE_WEB_COMPILATION": "1"}, clear=False
+            ),
+            patch("subprocess.run") as mock_subprocess,
+            patch("requests.post") as mock_post,
+        ):
+            mock_response = MagicMock()
+            mock_response.status_code = 201
+            mock_response.content = b"%PDF-1.4\nPDF_CONTENT_HERE"
+            mock_post.return_value = mock_response
+
+            fig.compile_pdf(filename=output_pdf)
+
+            mock_post.assert_called_once()
+            mock_subprocess.assert_not_called()
+            assert output_pdf.exists()
+
     def test_compile_pdf_with_web_fallback(self, tmp_path):
         """Test compile_pdf() falls back to web API when pdflatex fails."""
         from tikzfigure import TikzFigure
@@ -212,6 +239,26 @@ class TestWebCompiler:
             call_kwargs = mock_compile.call_args[1]
             assert call_kwargs.get("use_web_compilation") is True
 
+    def test_savefig_env_forces_web_compilation(self, tmp_path):
+        """savefig() should honor the environment-variable override."""
+        from tikzfigure import TikzFigure
+
+        fig = TikzFigure()
+        fig.node("test", content="Test Node")
+        output_pdf = tmp_path / "test_output.pdf"
+
+        with (
+            patch.dict(
+                os.environ, {"TIKZFIGURE_USE_WEB_COMPILATION": "true"}, clear=False
+            ),
+            patch.object(fig, "compile_pdf") as mock_compile,
+        ):
+            fig.savefig(filename=output_pdf)
+
+            mock_compile.assert_called_once()
+            call_kwargs = mock_compile.call_args[1]
+            assert call_kwargs.get("use_web_compilation") is True
+
     def test_show_with_web_compilation(self, tmp_path):
         """Test show() accepts and passes use_web_compilation parameter through to savefig()."""
         from tikzfigure import TikzFigure
@@ -228,6 +275,28 @@ class TestWebCompiler:
             fig.show(backend="matplotlib", use_web_compilation=True)
 
             # Verify the backend was called with use_web_compilation=True
+            mock_backend.assert_called_once()
+            call_kwargs = mock_backend.call_args[1]
+            assert call_kwargs.get("use_web_compilation") is True
+
+    def test_show_env_forces_web_compilation(self):
+        """show() should honor the environment-variable override."""
+        from tikzfigure import TikzFigure
+
+        fig = TikzFigure()
+        fig.node("test", content="Test Node")
+
+        def fake_environ_get(key, default=None):
+            if key == "TIKZFIGURE_USE_WEB_COMPILATION":
+                return "on"
+            return None
+
+        with (
+            patch.object(fig, "_show_matplotlib") as mock_backend,
+            patch("os.environ.get", side_effect=fake_environ_get),
+        ):
+            fig.show(backend="matplotlib")
+
             mock_backend.assert_called_once()
             call_kwargs = mock_backend.call_args[1]
             assert call_kwargs.get("use_web_compilation") is True

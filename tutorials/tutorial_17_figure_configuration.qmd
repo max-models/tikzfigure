@@ -26,18 +26,43 @@ you would normally write in the `tikzpicture` options block goes here.
 
 A particularly useful technique is `every node/.append style={...}` — it applies
 a style to every node in the figure without repeating the options on each
-individual `add_node` call.
+individual `node` call.
 
 ```{python}
 fig = TikzFigure(
-    figure_setup="every node/.append style={draw, fill=blue!10, minimum size=1.2cm}"
+    figure_setup="every node/.append style={draw, fill=blue!10, minimum size=1.2cm}",
 )
 
-A = fig.add_node(0, 0, label="A", content="A")
-B = fig.add_node(2, 0, label="B", content="B")
-C = fig.add_node(4, 0, label="C", content="C")
-D = fig.add_node(1, 2, label="D", content="D")
-E = fig.add_node(3, 2, label="E", content="E")
+A = fig.node(
+    0,
+    0,
+    label="A",
+    content="A",
+)
+B = fig.node(
+    2,
+    0,
+    label="B",
+    content="B",
+)
+C = fig.node(
+    4,
+    0,
+    label="C",
+    content="C",
+)
+D = fig.node(
+    1,
+    2,
+    label="D",
+    content="D",
+)
+E = fig.node(
+    3,
+    2,
+    label="E",
+    content="E",
+)
 
 fig.draw([A, B], arrows="->")
 fig.draw([D, E], arrows="->")
@@ -59,15 +84,19 @@ fig = TikzFigure(
         "minimum width=2cm, minimum height=0.8cm, "
         "rounded corners=4pt, font=\\small"
         "}"
-    )
+    ),
 )
 
 nodes = ["Input", "Process", "Output"]
 for i, label in enumerate(nodes):
-    fig.add_node(i * 3, 0, content=label)
+    fig.node(i * 3, 0, content=label)
 
 for i in range(len(nodes) - 1):
-    fig.draw([(i * 3 + 1.0, 0), (i * 3 + 2.0, 0)], arrows="->", color="gray!70")
+    fig.draw(
+        [(i * 3 + 1.0, 0), (i * 3 + 2.0, 0)],
+        arrows="->",
+        color="gray!70",
+    )
 
 fig.show()
 ```
@@ -82,14 +111,29 @@ positioning aid when you are still working out coordinates.
 ```{python}
 fig = TikzFigure(grid=True)
 
-n1 = fig.add_node(
-    0, 0, shape="circle", fill="red!40", content="A", minimum_size="0.8cm"
+n1 = fig.node(
+    0,
+    0,
+    shape="circle",
+    fill="red!40",
+    content="A",
+    minimum_size="0.8cm",
 )
-n2 = fig.add_node(
-    3, 2, shape="circle", fill="blue!40", content="B", minimum_size="0.8cm"
+n2 = fig.node(
+    3,
+    2,
+    shape="circle",
+    fill="blue!40",
+    content="B",
+    minimum_size="0.8cm",
 )
-n3 = fig.add_node(
-    5, 0, shape="circle", fill="green!40", content="C", minimum_size="0.8cm"
+n3 = fig.node(
+    5,
+    0,
+    shape="circle",
+    fill="green!40",
+    content="C",
+    minimum_size="0.8cm",
 )
 fig.draw([n1, n2], arrows="->")
 fig.draw([n2, n3], arrows="->")
@@ -113,9 +157,11 @@ placement keywords such as `above_of`, `below_of`, `left_of`, `right_of`, and
 the `node_distance` parameter.
 
 ```{python}
-fig = TikzFigure(document_setup=r"\usetikzlibrary{positioning}")
+fig = TikzFigure(
+    document_setup=r"\usetikzlibrary{positioning}",
+)
 
-root = fig.add_node(
+root = fig.node(
     0,
     0,
     label="root",
@@ -126,7 +172,7 @@ root = fig.add_node(
 )
 
 # Relative positioning: omit x/y so no 'at (...)' is emitted
-fig.add_node(
+fig.node(
     label="above_node",
     content="Above",
     shape="rectangle",
@@ -136,7 +182,7 @@ fig.add_node(
     node_distance="1.8cm",
 )
 
-fig.add_node(
+fig.node(
     label="below_node",
     content="Below",
     shape="rectangle",
@@ -146,7 +192,7 @@ fig.add_node(
     node_distance="1.8cm",
 )
 
-fig.add_node(
+fig.node(
     label="left_node",
     content="Left",
     shape="rectangle",
@@ -156,7 +202,7 @@ fig.add_node(
     node_distance="2.5cm",
 )
 
-fig.add_node(
+fig.node(
     label="right_node",
     content="Right",
     shape="rectangle",
@@ -167,7 +213,11 @@ fig.add_node(
 )
 
 for label in ["above_node", "below_node", "left_node", "right_node"]:
-    fig.draw(["root", label], arrows="->", color="gray")
+    fig.draw(
+        ["root", label],
+        arrows="->",
+        color="gray",
+    )
 
 fig.show()
 ```
@@ -184,7 +234,7 @@ figure content uses macros from packages like `amsmath` or `xcolor`.
 fig = TikzFigure(extra_packages=["amsmath", "xcolor"])
 
 # amsmath lets us use \dfrac inside node content
-fig.add_node(
+fig.node(
     0,
     2,
     content=r"$\dfrac{a}{b} + \sqrt{c}$",
@@ -195,7 +245,7 @@ fig.add_node(
     minimum_height="1.2cm",
 )
 
-fig.add_node(
+fig.node(
     0,
     0,
     content=r"$\sum_{k=1}^{n} k = \dfrac{n(n+1)}{2}$",
@@ -223,7 +273,13 @@ fig = TikzFigure(
     extra_packages=["amsmath"],
 )
 
-fig.add_node(0, 0, content="Hello", shape="circle", fill="blue!30")
+fig.node(
+    0,
+    0,
+    content="Hello",
+    shape="circle",
+    fill="blue!30",
+)
 
 print(fig.generate_standalone())
 ```
@@ -241,9 +297,30 @@ fig = TikzFigure(
     label="fig:simple-graph",
 )
 
-A = fig.add_node(0, 1, label="A", content="A", shape="circle", fill="cyan!40")
-B = fig.add_node(3, 1, label="B", content="B", shape="circle", fill="cyan!40")
-C = fig.add_node(1.5, -1, label="C", content="C", shape="circle", fill="cyan!40")
+A = fig.node(
+    0,
+    1,
+    label="A",
+    content="A",
+    shape="circle",
+    fill="cyan!40",
+)
+B = fig.node(
+    3,
+    1,
+    label="B",
+    content="B",
+    shape="circle",
+    fill="cyan!40",
+)
+C = fig.node(
+    1.5,
+    -1,
+    label="C",
+    content="C",
+    shape="circle",
+    fill="cyan!40",
+)
 
 fig.draw([A, B], arrows="->")
 fig.draw([A, C], arrows="->")
@@ -265,9 +342,21 @@ the saved file.
 ```{python}
 fig = TikzFigure(figsize=(4, 2))
 
-fig.add_node(0, 0, shape="circle", fill="red!40", content="Small", minimum_size="1.5cm")
-fig.add_node(
-    3, 0, shape="circle", fill="blue!40", content="display", minimum_size="1.5cm"
+fig.node(
+    0,
+    0,
+    shape="circle",
+    fill="red!40",
+    content="Small",
+    minimum_size="1.5cm",
+)
+fig.node(
+    3,
+    0,
+    shape="circle",
+    fill="blue!40",
+    content="display",
+    minimum_size="1.5cm",
 )
 
 fig.show()
@@ -279,9 +368,21 @@ fig.show()
 # Same figure, larger display size
 fig = TikzFigure(figsize=(8, 4))
 
-fig.add_node(0, 0, shape="circle", fill="red!40", content="Large", minimum_size="1.5cm")
-fig.add_node(
-    3, 0, shape="circle", fill="blue!40", content="display", minimum_size="1.5cm"
+fig.node(
+    0,
+    0,
+    shape="circle",
+    fill="red!40",
+    content="Large",
+    minimum_size="1.5cm",
+)
+fig.node(
+    3,
+    0,
+    shape="circle",
+    fill="blue!40",
+    content="display",
+    minimum_size="1.5cm",
 )
 
 fig.show()

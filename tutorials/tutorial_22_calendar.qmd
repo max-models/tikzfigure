@@ -89,9 +89,14 @@ lebanon_2026 = {
     "2026-12-25": "Christmas Day",
 }
 for date, name in sorted(lebanon_2026.items()):
-    holidays_dict["LB"].append({"startDate": date, "name": [{"text": name}]})
+    holidays_dict["LB"].append(
+        {"startDate": date, "name": [{"text": name}]},
+    )
 
-print("Holiday counts:", {k: len(v) for k, v in holidays_dict.items()})
+print(
+    "Holiday counts:",
+    {k: len(v) for k, v in holidays_dict.items()},
+)
 ```
 
 ## Build the date lookup table
@@ -118,7 +123,7 @@ for month in range(1, num_months + 1):
                 "holiday_de": None,
                 "holiday_fr": None,
                 "holiday_lb": None,
-            }
+            },
         )
 
 for country, holidays in holidays_dict.items():
@@ -166,7 +171,10 @@ document_setup = r"""
 \usepackage{lmodern}
 \renewcommand*\familydefault{\sfdefault}
 """
-fig = TikzFigure(extra_packages=["worldflags"], document_setup=document_setup)
+fig = TikzFigure(
+    extra_packages=["worldflags"],
+    document_setup=document_setup,
+)
 
 # Outer border
 border = [
@@ -175,12 +183,16 @@ border = [
     (calendar_width, calendar_height),
     (0, calendar_height),
 ]
-fig.draw(nodes=border, fill="gray!10!white", draw="black", cycle=True)
+fig.draw(
+    nodes=border,
+    fill="gray!10!white",
+    draw="black",
+    cycle=True,
+)
 
 # Year label
-fig.add_node(
-    x=calendar_width / 2,
-    y=calendar_height * 1.1,
+fig.node(
+    (calendar_width / 2, calendar_height * 1.1),
     anchor="center",
     scale=10,
     content=str(calendar_year),
@@ -191,9 +203,8 @@ for month in range(num_months):
     month_name = calendar.month_name[month + 1]
 
     # Month header
-    fig.add_node(
-        x=x_center,
-        y=calendar_height * 1.02,
+    fig.node(
+        (x_center, calendar_height * 1.02),
         anchor="center",
         scale=4.0,
         content=month_name,
@@ -212,17 +223,26 @@ for month in range(num_months):
             (x0, y0 + day_height - 2 * padding),
         ]
         col = get_color(month, day)
-        fig.draw(nodes=cell, fill=col, draw=col, cycle=True)
+        fig.draw(
+            nodes=cell,
+            fill=col,
+            draw=col,
+            cycle=True,
+        )
 
         # Day number
-        fig.add_node(x=x0, y=y_center, anchor="west", scale=2.0, content=str(day + 1))
+        fig.node(
+            (x0, y_center),
+            anchor="west",
+            scale=2.0,
+            content=str(day + 1),
+        )
 
         # Flag icons for holidays
         flags = get_flag_content(month, day)
         if flags:
-            fig.add_node(
-                x=x0 + month_width - 2 * padding,
-                y=y_center - day_height / 2,
+            fig.node(
+                (x0 + month_width - 2 * padding, y_center - day_height / 2),
                 anchor="south east",
                 scale=1,
                 content=flags,

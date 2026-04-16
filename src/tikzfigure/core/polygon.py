@@ -2,7 +2,7 @@ import math
 from typing import Any
 
 from tikzfigure.core.base import TikzObject
-from tikzfigure.core.coordinate import TikzCoordinate
+from tikzfigure.core.coordinate import PositionInput, TikzCoordinate
 
 
 class Polygon(TikzObject):
@@ -18,7 +18,7 @@ class Polygon(TikzObject):
 
     def __init__(
         self,
-        center: tuple[float | str, float | str] | TikzCoordinate,
+        center: PositionInput,
         radius: float | str,
         sides: int,
         rotation: float = 0,
@@ -32,7 +32,8 @@ class Polygon(TikzObject):
         """Initialize a Polygon.
 
         Args:
-            center: Center coordinate as (x, y) tuple or TikzCoordinate.
+            center: Center coordinate as an ``(x, y)`` / ``(x, y, z)`` tuple or
+                :class:`TikzCoordinate`.
             radius: Distance from center to vertices (numeric or PGF expression string).
             sides: Number of sides (must be >= 3).
             rotation: Rotation angle in degrees. Defaults to 0.
@@ -50,10 +51,7 @@ class Polygon(TikzObject):
         if sides < 3:
             raise ValueError("Polygon must have at least 3 sides")
 
-        if isinstance(center, tuple):
-            self._center = TikzCoordinate(center[0], center[1], layer=layer)
-        else:
-            self._center = center
+        self._center = TikzCoordinate(center, layer=layer)
 
         self._radius = radius
         self._sides = sides
@@ -227,7 +225,7 @@ class Triangle(Polygon):
 
     def __init__(
         self,
-        center: tuple[float | str, float | str] | TikzCoordinate,
+        center: PositionInput,
         radius: float | str,
         rotation: float = 0,
         label: str = "",
@@ -240,7 +238,8 @@ class Triangle(Polygon):
         """Initialize a Triangle.
 
         Args:
-            center: Center coordinate as (x, y) tuple or TikzCoordinate.
+            center: Center coordinate as an ``(x, y)`` / ``(x, y, z)`` tuple or
+                :class:`TikzCoordinate`.
             radius: Distance from center to vertices.
             rotation: Rotation angle in degrees. Defaults to 0.
             label: Internal TikZ name. Defaults to "".
@@ -322,7 +321,7 @@ class Square(Polygon):
 
     def __init__(
         self,
-        center: tuple[float | str, float | str] | TikzCoordinate,
+        center: PositionInput,
         radius: float | str,
         rotation: float = 45,
         label: str = "",
@@ -335,7 +334,8 @@ class Square(Polygon):
         """Initialize a Square.
 
         Args:
-            center: Center coordinate as (x, y) tuple or TikzCoordinate.
+            center: Center coordinate as an ``(x, y)`` / ``(x, y, z)`` tuple or
+                :class:`TikzCoordinate`.
             radius: Distance from center to vertices (corner-to-center distance).
             rotation: Rotation angle in degrees. Defaults to 45 (axis-aligned).
             label: Internal TikZ name. Defaults to "".

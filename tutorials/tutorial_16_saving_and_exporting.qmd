@@ -37,8 +37,18 @@ Use `print(fig)` or `fig.generate_tikz()` to see the generated pgfplots LaTeX:
 
 ```{python}
 fig = TikzFigure()
-ax = fig.axis2d(xlabel="X", ylabel="Y", xlim=(0, 5), ylim=(0, 5))
-ax.add_plot([0, 1, 2, 3, 4], [0, 1, 2, 3, 4], label="linear", color="blue")
+ax = fig.axis2d(
+    xlabel="X",
+    ylabel="Y",
+    xlim=(0, 5),
+    ylim=(0, 5),
+)
+ax.add_plot(
+    [0, 1, 2, 3, 4],
+    [0, 1, 2, 3, 4],
+    label="linear",
+    color="blue",
+)
 ax.set_legend(position="north west")
 
 print(fig)
@@ -53,7 +63,13 @@ the preamble, packages, and all library imports:
 
 ```{python}
 fig = TikzFigure(extra_packages=["amsmath"])
-fig.add_node(0, 0, content=r"$\sum_{k=1}^{n} k$", shape="circle", fill="blue!20")
+fig.node(
+    0,
+    0,
+    content=r"$\sum_{k=1}^{n} k$",
+    shape="circle",
+    fill="blue!20",
+)
 
 print(fig.generate_standalone())
 ```
@@ -67,7 +83,13 @@ print(fig.generate_standalone())
 ```{python}
 #| eval: false
 fig = TikzFigure()
-fig.add_node(0, 0, content="Hello", shape="circle", fill="cyan!30")
+fig.node(
+    0,
+    0,
+    content="Hello",
+    shape="circle",
+    fill="cyan!30",
+)
 
 pdf_path = fig.compile_pdf()
 print(f"PDF saved to: {pdf_path}")
@@ -80,13 +102,22 @@ If you don't have `pdflatex` installed locally, use web-based compilation:
 ```{python}
 #| eval: false
 fig = TikzFigure()
-fig.add_node(0, 0, content="Hello", shape="circle", fill="cyan!30")
+fig.node(
+    0,
+    0,
+    content="Hello",
+    shape="circle",
+    fill="cyan!30",
+)
 
 # Use the latex-on-http API
 fig.show(use_web_compilation=True)
 
 # Or save with web compilation
-fig.savefig("output.png", use_web_compilation=True)
+fig.savefig(
+    "output.png",
+    use_web_compilation=True,
+)
 ```
 
 This sends the LaTeX to a remote API for compilation, no local TeX installation
@@ -100,14 +131,26 @@ notebooks. It does not affect the LaTeX output or saved files:
 ```{python}
 # Small display
 fig = TikzFigure(figsize=(4, 2))
-fig.add_node(0, 0, shape="circle", fill="red!40", content="Small")
+fig.node(
+    0,
+    0,
+    shape="circle",
+    fill="red!40",
+    content="Small",
+)
 fig.show()
 ```
 
 ```{python}
 # Large display (same LaTeX, bigger rendering)
 fig = TikzFigure(figsize=(8, 4))
-fig.add_node(0, 0, shape="circle", fill="blue!40", content="Large")
+fig.node(
+    0,
+    0,
+    shape="circle",
+    fill="blue!40",
+    content="Large",
+)
 fig.show()
 ```
 

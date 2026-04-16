@@ -20,10 +20,34 @@ The `shape` parameter accepts any TikZ node shape. Common built-in shapes are
 ```{python}
 fig = TikzFigure()
 
-fig.add_node(0, 0, shape="circle", fill="blue!30", content="circle")
-fig.add_node(3, 0, shape="rectangle", fill="red!30", content="rectangle")
-fig.add_node(6, 0, shape="ellipse", fill="green!30", content="ellipse")
-fig.add_node(9, 0, shape="diamond", fill="orange!30", content="diamond")
+fig.node(
+    0,
+    0,
+    shape="circle",
+    fill="blue!30",
+    content="circle",
+)
+fig.node(
+    3,
+    0,
+    shape="rectangle",
+    fill="red!30",
+    content="rectangle",
+)
+fig.node(
+    6,
+    0,
+    shape="ellipse",
+    fill="green!30",
+    content="ellipse",
+)
+fig.node(
+    9,
+    0,
+    shape="diamond",
+    fill="orange!30",
+    content="diamond",
+)
 
 fig.show()
 ```
@@ -55,8 +79,20 @@ colors = [
 ]
 
 for i, (color, label) in enumerate(colors):
-    fig.add_node(i * 3, 0, shape="circle", fill=color, content="", minimum_size="1cm")
-    fig.add_node(i * 3, -1, content=f"\\texttt{{{label}}}", draw="none")
+    fig.node(
+        i * 3,
+        0,
+        shape="circle",
+        fill=color,
+        content="",
+        minimum_size="1cm",
+    )
+    fig.node(
+        i * 3,
+        -1,
+        content=f"\\texttt{{{label}}}",
+        draw="none",
+    )
 
 fig.show()
 ```
@@ -82,8 +118,19 @@ styles = [
 
 for i, (opts, lw, label) in enumerate(styles):
     y = -i * 1.2
-    fig.draw([(0, y), (5, y)], options=opts, line_width=lw, color="black")
-    fig.add_node(5.1, y, content=f"\\texttt{{{label}}}", draw="none", anchor="west")
+    fig.draw(
+        [(0, y), (5, y)],
+        options=opts,
+        line_width=lw,
+        color="black",
+    )
+    fig.node(
+        5.1,
+        y,
+        content=f"\\texttt{{{label}}}",
+        draw="none",
+        anchor="west",
+    )
 fig.show()
 ```
 
@@ -108,8 +155,19 @@ arrows = [
 
 for i, (arrow, label) in enumerate(arrows):
     y = -i * 1.2
-    fig.draw([(0, y), (4, y)], options=[arrow], line_width=1.5, color="black")
-    fig.add_node(5, y, content=f"\\texttt{{{label}}}", draw="none", anchor="west")
+    fig.draw(
+        [(0, y), (4, y)],
+        options=[arrow],
+        line_width=1.5,
+        color="black",
+    )
+    fig.node(
+        5,
+        y,
+        content=f"\\texttt{{{label}}}",
+        draw="none",
+        anchor="west",
+    )
 
 fig.show()
 ```
@@ -126,26 +184,96 @@ the node sits at that point. The default is `center`. Useful values: `center`,
 ```{python}
 # Let's try to reproduce this: https://rmwu.github.io/tutorial/latex/2019/11/21/positioning/
 
-fig = TikzFigure(figure_setup="every node/.append style={draw, minimum size=0.8cm}")
+fig = TikzFigure(
+    figure_setup="every node/.append style={draw, minimum size=0.8cm}",
+)
 
-fig.add_node(0, 0, draw="none", content="\\textbullet", comment="center")
-fig.add_node(0, 0)
-fig.add_node(0, 0, options="anchor=center, label=below:{{center}}")
+fig.node(
+    0,
+    0,
+    draw="none",
+    content="\\textbullet",
+    comment="center",
+)
+fig.node((0, 0))
+fig.node(
+    0,
+    0,
+    options="anchor=center, label=below:{{center}}",
+)
 
-fig.add_node(2, 0, draw="none", content="\\textbullet", comment="West and east")
-fig.add_node(2, 0, anchor="west", content="west")
-fig.add_node(2, 0, anchor="east", content="east")
+fig.node(
+    2,
+    0,
+    draw="none",
+    content="\\textbullet",
+    comment="West and east",
+)
+fig.node(
+    2,
+    0,
+    anchor="west",
+    content="west",
+)
+fig.node(
+    2,
+    0,
+    anchor="east",
+    content="east",
+)
 
 
-fig.add_node(4, 0, draw="none", content="\\textbullet", comment="North and south")
-fig.add_node(4, 0, anchor="north", content="north")
-fig.add_node(4, 0, anchor="south", content="south")
+fig.node(
+    4,
+    0,
+    draw="none",
+    content="\\textbullet",
+    comment="North and south",
+)
+fig.node(
+    4,
+    0,
+    anchor="north",
+    content="north",
+)
+fig.node(
+    4,
+    0,
+    anchor="south",
+    content="south",
+)
 
-fig.add_node(6, 0, draw="none", content="\\textbullet", comment="NW, NE, SE, and SW")
-fig.add_node(6, 0, anchor="north west", content="nw")
-fig.add_node(6, 0, anchor="north east", content="ne")
-fig.add_node(6, 0, anchor="south east", content="se")
-fig.add_node(6, 0, anchor="south west", content="sw")
+fig.node(
+    6,
+    0,
+    draw="none",
+    content="\\textbullet",
+    comment="NW, NE, SE, and SW",
+)
+fig.node(
+    6,
+    0,
+    anchor="north west",
+    content="nw",
+)
+fig.node(
+    6,
+    0,
+    anchor="north east",
+    content="ne",
+)
+fig.node(
+    6,
+    0,
+    anchor="south east",
+    content="se",
+)
+fig.node(
+    6,
+    0,
+    anchor="south west",
+    content="sw",
+)
 
 fig.show()
 ```
@@ -196,9 +324,21 @@ def arc_seg(center, radius, start_angle, end_angle, color):
 
 
 for (cx, cy), (start_angle, end_angle), color in ring_specs:
-    fig.circle(center=(cx, cy), radius=f"{r}cm", color=color, line_width=lw, layer=0)
+    fig.circle(
+        center=(cx, cy),
+        radius=f"{r}cm",
+        color=color,
+        line_width=lw,
+        layer=0,
+    )
     if start_angle is not None and end_angle is not None:
-        arc_seg((cx, cy), r, start_angle, end_angle, color)
+        arc_seg(
+            (cx, cy),
+            r,
+            start_angle,
+            end_angle,
+            color,
+        )
 
 fig.show()
 

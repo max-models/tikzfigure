@@ -1,7 +1,7 @@
 from typing import Any
 
 from tikzfigure.core.base import TikzObject
-from tikzfigure.core.coordinate import TikzCoordinate
+from tikzfigure.core.coordinate import PositionInput, TikzCoordinate
 
 
 class Circle(TikzObject):
@@ -15,7 +15,7 @@ class Circle(TikzObject):
 
     def __init__(
         self,
-        center: tuple[float | str, float | str] | TikzCoordinate,
+        center: PositionInput,
         radius: float | str,
         label: str = "",
         comment: str | None = None,
@@ -27,7 +27,8 @@ class Circle(TikzObject):
         """Initialize a Circle.
 
         Args:
-            center: Center coordinate as (x, y) tuple or TikzCoordinate.
+            center: Center coordinate as an ``(x, y)`` / ``(x, y, z)`` tuple or
+                :class:`TikzCoordinate`.
             radius: Radius of the circle (numeric or PGF expression string).
             label: Internal TikZ name for this circle. Defaults to "".
             comment: Optional comment prepended in the TikZ output.
@@ -40,10 +41,7 @@ class Circle(TikzObject):
         if options is None:
             options = []
 
-        if isinstance(center, tuple):
-            self._center = TikzCoordinate(center[0], center[1], layer=layer)
-        else:
-            self._center = center
+        self._center = TikzCoordinate(center, layer=layer)
 
         self._radius = radius
         self._tikz_command = tikz_command
@@ -78,7 +76,6 @@ class Circle(TikzObject):
             A \\draw or \\filldraw command string ending with a newline,
             optionally preceded by a comment line.
         """
-        center_parts = ", ".join(str(x) for x in self._center.coordinate)
         options = self.tikz_options
 
         if options:
@@ -86,7 +83,7 @@ class Circle(TikzObject):
         else:
             full_options = ""
 
-        circle_str = f"\\{self.tikz_command}{full_options} ({center_parts}) circle ({self._radius});\n"
+        circle_str = f"\\{self.tikz_command}{full_options} {self.center.to_tikz()} circle ({self._radius});\n"
         circle_str = self.add_comment(circle_str)
 
         return circle_str

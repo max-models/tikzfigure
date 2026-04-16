@@ -29,16 +29,20 @@ from tikzfigure import TikzFigure
 
 fig = TikzFigure()
 
-n1 = fig.add_node(0, 0, shape="circle", fill="blue!40!green", content="Tikz")
-n2 = fig.add_node(2, 0, shape="circle", fill="purple!40!orange", content="Figure")
+n1 = fig.node(x=0, y=0, shape="circle", fill="blue!40!green", content="Tikz")
+n2 = fig.node(x=2, y=0, shape="circle", fill="purple!40!orange", content="Figure")
 
 fig.draw([n1, n2], line_width=2, arrows="->", color="gray")
 
-n3 = fig.add_node(4, 0, shape="circle", fill="orange!50", content="Chain")
-fig.draw(
-    n1.to(n2).to(n3, options=["bend left"], looseness=1.2),
-    color="blue",
-)
+fig.variable("R", 1.0)
+
+with fig.loop("angle", range(40, 340, 20)) as loop:
+    loop.node(
+        x=r"\R*cos(\angle)",
+        y=r"\R*sin(\angle)",
+        shape="circle",
+        fill="red!50",
+    )
 
 fig.show()
 ```

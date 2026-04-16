@@ -7,6 +7,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from tikzfigure import TikzFigure
+from tikzfigure.core.coordinate import TikzCoordinate, TikzVector
 
 
 class TestFigureReprStr:
@@ -33,6 +34,186 @@ class TestFigureReprStr:
         fig = TikzFigure()
         fig.add_node(x=1, y=1, label="C", content="C")
         assert repr(fig) == str(fig)
+
+
+class TestAddNodeCoordinateInputs:
+    """Test alternate coordinate inputs accepted by add_node()."""
+
+    def test_add_node_accepts_tuple_position(self):
+        """A 2-D tuple should populate x/y directly."""
+        fig = TikzFigure()
+
+        node = fig.add_node((1, 2), label="A", content="tuple")
+
+        assert node.x == 1
+        assert node.y == 2
+        assert node.z is None
+
+    def test_add_node_accepts_3d_tuple_position(self):
+        """A 3-D tuple should populate x/y/z directly."""
+        fig = TikzFigure()
+
+        node = fig.add_node((1, 2, 3), label="A", content="tuple3d")
+
+        assert node.x == 1
+        assert node.y == 2
+        assert node.z == 3
+
+    def test_add_node_accepts_tikzcoordinate_position(self):
+        """A TikzCoordinate should populate x/y/z directly."""
+        fig = TikzFigure()
+
+        node = fig.add_node(TikzCoordinate(1, 2, 3), label="A", content="coord")
+
+        assert node.x == 1
+        assert node.y == 2
+        assert node.z == 3
+
+    def test_add_node_rejects_mixed_tuple_and_explicit_coordinates(self):
+        """Tuple-based positions should not be mixed with y/z arguments."""
+        fig = TikzFigure()
+
+        with pytest.raises(ValueError, match="coordinate tuple"):
+            fig.add_node((1, 2), y=3)
+
+    def test_add_node_accepts_label_only_string_shorthand(self):
+        """A lone first string argument should still be treated as the label."""
+        fig = TikzFigure()
+
+        node = fig.add_node("A", content="label-only")
+
+        assert node.label == "A"
+        assert node.x is None
+        assert node.y is None
+
+
+class TestAddCoordinateInputs:
+    """Test alternate coordinate inputs accepted by add_coordinate()."""
+
+    def test_add_coordinate_accepts_tuple_position(self):
+        """A 2-D tuple should populate x/y directly."""
+        fig = TikzFigure()
+
+        coord = fig.add_coordinate("A", (1, 2))
+
+        assert coord.x == 1
+        assert coord.y == 2
+        assert coord.z is None
+
+    def test_add_coordinate_accepts_3d_tuple_position(self):
+        """A 3-D tuple should populate x/y/z directly."""
+        fig = TikzFigure()
+
+        coord = fig.add_coordinate("A", (1, 2, 3))
+
+        assert coord.x == 1
+        assert coord.y == 2
+        assert coord.z == 3
+
+    def test_add_coordinate_accepts_tikzcoordinate_position(self):
+        """A TikzCoordinate should populate x/y/z directly."""
+        fig = TikzFigure()
+
+        coord = fig.add_coordinate("A", TikzCoordinate(1, 2, 3))
+
+        assert coord.x == 1
+        assert coord.y == 2
+        assert coord.z == 3
+
+    def test_add_coordinate_rejects_mixed_tuple_and_explicit_coordinates(self):
+        """Tuple-based positions should not be mixed with y/z arguments."""
+        fig = TikzFigure()
+
+        with pytest.raises(ValueError, match="coordinate tuple"):
+            fig.add_coordinate("A", (1, 2), y=3)
+
+    def test_add_coordinate_rejects_at_with_coordinates(self):
+        """Expression-based coordinates should not be mixed with explicit ones."""
+        fig = TikzFigure()
+
+        with pytest.raises(ValueError, match="coordinates or an 'at' expression"):
+            fig.add_coordinate("A", (1, 2), at="B.north")
+
+
+class TestShapeCoordinateInputs:
+    """Test position-based figure methods using TikzCoordinate inputs."""
+
+    def test_figure_shape_methods_accept_tikzcoordinate_positions(self):
+        """All position-based helpers should accept TikzCoordinate directly."""
+        fig = TikzFigure()
+        origin = TikzCoordinate(0, 0)
+        diag = TikzCoordinate(1, 1)
+
+        arc = fig.arc(origin, 0, 90, 1)
+        circle = fig.circle(origin, 1)
+        rectangle = fig.rectangle(origin, diag)
+        ellipse = fig.ellipse(origin, 2, 1)
+        grid = fig.grid(origin, diag)
+        parabola = fig.parabola(origin, diag, bend=TikzCoordinate(0.5, 1))
+        line = fig.line(origin, diag)
+        polygon = fig.polygon(origin, radius=1, sides=5)
+        triangle = fig.triangle(origin, radius=1)
+        square = fig.square(origin, radius=1)
+
+        assert arc.start.coordinate == (0, 0)
+        assert circle.center.coordinate == (0, 0)
+        assert rectangle.corner1.coordinate == (0, 0)
+        assert rectangle.corner2.coordinate == (1, 1)
+        assert ellipse.center.coordinate == (0, 0)
+        assert grid.corner1.coordinate == (0, 0)
+        assert grid.corner2.coordinate == (1, 1)
+        assert parabola.start.coordinate == (0, 0)
+        assert parabola.end.coordinate == (1, 1)
+        assert parabola.bend is not None
+        assert parabola.bend.coordinate == (0.5, 1)
+        assert line.start.coordinate == (0, 0)
+        assert line.end.coordinate == (1, 1)
+        assert polygon.center.coordinate == (0, 0)
+        assert triangle.center.coordinate == (0, 0)
+        assert square.center.coordinate == (0, 0)
+
+
+class TestGeometryEdgeCases:
+    """Test invalid point/vector geometry operations."""
+
+    def test_relative_node_geometry_requires_absolute_coordinates(self):
+        """Relative nodes should reject geometry helpers."""
+        node = TikzFigure().add_node(label="A", content="relative")
+
+        with pytest.raises(ValueError, match="explicit coordinates"):
+            node.translate(TikzVector(1, 2))
+
+
+class TestFigureShortAliases:
+    """Test short fig.* aliases for add_* helpers."""
+
+    def test_short_aliases_create_expected_objects(self):
+        """Short aliases should behave like their add_* counterparts."""
+        fig = TikzFigure(rows=1, cols=1)
+
+        node = fig.node((0, 0), label="A", content="A")
+        coord = fig.coordinate("C", (1, 2))
+        variable = fig.variable("scale", 2)
+        raw = fig.raw("% raw")
+        loop = fig.loop("i", range(2))
+        subfig = fig.subfigure(width=0.5)
+
+        assert node.label == "A"
+        assert coord.x == 1
+        assert coord.y == 2
+        assert variable.label == "scale"
+        assert raw.to_tikz() == "% raw\n"
+        assert loop.values == [0, 1]
+        assert isinstance(subfig, TikzFigure)
+
+    def test_loop_short_aliases_create_nested_content(self):
+        """Loop aliases should mirror add_node/add_loop."""
+        outer = TikzFigure().loop("i", range(2))
+        node = outer.node((0, 0), label="A")
+        inner = outer.loop("j", [1])
+
+        assert node.label == "A"
+        assert inner.variable == "j"
 
 
 class TestShowWithoutIPython:

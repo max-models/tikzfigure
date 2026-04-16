@@ -80,7 +80,9 @@ def test_raw_tikz_with_nodes_and_references():
     n1 = fig.add_node(
         0, 0, shape="circle", color="white", fill="blue", content="Hello!"
     )
-    n2 = fig.add_node(5, 0, shape="circle", color="white", fill="red", content="Hi!")
+    n2 = fig.add_node(
+        x=5, y=0, shape="circle", color="white", fill="red", content="Hi!"
+    )
 
     # Add raw TikZ code that references the nodes
     fig.add_raw(f"\\draw[->, thick, dashed] ({n2.label}) -- ({n1.label});")
@@ -104,7 +106,9 @@ def test_raw_tikz_complex_integration():
     n1 = fig.add_node(
         0, 0, shape="circle", color="white", fill="blue", content="Hello!"
     )
-    n2 = fig.add_node(5, 0, shape="circle", color="white", fill="red", content="Hi!")
+    n2 = fig.add_node(
+        x=5, y=0, shape="circle", color="white", fill="red", content="Hi!"
+    )
 
     fig.add_raw("% This is a comment in the TikZ code")
     fig.add_raw("\\node at (2.5, 1) {This is a raw TikZ node};")

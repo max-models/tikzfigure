@@ -19,6 +19,9 @@ TUTORIALS_SRC = ASTRO_ROOT.parent / "tutorials"
 CONTENT_DST = ASTRO_ROOT / "src" / "content" / "docs" / "tutorials"
 PUBLIC_DST = ASTRO_ROOT / "public" / "tutorials"
 BASE_PATH = "/tikzfigure"
+# This is the tab for python code, do not use TAB from tikzfigure.core.constants
+# since that is used for the tikz code and could change in the future.
+TAB = "    "
 
 
 def extract_title(content: str, fallback: str) -> str:
@@ -122,13 +125,13 @@ def fence_indented_output_blocks(content: str) -> str:
         prev_blank = i == 0 or lines[i - 1].strip() == ""
 
         # Only process indented blocks if we're NOT in a fence
-        if line.startswith("    ") and prev_blank and not in_fence:
+        if line.startswith(TAB) and prev_blank and not in_fence:
             block: list[str] = []
             j = i
             while j < len(lines):
                 current = lines[j]
-                if current.startswith("    "):
-                    block.append(current[4:])
+                if current.startswith(TAB):
+                    block.append(current[len(TAB) :])
                     j += 1
                     continue
                 # Keep blank lines inside the block if followed by another
@@ -136,7 +139,7 @@ def fence_indented_output_blocks(content: str) -> str:
                 if (
                     current.strip() == ""
                     and j + 1 < len(lines)
-                    and lines[j + 1].startswith("    ")
+                    and lines[j + 1].startswith(TAB)
                 ):
                     block.append("")
                     j += 1

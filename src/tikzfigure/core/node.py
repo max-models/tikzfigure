@@ -1,6 +1,14 @@
 from typing import TYPE_CHECKING, Any
 
 from tikzfigure.core.base import TikzObject
+from tikzfigure.core.coordinate import (
+    CoordinateTuple2D,
+    CoordinateTuple3D,
+    CoordinateValue,
+    TikzCoordinate,
+    TikzVector,
+    VectorInput,
+)
 from tikzfigure.core.types import _Align, _Anchor, _Pattern, _Shading, _Shape
 
 if TYPE_CHECKING:
@@ -25,9 +33,13 @@ class Node(TikzObject):
 
     def __init__(
         self,
-        x: float | int | str | None = None,
-        y: float | int | str | None = None,
-        z: float | int | str | None = None,
+        x: CoordinateValue
+        | CoordinateTuple2D
+        | CoordinateTuple3D
+        | TikzCoordinate
+        | None = None,
+        y: CoordinateValue | None = None,
+        z: CoordinateValue | None = None,
         label: str = "",
         content: str = "",
         comment: str | None = None,
@@ -129,9 +141,13 @@ class Node(TikzObject):
         Refer to that method for the full parameter reference.
 
         Args:
-            x: X-coordinate. Use ``None`` for relatively positioned nodes.
-            y: Y-coordinate. Use ``None`` for relatively positioned nodes.
-            z: Z-coordinate for 3-D figures.
+            x: X-coordinate, a ``(x, y)`` / ``(x, y, z)`` tuple, or a
+                :class:`TikzCoordinate`. Use ``None`` for relatively
+                positioned nodes.
+            y: Y-coordinate. Use ``None`` when ``x`` already provides the
+                full position.
+            z: Z-coordinate for 3-D figures. Use ``None`` when ``x`` already
+                provides the full position.
             label: Internal TikZ name for this node. Defaults to ``""``.
             content: Text or LaTeX content displayed inside the node.
             comment: Optional comment prepended in the TikZ output.
@@ -212,6 +228,7 @@ class Node(TikzObject):
             **kwargs: Additional TikZ options not listed above. Underscores
                 in keys become spaces in the output.
         """
+        # Capture all parameters for TikZ option generation, excluding internal and base-class keys
         _params = locals().copy()
         _non_tikz = {
             "self",
@@ -235,13 +252,14 @@ class Node(TikzObject):
         if options is None:
             options = []
 
-        self._x = x
-        self._y = y
-        self._z = z
-        if z is None:
-            self._ndim = 2
+        if x is None and y is None and z is None:
+            self._coordinate = None
         else:
-            self._ndim = 3
+            if x is None:
+                raise ValueError(
+                    "Provide both x and y coordinates, or pass a coordinate tuple/TikzCoordinate."
+                )
+            self._coordinate = TikzCoordinate(x=x, y=y, z=z, layer=layer)
 
         self._content = content
         super().__init__(
@@ -253,24 +271,42 @@ class Node(TikzObject):
         )
 
     @property
-    def x(self) -> float | int | str | None:
+    def x(self) -> CoordinateValue | None:
         """X-coordinate, or ``None`` for relatively positioned nodes."""
-        return self._x
+        if self.coordinate is None:
+            return None
+        return self.coordinate.x
 
     @property
-    def y(self) -> float | int | str | None:
+    def y(self) -> CoordinateValue | None:
         """Y-coordinate, or ``None`` for relatively positioned nodes."""
-        return self._y
+        if self.coordinate is None:
+            return None
+        return self.coordinate.y
 
     @property
-    def z(self) -> float | int | str | None:
+    def z(self) -> CoordinateValue | None:
         """Z-coordinate for 3-D figures, or ``None`` for 2-D figures."""
-        return self._z
+        if self.coordinate is None:
+            return None
+        return self.coordinate.z
+
+    @property
+    def coordinate(self) -> TikzCoordinate | None:
+        """TikzCoordinate for this node, or ``None`` for relatively positioned nodes."""
+        return self._coordinate
+
+    @property
+    def position(self) -> TikzCoordinate | None:
+        """Alias for :attr:`coordinate` for geometric operations."""
+        return self.coordinate
 
     @property
     def ndim(self) -> int:
         """Number of spatial dimensions (``2`` or ``3``)."""
-        return self._ndim
+        if self.coordinate is None:
+            return 2
+        return self.coordinate.ndim
 
     @property
     def center(self) -> str:
@@ -281,6 +317,37 @@ class Node(TikzObject):
     def content(self) -> str:
         """Text or LaTeX content displayed inside this node."""
         return self._content
+
+    def _require_coordinate(self) -> TikzCoordinate:
+        """Return the absolute position or raise for relatively positioned nodes."""
+        if self.coordinate is None:
+            raise ValueError(
+                "This node does not have explicit coordinates, so geometric operations are unavailable."
+            )
+        return self.coordinate
+
+    @staticmethod
+    def _coerce_coordinate(other: "Node | TikzCoordinate") -> TikzCoordinate:
+        """Normalize a node-or-coordinate operand to a coordinate."""
+        if isinstance(other, Node):
+            return other._require_coordinate()
+        return other
+
+    def to_vector(self) -> TikzVector:
+        """Interpret this node position as a vector from the origin."""
+        return self._require_coordinate().to_vector()
+
+    def vector_to(self, other: "Node | TikzCoordinate") -> TikzVector:
+        """Return the vector from this node to another node or point."""
+        return self._require_coordinate().vector_to(self._coerce_coordinate(other))
+
+    def distance_to(self, other: "Node | TikzCoordinate") -> float:
+        """Return the Euclidean distance to another node or point."""
+        return self._require_coordinate().distance_to(self._coerce_coordinate(other))
+
+    def translate(self, vector: VectorInput) -> TikzCoordinate:
+        """Return the translated point for this node."""
+        return self._require_coordinate().translate(TikzVector(vector))
 
     def to(
         self,
@@ -309,49 +376,13 @@ class Node(TikzObject):
         options = self.tikz_options
         if options:
             options = f"[{options}]"
-        if self.x is None and self.y is None:
+        if self.coordinate is None:
             node_string = f"\\node{options} ({self.label}) {{{self.content}}};\n"
-        elif self.ndim == 2:
-            # Wrap coordinates in braces for loop variable expansion (e.g., \i, \j)
-            # If the coordinate already has outer parens from expression, unwrap them first
-            x_str = str(self.x)
-            y_str = str(self.y)
-            if (
-                x_str.startswith("(")
-                and x_str.endswith(")")
-                and not x_str.startswith("((")
-            ):
-                x_str = x_str[1:-1]
-            if (
-                y_str.startswith("(")
-                and y_str.endswith(")")
-                and not y_str.startswith("((")
-            ):
-                y_str = y_str[1:-1]
-            node_string = f"\\node{options} ({self.label}) at ({{{x_str}}}, {{{y_str}}}) {{{self.content}}};\n"
         else:
-            z_str = str(self.z)
-            x_str = str(self.x)
-            y_str = str(self.y)
-            if (
-                x_str.startswith("(")
-                and x_str.endswith(")")
-                and not x_str.startswith("((")
-            ):
-                x_str = x_str[1:-1]
-            if (
-                y_str.startswith("(")
-                and y_str.endswith(")")
-                and not y_str.startswith("((")
-            ):
-                y_str = y_str[1:-1]
-            if (
-                z_str.startswith("(")
-                and z_str.endswith(")")
-                and not z_str.startswith("((")
-            ):
-                z_str = z_str[1:-1]
-            node_string = f"\\node{options} ({self.label}) at (axis cs:{{{x_str}}}, {{{y_str}}}, {{{z_str}}}) {{{self.content}}};\n"
+            node_string = (
+                f"\\node{options} ({self.label}) at {self.coordinate.to_tikz()} "
+                f"{{{self.content}}};\n"
+            )
 
         node_string = self.add_comment(node_string)
         return node_string
@@ -367,9 +398,9 @@ class Node(TikzObject):
         d.update(
             {
                 "type": "Node",
-                "x": self._x,
-                "y": self._y,
-                "z": self._z,
+                "x": self.x,
+                "y": self.y,
+                "z": self.z,
                 "content": self._content,
             }
         )

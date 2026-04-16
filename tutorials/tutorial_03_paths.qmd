@@ -37,7 +37,12 @@ fig.draw(zigzag, line_width=2, color="blue")
 
 # Closed path - a triangle
 triangle = [[6, 0], [8, 0], [7, 1.5]]
-fig.draw(triangle, cycle=True, line_width=2, color="red")
+fig.draw(
+    triangle,
+    cycle=True,
+    line_width=2,
+    color="red",
+)
 
 fig.show()
 ```
@@ -54,13 +59,35 @@ fig = TikzFigure()
 
 # Pentagon via filldraw
 angles = np.linspace(np.pi / 2, np.pi / 2 + 2 * np.pi, 6)[:-1]
-pentagon = list(zip(np.cos(angles) * 2 + 2, np.sin(angles) * 2 + 2))
-fig.filldraw(pentagon, cycle=True, line_width=2, color="purple", fill="purple!20")
+pentagon = list(
+    zip(
+        np.cos(angles) * 2 + 2,
+        np.sin(angles) * 2 + 2,
+    ),
+)
+fig.filldraw(
+    pentagon,
+    cycle=True,
+    line_width=2,
+    color="purple",
+    fill="purple!20",
+)
 
 # Same via draw(..., fill=...)
 hexagon_angles = np.linspace(0, 2 * np.pi, 7)[:-1]
-hexagon = list(zip(np.cos(hexagon_angles) * 2 + 7, np.sin(hexagon_angles) * 2 + 2))
-fig.draw(hexagon, cycle=True, line_width=2, color="teal", fill="teal!20")
+hexagon = list(
+    zip(
+        np.cos(hexagon_angles) * 2 + 7,
+        np.sin(hexagon_angles) * 2 + 2,
+    ),
+)
+fig.draw(
+    hexagon,
+    cycle=True,
+    line_width=2,
+    color="teal",
+    fill="teal!20",
+)
 
 fig.show()
 ```
@@ -86,7 +113,12 @@ for i, radius in enumerate([0, 5, 15, 30]):
         fill="orange!20",
         rounded_corners=f"{radius}pt",
     )
-    fig.add_node(x0 + 1, -0.5, content=f"{radius}pt", draw="none")
+    fig.node(
+        x0 + 1,
+        -0.5,
+        content=f"{radius}pt",
+        draw="none",
+    )
 
 fig.show()
 ```
@@ -132,9 +164,8 @@ fig = TikzFigure()
 
 specs = [("src", 0, 1, "teal"), ("mid", 4, 3, "orange"), ("dst", 8, 1, "purple")]
 for label, x, y, color in specs:
-    fig.add_node(
-        x=x,
-        y=y,
+    fig.node(
+        (x, y),
         label=label,
         shape="circle",
         fill=f"{color}!25",
@@ -167,9 +198,8 @@ that connector.
 ```{python}
 fig = TikzFigure()
 
-A = fig.add_node(
-    x=0,
-    y=1,
+A = fig.node(
+    (0, 1),
     label="A",
     shape="circle",
     fill="teal!25",
@@ -177,9 +207,8 @@ A = fig.add_node(
     minimum_size="1cm",
     content="A",
 )
-B = fig.add_node(
-    x=4,
-    y=3,
+B = fig.node(
+    (4, 3),
     label="B",
     shape="circle",
     fill="orange!25",
@@ -187,9 +216,8 @@ B = fig.add_node(
     minimum_size="1cm",
     content="B",
 )
-C = fig.add_node(
-    x=8,
-    y=1,
+C = fig.node(
+    (8, 1),
     label="C",
     shape="circle",
     fill="purple!25",
@@ -223,9 +251,8 @@ for label, x, y, color in [
     ("B", 5, 4, "orange"),
     ("C", 10, 2, "purple"),
 ]:
-    fig.add_node(
-        x=x,
-        y=y,
+    fig.node(
+        (x, y),
         label=label,
         shape="circle",
         fill=f"{color}!20",
@@ -257,9 +284,8 @@ two segments of the same symmetric path use opposite looseness values:
 fig = TikzFigure()
 
 for label, x, y in [("A", 0, 2), ("B", 5, 2), ("C", 10, 2)]:
-    fig.add_node(
-        x=x,
-        y=y,
+    fig.node(
+        (x, y),
         label=label,
         shape="circle",
         fill="gray!15",
@@ -294,9 +320,8 @@ for label, x, y, color in [
     ("B", 4, 3, "red"),
     ("C", 8, 0, "blue"),
 ]:
-    fig.add_node(
-        x=x,
-        y=y,
+    fig.node(
+        (x, y),
         label=label,
         shape="circle",
         fill=f"{color}!20",
@@ -349,9 +374,8 @@ node_specs = [
     ("br", 6, 0, "blue", r"$v_3$"),
 ]
 for label, x, y, color, text in node_specs:
-    fig.add_node(
-        x=x,
-        y=y,
+    fig.node(
+        (x, y),
         label=label,
         shape="circle",
         draw=f"{color}!60",
@@ -381,17 +405,15 @@ fig.draw(
 )
 
 # Labels outside the shapes
-fig.add_node(
-    x=7.5,
-    y=2,
+fig.node(
+    (7.5, 2),
     content=r"\textcolor{red!60}{border anchors}",
     draw="none",
     anchor="west",
     font=r"\small",
 )
-fig.add_node(
-    x=7.5,
-    y=1,
+fig.node(
+    (7.5, 1),
     content=r"\textcolor{blue!70}{.center anchors}",
     draw="none",
     anchor="west",
@@ -409,9 +431,8 @@ suffix. Any TikZ anchor string works — `"north"`, `"south east"`, `"west"`, et
 ```{python}
 fig = TikzFigure()
 
-fig.add_node(
-    x=0,
-    y=0,
+fig.node(
+    (0, 0),
     label="A",
     shape="rectangle",
     draw="black",
@@ -420,9 +441,8 @@ fig.add_node(
     minimum_height="1cm",
     content="A",
 )
-fig.add_node(
-    x=5,
-    y=2,
+fig.node(
+    (5, 2),
     label="B",
     shape="rectangle",
     draw="black",
@@ -431,9 +451,8 @@ fig.add_node(
     minimum_height="1cm",
     content="B",
 )
-fig.add_node(
-    x=10,
-    y=0,
+fig.node(
+    (10, 0),
     label="C",
     shape="rectangle",
     draw="black",
@@ -476,10 +495,10 @@ fig = TikzFigure()
 
 fig.colorlet("lightred", "red!40!white")
 
-A = fig.add_node(-width, height)
-B = fig.add_node(0, 0)
-C = fig.add_node(width, height)
-D = fig.add_node(0, height)
+A = fig.node(-width, height)
+B = fig.node((0, 0))
+C = fig.node(width, height)
+D = fig.node(0, height)
 
 fig.draw(
     A.to(B, options=["out=-90, in=135"])
@@ -508,9 +527,16 @@ fig = TikzFigure()
 
 star = [[0, 0], [1, 2.5], [2, 0], [-0.5, 1.5], [2.5, 1.5], [0, 0]]
 
-fig.draw(star, line_width=3, cycle=True, color="gold", fill="yellow!50!white")
+fig.draw(
+    star,
+    line_width=3,
+    cycle=True,
+    color="gold",
+    fill="yellow!50!white",
+)
 
 fig.show()
+print(fig)
 ```
 
 {{< include includes/tikz_code_callout.qmd >}}
@@ -527,7 +553,9 @@ fig = TikzFigure()
 N = 300
 theta = np.linspace(0, 8 * np.pi, N)
 r = np.linspace(0.1, 3, N)
-spiral = list(zip(r * np.cos(theta) + 4, r * np.sin(theta) + 4))
+spiral = list(
+    zip(r * np.cos(theta) + 4, r * np.sin(theta) + 4),
+)
 fig.draw(spiral, line_width=2, color="teal")
 
 fig.show()
@@ -546,16 +574,36 @@ cx, cy, R = 4, 4, 1.0  # center and core radius
 
 # Core
 theta = np.linspace(0, 2 * np.pi, 60)
-core = list(zip(cx + R * np.cos(theta), cy + R * np.sin(theta)))
-fig.filldraw(core, cycle=True, line_width=2, color="orange", fill="yellow!60")
+core = list(
+    zip(
+        cx + R * np.cos(theta),
+        cy + R * np.sin(theta),
+    ),
+)
+fig.filldraw(
+    core,
+    cycle=True,
+    line_width=2,
+    color="orange",
+    fill="yellow!60",
+)
 
 # Rays
-for angle in np.linspace(0, 2 * np.pi, 12, endpoint=False):
+for angle in np.linspace(
+    0,
+    2 * np.pi,
+    12,
+    endpoint=False,
+):
     x0 = cx + R * np.cos(angle)
     y0 = cy + R * np.sin(angle)
     x1 = cx + (R + 0.7) * np.cos(angle)
     y1 = cy + (R + 0.7) * np.sin(angle)
-    fig.draw([(x0, y0), (x1, y1)], line_width=2, color="orange")
+    fig.draw(
+        [(x0, y0), (x1, y1)],
+        line_width=2,
+        color="orange",
+    )
 
 fig.show()
 ```
@@ -577,7 +625,12 @@ triangles = [
     ([[3, 0], [6, 0], [4.5, 2.5]], "green!60"),
 ]
 for pts, color in triangles:
-    fig.fill(pts, cycle=True, fill=color, fill_opacity=0.6)
+    fig.fill(
+        pts,
+        cycle=True,
+        fill=color,
+        fill_opacity=0.6,
+    )
 
 fig.show()
 ```
@@ -594,11 +647,21 @@ fig = TikzFigure()
 
 # A five-pointed star is self-intersecting
 angles = np.linspace(np.pi / 2, np.pi / 2 + 4 * np.pi, 6)[:-1]
-star_pts = list(zip(np.cos(angles) * 2 + 2, np.sin(angles) * 2 + 2))
+star_pts = list(
+    zip(
+        np.cos(angles) * 2 + 2,
+        np.sin(angles) * 2 + 2,
+    ),
+)
 
 # Default winding rule: centre is filled solid
-fig.fill(star_pts, cycle=True, fill="orange!80", fill_opacity=0.9)
-fig.add_node(
+fig.fill(
+    star_pts,
+    cycle=True,
+    fill="orange!80",
+    fill_opacity=0.9,
+)
+fig.node(
     2,
     -0.3,
     content="winding rule (default)",
@@ -609,10 +672,26 @@ fig.add_node(
 
 # Even-odd rule: centre is hollow
 angles2 = np.linspace(np.pi / 2, np.pi / 2 + 4 * np.pi, 6)[:-1]
-star_pts2 = list(zip(np.cos(angles2) * 2 + 8, np.sin(angles2) * 2 + 2))
-fig.fill(star_pts2, cycle=True, fill="teal!70", fill_opacity=0.9, even_odd_rule=True)
-fig.add_node(
-    8, -0.3, content="even odd rule", draw="none", font=r"\small", anchor="center"
+star_pts2 = list(
+    zip(
+        np.cos(angles2) * 2 + 8,
+        np.sin(angles2) * 2 + 2,
+    ),
+)
+fig.fill(
+    star_pts2,
+    cycle=True,
+    fill="teal!70",
+    fill_opacity=0.9,
+    even_odd_rule=True,
+)
+fig.node(
+    8,
+    -0.3,
+    content="even odd rule",
+    draw="none",
+    font=r"\small",
+    anchor="center",
 )
 
 fig.show()
@@ -624,8 +703,8 @@ fig.show()
 
 `fig.clip()` installs a clipping path — all subsequent drawing is masked to the
 given boundary. Wrap the clip together with the clipped content inside a
-`\begin{scope}...\end{scope}` via `fig.add_raw()` so the clip doesn't leak into
-the rest of the figure.
+`\begin{scope}...\end{scope}` via `fig.raw()` so the clip doesn't leak into the
+rest of the figure.
 
 ```{python}
 fig = TikzFigure()
@@ -636,7 +715,7 @@ fig.draw(
         zip(
             np.cos(np.linspace(0, 2 * np.pi, 60)) * 2 + 2,
             np.sin(np.linspace(0, 2 * np.pi, 60)) * 2 + 2,
-        )
+        ),
     ),
     cycle=True,
     color="gray!40",
@@ -644,18 +723,26 @@ fig.draw(
 )
 
 # Open a scope, clip to a rectangle, then draw a dense grid inside
-fig.add_raw(r"\begin{scope}")
+fig.raw(r"\begin{scope}")
 clip_rect = [[0.5, 0.5], [3.5, 0.5], [3.5, 3.5], [0.5, 3.5]]
 fig.clip(clip_rect, cycle=True)
 
 for i in np.linspace(0, 4, 20):
-    fig.draw([(0, i), (4, i)], color="blue!40", line_width=0.4)
-    fig.draw([(i, 0), (i, 4)], color="blue!40", line_width=0.4)
+    fig.draw(
+        [(0, i), (4, i)],
+        color="blue!40",
+        line_width=0.4,
+    )
+    fig.draw(
+        [(i, 0), (i, 4)],
+        color="blue!40",
+        line_width=0.4,
+    )
 
-fig.add_raw(r"\end{scope}")
+fig.raw(r"\end{scope}")
 
 # Anything drawn after the scope is unclipped again
-fig.add_node(
+fig.node(
     2,
     -0.5,
     content="clipped grid inside circle",
@@ -689,9 +776,8 @@ for label, x, y, color in [
     ("B", 5, 3, "orange"),
     ("C", 10, 0, "purple"),
 ]:
-    fig.add_node(
-        x=x,
-        y=y,
+    fig.node(
+        (x, y),
         label=label,
         shape="circle",
         fill=f"{color}!20",
@@ -728,7 +814,7 @@ fig.path(
                 "font": r"\small",
             },
             "bend_left": 20,
-        }
+        },
     ],
 )
 fig.path(
@@ -742,7 +828,7 @@ fig.path(
                 "font": r"\small",
             },
             "bend_right": 20,
-        }
+        },
     ],
 )
 

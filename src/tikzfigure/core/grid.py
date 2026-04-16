@@ -1,7 +1,7 @@
 from typing import Any
 
 from tikzfigure.core.base import TikzObject
-from tikzfigure.core.coordinate import TikzCoordinate
+from tikzfigure.core.coordinate import PositionInput, TikzCoordinate
 
 
 class Grid(TikzObject):
@@ -16,8 +16,8 @@ class Grid(TikzObject):
 
     def __init__(
         self,
-        corner1: tuple[float | str, float | str] | TikzCoordinate,
-        corner2: tuple[float | str, float | str] | TikzCoordinate,
+        corner1: PositionInput,
+        corner2: PositionInput,
         step: str | None = None,
         label: str = "",
         comment: str | None = None,
@@ -29,8 +29,10 @@ class Grid(TikzObject):
         """Initialize a Grid.
 
         Args:
-            corner1: First corner as (x, y) tuple or TikzCoordinate.
-            corner2: Opposite corner as (x, y) tuple or TikzCoordinate.
+            corner1: First corner as an ``(x, y)`` / ``(x, y, z)`` tuple or
+                :class:`TikzCoordinate`.
+            corner2: Opposite corner as an ``(x, y)`` / ``(x, y, z)`` tuple or
+                :class:`TikzCoordinate`.
             step: Grid step size (e.g. "1cm" or "0.5cm,1cm"). If None, defaults
                 to TikZ default (1cm).
             label: Internal TikZ name for this grid. Defaults to "".
@@ -44,15 +46,8 @@ class Grid(TikzObject):
         if options is None:
             options = []
 
-        if isinstance(corner1, tuple):
-            self._corner1 = TikzCoordinate(corner1[0], corner1[1], layer=layer)
-        else:
-            self._corner1 = corner1
-
-        if isinstance(corner2, tuple):
-            self._corner2 = TikzCoordinate(corner2[0], corner2[1], layer=layer)
-        else:
-            self._corner2 = corner2
+        self._corner1 = TikzCoordinate(corner1, layer=layer)
+        self._corner2 = TikzCoordinate(corner2, layer=layer)
 
         self._step = step
         self._tikz_command = tikz_command
@@ -92,8 +87,6 @@ class Grid(TikzObject):
             A \\draw command string ending with a newline,
             optionally preceded by a comment line.
         """
-        c1_parts = ", ".join(str(x) for x in self._corner1.coordinate)
-        c2_parts = ", ".join(str(x) for x in self._corner2.coordinate)
         options = self.tikz_options
 
         # Add step to options if specified
@@ -108,9 +101,7 @@ class Grid(TikzObject):
         else:
             full_options = ""
 
-        grid_str = (
-            f"\\{self.tikz_command}{full_options} ({c1_parts}) grid ({c2_parts});\n"
-        )
+        grid_str = f"\\{self.tikz_command}{full_options} {self.corner1.to_tikz()} grid {self.corner2.to_tikz()};\n"
         grid_str = self.add_comment(grid_str)
 
         return grid_str
