@@ -1,7 +1,7 @@
 from typing import Any
 
 from tikzfigure.core.base import TikzObject
-from tikzfigure.core.coordinate import TikzCoordinate
+from tikzfigure.core.coordinate import PositionInput, TikzCoordinate
 
 
 class Arc(TikzObject):
@@ -17,7 +17,7 @@ class Arc(TikzObject):
 
     def __init__(
         self,
-        start: tuple[float | str, float | str] | TikzCoordinate,
+        start: PositionInput,
         start_angle: float,
         end_angle: float,
         radius: float | str,
@@ -31,7 +31,8 @@ class Arc(TikzObject):
         """Initialize an Arc.
 
         Args:
-            start: Starting coordinate as (x, y) tuple or TikzCoordinate.
+            start: Starting coordinate as an ``(x, y)`` / ``(x, y, z)`` tuple or
+                :class:`TikzCoordinate`.
             start_angle: Start angle in degrees.
             end_angle: End angle in degrees.
             radius: Radius of the arc (numeric or PGF expression string).
@@ -46,10 +47,7 @@ class Arc(TikzObject):
         if options is None:
             options = []
 
-        if isinstance(start, tuple):
-            self._start = TikzCoordinate(start[0], start[1], layer=layer)
-        else:
-            self._start = start
+        self._start = TikzCoordinate(start, layer=layer)
 
         self._start_angle = start_angle
         self._end_angle = end_angle
@@ -96,7 +94,6 @@ class Arc(TikzObject):
             A \\draw or \\filldraw command string ending with a newline,
             optionally preceded by a comment line.
         """
-        start_parts = ", ".join(str(x) for x in self._start.coordinate)
         options = self.tikz_options
 
         arc_options = f"start angle={self._start_angle}, end angle={self._end_angle}, radius={self._radius}"
@@ -106,7 +103,7 @@ class Arc(TikzObject):
         else:
             full_options = arc_options
 
-        arc_str = f"\\{self.tikz_command}[{full_options}] ({start_parts}) arc;\n"
+        arc_str = f"\\{self.tikz_command}[{full_options}] {self.start.to_tikz()} arc;\n"
         arc_str = self.add_comment(arc_str)
 
         return arc_str

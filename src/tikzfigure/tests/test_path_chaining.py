@@ -64,9 +64,9 @@ def test_normalize_segment_options_returns_none_for_empty_list():
 
 def test_draw_accepts_node_path_builder_and_reuses_segment_options():
     fig = TikzFigure()
-    a = fig.add_node(0, 0, label="A")
-    b = fig.add_node(1, 0, label="B")
-    c = fig.add_node(2, 0, label="C")
+    a = fig.add_node(x=0, y=0, label="A")
+    b = fig.add_node(x=1, y=0, label="B")
+    c = fig.add_node(x=2, y=0, label="C")
 
     path = fig.draw(
         a.to(b).to(c, options=["bend left"], looseness=1.2),
@@ -86,9 +86,9 @@ def test_draw_accepts_node_path_builder_and_reuses_segment_options():
 
 def test_filldraw_accepts_node_path_builder():
     fig = TikzFigure()
-    a = fig.add_node(0, 0, label="A")
-    b = fig.add_node(1, 0, label="B")
-    c = fig.add_node(2, 0, label="C")
+    a = fig.add_node(x=0, y=0, label="A")
+    b = fig.add_node(x=1, y=0, label="B")
+    c = fig.add_node(x=2, y=0, label="C")
 
     path = fig.filldraw(
         a.to(b).to(c, options=["bend right"]),
@@ -101,8 +101,8 @@ def test_filldraw_accepts_node_path_builder():
 
 def test_draw_rejects_extra_segment_options_when_builder_is_used():
     fig = TikzFigure()
-    a = fig.add_node(0, 0, label="A")
-    b = fig.add_node(1, 0, label="B")
+    a = fig.add_node(x=0, y=0, label="A")
+    b = fig.add_node(x=1, y=0, label="B")
 
     with pytest.raises(ValueError, match="segment_options cannot be passed"):
         fig.draw(a.to(b), segment_options=[{"options": ["bend left"]}])
@@ -110,9 +110,9 @@ def test_draw_rejects_extra_segment_options_when_builder_is_used():
 
 def test_draw_list_input_still_renders_plain_to_segments():
     fig = TikzFigure()
-    a = fig.add_node(0, 0, label="A")
-    b = fig.add_node(1, 0, label="B")
-    c = fig.add_node(2, 0, label="C")
+    a = fig.add_node(x=0, y=0, label="A")
+    b = fig.add_node(x=1, y=0, label="B")
+    c = fig.add_node(x=2, y=0, label="C")
 
     path = fig.draw([a, b, c], color="blue")
 

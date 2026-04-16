@@ -6,29 +6,47 @@ jupyter: python3
 tikzfigure can compute new node positions geometrically from existing ones.
 `fig.midpoint(node_a, node_b)` places a new node exactly halfway between two
 existing nodes. For a lighter alternative with no visible output, use
-`fig.add_coordinate(label, x, y)` to define a named invisible waypoint.
+`fig.coordinate(label, x, y)` to define a named invisible waypoint.
 
-This tutorial covers: - basic midpoint usage - using label strings as references
-- edge labels on a triangle - recursive bisection - computing a triangle's
-centroid via iterated midpoints - named coordinates as invisible path waypoints
-- routing paths via intermediate coordinates - expression-based coordinates with
-the `calc` library
+This tutorial covers: - basic midpoint usage - point/vector translations from
+node positions - using label strings as references - edge labels on a triangle -
+recursive bisection - computing a triangle's centroid via iterated midpoints -
+named coordinates as invisible path waypoints - routing paths via intermediate
+coordinates - expression-based coordinates with the `calc` library
 
 ```{python}
-from tikzfigure import TikzFigure
+from tikzfigure import TikzFigure, TikzVector
 ```
 
 ```{python}
 fig = TikzFigure()
 
-A = fig.add_node(
-    0, 0, label="A", content="$A$", shape="circle", fill="blue!20", draw="blue"
+A = fig.node(
+    0,
+    0,
+    label="A",
+    content="$A$",
+    shape="circle",
+    fill="blue!20",
+    draw="blue",
 )
-B = fig.add_node(
-    6, 0, label="B", content="$B$", shape="circle", fill="blue!20", draw="blue"
+B = fig.node(
+    6,
+    0,
+    label="B",
+    content="$B$",
+    shape="circle",
+    fill="blue!20",
+    draw="blue",
 )
-C = fig.add_node(
-    2, 4, label="C", content="$C$", shape="circle", fill="blue!20", draw="blue"
+C = fig.node(
+    2,
+    4,
+    label="C",
+    content="$C$",
+    shape="circle",
+    fill="blue!20",
+    draw="blue",
 )
 
 fig.draw(
@@ -51,18 +69,97 @@ node has `.x` and `.y` set to the computed midpoint.
 ```{python}
 fig = TikzFigure()
 
-n1 = fig.add_node(
-    0, 0, label="A", content="A", shape="circle", fill="blue!30", draw="blue"
+n1 = fig.node(
+    0,
+    0,
+    label="A",
+    content="A",
+    shape="circle",
+    fill="blue!30",
+    draw="blue",
 )
-n2 = fig.add_node(
-    4, 0, label="B", content="B", shape="circle", fill="red!30", draw="red"
+n2 = fig.node(
+    4,
+    0,
+    label="B",
+    content="B",
+    shape="circle",
+    fill="red!30",
+    draw="red",
 )
 
 mid = fig.midpoint(
-    n1, "B", label="M", content="M", shape="circle", fill="green!30", draw="green"
+    n1,
+    "B",
+    label="M",
+    content="M",
+    shape="circle",
+    fill="green!30",
+    draw="green",
 )
 
 fig.draw([n1, n2], options=["dashed", "gray"])
+
+fig.show()
+```
+
+{{< include includes/tikz_code_callout.qmd >}}
+
+## Point and vector operations
+
+Each positioned node exposes its point as `node.position`. Subtracting two
+points gives a `TikzVector`, and adding a vector to a point translates it to a
+new position. That lets you place derived geometry without retyping coordinates.
+
+```{python}
+fig = TikzFigure()
+
+A = fig.node(
+    (0, 0),
+    label="A",
+    content="$A$",
+    shape="circle",
+    fill="blue!20",
+    draw="blue",
+)
+B = fig.node(
+    (4, 2),
+    label="B",
+    content="$B$",
+    shape="circle",
+    fill="orange!20",
+    draw="orange",
+)
+
+AB = A.vector_to(B)
+midpoint = A.position + 0.5 * AB
+offset = TikzVector(-1, 2)
+
+M = fig.node(
+    midpoint,
+    label="M",
+    content="$M$",
+    shape="circle",
+    fill="yellow!40",
+    draw="yellow!60!black",
+)
+A_shifted = fig.node(
+    A.translate(offset),
+    label="Ashift",
+    content="$A+v$",
+    shape="circle",
+    fill="green!20",
+    draw="green!60!black",
+)
+
+fig.draw([A, B], dashed=True, color="gray")
+fig.draw([A, A_shifted], arrows="->", color="green!60!black")
+fig.draw([A, M, B], color="purple")
+fig.node(
+    (2, 3.3),
+    content=rf"$\|AB\| = {A.distance_to(B):.2f}$",
+    draw="none",
+)
 
 fig.show()
 ```
@@ -77,15 +174,33 @@ object.
 ```{python}
 fig = TikzFigure()
 
-fig.add_node(
-    0, 2, label="P", content="P", shape="circle", fill="orange!40", draw="orange"
+fig.node(
+    0,
+    2,
+    label="P",
+    content="P",
+    shape="circle",
+    fill="orange!40",
+    draw="orange",
 )
-fig.add_node(
-    6, 2, label="Q", content="Q", shape="circle", fill="orange!40", draw="orange"
+fig.node(
+    6,
+    2,
+    label="Q",
+    content="Q",
+    shape="circle",
+    fill="orange!40",
+    draw="orange",
 )
 
 fig.midpoint(
-    "P", "Q", label="PQ", content="mid", shape="circle", fill="white", draw="black"
+    "P",
+    "Q",
+    label="PQ",
+    content="mid",
+    shape="circle",
+    fill="white",
+    draw="black",
 )
 
 fig.draw(["P", "Q"], options=["dashed", "gray"])
@@ -100,19 +215,63 @@ fig.show()
 A classic use case: place a label at the midpoint of each edge.
 
 ```{python}
-fig = TikzFigure(figure_setup="every node/.append style={draw, minimum size=0.7cm}")
+fig = TikzFigure(
+    figure_setup="every node/.append style={draw, minimum size=0.7cm}",
+)
 
-fig.add_node(0, 0, label="A", content="A", shape="circle", fill="blue!20")
-fig.add_node(4, 0, label="B", content="B", shape="circle", fill="blue!20")
-fig.add_node(2, 3, label="C", content="C", shape="circle", fill="blue!20")
+fig.node(
+    0,
+    0,
+    label="A",
+    content="A",
+    shape="circle",
+    fill="blue!20",
+)
+fig.node(
+    4,
+    0,
+    label="B",
+    content="B",
+    shape="circle",
+    fill="blue!20",
+)
+fig.node(
+    2,
+    3,
+    label="C",
+    content="C",
+    shape="circle",
+    fill="blue!20",
+)
 
 fig.draw(["A", "B"], color="black")
 fig.draw(["B", "C"], color="black")
 fig.draw(["A", "C"], color="black")
 
-fig.midpoint("A", "B", label="AB", content="$c$", draw="none", fill="yellow!60")
-fig.midpoint("B", "C", label="BC", content="$a$", draw="none", fill="yellow!60")
-fig.midpoint("A", "C", label="AC", content="$b$", draw="none", fill="yellow!60")
+fig.midpoint(
+    "A",
+    "B",
+    label="AB",
+    content="$c$",
+    draw="none",
+    fill="yellow!60",
+)
+fig.midpoint(
+    "B",
+    "C",
+    label="BC",
+    content="$a$",
+    draw="none",
+    fill="yellow!60",
+)
+fig.midpoint(
+    "A",
+    "C",
+    label="AC",
+    content="$b$",
+    draw="none",
+    fill="yellow!60",
+)
 
 fig.show()
 ```
@@ -136,18 +295,63 @@ dot = dict(
     content="",
 )
 
-left = fig.add_node(0, 0, label="L", **dot)
-right = fig.add_node(8, 0, label="R", **dot)
+left = fig.node(
+    0,
+    0,
+    label="L",
+    **dot,
+)
+right = fig.node(
+    8,
+    0,
+    label="R",
+    **dot,
+)
 fig.draw([left, right], color="gray")
 
-m1 = fig.midpoint(left, right, label="M1", **dot)
-m2a = fig.midpoint(left, m1, label="M2a", **dot)
-m2b = fig.midpoint(m1, right, label="M2b", **dot)
+m1 = fig.midpoint(
+    left,
+    right,
+    label="M1",
+    **dot,
+)
+m2a = fig.midpoint(
+    left,
+    m1,
+    label="M2a",
+    **dot,
+)
+m2b = fig.midpoint(
+    m1,
+    right,
+    label="M2b",
+    **dot,
+)
 
-fig.midpoint(left, m2a, label="M3a", **dot)
-fig.midpoint(m2a, m1, label="M3b", **dot)
-fig.midpoint(m1, m2b, label="M3c", **dot)
-fig.midpoint(m2b, right, label="M3d", **dot)
+fig.midpoint(
+    left,
+    m2a,
+    label="M3a",
+    **dot,
+)
+fig.midpoint(
+    m2a,
+    m1,
+    label="M3b",
+    **dot,
+)
+fig.midpoint(
+    m1,
+    m2b,
+    label="M3c",
+    **dot,
+)
+fig.midpoint(
+    m2b,
+    right,
+    label="M3d",
+    **dot,
+)
 
 fig.show()
 ```
@@ -165,14 +369,32 @@ $AB$.)
 ```{python}
 fig = TikzFigure()
 
-A = fig.add_node(
-    0, 0, label="A", content="$A$", shape="circle", fill="blue!20", draw="blue"
+A = fig.node(
+    0,
+    0,
+    label="A",
+    content="$A$",
+    shape="circle",
+    fill="blue!20",
+    draw="blue",
 )
-B = fig.add_node(
-    6, 0, label="B", content="$B$", shape="circle", fill="blue!20", draw="blue"
+B = fig.node(
+    6,
+    0,
+    label="B",
+    content="$B$",
+    shape="circle",
+    fill="blue!20",
+    draw="blue",
 )
-C = fig.add_node(
-    2, 4, label="C", content="$C$", shape="circle", fill="blue!20", draw="blue"
+C = fig.node(
+    2,
+    4,
+    label="C",
+    content="$C$",
+    shape="circle",
+    fill="blue!20",
+    draw="blue",
 )
 
 fig.draw(
@@ -200,7 +422,12 @@ fig.draw([A, mid_BC], dashed=True, color="gray")
 
 # Centroid = midpoint(midpoint(A, B), C)
 centroid = fig.midpoint(
-    fig.midpoint(A, B, label="_MAB", content=""),
+    fig.midpoint(
+        A,
+        B,
+        label="_MAB",
+        content="",
+    ),
     C,
     label="G",
     content="$G$",
@@ -216,29 +443,48 @@ fig.show()
 
 ## Named coordinates as path waypoints
 
-`fig.add_coordinate(label, x, y)` plants an invisible named point — no box, no
+`fig.coordinate(label, x, y)` plants an invisible named point — no box, no
 content, no border. It emits `\coordinate (label) at (x,y);` in TikZ and can be
 referenced in any path list just like a node label.
 
-This is lighter than `add_node` when you only need a reusable geometric anchor,
-not a visible element.
+This is lighter than `fig.node()` when you only need a reusable geometric
+anchor, not a visible element.
 
 ```{python}
 fig = TikzFigure()
 
 # Four invisible corners of a diamond
-fig.add_coordinate("top", x=3, y=4)
-fig.add_coordinate("right", x=6, y=2)
-fig.add_coordinate("bot", x=3, y=0)
-fig.add_coordinate("left", x=0, y=2)
+fig.coordinate("top", x=3, y=4)
+fig.coordinate("right", x=6, y=2)
+fig.coordinate("bot", x=3, y=0)
+fig.coordinate("left", x=0, y=2)
 
 # Draw a diamond outline and its diagonals
-fig.draw(["top", "right", "bot", "left"], cycle=True, color="teal", line_width=2)
-fig.draw(["top", "bot"], dashed=True, color="gray")
-fig.draw(["left", "right"], dashed=True, color="gray")
+fig.draw(
+    ["top", "right", "bot", "left"],
+    cycle=True,
+    color="teal",
+    line_width=2,
+)
+fig.draw(
+    ["top", "bot"],
+    dashed=True,
+    color="gray",
+)
+fig.draw(
+    ["left", "right"],
+    dashed=True,
+    color="gray",
+)
 
 # A visible centre node for reference
-fig.add_node(3, 2, content="centre", draw="none", font=r"\small")
+fig.node(
+    3,
+    2,
+    content="centre",
+    draw="none",
+    font=r"\small",
+)
 
 fig.show()
 ```
@@ -254,7 +500,7 @@ L-shaped arrow: the path goes horizontally to a corner, then vertically up.
 ```{python}
 fig = TikzFigure()
 
-fig.add_node(
+fig.node(
     0,
     0,
     label="src",
@@ -265,7 +511,7 @@ fig.add_node(
     minimum_height="0.8cm",
     content="source",
 )
-fig.add_node(
+fig.node(
     5,
     3,
     label="dst",
@@ -278,7 +524,7 @@ fig.add_node(
 )
 
 # Corner at the same column as dst, same row as src
-fig.add_coordinate("corner", x=5, y=0)
+fig.coordinate("corner", x=5, y=0)
 
 fig.draw(
     ["src.east", "corner", "dst.south"],
@@ -299,13 +545,15 @@ fig.show()
 ## Coordinates from expressions (`calc` library)
 
 When you add `\usetikzlibrary{calc}` via `document_setup`, the `at` parameter of
-`add_coordinate` accepts full calc expressions. The `$(A)!t!(B)$` syntax places
-a point a fraction `t` of the way from `A` to `B`.
+`fig.coordinate()` accepts full calc expressions. The `$(A)!t!(B)$` syntax
+places a point a fraction `t` of the way from `A` to `B`.
 
 ```{python}
-fig = TikzFigure(document_setup=r"\usetikzlibrary{calc}")
+fig = TikzFigure(
+    document_setup=r"\usetikzlibrary{calc}",
+)
 
-fig.add_node(
+fig.node(
     0,
     0,
     label="A",
@@ -315,7 +563,7 @@ fig.add_node(
     minimum_size="1cm",
     content="$A$",
 )
-fig.add_node(
+fig.node(
     8,
     0,
     label="B",
@@ -325,7 +573,7 @@ fig.add_node(
     minimum_size="1cm",
     content="$B$",
 )
-fig.add_node(
+fig.node(
     4,
     5,
     label="C",
@@ -337,13 +585,16 @@ fig.add_node(
 )
 
 # Invisible midpoints of each edge using calc expressions
-fig.add_coordinate("mAB", at="$(A)!0.5!(B)$")
-fig.add_coordinate("mBC", at="$(B)!0.5!(C)$")
-fig.add_coordinate("mCA", at="$(C)!0.5!(A)$")
+fig.coordinate("mAB", at="$(A)!0.5!(B)$")
+fig.coordinate("mBC", at="$(B)!0.5!(C)$")
+fig.coordinate("mCA", at="$(C)!0.5!(A)$")
 
 # Outline triangle
 fig.draw(
-    ["A.center", "B.center", "C.center"], cycle=True, color="gray!50", line_width=1
+    ["A.center", "B.center", "C.center"],
+    cycle=True,
+    color="gray!50",
+    line_width=1,
 )
 
 # Medial triangle connecting the three edge midpoints

@@ -1,7 +1,8 @@
+from tikzfigure.core.coordinate import TikzCoordinate, TikzVector
 from tikzfigure.core.figure import TikzFigure
 from tikzfigure.core.node import Node
 
-__all__ = ["TikzFigure", "Node"]
+__all__ = ["TikzFigure", "Node", "TikzCoordinate", "TikzVector"]
 
 
 def load_ipython_extension(ipython):

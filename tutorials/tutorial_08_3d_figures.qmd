@@ -8,7 +8,7 @@ when creating the figure to switch to pgfplots' `\begin{axis}` environment with
 a default perspective of `view={20}{30}`.
 
 Key facts: - Multiple `plot3d` calls on the same figure stack as separate
-curves. - `add_node(x, y, z=z, ...)` places a marker in 3-D space. -
+curves. - `node(x, y, z=z, ...)` places a marker in 3-D space. -
 `show_axes=True` adds labelled axis lines and a grid.
 
 This tutorial covers: - **Simple helix** - the minimal 3-D setup - **Torus
@@ -37,21 +37,23 @@ xvec = np.cos(t)
 yvec = np.sin(t)
 zvec = t / (4 * np.pi) * 4  # rise from 0 to 4
 
-fig.plot3d(xvec, yvec, zvec, options=["color=blue", "thick"], layer=0)
+fig.plot3d(
+    xvec,
+    yvec,
+    zvec,
+    options=["color=blue", "thick"],
+    layer=0,
+)
 
 # Mark start and end
-fig.add_node(
-    x=xvec[0],
-    y=yvec[0],
-    z=zvec[0],
+fig.node(
+    (xvec[0], yvec[0], zvec[0]),
     fill="green!60!black",
     inner_sep="3pt",
     options="circle",
 )
-fig.add_node(
-    x=xvec[-1],
-    y=yvec[-1],
-    z=zvec[-1],
+fig.node(
+    (xvec[-1], yvec[-1], zvec[-1]),
     fill="red!70!black",
     inner_sep="3pt",
     options="circle",
@@ -89,20 +91,23 @@ states = odeint(lorenz, y0=[1.0, 1.0, 1.0], t=t) * 0.25
 
 fig = TikzFigure(ndim=3)
 
-fig.plot3d(states[:, 0], states[:, 1], states[:, 2], color="black", thick=True, layer=0)
+fig.plot3d(
+    states[:, 0],
+    states[:, 1],
+    states[:, 2],
+    color="black",
+    thick=True,
+    layer=0,
+)
 
-fig.add_node(
-    x=states[0, 0],
-    y=states[0, 1],
-    z=states[0, 2],
+fig.node(
+    (states[0, 0], states[0, 1], states[0, 2]),
     fill="green!50!black",
     inner_sep="2.0pt",
     options="circle",
 )
-fig.add_node(
-    x=states[-1, 0],
-    y=states[-1, 1],
-    z=states[-1, 2],
+fig.node(
+    (states[-1, 0], states[-1, 1], states[-1, 2]),
     fill="red!50!black",
     inner_sep="2.0pt",
     options="circle",
@@ -137,7 +142,13 @@ x = (R + r * np.cos(q * t)) * np.cos(p * t)
 y = (R + r * np.cos(q * t)) * np.sin(p * t)
 z = r * np.sin(q * t)
 
-fig.plot3d(x, y, z, options=["color=purple", "thick"], layer=0)
+fig.plot3d(
+    x,
+    y,
+    z,
+    options=["color=purple", "thick"],
+    layer=0,
+)
 
 fig.show(width=450)
 ```

@@ -71,10 +71,24 @@ A single axis can hold multiple plots for comparisons:
 ```{python}
 fig = TikzFigure()
 
-ax = fig.axis2d(xlabel="X", ylabel="Y", xlim=(0, 10), ylim=(0, 10), grid=True)
+ax = fig.axis2d(
+    xlabel="X",
+    ylabel="Y",
+    xlim=(0, 10),
+    ylim=(0, 10),
+    grid=True,
+)
 
-ax.add_plot([0, 2, 4, 6, 8, 10], [0, 2, 4, 6, 8, 10], label="$y = x$")
-ax.add_plot([0, 1, 2, 3], [0, 1, 4, 9], label="$y = x^2$")
+ax.add_plot(
+    [0, 2, 4, 6, 8, 10],
+    [0, 2, 4, 6, 8, 10],
+    label="$y = x$",
+)
+ax.add_plot(
+    [0, 1, 2, 3],
+    [0, 1, 4, 9],
+    label="$y = x^2$",
+)
 
 ax.set_legend(position="north west")
 
@@ -100,7 +114,12 @@ ax = fig.axis2d(
     grid=True,
 )
 
-ax.add_plot(x=[0, 5, 10], y=[0, 5, 10], label="Linear", color="blue")
+ax.add_plot(
+    x=[0, 5, 10],
+    y=[0, 5, 10],
+    label="Linear",
+    color="blue",
+)
 
 fig.show()
 ```
@@ -121,7 +140,11 @@ Call `axis2d()` multiple times for separate plots rendered in sequence:
 fig = TikzFigure()
 
 ax1 = fig.axis2d(
-    xlabel="Hour", ylabel="Temperature", xlim=(0, 24), ylim=(10, 30), grid=True
+    xlabel="Hour",
+    ylabel="Temperature",
+    xlim=(0, 24),
+    ylim=(10, 30),
+    grid=True,
 )
 ax1.add_plot(
     [0, 6, 12, 18, 24],
@@ -133,7 +156,11 @@ ax1.add_plot(
 ax1.set_legend(position="north east")
 
 ax2 = fig.axis2d(
-    xlabel="Hour", ylabel="Humidity (%)", xlim=(0, 24), ylim=(30, 90), grid=True
+    xlabel="Hour",
+    ylabel="Humidity (%)",
+    xlim=(0, 24),
+    ylim=(30, 90),
+    grid=True,
 )
 ax2.add_plot(
     [0, 6, 12, 18, 24],

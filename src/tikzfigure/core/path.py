@@ -1,6 +1,7 @@
 from typing import Any
 
 from tikzfigure.core.base import TikzObject
+from tikzfigure.core.constants import TAB
 from tikzfigure.core.coordinate import Coordinate, TikzCoordinate
 from tikzfigure.core.node import Node
 
@@ -289,7 +290,23 @@ class TikzPath(TikzObject):
                     parts.append(self._format_path_node(seg["node"]))
 
                 parts.append(label_list[i])
-            path_str = " ".join(parts)
+
+            # For short paths, keep everything on one line.
+            # For longer paths, put connectors on separate lines for readability.
+            if len(label_list) <= 3:
+                path_str = " ".join(parts)
+            else:
+                path_str = parts[0]
+                for ipart, part in enumerate(parts):
+                    if ipart == 0:
+                        continue
+                    if ipart % 2 == 0:
+                        # node label on same line
+                        path_str += f" {part}"
+                    else:
+                        # connector on new line
+                        path_str += f"\n{TAB}{part}"
+                # path_str = "\n  ".join(parts)
         else:
             path_str = ""
 

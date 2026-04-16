@@ -32,10 +32,10 @@ def main() -> None:
         shape="circle",
         layer=1,
     )
-    nA = fig.add_node(0.0, 2.0, fill="violet!70!blue", content="A", **opts)
-    nB = fig.add_node(-1.7, 0.0, fill="cyan!80!blue", content="B", **opts)
-    nC = fig.add_node(1.7, 0.0, fill="magenta!60!red", content="C", **opts)
-    nD = fig.add_node(0.0, -2.0, fill="teal!70!green", content="D", **opts)
+    nA = fig.add_node(x=0.0, y=2.0, fill="violet!70!blue", content="A", **opts)
+    nB = fig.add_node(x=-1.7, y=0.0, fill="cyan!80!blue", content="B", **opts)
+    nC = fig.add_node(x=1.7, y=0.0, fill="magenta!60!red", content="C", **opts)
+    nD = fig.add_node(x=0.0, y=-2.0, fill="teal!70!green", content="D", **opts)
 
     # Edges
     for src, dst in [(nA, nB), (nA, nC), (nB, nD), (nC, nD)]:

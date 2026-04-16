@@ -16,13 +16,25 @@ OUT.parent.mkdir(parents=True, exist_ok=True)
 def main() -> None:
     fig = TikzFigure()
     a = fig.add_node(
-        0, 0, content="A", shape="circle", fill="cyan!40", minimum_size="1cm"
+        0,
+        0,
+        content="A",
+        shape="circle",
+        fill="cyan!40",
     )
     b = fig.add_node(
-        3, 0, content="B", shape="circle", fill="cyan!40", minimum_size="1cm"
+        3,
+        0,
+        content="B",
+        shape="circle",
+        fill="cyan!40",
     )
     c = fig.add_node(
-        0, -2, content="C", shape="circle", fill="cyan!40", minimum_size="1cm"
+        0,
+        -2,
+        content="C",
+        shape="circle",
+        fill="cyan!40",
     )
 
     fig.draw([a, b], arrows="->")

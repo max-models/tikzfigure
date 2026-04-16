@@ -31,18 +31,16 @@ fig = TikzFigure()
 opacities = [1.0, 0.8, 0.6, 0.4, 0.2]
 
 for i, op in enumerate(opacities):
-    fig.add_node(
-        x=i * 1.5,
-        y=0,
+    fig.node(
+        (i * 1.5, 0),
         shape="circle",
         fill="blue!60",
         draw="blue!80",
         minimum_size="2.5cm",
         opacity=op,
     )
-    fig.add_node(
-        x=i * 1.5,
-        y=-1.8,
+    fig.node(
+        (i * 1.5, -1.8),
         content=f"opacity={op}",
         draw="none",
         font=r"\tiny",
@@ -65,9 +63,8 @@ fig = TikzFigure()
 colors = ["red", "blue", "green!60!black", "orange"]
 
 for i, color in enumerate(colors):
-    fig.add_node(
-        x=i * 2,
-        y=0,
+    fig.node(
+        (i * 2, 0),
         shape="circle",
         fill=color,
         draw=color,
@@ -97,7 +94,14 @@ triangles = [
 ]
 
 for pts, color, op in triangles:
-    fig.draw(pts, cycle=True, fill=color, draw=color, opacity=op, line_width=1.5)
+    fig.draw(
+        pts,
+        cycle=True,
+        fill=color,
+        draw=color,
+        opacity=op,
+        line_width=1.5,
+    )
 
 fig.show()
 ```
@@ -152,10 +156,15 @@ code itself, which does not include any background rectangle by default.
 ```{python}
 fig = TikzFigure()
 
-fig.add_node(
-    0, 0, shape="circle", fill="orange!60", content="Hello!", minimum_size="2cm"
+fig.node(
+    0,
+    0,
+    shape="circle",
+    fill="orange!60",
+    content="Hello!",
+    minimum_size="2cm",
 )
-fig.add_node(
+fig.node(
     3,
     0,
     shape="rectangle",
@@ -203,17 +212,47 @@ theta = [2 * math.pi * k / 80 for k in range(80)]
 left = [(-d / 2 + R * math.cos(t), R * math.sin(t)) for t in theta]
 right = [(d / 2 + R * math.cos(t), R * math.sin(t)) for t in theta]
 
-fig.draw(left, cycle=True, fill="blue", draw="blue!80", fill_opacity=0.4, line_width=2)
-fig.draw(right, cycle=True, fill="red", draw="red!80", fill_opacity=0.4, line_width=2)
+fig.draw(
+    left,
+    cycle=True,
+    fill="blue",
+    draw="blue!80",
+    fill_opacity=0.4,
+    line_width=2,
+)
+fig.draw(
+    right,
+    cycle=True,
+    fill="red",
+    draw="red!80",
+    fill_opacity=0.4,
+    line_width=2,
+)
 
 # Labels
-fig.add_node(
-    -d / 2 - 0.6, 0, content="Set A", draw="none", font=r"\bfseries", color="blue!80"
+fig.node(
+    -d / 2 - 0.6,
+    0,
+    content="Set A",
+    draw="none",
+    font=r"\bfseries",
+    color="blue!80",
 )
-fig.add_node(
-    d / 2 + 0.6, 0, content="Set B", draw="none", font=r"\bfseries", color="red!80"
+fig.node(
+    d / 2 + 0.6,
+    0,
+    content="Set B",
+    draw="none",
+    font=r"\bfseries",
+    color="red!80",
 )
-fig.add_node(0, 0, content=r"$A \cap B$", draw="none", font=r"\small")
+fig.node(
+    0,
+    0,
+    content=r"$A \cap B$",
+    draw="none",
+    font=r"\small",
+)
 
 fig.show()
 ```

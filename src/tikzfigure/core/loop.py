@@ -1,4 +1,5 @@
 import types
+from collections.abc import Sequence
 from typing import Any
 
 from tikzfigure.core.base import TikzObject
@@ -22,7 +23,7 @@ class Loop(TikzObject):
     def __init__(
         self,
         variable: str,
-        values: list[Any],
+        values: Sequence[Any],
         layer: int = 0,
         comment: str | None = None,
     ) -> None:
@@ -88,7 +89,7 @@ class Loop(TikzObject):
         return path
 
     def add_loop(
-        self, variable: str, values: list[Any], comment: str | None = None
+        self, variable: str, values: Sequence[Any], comment: str | None = None
     ) -> "Loop":
         """Add a nested loop inside this loop body.
 
@@ -103,6 +104,10 @@ class Loop(TikzObject):
         loop = Loop(variable, values, layer=self.layer or 0, comment=comment)
         self._items.append(loop)
         return loop
+
+    node = add_node
+    path = add_path
+    loop = add_loop
 
     def to_tikz(self) -> str:
         """Generate the TikZ ``\\foreach`` code for this loop.

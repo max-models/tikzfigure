@@ -28,9 +28,8 @@ effect. `double_distance` controls the gap between the two strokes. Setting
 fig = TikzFigure()
 
 # Double-bordered node with white gap (railway style)
-fig.add_node(
-    x=0,
-    y=0,
+fig.node(
+    (0, 0),
     shape="rectangle",
     draw="black",
     fill="gray!10",
@@ -43,9 +42,8 @@ fig.add_node(
 )
 
 # Double-bordered with black inner line
-fig.add_node(
-    x=4,
-    y=0,
+fig.node(
+    (4, 0),
     shape="rectangle",
     draw="blue!70",
     fill="blue!10",
@@ -58,9 +56,8 @@ fig.add_node(
 )
 
 # Double on a circle
-fig.add_node(
-    x=8,
-    y=0,
+fig.node(
+    (8, 0),
     shape="circle",
     draw="red!70",
     fill="red!10",
@@ -79,8 +76,12 @@ fig.draw(
     line_width=2,
     color="black",
 )
-fig.add_node(
-    4, -2.3, content="railway track (double path)", draw="none", font=r"\small\itshape"
+fig.node(
+    4,
+    -2.3,
+    content="railway track (double path)",
+    draw="none",
+    font=r"\small\itshape",
 )
 
 fig.show()
@@ -113,7 +114,7 @@ for i, (dp, phase, label) in enumerate(patterns):
         line_width=2,
         color="black",
     )
-    fig.add_node(
+    fig.node(
         6.2,
         y,
         content=f"\\texttt{{{label}}}",
@@ -147,10 +148,23 @@ for i, cap in enumerate(caps):
         color="blue!60",
     )
     # Thin reference line to show exact endpoint
-    fig.draw([(0.5, y - 0.5), (0.5, y + 0.5)], line_width=0.5, color="red")
-    fig.draw([(4.5, y - 0.5), (4.5, y + 0.5)], line_width=0.5, color="red")
-    fig.add_node(
-        5.2, y, content=f"\\texttt{{{cap}}}", draw="none", anchor="west", font=r"\small"
+    fig.draw(
+        [(0.5, y - 0.5), (0.5, y + 0.5)],
+        line_width=0.5,
+        color="red",
+    )
+    fig.draw(
+        [(4.5, y - 0.5), (4.5, y + 0.5)],
+        line_width=0.5,
+        color="red",
+    )
+    fig.node(
+        5.2,
+        y,
+        content=f"\\texttt{{{cap}}}",
+        draw="none",
+        anchor="west",
+        font=r"\small",
     )
 
 fig.show()
@@ -171,9 +185,18 @@ joins = ["miter", "bevel", "round"]
 for i, join in enumerate(joins):
     x0 = i * 4
     zigzag = [(x0 + 0, 0), (x0 + 1, 2), (x0 + 2, 0), (x0 + 3, 2)]
-    fig.draw(zigzag, line_join=join, line_width=8, color="teal!70")
-    fig.add_node(
-        x0 + 1.5, -0.6, content=f"\\texttt{{{join}}}", draw="none", font=r"\small"
+    fig.draw(
+        zigzag,
+        line_join=join,
+        line_width=8,
+        color="teal!70",
+    )
+    fig.node(
+        x0 + 1.5,
+        -0.6,
+        content=f"\\texttt{{{join}}}",
+        draw="none",
+        font=r"\small",
     )
 
 fig.show()
@@ -187,7 +210,9 @@ The `shadows` library adds drop shadows to nodes. Control the shadow offset with
 `shadow_xshift` / `shadow_yshift` and the shadow color with `shadow_color`.
 
 ```{python}
-fig = TikzFigure(document_setup=r"\usetikzlibrary{shadows}")
+fig = TikzFigure(
+    document_setup=r"\usetikzlibrary{shadows}",
+)
 
 shadow_specs = [
     ("gray!60", "3pt", "-3pt", "gray shadow"),
@@ -197,9 +222,8 @@ shadow_specs = [
 ]
 
 for i, (sc, sx, sy, label) in enumerate(shadow_specs):
-    fig.add_node(
-        x=i * 3,
-        y=0,
+    fig.node(
+        (i * 3, 0),
         shape="rectangle",
         fill="white",
         draw="gray!70",
@@ -228,7 +252,7 @@ specification string: `"above:text"`, `"right:text"`, `"below left:text"`, etc.
 fig = TikzFigure()
 
 # Three nodes with pins in different directions
-nA = fig.add_node(
+nA = fig.node(
     0,
     0,
     label="A",
@@ -239,7 +263,7 @@ nA = fig.add_node(
     pin="above:measured here",
 )
 
-nB = fig.add_node(
+nB = fig.node(
     4,
     0,
     label="B",
@@ -250,7 +274,7 @@ nB = fig.add_node(
     pin="right:peak value",
 )
 
-nC = fig.add_node(
+nC = fig.node(
     2,
     3,
     label="C",
@@ -276,12 +300,13 @@ The `shapes.geometric` library provides additional node shapes beyond the
 built-in `circle`, `rectangle`, and `ellipse`.
 
 ```{python}
-fig = TikzFigure(document_setup=r"\usetikzlibrary{shapes.geometric}")
+fig = TikzFigure(
+    document_setup=r"\usetikzlibrary{shapes.geometric}",
+)
 
 # Five-pointed star
-fig.add_node(
-    x=0,
-    y=0,
+fig.node(
+    (0, 0),
     shape="star",
     star_points=5,
     star_point_ratio=0.45,
@@ -294,9 +319,8 @@ fig.add_node(
 )
 
 # Six-pointed star
-fig.add_node(
-    x=3,
-    y=0,
+fig.node(
+    (3, 0),
     shape="star",
     star_points=6,
     star_point_ratio=0.5,
@@ -309,9 +333,8 @@ fig.add_node(
 )
 
 # Regular hexagon
-fig.add_node(
-    x=6,
-    y=0,
+fig.node(
+    (6, 0),
     shape="regular polygon",
     regular_polygon_sides=6,
     fill="green!40",
@@ -323,9 +346,8 @@ fig.add_node(
 )
 
 # Regular triangle (3 sides)
-fig.add_node(
-    x=9,
-    y=0,
+fig.node(
+    (9, 0),
     shape="regular polygon",
     regular_polygon_sides=3,
     fill="red!30",
@@ -337,9 +359,8 @@ fig.add_node(
 )
 
 # Cylinder
-fig.add_node(
-    x=12,
-    y=0,
+fig.node(
+    (12, 0),
     shape="cylinder",
     fill="purple!30",
     draw="purple!70",

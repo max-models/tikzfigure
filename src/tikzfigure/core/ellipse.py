@@ -1,7 +1,7 @@
 from typing import Any
 
 from tikzfigure.core.base import TikzObject
-from tikzfigure.core.coordinate import TikzCoordinate
+from tikzfigure.core.coordinate import PositionInput, TikzCoordinate
 
 
 class Ellipse(TikzObject):
@@ -16,7 +16,7 @@ class Ellipse(TikzObject):
 
     def __init__(
         self,
-        center: tuple[float | str, float | str] | TikzCoordinate,
+        center: PositionInput,
         x_radius: float | str,
         y_radius: float | str,
         label: str = "",
@@ -29,7 +29,8 @@ class Ellipse(TikzObject):
         """Initialize an Ellipse.
 
         Args:
-            center: Center coordinate as (x, y) tuple or TikzCoordinate.
+            center: Center coordinate as an ``(x, y)`` / ``(x, y, z)`` tuple or
+                :class:`TikzCoordinate`.
             x_radius: Horizontal radius (numeric or PGF expression string).
             y_radius: Vertical radius (numeric or PGF expression string).
             label: Internal TikZ name for this ellipse. Defaults to "".
@@ -43,10 +44,7 @@ class Ellipse(TikzObject):
         if options is None:
             options = []
 
-        if isinstance(center, tuple):
-            self._center = TikzCoordinate(center[0], center[1], layer=layer)
-        else:
-            self._center = center
+        self._center = TikzCoordinate(center, layer=layer)
 
         self._x_radius = x_radius
         self._y_radius = y_radius
@@ -87,7 +85,6 @@ class Ellipse(TikzObject):
             A \\draw or \\filldraw command string ending with a newline,
             optionally preceded by a comment line.
         """
-        center_parts = ", ".join(str(x) for x in self._center.coordinate)
         options = self.tikz_options
 
         if options:
@@ -95,7 +92,7 @@ class Ellipse(TikzObject):
         else:
             full_options = ""
 
-        ellipse_str = f"\\{self.tikz_command}{full_options} ({center_parts}) ellipse ({self._x_radius} and {self._y_radius});\n"
+        ellipse_str = f"\\{self.tikz_command}{full_options} {self.center.to_tikz()} ellipse ({self._x_radius} and {self._y_radius});\n"
         ellipse_str = self.add_comment(ellipse_str)
 
         return ellipse_str

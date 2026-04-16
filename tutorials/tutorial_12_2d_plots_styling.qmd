@@ -16,14 +16,31 @@ pgfplots supports named colors and various marker types:
 ```{python}
 fig = TikzFigure()
 
-ax = fig.axis2d(xlabel="Month", ylabel="Temperature", xlim=(0, 13), grid=True)
+ax = fig.axis2d(
+    xlabel="Month",
+    ylabel="Temperature",
+    xlim=(0, 13),
+    grid=True,
+)
 
 months = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
 temp_seattle = [-5, -4, 0, 5, 10, 15, 18, 17, 12, 6, 0, -4]
 temp_phoenix = [12, 15, 18, 24, 30, 36, 38, 37, 33, 26, 18, 12]
 
-ax.add_plot(months, temp_seattle, label="Seattle", color="blue", mark="o")
-ax.add_plot(months, temp_phoenix, label="Phoenix", color="red", mark="square")
+ax.add_plot(
+    months,
+    temp_seattle,
+    label="Seattle",
+    color="blue",
+    mark="o",
+)
+ax.add_plot(
+    months,
+    temp_phoenix,
+    label="Phoenix",
+    color="red",
+    mark="square",
+)
 
 ax.set_legend(position="north west")
 fig.show()
@@ -44,14 +61,31 @@ Customize line appearance with `options` and `line_width`:
 ```{python}
 fig = TikzFigure()
 
-ax = fig.axis2d(xlabel="$X$", ylabel="$Y$", xlim=(0, 10), grid=True)
+ax = fig.axis2d(
+    xlabel="$X$",
+    ylabel="$Y$",
+    xlim=(0, 10),
+    grid=True,
+)
 
 x = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 y1 = [0, 1, 4, 9, 16, 25, 36, 49, 64, 81, 100]
 y2 = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20]
 
-ax.add_plot(x, y1, label="Thick solid", color="red", line_width="2pt")
-ax.add_plot(x, y2, label="Thin dashed", color="blue", dashed=True)
+ax.add_plot(
+    x,
+    y1,
+    label="Thick solid",
+    color="red",
+    line_width="2pt",
+)
+ax.add_plot(
+    x,
+    y2,
+    label="Thin dashed",
+    color="blue",
+    dashed=True,
+)
 
 ax.set_legend()
 fig.show()
@@ -69,12 +103,27 @@ Control tick positions and labels:
 ```{python}
 fig = TikzFigure()
 
-ax = fig.axis2d(xlabel="Grade", ylabel="Count", xlim=(0.5, 4.5), ylim=(0, 30))
+ax = fig.axis2d(
+    xlabel="Grade",
+    ylabel="Count",
+    xlim=(0.5, 4.5),
+    ylim=(0, 30),
+)
 
-ax.add_plot([1, 2, 3, 4], [5, 12, 18, 10], label="Students", color="green", mark="*")
+ax.add_plot(
+    [1, 2, 3, 4],
+    [5, 12, 18, 10],
+    label="Students",
+    color="green",
+    mark="*",
+)
 
 # Custom x-axis labels
-ax.set_ticks("x", [1, 2, 3, 4], labels=["A", "B", "C", "D"])
+ax.set_ticks(
+    "x",
+    [1, 2, 3, 4],
+    labels=["A", "B", "C", "D"],
+)
 
 # Y-axis ticks at multiples of 5
 ax.set_ticks("y", [0, 5, 10, 15, 20, 25, 30])
@@ -92,7 +141,13 @@ Use `options=["only marks"]` to show only markers without connecting lines:
 ```{python}
 fig = TikzFigure()
 
-ax = fig.axis2d(xlabel="X", ylabel="Y", xlim=(-1, 5), ylim=(-2, 10), grid=True)
+ax = fig.axis2d(
+    xlabel="X",
+    ylabel="Y",
+    xlim=(-1, 5),
+    ylim=(-2, 10),
+    grid=True,
+)
 
 # Noisy data points
 x_data = [0, 1, 1.5, 2, 2.5, 3, 4]
@@ -111,7 +166,12 @@ ax.add_plot(
     mark_size="2pt",
     options=["only marks"],
 )
-ax.add_plot(x_fit, y_fit, label="Fit: y = 2x + 0.5", color="blue")
+ax.add_plot(
+    x_fit,
+    y_fit,
+    label="Fit: y = 2x + 0.5",
+    color="blue",
+)
 
 ax.set_legend(position="north west")
 fig.show()
@@ -126,12 +186,23 @@ Axes can be assigned to layers to control stacking with other TikZ elements:
 ```{python}
 fig = TikzFigure()
 
-ax = fig.axis2d(xlabel="X", ylabel="Y", xlim=(0, 5), ylim=(0, 5), layer=1)
-ax.add_plot([0, 1, 2, 3, 4, 5], [0, 1, 2, 3, 4, 5], label="data", color="red")
+ax = fig.axis2d(
+    xlabel="X",
+    ylabel="Y",
+    xlim=(0, 5),
+    ylim=(0, 5),
+    layer=1,
+)
+ax.add_plot(
+    [0, 1, 2, 3, 4, 5],
+    [0, 1, 2, 3, 4, 5],
+    label="data",
+    color="red",
+)
 ax.set_legend(position="north west")
 
 # Background shape on layer 0
-fig.add_node(
+fig.node(
     2.5,
     2.5,
     label="bg",
@@ -144,7 +215,7 @@ fig.add_node(
 )
 
 # Foreground annotation on layer 2
-fig.add_node(
+fig.node(
     4,
     4,
     label="fg",

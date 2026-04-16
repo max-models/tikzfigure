@@ -26,7 +26,9 @@ from tikzfigure import TikzFigure
 a horizontal gradient, or `top_color`/`bottom_color` for a vertical one.
 
 ```{python}
-fig = TikzFigure(document_setup=r"\usetikzlibrary{shadings}")
+fig = TikzFigure(
+    document_setup=r"\usetikzlibrary{shadings}",
+)
 
 # Horizontal gradients
 pairs = [
@@ -37,9 +39,8 @@ pairs = [
 ]
 
 for i, (lc, rc) in enumerate(pairs):
-    fig.add_node(
-        x=i * 3,
-        y=1.5,
+    fig.node(
+        (i * 3, 1.5),
         shape="rectangle",
         shading="axis",
         left_color=lc,
@@ -48,8 +49,13 @@ for i, (lc, rc) in enumerate(pairs):
         minimum_height="1.2cm",
         draw="gray!50",
     )
-    fig.add_node(
-        i * 3, 0.5, content=f"{lc} → {rc}", draw="none", font=r"\tiny", anchor="center"
+    fig.node(
+        i * 3,
+        0.5,
+        content=f"{lc} → {rc}",
+        draw="none",
+        font=r"\tiny",
+        anchor="center",
     )
 
 # Vertical gradients
@@ -60,9 +66,8 @@ vert_pairs = [
 ]
 
 for i, (tc, bc) in enumerate(vert_pairs):
-    fig.add_node(
-        x=i * 3,
-        y=-1,
+    fig.node(
+        (i * 3, -1),
         shape="rectangle",
         shading="axis",
         top_color=tc,
@@ -71,8 +76,13 @@ for i, (tc, bc) in enumerate(vert_pairs):
         minimum_height="1.2cm",
         draw="gray!50",
     )
-    fig.add_node(
-        i * 3, -2, content=f"{tc} ↕ {bc}", draw="none", font=r"\tiny", anchor="center"
+    fig.node(
+        i * 3,
+        -2,
+        content=f"{tc} ↕ {bc}",
+        draw="none",
+        font=r"\tiny",
+        anchor="center",
     )
 
 fig.show()
@@ -86,7 +96,9 @@ fig.show()
 `outer_color`. This gives a convincing glow effect.
 
 ```{python}
-fig = TikzFigure(document_setup=r"\usetikzlibrary{shadings}")
+fig = TikzFigure(
+    document_setup=r"\usetikzlibrary{shadings}",
+)
 
 glows = [
     ("white", "red"),
@@ -97,9 +109,8 @@ glows = [
 ]
 
 for i, (ic, oc) in enumerate(glows):
-    fig.add_node(
-        x=i * 2.5,
-        y=0,
+    fig.node(
+        (i * 2.5, 0),
         shape="circle",
         shading="radial",
         inner_color=ic,
@@ -119,14 +130,15 @@ fig.show()
 three-dimensional.
 
 ```{python}
-fig = TikzFigure(document_setup=r"\usetikzlibrary{shadings}")
+fig = TikzFigure(
+    document_setup=r"\usetikzlibrary{shadings}",
+)
 
 colors = ["red", "blue", "green!60!black", "orange", "purple", "teal"]
 
 for i, color in enumerate(colors):
-    fig.add_node(
-        x=i * 2.2,
-        y=0,
+    fig.node(
+        (i * 2.2, 0),
         shape="circle",
         shading="ball",
         ball_color=color,
@@ -147,7 +159,9 @@ using `fig.draw(pts, cycle=True, shading="axis", ...)`.
 ```{python}
 import math
 
-fig = TikzFigure(document_setup=r"\usetikzlibrary{shadings}")
+fig = TikzFigure(
+    document_setup=r"\usetikzlibrary{shadings}",
+)
 
 # A gradient-filled pentagon
 N = 5
@@ -189,7 +203,9 @@ Patterns are repeating geometric fills. Common patterns include
 Use `pattern_color` to set the pattern ink color.
 
 ```{python}
-fig = TikzFigure(document_setup=r"\usetikzlibrary{patterns}")
+fig = TikzFigure(
+    document_setup=r"\usetikzlibrary{patterns}",
+)
 
 patterns = [
     ("north east lines", "blue!60"),
@@ -203,9 +219,8 @@ patterns = [
 for i, (pat, pc) in enumerate(patterns):
     col = i % 3
     row = i // 3
-    fig.add_node(
-        x=col * 3.5,
-        y=row * (-2.5),
+    fig.node(
+        (col * 3.5, row * (-2.5)),
         shape="rectangle",
         pattern=pat,
         pattern_color=pc,
@@ -214,7 +229,7 @@ for i, (pat, pc) in enumerate(patterns):
         draw="gray!70",
         fill="white",
     )
-    fig.add_node(
+    fig.node(
         col * 3.5,
         row * (-2.5) - 1.2,
         content=f"\\texttt{{{pat}}}",
@@ -238,13 +253,12 @@ fig = TikzFigure(
         r"\usetikzlibrary{shadings}"
         "\n"
         r"\usetikzlibrary{patterns}"
-    )
+    ),
 )
 
 # Shaded background panel
-fig.add_node(
-    x=3,
-    y=1,
+fig.node(
+    (3, 1),
     shape="rectangle",
     shading="axis",
     top_color="blue!20",
@@ -255,9 +269,8 @@ fig.add_node(
 )
 
 # Ball-shaded decorative sphere
-fig.add_node(
-    x=0.5,
-    y=2,
+fig.node(
+    (0.5, 2),
     shape="circle",
     shading="ball",
     ball_color="cyan",
@@ -271,11 +284,10 @@ for i, (pat, fc) in enumerate(
         ("north east lines", "red!40"),
         ("dots", "green!40"),
         ("crosshatch", "orange!40"),
-    ]
+    ],
 ):
-    fig.add_node(
-        x=2 + i * 2,
-        y=1,
+    fig.node(
+        (2 + i * 2, 1),
         shape="rectangle",
         pattern=pat,
         pattern_color=fc,

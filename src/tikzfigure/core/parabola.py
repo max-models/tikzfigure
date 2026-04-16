@@ -1,7 +1,7 @@
 from typing import Any
 
 from tikzfigure.core.base import TikzObject
-from tikzfigure.core.coordinate import TikzCoordinate
+from tikzfigure.core.coordinate import PositionInput, TikzCoordinate
 
 
 class Parabola(TikzObject):
@@ -16,9 +16,9 @@ class Parabola(TikzObject):
 
     def __init__(
         self,
-        start: tuple[float | str, float | str] | TikzCoordinate,
-        end: tuple[float | str, float | str] | TikzCoordinate,
-        bend: tuple[float | str, float | str] | TikzCoordinate | None = None,
+        start: PositionInput,
+        end: PositionInput,
+        bend: PositionInput | None = None,
         label: str = "",
         comment: str | None = None,
         layer: int = 0,
@@ -29,9 +29,12 @@ class Parabola(TikzObject):
         """Initialize a Parabola.
 
         Args:
-            start: Starting coordinate as (x, y) tuple or TikzCoordinate.
-            end: Ending coordinate as (x, y) tuple or TikzCoordinate.
-            bend: Bend (control) point as (x, y) tuple or TikzCoordinate.
+            start: Starting coordinate as an ``(x, y)`` / ``(x, y, z)`` tuple or
+                :class:`TikzCoordinate`.
+            end: Ending coordinate as an ``(x, y)`` / ``(x, y, z)`` tuple or
+                :class:`TikzCoordinate`.
+            bend: Bend point as an ``(x, y)`` / ``(x, y, z)`` tuple or
+                :class:`TikzCoordinate`.
                 If None, uses default TikZ behavior. Defaults to None.
             label: Internal TikZ name for this parabola. Defaults to "".
             comment: Optional comment prepended in the TikZ output.
@@ -44,25 +47,9 @@ class Parabola(TikzObject):
         if options is None:
             options = []
 
-        if isinstance(start, tuple):
-            self._start = TikzCoordinate(start[0], start[1], layer=layer)
-        else:
-            self._start = start
-
-        if isinstance(end, tuple):
-            self._end = TikzCoordinate(end[0], end[1], layer=layer)
-        else:
-            self._end = end
-
-        if bend is not None:
-            if isinstance(bend, tuple):
-                self._bend: TikzCoordinate | None = TikzCoordinate(
-                    bend[0], bend[1], layer=layer
-                )
-            else:
-                self._bend = bend
-        else:
-            self._bend = None
+        self._start = TikzCoordinate(start, layer=layer)
+        self._end = TikzCoordinate(end, layer=layer)
+        self._bend = TikzCoordinate(bend, layer=layer) if bend is not None else None
 
         self._tikz_command = tikz_command
 
@@ -101,8 +88,6 @@ class Parabola(TikzObject):
             A \\draw or \\filldraw command string ending with a newline,
             optionally preceded by a comment line.
         """
-        start_parts = ", ".join(str(x) for x in self._start.coordinate)
-        end_parts = ", ".join(str(x) for x in self._end.coordinate)
         options = self.tikz_options
 
         if options:
@@ -111,10 +96,9 @@ class Parabola(TikzObject):
             full_options = ""
 
         if self._bend is not None:
-            bend_parts = ", ".join(str(x) for x in self._bend.coordinate)
-            parabola_str = f"\\{self.tikz_command}{full_options} ({start_parts}) parabola bend ({bend_parts}) ({end_parts});\n"
+            parabola_str = f"\\{self.tikz_command}{full_options} {self.start.to_tikz()} parabola bend {self._bend.to_tikz()} {self.end.to_tikz()};\n"
         else:
-            parabola_str = f"\\{self.tikz_command}{full_options} ({start_parts}) parabola ({end_parts});\n"
+            parabola_str = f"\\{self.tikz_command}{full_options} {self.start.to_tikz()} parabola {self.end.to_tikz()};\n"
 
         parabola_str = self.add_comment(parabola_str)
 

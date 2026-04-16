@@ -11,7 +11,8 @@ from tikzfigure.core.axis import Axis2D
 from tikzfigure.core.base import TikzObject
 from tikzfigure.core.circle import Circle
 from tikzfigure.core.color import Color
-from tikzfigure.core.coordinate import Coordinate, TikzCoordinate
+from tikzfigure.core.constants import TAB
+from tikzfigure.core.coordinate import Coordinate, PositionInput, TikzCoordinate
 from tikzfigure.core.ellipse import Ellipse
 from tikzfigure.core.grid import Grid
 from tikzfigure.core.layer import LayerCollection
@@ -45,6 +46,7 @@ link_string = "% https://github.com/max-models/tikzfigure"
 link_string += " " * (line_length - len(link_string) - 2) + "%\n"
 line_separator = "% " + "-" * (line_length - 5) + " %\n"
 TIKZFIGURE_HEADER = line_separator + version_string + link_string + line_separator
+WEB_COMPILATION_ENV_VAR = "TIKZFIGURE_USE_WEB_COMPILATION"
 
 
 class TikzFigure:
@@ -61,8 +63,9 @@ class TikzFigure:
     web API for compilation. You can explicitly request web-based compilation
     by passing ``use_web_compilation=True`` to these methods. This allows
     figures to be compiled and rendered without requiring a local LaTeX
-    installation. See https://github.com/max-models/tikzfigure for more
-    details.
+    installation. You can also force this behavior process-wide by setting
+    the ``TIKZFIGURE_USE_WEB_COMPILATION=1`` environment variable. See
+    https://github.com/max-models/tikzfigure for more details.
 
     Attributes:
         layers: The :class:`LayerCollection` holding all drawing layers.
@@ -92,6 +95,18 @@ class TikzFigure:
                 )
             return nodes.nodes, nodes.segment_options
         return nodes, segment_options
+
+    @staticmethod
+    def _env_requests_web_compilation() -> bool:
+        """Return True when the environment forces web compilation."""
+        value = os.environ.get(WEB_COMPILATION_ENV_VAR)
+        if value is None:
+            return False
+        return value.strip().lower() in {"1", "true", "yes", "on"}
+
+    def _resolve_use_web_compilation(self, use_web_compilation: bool) -> bool:
+        """Resolve the effective web compilation setting."""
+        return use_web_compilation or self._env_requests_web_compilation()
 
     def _add_path(
         self,
@@ -296,6 +311,29 @@ class TikzFigure:
             lines = [line.lstrip().rstrip() for line in lines]
             lines = [line for line in lines if line not in ["", "\n"]]
             lines = [line for line in lines if not line[0] == "%"]
+
+            merged_lines: list[str] = []
+            multiline_command: str | None = None
+            for line in lines:
+                if multiline_command is not None:
+                    multiline_command = f"{multiline_command} {line.strip()}"
+                    if line.endswith(";"):
+                        merged_lines.append(multiline_command)
+                        multiline_command = None
+                    continue
+
+                if line.startswith(
+                    ("\\draw", "\\filldraw", "\\path", "\\fill")
+                ) and not line.endswith(";"):
+                    multiline_command = line
+                    continue
+
+                merged_lines.append(line)
+
+            if multiline_command is not None:
+                merged_lines.append(multiline_command)
+
+            lines = merged_lines
 
             assert lines[0] == "\\begin{tikzpicture}", f"Found: {lines[0]}"
             assert lines[-1] == "\\end{tikzpicture}", f"Found: {lines[-1]}"
@@ -623,7 +661,15 @@ class TikzFigure:
 
     def add_node(
         self,
-        x: float | int | str | None = None,
+        x: (
+            float
+            | int
+            | str
+            | tuple[float | int | str, float | int | str]
+            | tuple[float | int | str, float | int | str, float | int | str]
+            | TikzCoordinate
+            | None
+        ) = None,
         y: float | int | str | None = None,
         z: float | int | str | None = None,
         label: str | None = None,
@@ -725,9 +771,13 @@ class TikzFigure:
         """Add a node to the TikZ figure.
 
         Args:
-            x: X-coordinate. Use ``None`` for relatively positioned nodes.
-            y: Y-coordinate. Use ``None`` for relatively positioned nodes.
-            z: Z-coordinate for 3-D figures.
+            x: X-coordinate, a ``(x, y)`` / ``(x, y, z)`` tuple, or a
+                :class:`TikzCoordinate`. Use ``None`` for relatively
+                positioned nodes.
+            y: Y-coordinate. Use ``None`` when ``x`` already provides the
+                full position.
+            z: Z-coordinate for 3-D figures. Use ``None`` when ``x`` already
+                provides the full position.
             label: Internal TikZ name. Auto-assigned when ``None``.
             content: Text or LaTeX content displayed inside the node.
             layer: Target layer index. Defaults to ``0``.
@@ -845,6 +895,10 @@ class TikzFigure:
         if isinstance(options, str):
             options = [options]
 
+        if label is None and isinstance(x, str) and y is None and z is None:
+            label = x
+            x = None
+
         if label is None:
             label = f"node{self._node_counter}"
         node = Node(
@@ -907,9 +961,7 @@ class TikzFigure:
         mid_x = (node1_obj.x + node2_obj.x) / 2  # type: ignore[operator]
         mid_y = (node1_obj.y + node2_obj.y) / 2  # type: ignore[operator]
 
-        if isinstance(node1_obj, Coordinate) or isinstance(node2_obj, Coordinate):
-            mid_z = None
-        elif node1_obj.ndim == 3 and node2_obj.ndim == 3:
+        if node1_obj.z is not None and node2_obj.z is not None:
             mid_z = (node1_obj.z + node2_obj.z) / 2  # type: ignore[operator]
         else:
             mid_z = None
@@ -927,8 +979,17 @@ class TikzFigure:
     def add_coordinate(
         self,
         label: str,
-        x: float | str | None = None,
-        y: float | str | None = None,
+        x: (
+            float
+            | int
+            | str
+            | tuple[float | int | str, float | int | str]
+            | tuple[float | int | str, float | int | str, float | int | str]
+            | TikzCoordinate
+            | None
+        ) = None,
+        y: float | int | str | None = None,
+        z: float | int | str | None = None,
         at: str | None = None,
         layer: int = 0,
         comment: str | None = None,
@@ -942,13 +1003,13 @@ class TikzFigure:
         midpoints, or expression-based positions that you can reference in
         paths and other commands.
 
-        Either provide numeric ``x`` and ``y`` values, or a raw TikZ
-        coordinate expression via ``at``.
+        Either provide explicit coordinates, or a raw TikZ coordinate
+        expression via ``at``.
 
         Examples::
 
             # Fixed point
-            fig.add_coordinate("origin", x=0, y=0)
+            fig.add_coordinate("origin", (0, 0))
             fig.draw(["origin", "A"])
 
             # Midpoint using calc (add "calc" to extra_packages)
@@ -961,12 +1022,13 @@ class TikzFigure:
         Args:
             label: TikZ name for this coordinate.  Used when referencing
                 it in path lists (e.g. ``["A", "mid", "B"]``).
-            x: X-coordinate value (numeric or PGF expression string).
-                Must be provided together with ``y``.  Mutually exclusive
-                with ``at``.
-            y: Y-coordinate value (numeric or PGF expression string).
-                Must be provided together with ``x``.  Mutually exclusive
-                with ``at``.
+            x: X-coordinate value, a ``(x, y)`` / ``(x, y, z)`` tuple, or a
+                :class:`TikzCoordinate`. Must be provided together with ``y``
+                when passed as a scalar. Mutually exclusive with ``at``.
+            y: Y-coordinate value when passing explicit scalar coordinates.
+                Mutually exclusive with ``at``.
+            z: Z-coordinate value when passing explicit scalar coordinates.
+                Mutually exclusive with ``at``.
             at: Raw TikZ coordinate expression.  Examples:
 
                 * ``"$(A)!0.5!(B)$"`` — midpoint via ``calc`` library
@@ -986,6 +1048,7 @@ class TikzFigure:
             label=label,
             x=x,
             y=y,
+            z=z,
             at=at,
             layer=layer,
             comment=comment,
@@ -1056,7 +1119,7 @@ class TikzFigure:
 
     def arc(
         self,
-        start: tuple[float | str, float | str],
+        start: PositionInput,
         start_angle: float,
         end_angle: float,
         radius: float | str,
@@ -1097,7 +1160,8 @@ class TikzFigure:
         """Add an arc to the figure.
 
         Args:
-            start: Starting coordinate as (x, y) tuple.
+            start: Starting coordinate as an ``(x, y)`` / ``(x, y, z)`` tuple or
+                :class:`TikzCoordinate`.
             start_angle: Start angle in degrees.
             end_angle: End angle in degrees.
             radius: Radius of the arc (e.g. ``"3mm"``, ``0.5``).
@@ -1196,7 +1260,7 @@ class TikzFigure:
 
     def circle(
         self,
-        center: tuple[float | str, float | str],
+        center: PositionInput,
         radius: float | str,
         layer: int = 0,
         comment: str | None = None,
@@ -1233,7 +1297,8 @@ class TikzFigure:
         """Add a circle to the figure.
 
         Args:
-            center: Center coordinate as (x, y) tuple.
+            center: Center coordinate as an ``(x, y)`` / ``(x, y, z)`` tuple or
+                :class:`TikzCoordinate`.
             radius: Radius of the circle (e.g. ``"5mm"``, ``1.0``).
             layer: Target layer index. Defaults to ``0``.
             comment: Optional comment prepended in the TikZ output.
@@ -1323,8 +1388,8 @@ class TikzFigure:
 
     def rectangle(
         self,
-        corner1: tuple[float | str, float | str],
-        corner2: tuple[float | str, float | str],
+        corner1: PositionInput,
+        corner2: PositionInput,
         layer: int = 0,
         comment: str | None = None,
         verbose: bool = False,
@@ -1362,8 +1427,10 @@ class TikzFigure:
         """Add a rectangle to the figure.
 
         Args:
-            corner1: First corner as (x, y) tuple.
-            corner2: Opposite corner as (x, y) tuple.
+            corner1: First corner as an ``(x, y)`` / ``(x, y, z)`` tuple or
+                :class:`TikzCoordinate`.
+            corner2: Opposite corner as an ``(x, y)`` / ``(x, y, z)`` tuple or
+                :class:`TikzCoordinate`.
             layer: Target layer index. Defaults to ``0``.
             comment: Optional comment prepended in the TikZ output.
             verbose: If ``True``, print a debug message.
@@ -1453,7 +1520,7 @@ class TikzFigure:
 
     def ellipse(
         self,
-        center: tuple[float | str, float | str],
+        center: PositionInput,
         x_radius: float | str,
         y_radius: float | str,
         layer: int = 0,
@@ -1491,7 +1558,8 @@ class TikzFigure:
         """Add an ellipse to the figure.
 
         Args:
-            center: Center coordinate as (x, y) tuple.
+            center: Center coordinate as an ``(x, y)`` / ``(x, y, z)`` tuple or
+                :class:`TikzCoordinate`.
             x_radius: Horizontal radius (e.g. ``"2cm"``, ``1.5``).
             y_radius: Vertical radius (e.g. ``"1cm"``, ``0.75``).
             layer: Target layer index. Defaults to ``0``.
@@ -1581,8 +1649,8 @@ class TikzFigure:
 
     def grid(
         self,
-        corner1: tuple[float | str, float | str],
-        corner2: tuple[float | str, float | str],
+        corner1: PositionInput,
+        corner2: PositionInput,
         step: str | None = None,
         layer: int = 0,
         comment: str | None = None,
@@ -1613,8 +1681,10 @@ class TikzFigure:
         """Add a grid to the figure.
 
         Args:
-            corner1: First corner as (x, y) tuple.
-            corner2: Opposite corner as (x, y) tuple.
+            corner1: First corner as an ``(x, y)`` / ``(x, y, z)`` tuple or
+                :class:`TikzCoordinate`.
+            corner2: Opposite corner as an ``(x, y)`` / ``(x, y, z)`` tuple or
+                :class:`TikzCoordinate`.
             step: Grid step size (e.g. ``"1cm"`` for uniform, or
                 ``"0.5cm,1cm"`` for different x/y steps). Defaults to ``None``
                 (TikZ default of 1cm).
@@ -1687,9 +1757,9 @@ class TikzFigure:
 
     def parabola(
         self,
-        start: tuple[float | str, float | str],
-        end: tuple[float | str, float | str],
-        bend: tuple[float | str, float | str] | None = None,
+        start: PositionInput,
+        end: PositionInput,
+        bend: PositionInput | None = None,
         layer: int = 0,
         comment: str | None = None,
         verbose: bool = False,
@@ -1727,10 +1797,12 @@ class TikzFigure:
         """Add a parabola to the figure.
 
         Args:
-            start: Starting coordinate as (x, y) tuple.
-            end: Ending coordinate as (x, y) tuple.
-            bend: Bend (control) point as (x, y) tuple. If None, uses TikZ
-                default. Defaults to ``None``.
+            start: Starting coordinate as an ``(x, y)`` / ``(x, y, z)`` tuple or
+                :class:`TikzCoordinate`.
+            end: Ending coordinate as an ``(x, y)`` / ``(x, y, z)`` tuple or
+                :class:`TikzCoordinate`.
+            bend: Bend point as an ``(x, y)`` / ``(x, y, z)`` tuple or
+                :class:`TikzCoordinate`. If None, uses TikZ default.
             layer: Target layer index. Defaults to ``0``.
             comment: Optional comment prepended in the TikZ output.
             verbose: If ``True``, print a debug message.
@@ -1823,8 +1895,8 @@ class TikzFigure:
 
     def line(
         self,
-        start: tuple[float | str, float | str],
-        end: tuple[float | str, float | str],
+        start: PositionInput,
+        end: PositionInput,
         layer: int = 0,
         comment: str | None = None,
         verbose: bool = False,
@@ -1858,8 +1930,10 @@ class TikzFigure:
         """Add a line segment to the figure.
 
         Args:
-            start: Starting point as (x, y) tuple.
-            end: Ending point as (x, y) tuple.
+            start: Starting point as an ``(x, y)`` / ``(x, y, z)`` tuple or
+                :class:`TikzCoordinate`.
+            end: Ending point as an ``(x, y)`` / ``(x, y, z)`` tuple or
+                :class:`TikzCoordinate`.
             layer: Target layer index. Defaults to ``0``.
             comment: Optional comment prepended in the TikZ output.
             verbose: If ``True``, print a debug message.
@@ -1939,7 +2013,7 @@ class TikzFigure:
 
     def polygon(
         self,
-        center: tuple[float | str, float | str],
+        center: PositionInput,
         radius: float | str,
         sides: int,
         rotation: float = 0,
@@ -1978,7 +2052,8 @@ class TikzFigure:
         """Add a regular polygon to the figure.
 
         Args:
-            center: Center coordinate as (x, y) tuple.
+            center: Center coordinate as an ``(x, y)`` / ``(x, y, z)`` tuple or
+                :class:`TikzCoordinate`.
             radius: Distance from center to vertices.
             sides: Number of sides (must be >= 3).
             rotation: Rotation angle in degrees. Defaults to ``0``.
@@ -2073,7 +2148,7 @@ class TikzFigure:
 
     def triangle(
         self,
-        center: tuple[float | str, float | str],
+        center: PositionInput,
         radius: float | str,
         rotation: float = 0,
         layer: int = 0,
@@ -2097,7 +2172,8 @@ class TikzFigure:
         """Add an equilateral triangle to the figure.
 
         Args:
-            center: Center coordinate as (x, y) tuple.
+            center: Center coordinate as an ``(x, y)`` / ``(x, y, z)`` tuple or
+                :class:`TikzCoordinate`.
             radius: Distance from center to vertices.
             rotation: Rotation angle in degrees. Defaults to ``0``.
             layer: Target layer index. Defaults to ``0``.
@@ -2154,7 +2230,7 @@ class TikzFigure:
 
     def square(
         self,
-        center: tuple[float | str, float | str],
+        center: PositionInput,
         radius: float | str,
         rotation: float = 45,
         layer: int = 0,
@@ -2178,7 +2254,8 @@ class TikzFigure:
         """Add a square to the figure.
 
         Args:
-            center: Center coordinate as (x, y) tuple.
+            center: Center coordinate as an ``(x, y)`` / ``(x, y, z)`` tuple or
+                :class:`TikzCoordinate`.
             radius: Distance from center to vertices (corner-to-center distance).
             rotation: Rotation angle in degrees. Defaults to ``45`` (axis-aligned).
             layer: Target layer index. Defaults to ``0``.
@@ -3092,8 +3169,8 @@ class TikzFigure:
         Example:
             >>> fig = TikzFigure(rows=2, cols=2)
             >>> subfig = fig.add_subfigure(width=0.45)
-            >>> A = subfig.add_node(0, 1, label="A", content="A")
-            >>> B = subfig.add_node(2, 1, label="B", content="B")
+            >>> A = subfig.add_node(x = 0, y = 1, label="A", content="A")
+            >>> B = subfig.add_node(x = 2, y = 1, label="B", content="B")
             >>> subfig.draw([A, B], options=["->"])
         """
         if width <= 0 or width > 1.0:
@@ -3150,7 +3227,7 @@ class TikzFigure:
     def add_loop(
         self,
         variable: str,
-        values: list[Any],
+        values: list[Any] | tuple[Any, ...] | range,
         layer: int = 0,
         comment: str | None = None,
         verbose: bool = False,
@@ -3193,12 +3270,11 @@ class TikzFigure:
             nesting level.
         """
         tikz_script_new = ""
-        tab_str = "    "
         num_tabs = 0
         for line in tikz_script.split("\n"):
             if "\\end" in line or "end \\foreach" in line:
                 num_tabs = max(num_tabs - 1, 0)
-            tikz_script_new += f"{tab_str * num_tabs}{line}".rstrip() + "\n"
+            tikz_script_new += f"{TAB * num_tabs}{line}".rstrip() + "\n"
             if "\\begin" in line or "start \\foreach" in line:
                 num_tabs += 1
             if "\\foreach" in line and "in" in line and "{" in line:
@@ -3232,7 +3308,7 @@ class TikzFigure:
 
         # Indent and add to groupplot
         axis_lines = axis_tikz.split("\n")
-        return "\n".join(["    " + line for line in axis_lines]) + "\n"
+        return "\n".join([TAB + line for line in axis_lines]) + "\n"
 
     def _render_groupplot_grid(self, num_rows: int, num_cols: int) -> str:
         """Render a grid of Axis2D items using pgfplots groupplot."""
@@ -3341,7 +3417,7 @@ class TikzFigure:
                         )
                     for line in axis_tikz.split("\n"):
                         if line.strip():
-                            result += f"    {line}\n"
+                            result += f"{TAB}{line}\n"
                     result += "\\end{scope}\n"
                 elif isinstance(item, TikzFigure):
                     result += f"\\begin{{scope}}[xshift={x:.1f}cm, yshift={y:.1f}cm]\n"
@@ -3351,7 +3427,7 @@ class TikzFigure:
                                 tikz_content = tikz_obj.to_tikz()
                                 for line in tikz_content.split("\n"):
                                     if line.strip():
-                                        result += f"    {line}\n"
+                                        result += f"{TAB}{line}\n"
                     result += "\\end{scope}\n"
 
         return result
@@ -3414,7 +3490,7 @@ class TikzFigure:
                 tikz_script += "grid=major\n"
             else:
                 tikz_script += "hide axis\n"
-            tikz_script += "    ]\n"
+            tikz_script += f"{TAB}]\n"
 
         # Collect all layer keys from both drawing elements and axes
         all_layer_keys = set(self.layers.layers.keys())
@@ -3438,7 +3514,7 @@ class TikzFigure:
         # TODO: Create a Grid class
         if self._grid:
             tikz_script += (
-                "    \\draw[step=1cm, gray, very thin] (-10,-10) grid (10,10);\n"
+                f"{TAB}\\draw[step=1cm, gray, very thin] (-10,-10) grid (10,10);\n"
             )
         ordered_layers = []
         buffered_layers = set()
@@ -3554,7 +3630,7 @@ class TikzFigure:
         elif self._description or self._label:
             figure_env = "\\begin{figure}\n" + tikz_script + "\n"
             if self._label:
-                figure_env += f"    \\label{{{self._label}}}\n"
+                figure_env += f"{TAB}\\label{{{self._label}}}\n"
             figure_env += "\\end{figure}"
             tikz_script = figure_env
         tikz_script = self._add_tabs(tikz_script)
@@ -3628,19 +3704,19 @@ class TikzFigure:
             )
 
             # Start subfigure
-            latex_code += f"    \\begin{{subfigure}}{{{width}\\textwidth}}\n"
-            latex_code += f"        \\centering\n"
-            latex_code += f"        {tikz_code}\n"
+            latex_code += f"{TAB}\\begin{{subfigure}}{{{width}\\textwidth}}\n"
+            latex_code += f"{TAB * 2}\\centering\n"
+            latex_code += f"{TAB * 2}{tikz_code}\n"
 
             # Add label to subfigure if provided
             if label:
-                latex_code += f"        \\label{{{label}}}\n"
+                latex_code += f"{TAB * 2}\\label{{{label}}}\n"
 
-            latex_code += "    \\end{subfigure}\n"
+            latex_code += f"{TAB}\\end{{subfigure}}\n"
 
             # Add spacing between subfigures (not after last one)
             if i < len(figures) - 1:
-                latex_code += f"    \\hspace{{{spacing}}}\n"
+                latex_code += f"{TAB}\\hspace{{{spacing}}}\n"
 
         latex_code += "\\end{figure}\n"
         return latex_code
@@ -3705,6 +3781,7 @@ class TikzFigure:
         if isinstance(filename, str):
             filename = Path(filename)
 
+        use_web_compilation = self._resolve_use_web_compilation(use_web_compilation)
         latex_document = self.generate_standalone()
         if verbose:
             print(latex_document)
@@ -3821,6 +3898,7 @@ class TikzFigure:
         if isinstance(filename, str):
             filename = Path(filename)
 
+        use_web_compilation = self._resolve_use_web_compilation(use_web_compilation)
         ext = filename.suffix.lower()
 
         if ext == ".pdf":
@@ -4045,6 +4123,8 @@ class TikzFigure:
         Raises:
             ValueError: If *backend* is not one of the supported values.
         """
+        use_web_compilation = self._resolve_use_web_compilation(use_web_compilation)
+
         # Skip display in test/headless environments
         if os.environ.get("tikzfigure_NO_SHOW") == "1" or os.environ.get(
             "PYTEST_CURRENT_TEST"
@@ -4144,6 +4224,14 @@ class TikzFigure:
     def subfigure_axes(self) -> list[tuple[Axis2D, float]]:
         """List of subfigure axes with widths."""
         return self._subfigure_axes
+
+    # Short public aliases for the add_* helpers.
+    node = add_node
+    coordinate = add_coordinate
+    variable = add_variable
+    raw = add_raw
+    subfigure = add_subfigure
+    loop = add_loop
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, TikzFigure):

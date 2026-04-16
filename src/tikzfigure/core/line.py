@@ -1,7 +1,12 @@
 from typing import Any
 
 from tikzfigure.core.base import TikzObject
-from tikzfigure.core.coordinate import TikzCoordinate
+from tikzfigure.core.coordinate import (
+    PositionInput,
+    TikzCoordinate,
+    TikzVector,
+    VectorInput,
+)
 
 
 class Line(TikzObject):
@@ -14,8 +19,8 @@ class Line(TikzObject):
 
     def __init__(
         self,
-        start: tuple[float | str, float | str] | TikzCoordinate,
-        end: tuple[float | str, float | str] | TikzCoordinate,
+        start: PositionInput,
+        end: PositionInput,
         label: str = "",
         comment: str | None = None,
         layer: int = 0,
@@ -25,8 +30,10 @@ class Line(TikzObject):
         """Initialize a Line.
 
         Args:
-            start: Starting point as (x, y) tuple or TikzCoordinate.
-            end: Ending point as (x, y) tuple or TikzCoordinate.
+            start: Starting point as an ``(x, y)`` / ``(x, y, z)`` tuple or
+                :class:`TikzCoordinate`.
+            end: Ending point as an ``(x, y)`` / ``(x, y, z)`` tuple or
+                :class:`TikzCoordinate`.
             label: Internal TikZ name for this line. Defaults to "".
             comment: Optional comment prepended in the TikZ output.
             layer: Layer index. Defaults to 0.
@@ -36,15 +43,8 @@ class Line(TikzObject):
         if options is None:
             options = []
 
-        if isinstance(start, tuple):
-            self._start = TikzCoordinate(start[0], start[1], layer=layer)
-        else:
-            self._start = start
-
-        if isinstance(end, tuple):
-            self._end = TikzCoordinate(end[0], end[1], layer=layer)
-        else:
-            self._end = end
+        self._start = TikzCoordinate(start, layer=layer)
+        self._end = TikzCoordinate(end, layer=layer)
 
         super().__init__(
             label=label,
@@ -64,6 +64,34 @@ class Line(TikzObject):
         """Ending point of the line."""
         return self._end
 
+    @property
+    def vector(self) -> TikzVector:
+        """Vector from the start point to the end point."""
+        return self.start.vector_to(self.end)
+
+    @property
+    def direction(self) -> TikzVector:
+        """Alias for :attr:`vector`."""
+        return self.vector
+
+    @property
+    def length(self) -> float:
+        """Euclidean length of the line segment."""
+        return self.vector.norm()
+
+    def translate(self, vector: VectorInput) -> "Line":
+        """Return a translated copy of this line."""
+        offset = TikzVector(vector, layer=self.layer or 0)
+        return Line(
+            start=self.start + offset,
+            end=self.end + offset,
+            label=self.label or "",
+            comment=self.comment,
+            layer=self.layer or 0,
+            options=list(self.options),
+            **dict(self.kwargs),
+        )
+
     def to_tikz(self) -> str:
         """Generate the TikZ line command.
 
@@ -71,8 +99,6 @@ class Line(TikzObject):
             A \\draw command string ending with a newline,
             optionally preceded by a comment line.
         """
-        start_parts = ", ".join(str(x) for x in self._start.coordinate)
-        end_parts = ", ".join(str(x) for x in self._end.coordinate)
         options = self.tikz_options
 
         if options:
@@ -80,7 +106,9 @@ class Line(TikzObject):
         else:
             full_options = ""
 
-        line_str = f"\\draw{full_options} ({start_parts}) -- ({end_parts});\n"
+        line_str = (
+            f"\\draw{full_options} {self.start.to_tikz()} -- {self.end.to_tikz()};\n"
+        )
         line_str = self.add_comment(line_str)
 
         return line_str

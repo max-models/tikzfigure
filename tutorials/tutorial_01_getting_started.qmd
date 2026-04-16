@@ -22,19 +22,38 @@ from tikzfigure import Node, TikzFigure
 
 ## Your first figure
 
-A `TikzFigure` is the canvas. Nodes are placed on it with `add_node(x, y, ...)`,
-and connections are drawn with `draw([node_a, node_b], ...)`. Call `show()` to
+A `TikzFigure` is the canvas. Nodes are placed on it with `node(x, y, ...)`, and
+connections are drawn with `draw([node_a, node_b], ...)`. Call `show()` to
 compile and display the result inline.
 
 ```{python}
 fig = TikzFigure()
 
-n1 = fig.add_node(0, 0, shape="circle", color="white", fill="blue", content="Hello!")
-n2 = fig.add_node(5, 0, shape="circle", color="white", fill="red", content="Hi!")
+n1 = fig.node(
+    0,
+    0,
+    shape="circle",
+    color="white",
+    fill="blue",
+    content="Hello!",
+)
+n2 = fig.node(
+    5,
+    0,
+    shape="circle",
+    color="white",
+    fill="red",
+    content="Hi!",
+)
 
-fig.draw([n1, n2], arrows="->", line_width=2, color="gray")
+fig.draw(
+    [n1, n2],
+    arrows="->",
+    line_width=2,
+    color="gray",
+)
 
-fig.show(use_web_compilation=True)
+fig.show()
 ```
 
 {{< include includes/tikz_code_callout.qmd >}}
@@ -60,13 +79,32 @@ instance (`n1`) or its label (`node1`).
 fig2 = TikzFigure()
 
 n1 = Node(
-    0, 0, label="node1", shape="circle", color="white", fill="blue", content="Hello!"
+    0,
+    0,
+    label="node1",
+    shape="circle",
+    color="white",
+    fill="blue",
+    content="Hello!",
 )
-n2 = Node(5, 0, label="node2", shape="circle", color="white", fill="red", content="Hi!")
+n2 = Node(
+    5,
+    0,
+    label="node2",
+    shape="circle",
+    color="white",
+    fill="red",
+    content="Hi!",
+)
 
 fig2.add([n1, n2])
 # Note that we can use the node labels to refer to them when drawing edges
-fig2.draw(["node1", n2], arrows="<-", line_width=2, color="gray")
+fig2.draw(
+    ["node1", n2],
+    arrows="<-",
+    line_width=2,
+    color="gray",
+)
 
 fig2.show()
 ```
@@ -81,16 +119,50 @@ arrow - positive values bend it left relative to the direction of travel.
 ```{python}
 fig = TikzFigure()
 
-A = fig.add_node(0, 2, label="A", content="A", shape="circle", fill="cyan!40")
-B = fig.add_node(3, 2, label="B", content="B", shape="circle", fill="cyan!40")
-C = fig.add_node(0, 0, label="C", content="C", shape="circle", fill="cyan!40")
-D = fig.add_node(3, 0, label="D", content="D", shape="circle", fill="cyan!40")
+A = fig.node(
+    0,
+    2,
+    label="A",
+    content="A",
+    shape="circle",
+    fill="cyan!40",
+)
+B = fig.node(
+    3,
+    2,
+    label="B",
+    content="B",
+    shape="circle",
+    fill="cyan!40",
+)
+C = fig.node(
+    0,
+    0,
+    label="C",
+    content="C",
+    shape="circle",
+    fill="cyan!40",
+)
+D = fig.node(
+    3,
+    0,
+    label="D",
+    content="D",
+    shape="circle",
+    fill="cyan!40",
+)
 
 fig.draw([A, B], arrows="->")
 fig.draw([A, C], arrows="->")
 fig.draw([B, D], arrows="->")
 fig.draw([C, D], arrows="->")
-fig.draw([A, D], arrows="->", dashed=True, bend_left=20, color="gray")
+fig.draw(
+    [A, D],
+    arrows="->",
+    dashed=True,
+    bend_left=20,
+    color="gray",
+)
 
 fig.show()
 ```

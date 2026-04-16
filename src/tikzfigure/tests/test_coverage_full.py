@@ -8,10 +8,11 @@ from types import ModuleType
 
 import pytest
 
+from tikzfigure import TikzCoordinate, TikzVector
 from tikzfigure.core.base import TikzObject
 from tikzfigure.core.color import Color
-from tikzfigure.core.coordinate import TikzCoordinate
 from tikzfigure.core.figure import TikzFigure
+from tikzfigure.core.line import Line
 from tikzfigure.core.loop import Loop
 from tikzfigure.core.node import Node
 from tikzfigure.core.path import TikzPath
@@ -120,10 +121,51 @@ def test_color_variable_coordinate():
     coord2 = TikzCoordinate(1, 2)
     assert coord2.ndim == 2
     assert coord2.coordinate == (1, 2)
+    assert coord2.to_tikz() == "({1}, {2})"
+
+    coord2_tuple = TikzCoordinate((1, 2))
+    assert coord2_tuple.ndim == 2
+    assert coord2_tuple.coordinate == (1, 2)
 
     coord3 = TikzCoordinate(1, 2, 3)
     assert coord3.ndim == 3
     assert coord3.coordinate == (1, 2, 3)
+    assert coord3.to_tikz() == "(axis cs:{1}, {2}, {3})"
+
+    coord3_clone = TikzCoordinate(coord3)
+    assert coord3_clone.ndim == 3
+    assert coord3_clone.coordinate == (1, 2, 3)
+
+    vector2 = TikzVector(3, 4)
+    assert vector2.coordinate == (3, 4)
+    assert vector2.norm() == 5.0
+
+
+def test_point_and_vector_linear_algebra():
+    vector_u = TikzVector(1, 2, 3)
+    vector_v = TikzVector(4, 5, 6)
+
+    assert vector_u + vector_v == TikzVector(5, 7, 9)
+    assert vector_v - vector_u == TikzVector(3, 3, 3)
+    assert 2 * vector_u == TikzVector(2, 4, 6)
+    assert vector_u * 3 == TikzVector(3, 6, 9)
+    assert vector_u.dot(vector_v) == 32.0
+    assert (vector_u @ vector_v) == 32.0
+    assert vector_u.cross(vector_v) == TikzVector(-3, 6, -3)
+
+    point_p = TikzCoordinate(1, 2)
+    point_q = TikzCoordinate(4, 6)
+    diff = point_q - point_p
+
+    assert diff == TikzVector(3, 4)
+    assert point_p + TikzVector(3, 4) == point_q
+    assert point_q - TikzVector(3, 4) == point_p
+    assert point_p.vector_to(point_q) == TikzVector(3, 4)
+    assert point_p.distance_to(point_q) == 5.0
+    assert point_q.to_vector() == TikzVector(4, 6)
+
+    with pytest.raises(TypeError, match="requires numeric coordinates"):
+        TikzCoordinate("x", 2).distance_to(TikzCoordinate(1, 2))
 
 
 def test_node_to_tikz_branches():
@@ -138,6 +180,27 @@ def test_node_to_tikz_branches():
 
     node3d = Node(1, 2, 3, label="n3", content="Z")
     assert "axis cs:{1}, {2}, {3}" in node3d.to_tikz()
+
+
+def test_node_and_line_geometry_helpers():
+    node_a = Node(1, 2, label="a")
+    node_b = Node(4, 6, label="b")
+
+    assert node_a.position == TikzCoordinate(1, 2)
+    assert node_a.to_vector() == TikzVector(1, 2)
+    assert node_a.vector_to(node_b) == TikzVector(3, 4)
+    assert node_a.distance_to(node_b) == 5.0
+    assert node_a.translate(TikzVector(3, 4)) == TikzCoordinate(4, 6)
+
+    line = Line((1, 2), (4, 6), color="red")
+    shifted = line.translate((1, 1))
+
+    assert line.vector == TikzVector(3, 4)
+    assert line.direction == TikzVector(3, 4)
+    assert line.length == 5.0
+    assert shifted.start == TikzCoordinate(2, 3)
+    assert shifted.end == TikzCoordinate(5, 7)
+    assert shifted.kwargs["color"] == "red"
 
 
 def test_path_label_list_and_options():
@@ -230,8 +293,8 @@ def test_figure_generate_tikz_features_and_ordering():
     fig.draw([(0, 0), (1, 1)], layer=0)
     fig.filldraw([n0, n1], layer=1)
     fig.plot3d([0, 1], [0, 1], [0, 1], layer=2, comment="plot3d")
-    fig.add_node(2, 2, label=None, content="C", options="right of=n0")
-    fig.add_node(3, 3, label="s", content="S")
+    fig.add_node(x=2, y=2, label=None, content="C", options="right of=n0")
+    fig.add_node(x=3, y=3, label="s", content="S")
     fig.draw(["s", "s"], layer=0)
     fig.add_raw("% raw", layer=0)
 
@@ -349,7 +412,7 @@ def test_generate_standalone_compiles_via_latex_on_http():
 
 def test_generate_tikz_single_layer_no_layers_block():
     fig = TikzFigure()
-    fig.add_node(0, 0, label="n", content="N")
+    fig.add_node(x=0, y=0, label="n", content="N")
     tikz = fig.generate_tikz(use_layers=True)
     assert "\\pgfdeclarelayer" not in tikz
 

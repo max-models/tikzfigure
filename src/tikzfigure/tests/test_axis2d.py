@@ -671,7 +671,7 @@ class TestTikzFigureAxis2D:
         fig = TikzFigure()
 
         # Add a node on layer 1
-        fig.add_node(0, 0, label="n1", content="Node", layer=1)
+        fig.add_node(x=0, y=0, label="n1", content="Node", layer=1)
 
         # Add an axis on layer 1
         axis = fig.axis2d(xlabel="X", layer=1)
@@ -1117,8 +1117,8 @@ class TestAxis2DIntegration:
 
         # Create subfigure and add nodes
         subfig = fig.add_subfigure(width=0.45)
-        A = subfig.add_node(0, 1, label="A", content="A", shape="circle")
-        B = subfig.add_node(2, 1, label="B", content="B", shape="circle")
+        A = subfig.add_node(x=0, y=1, label="A", content="A", shape="circle")
+        B = subfig.add_node(x=2, y=1, label="B", content="B", shape="circle")
         subfig.draw([A, B], options=["->"])
 
         # Verify subfigure has nodes

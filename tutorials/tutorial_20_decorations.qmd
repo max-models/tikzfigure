@@ -29,7 +29,9 @@ from tikzfigure import TikzFigure
 A zigzag path oscillates sharply between two extremes along the path direction.
 
 ```{python}
-fig = TikzFigure(document_setup=r"\usetikzlibrary{decorations.pathmorphing}")
+fig = TikzFigure(
+    document_setup=r"\usetikzlibrary{decorations.pathmorphing}",
+)
 
 fig.draw(
     [(0, 0), (6, 0)],
@@ -50,7 +52,9 @@ A snake decoration produces a smooth sinusoidal wave — like a zigzag but with
 rounded peaks.
 
 ```{python}
-fig = TikzFigure(document_setup=r"\usetikzlibrary{decorations.pathmorphing}")
+fig = TikzFigure(
+    document_setup=r"\usetikzlibrary{decorations.pathmorphing}",
+)
 
 fig.draw(
     [(0, 0), (6, 0)],
@@ -71,7 +75,9 @@ A coil decoration draws a helical spring along the path. It works well for
 physics diagrams.
 
 ```{python}
-fig = TikzFigure(document_setup=r"\usetikzlibrary{decorations.pathmorphing}")
+fig = TikzFigure(
+    document_setup=r"\usetikzlibrary{decorations.pathmorphing}",
+)
 
 fig.draw(
     [(0, 0), (6, 0)],
@@ -92,7 +98,9 @@ Bumps produce smooth humps along the path — similar to a snake but with the
 oscillation only on one side.
 
 ```{python}
-fig = TikzFigure(document_setup=r"\usetikzlibrary{decorations.pathmorphing}")
+fig = TikzFigure(
+    document_setup=r"\usetikzlibrary{decorations.pathmorphing}",
+)
 
 fig.draw(
     [(0, 0), (6, 0)],
@@ -113,7 +121,9 @@ Showing all four morphing decorations together, each with a label, makes it easy
 to choose the right one for your diagram.
 
 ```{python}
-fig = TikzFigure(document_setup=r"\usetikzlibrary{decorations.pathmorphing}")
+fig = TikzFigure(
+    document_setup=r"\usetikzlibrary{decorations.pathmorphing}",
+)
 
 decorations = [
     ("zigzag", "red"),
@@ -131,7 +141,7 @@ for i, (dec, color) in enumerate(decorations):
         line_width=2,
         color=color,
     )
-    fig.add_node(
+    fig.node(
         5.3,
         y,
         content=f"\\texttt{{{dec}}}",
@@ -160,13 +170,12 @@ fig = TikzFigure(
         r"\usetikzlibrary{decorations.pathmorphing}"
         "\n"
         r"\usetikzlibrary{decorations.pathreplacing}"
-    )
+    ),
 )
 
 # The region being annotated
-fig.add_node(
-    x=2,
-    y=1,
+fig.node(
+    (2, 1),
     shape="rectangle",
     fill="blue!15",
     draw="blue!50",
@@ -183,8 +192,13 @@ fig.draw(
     line_width=1.5,
     color="blue!70",
 )
-fig.add_node(
-    2, -0.45, content="4 cm wide", draw="none", color="blue!70", font=r"\small"
+fig.node(
+    2,
+    -0.45,
+    content="4 cm wide",
+    draw="none",
+    color="blue!70",
+    font=r"\small",
 )
 
 # Vertical brace on the right side (bottom-to-top so the brace opens rightward)
@@ -195,7 +209,7 @@ fig.draw(
     line_width=1.5,
     color="red!70",
 )
-fig.add_node(
+fig.node(
     5.0,
     1.0,
     content="1.5 cm",
@@ -222,7 +236,7 @@ fig = TikzFigure(
         r"\usetikzlibrary{decorations.pathmorphing}"
         "\n"
         r"\usetikzlibrary{decorations.pathreplacing}"
-    )
+    ),
 )
 
 # Ground line (zigzag = rough terrain)
@@ -270,10 +284,15 @@ fig.draw(
 
 # Anchor nodes
 for x in [1, 7]:
-    fig.add_node(
-        x, 3, shape="circle", fill="gray!50", draw="gray", minimum_size="0.3cm"
+    fig.node(
+        x,
+        3,
+        shape="circle",
+        fill="gray!50",
+        draw="gray",
+        minimum_size="0.3cm",
     )
-    fig.add_node(
+    fig.node(
         x,
         0,
         shape="rectangle",

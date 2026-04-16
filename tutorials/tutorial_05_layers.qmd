@@ -27,10 +27,27 @@ overlapping filled circles: whichever is drawn second covers the first.
 fig = TikzFigure()
 
 # Blue drawn first → red on top
-fig.add_node(0.25, 1, minimum_size="2cm", shape="circle", fill="blue")
-fig.add_node(-0.25, 1, minimum_size="2cm", shape="circle", fill="red")
+fig.node(
+    0.25,
+    1,
+    minimum_size="2cm",
+    shape="circle",
+    fill="blue",
+)
+fig.node(
+    -0.25,
+    1,
+    minimum_size="2cm",
+    shape="circle",
+    fill="red",
+)
 
-fig.add_node(0.05, -0.3, content="red on top (default)", draw="none")
+fig.node(
+    0.05,
+    -0.3,
+    content="red on top (default)",
+    draw="none",
+)
 fig.show()
 ```
 
@@ -40,10 +57,29 @@ fig.show()
 # With layers - blue on layer 2 even though it is drawn first in code
 fig = TikzFigure()
 
-fig.add_node(0.25, 1, minimum_size="2cm", shape="circle", fill="blue", layer=2)
-fig.add_node(-0.25, 1, minimum_size="2cm", shape="circle", fill="red", layer=1)
+fig.node(
+    0.25,
+    1,
+    minimum_size="2cm",
+    shape="circle",
+    fill="blue",
+    layer=2,
+)
+fig.node(
+    -0.25,
+    1,
+    minimum_size="2cm",
+    shape="circle",
+    fill="red",
+    layer=1,
+)
 
-fig.add_node(0.0, -0.3, content="blue on top (layer=2)", draw="none")
+fig.node(
+    0.0,
+    -0.3,
+    content="blue on top (layer=2)",
+    draw="none",
+)
 fig.show()
 ```
 
@@ -78,7 +114,12 @@ nodes_M = [
     [0.5, 0],
 ]
 fig.draw(
-    nodes_M, options=style, layer=0, cycle=True, color="purple", fill="purple!50!white"
+    nodes_M,
+    options=style,
+    layer=0,
+    cycle=True,
+    color="purple",
+    fill="purple!50!white",
 )
 
 nodes_T = [
@@ -92,7 +133,12 @@ nodes_T = [
     [3.875, 0],
 ]
 fig.draw(
-    nodes_T, options=style, layer=0, cycle=True, color="blue", fill="blue!50!white"
+    nodes_T,
+    options=style,
+    layer=0,
+    cycle=True,
+    color="blue",
+    fill="blue!50!white",
 )
 
 nodes_L = [
@@ -104,12 +150,22 @@ nodes_L = [
     [7, 0],
 ]
 fig.draw(
-    nodes_L, options=style, layer=2, cycle=True, color="purple", fill="purple!50!white"
+    nodes_L,
+    options=style,
+    layer=2,
+    cycle=True,
+    color="purple",
+    fill="purple!50!white",
 )
 
 xvec = np.arange(0, 7, 0.05)
 wave = [(x, np.sin(x) * 0.25 + 1.25) for x in xvec]
-fig.draw(wave, options=style, layer=1, color="black")
+fig.draw(
+    wave,
+    options=style,
+    layer=1,
+    color="black",
+)
 
 fig.show()
 ```

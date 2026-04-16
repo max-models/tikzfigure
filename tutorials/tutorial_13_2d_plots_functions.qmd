@@ -19,10 +19,26 @@ pre-computing data points:
 ```{python}
 fig = TikzFigure()
 
-ax = fig.axis2d(xlabel="x", ylabel="y", xlim=(0, 360), ylim=(-1.5, 1.5), grid=True)
+ax = fig.axis2d(
+    xlabel="x",
+    ylabel="y",
+    xlim=(0, 360),
+    ylim=(-1.5, 1.5),
+    grid=True,
+)
 
-ax.add_plot(func="sin(x)", label=r"$\sin(x)$", color="red", line_width="1.5pt")
-ax.add_plot(func="cos(x)", label=r"$\cos(x)$", color="blue", line_width="1.5pt")
+ax.add_plot(
+    func="sin(x)",
+    label=r"$\sin(x)$",
+    color="red",
+    line_width="1.5pt",
+)
+ax.add_plot(
+    func="cos(x)",
+    label=r"$\cos(x)$",
+    color="blue",
+    line_width="1.5pt",
+)
 
 ax.set_legend(position="south east")
 fig.show()
@@ -40,11 +56,26 @@ Plot multiple functions side-by-side:
 ```{python}
 fig = TikzFigure()
 
-ax = fig.axis2d(xlabel="$x$", ylabel="$y$", xlim=(0, 10), ylim=(0, 5), grid=True)
+ax = fig.axis2d(
+    xlabel="$x$",
+    ylabel="$y$",
+    xlim=(0, 10),
+    ylim=(0, 5),
+    grid=True,
+)
 
 ax.add_plot(func="x", label="$x$", color="black")
-ax.add_plot(func="sqrt(x)", label=r"$\sqrt{x}$", color="blue", line_width="2pt")
-ax.add_plot(func="x/2", label="$x/2$", color="green")
+ax.add_plot(
+    func="sqrt(x)",
+    label=r"$\sqrt{x}$",
+    color="blue",
+    line_width="2pt",
+)
+ax.add_plot(
+    func="x/2",
+    label="$x/2$",
+    color="green",
+)
 
 ax.set_legend(position="north west")
 fig.show()
@@ -71,8 +102,18 @@ x = [i * 0.1 for i in range(65)]
 y_sin = [math.sin(xi) for xi in x]
 y_cos = [math.cos(xi) for xi in x]
 
-ax.add_plot(x, y_sin, label=r"$\sin(x)$", color="red")
-ax.add_plot(x, y_cos, label=r"$\cos(x)$", color="blue")
+ax.add_plot(
+    x,
+    y_sin,
+    label=r"$\sin(x)$",
+    color="red",
+)
+ax.add_plot(
+    x,
+    y_cos,
+    label=r"$\cos(x)$",
+    color="blue",
+)
 
 ax.set_legend(position="south east")
 fig.show()
@@ -88,7 +129,11 @@ Visualizing exponential functions with Python-generated data:
 fig = TikzFigure()
 
 ax = fig.axis2d(
-    xlabel="Time (years)", ylabel="Population", xlim=(0, 10), ylim=(0, 1000), grid=True
+    xlabel="Time (years)",
+    ylabel="Population",
+    xlim=(0, 10),
+    ylim=(0, 1000),
+    grid=True,
 )
 
 time = [i for i in range(11)]

@@ -196,6 +196,7 @@ tutorials/*_files/
 .worktrees/
 .claude/
 .omc/
+.panache-cache/
 CLAUDE.md
 README.html
 TIKZ_COMMAND_COVERAGE.md
