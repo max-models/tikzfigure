@@ -1,5 +1,8 @@
 from typing import Literal
 
+from tikzfigure.arrows import TikzArrow
+from tikzfigure.styles import TikzStyle
+
 # ---------- Literal type aliases for IDE autocomplete ---------- #
 
 _Shape = (
@@ -48,8 +51,9 @@ _Anchor = (
     | None
 )
 
-_LineCap = Literal["butt", "rect", "round"] | str | None
-_LineJoin = Literal["miter", "bevel", "round"] | str | None
+_Option = str | TikzStyle | TikzArrow
+_LineCap = Literal["butt", "rect", "round"] | TikzStyle | str | None
+_LineJoin = Literal["miter", "bevel", "round"] | TikzStyle | str | None
 _Align = Literal["left", "center", "right", "justify"] | str | None
 _Shading = Literal["axis", "radial", "ball"] | str | None
 

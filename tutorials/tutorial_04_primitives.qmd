@@ -15,7 +15,7 @@ standard geometric shapes.
 ```{python}
 import math
 
-from tikzfigure import TikzFigure
+from tikzfigure import TikzFigure, arrows, styles
 ```
 
 ## Arcs
@@ -52,7 +52,7 @@ fig.arc(
     start_angle=0,
     end_angle=180,
     radius="2cm",
-    arrows="->",
+    arrows=arrows.forward,
     color="green",
     line_width="2pt",
 )
@@ -297,7 +297,7 @@ fig.parabola(
     (0, 3),
     (3, 4),
     color="green",
-    arrows="->",
+    arrows=arrows.forward,
     line_width="2pt",
 )
 
@@ -326,7 +326,7 @@ fig.line(
     (3, 0),
     (5, 2),
     color="blue",
-    arrows="->",
+    arrows=arrows.forward,
     line_width="2pt",
 )
 
@@ -335,7 +335,7 @@ fig.line(
     (6, 0),
     (8, 1),
     color="green",
-    dash_pattern="on 2pt off 2pt",
+    options=[styles.dashed],
     line_width="2pt",
 )
 

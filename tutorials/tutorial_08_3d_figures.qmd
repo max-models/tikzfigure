@@ -21,7 +21,7 @@ Lorenz trajectories diverging over time
 import numpy as np
 from scipy.integrate import odeint
 
-from tikzfigure import TikzFigure
+from tikzfigure import TikzFigure, styles
 ```
 
 ## A simple 3-D helix
@@ -41,7 +41,8 @@ fig.plot3d(
     xvec,
     yvec,
     zvec,
-    options=["color=blue", "thick"],
+    color="blue",
+    options=[styles.thick],
     layer=0,
 )
 
@@ -96,7 +97,7 @@ fig.plot3d(
     states[:, 1],
     states[:, 2],
     color="black",
-    thick=True,
+    options=[styles.thick],
     layer=0,
 )
 
@@ -146,7 +147,8 @@ fig.plot3d(
     x,
     y,
     z,
-    options=["color=purple", "thick"],
+    color="purple",
+    options=[styles.thick],
     layer=0,
 )
 

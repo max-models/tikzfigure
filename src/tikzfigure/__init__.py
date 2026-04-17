@@ -2,7 +2,18 @@ from tikzfigure.core.coordinate import TikzCoordinate, TikzVector
 from tikzfigure.core.figure import TikzFigure
 from tikzfigure.core.node import Node
 
-__all__ = ["TikzFigure", "Node", "TikzCoordinate", "TikzVector"]
+from . import arrows, colors, styles, units
+
+__all__ = [
+    "TikzFigure",
+    "Node",
+    "TikzCoordinate",
+    "TikzVector",
+    "units",
+    "colors",
+    "styles",
+    "arrows",
+]
 
 
 def load_ipython_extension(ipython):

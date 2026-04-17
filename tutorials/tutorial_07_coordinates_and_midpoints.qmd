@@ -15,15 +15,14 @@ named coordinates as invisible path waypoints - routing paths via intermediate
 coordinates - expression-based coordinates with the `calc` library
 
 ```{python}
-from tikzfigure import TikzFigure, TikzVector
+from tikzfigure import TikzFigure, TikzVector, arrows, styles
 ```
 
 ```{python}
 fig = TikzFigure()
 
 A = fig.node(
-    0,
-    0,
+    (0, 0),
     label="A",
     content="$A$",
     shape="circle",
@@ -31,8 +30,7 @@ A = fig.node(
     draw="blue",
 )
 B = fig.node(
-    6,
-    0,
+    (6, 0),
     label="B",
     content="$B$",
     shape="circle",
@@ -40,8 +38,7 @@ B = fig.node(
     draw="blue",
 )
 C = fig.node(
-    2,
-    4,
+    (2, 4),
     label="C",
     content="$C$",
     shape="circle",
@@ -70,8 +67,7 @@ node has `.x` and `.y` set to the computed midpoint.
 fig = TikzFigure()
 
 n1 = fig.node(
-    0,
-    0,
+    (0, 0),
     label="A",
     content="A",
     shape="circle",
@@ -79,8 +75,7 @@ n1 = fig.node(
     draw="blue",
 )
 n2 = fig.node(
-    4,
-    0,
+    (4, 0),
     label="B",
     content="B",
     shape="circle",
@@ -98,7 +93,7 @@ mid = fig.midpoint(
     draw="green",
 )
 
-fig.draw([n1, n2], options=["dashed", "gray"])
+fig.draw([n1, n2], options=[styles.dashed], color="gray")
 
 fig.show()
 ```
@@ -152,8 +147,8 @@ A_shifted = fig.node(
     draw="green!60!black",
 )
 
-fig.draw([A, B], dashed=True, color="gray")
-fig.draw([A, A_shifted], arrows="->", color="green!60!black")
+fig.draw([A, B], options=[styles.dashed], color="gray")
+fig.draw([A, A_shifted], arrows=arrows.forward, color="green!60!black")
 fig.draw([A, M, B], color="purple")
 fig.node(
     (2, 3.3),
@@ -175,8 +170,7 @@ object.
 fig = TikzFigure()
 
 fig.node(
-    0,
-    2,
+    (0, 2),
     label="P",
     content="P",
     shape="circle",
@@ -184,8 +178,7 @@ fig.node(
     draw="orange",
 )
 fig.node(
-    6,
-    2,
+    (6, 2),
     label="Q",
     content="Q",
     shape="circle",
@@ -203,7 +196,7 @@ fig.midpoint(
     draw="black",
 )
 
-fig.draw(["P", "Q"], options=["dashed", "gray"])
+fig.draw(["P", "Q"], options=[styles.dashed], color="gray")
 
 fig.show()
 ```
@@ -220,24 +213,21 @@ fig = TikzFigure(
 )
 
 fig.node(
-    0,
-    0,
+    (0, 0),
     label="A",
     content="A",
     shape="circle",
     fill="blue!20",
 )
 fig.node(
-    4,
-    0,
+    (4, 0),
     label="B",
     content="B",
     shape="circle",
     fill="blue!20",
 )
 fig.node(
-    2,
-    3,
+    (2, 3),
     label="C",
     content="C",
     shape="circle",
@@ -296,14 +286,12 @@ dot = dict(
 )
 
 left = fig.node(
-    0,
-    0,
+    (0, 0),
     label="L",
     **dot,
 )
 right = fig.node(
-    8,
-    0,
+    (8, 0),
     label="R",
     **dot,
 )
@@ -370,8 +358,7 @@ $AB$.)
 fig = TikzFigure()
 
 A = fig.node(
-    0,
-    0,
+    (0, 0),
     label="A",
     content="$A$",
     shape="circle",
@@ -379,8 +366,7 @@ A = fig.node(
     draw="blue",
 )
 B = fig.node(
-    6,
-    0,
+    (6, 0),
     label="B",
     content="$B$",
     shape="circle",
@@ -388,8 +374,7 @@ B = fig.node(
     draw="blue",
 )
 C = fig.node(
-    2,
-    4,
+    (2, 4),
     label="C",
     content="$C$",
     shape="circle",
@@ -418,7 +403,7 @@ mid_BC = fig.midpoint(
     draw="gray",
     inner_sep="0pt",
 )
-fig.draw([A, mid_BC], dashed=True, color="gray")
+fig.draw([A, mid_BC], options=[styles.dashed], color="gray")
 
 # Centroid = midpoint(midpoint(A, B), C)
 centroid = fig.midpoint(
@@ -468,19 +453,18 @@ fig.draw(
 )
 fig.draw(
     ["top", "bot"],
-    dashed=True,
+    options=[styles.dashed],
     color="gray",
 )
 fig.draw(
     ["left", "right"],
-    dashed=True,
+    options=[styles.dashed],
     color="gray",
 )
 
 # A visible centre node for reference
 fig.node(
-    3,
-    2,
+    (3, 2),
     content="centre",
     draw="none",
     font=r"\small",
@@ -501,8 +485,7 @@ L-shaped arrow: the path goes horizontally to a corner, then vertically up.
 fig = TikzFigure()
 
 fig.node(
-    0,
-    0,
+    (0, 0),
     label="src",
     shape="rectangle",
     draw="blue!70",
@@ -512,8 +495,7 @@ fig.node(
     content="source",
 )
 fig.node(
-    5,
-    3,
+    (5, 3),
     label="dst",
     shape="rectangle",
     draw="orange!80",
@@ -528,8 +510,8 @@ fig.coordinate("corner", x=5, y=0)
 
 fig.draw(
     ["src.east", "corner", "dst.south"],
-    arrows="->",
-    thick=True,
+    arrows=arrows.forward,
+    options=[styles.thick],
     color="purple",
     segment_options=[
         {"connector": "--"},  # horizontal segment: straight line
@@ -554,8 +536,7 @@ fig = TikzFigure(
 )
 
 fig.node(
-    0,
-    0,
+    (0, 0),
     label="A",
     shape="circle",
     fill="blue!20",
@@ -564,8 +545,7 @@ fig.node(
     content="$A$",
 )
 fig.node(
-    8,
-    0,
+    (8, 0),
     label="B",
     shape="circle",
     fill="red!20",
@@ -574,8 +554,7 @@ fig.node(
     content="$B$",
 )
 fig.node(
-    4,
-    5,
+    (4, 5),
     label="C",
     shape="circle",
     fill="green!20",

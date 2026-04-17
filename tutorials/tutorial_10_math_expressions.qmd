@@ -20,7 +20,7 @@ This tutorial covers:
 - Available PGF functions and constants
 
 ```{python}
-from tikzfigure import TikzFigure
+from tikzfigure import TikzFigure, arrows
 from tikzfigure.math import sin, cos, sqrt, Var, pi, max, min
 ```
 
@@ -88,7 +88,7 @@ fig.draw(
         (sin(90), cos(90)),
         (sin(180), cos(180)),
     ],
-    arrows="->",
+    arrows=arrows.forward,
     color="gray",
     line_width=1.5,
 )
@@ -148,7 +148,7 @@ node_b = fig.node(
 # Draw using the variable
 fig.draw(
     [(Var("radius"), 0), (0, Var("radius"))],
-    arrows="->",
+    arrows=arrows.forward,
     color="gray",
 )
 
@@ -203,7 +203,7 @@ fig.node(
 # Draw a line from origin to (x, y)
 fig.draw(
     [(0, 0), (Var("x"), Var("y"))],
-    arrows="->",
+    arrows=arrows.forward,
     color="gray",
 )
 

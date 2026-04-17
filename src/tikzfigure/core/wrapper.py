@@ -40,7 +40,7 @@ class TikzWrapper:
         self.layer: int = layer
         self.options: dict[str, Any] = kwargs
 
-    def to_tikz(self) -> str:
+    def to_tikz(self, output_unit: str | None = None) -> str:
         """Return the raw TikZ string for this wrapper.
 
         Returns:

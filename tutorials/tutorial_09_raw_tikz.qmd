@@ -29,16 +29,14 @@ into the string.
 fig = TikzFigure()
 
 n1 = fig.node(
-    0,
-    0,
+    (0, 0),
     shape="circle",
     color="white",
     fill="blue",
     content="Hello!",
 )
 n2 = fig.node(
-    5,
-    0,
+    (5, 0),
     shape="circle",
     color="white",
     fill="red",
@@ -72,43 +70,37 @@ raw TikZ.
 fig = TikzFigure()
 
 start = fig.node(
-    2,
-    4,
+    (2, 4),
     shape="ellipse",
     fill="green!30",
     content="Start",
 )
 process = fig.node(
-    2,
-    2,
+    (2, 2),
     shape="rectangle",
     fill="blue!20",
     content="Process",
 )
 decision = fig.node(
-    2,
-    0,
+    (2, 0),
     shape="diamond",
     fill="orange!30",
     content="Decision?",
 )
 yes_node = fig.node(
-    0,
-    -2,
+    (0, -2),
     shape="rectangle",
     fill="red!20",
     content="Action A",
 )
 no_node = fig.node(
-    4,
-    -2,
+    (4, -2),
     shape="rectangle",
     fill="green!20",
     content="Action B",
 )
 end = fig.node(
-    2,
-    -4,
+    (2, -4),
     shape="ellipse",
     fill="red!30",
     content="End",
@@ -252,8 +244,7 @@ fig.raw(
 
 for x, year, label, color in events:
     event_node = fig.node(
-        x,
-        1.2,
+        (x, 1.2),
         shape="rectangle",
         fill=color,
         content=label,

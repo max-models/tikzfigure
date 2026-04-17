@@ -6,7 +6,7 @@ jupyter: python3
 Customize plot appearance with colors, markers, line styles, and custom ticks.
 
 ```{python}
-from tikzfigure import TikzFigure
+from tikzfigure import TikzFigure, styles
 ```
 
 ## Colors and markers
@@ -84,7 +84,7 @@ ax.add_plot(
     y2,
     label="Thin dashed",
     color="blue",
-    dashed=True,
+    options=[styles.dashed],
 )
 
 ax.set_legend()
@@ -203,8 +203,7 @@ ax.set_legend(position="north west")
 
 # Background shape on layer 0
 fig.node(
-    2.5,
-    2.5,
+    (2.5, 2.5),
     label="bg",
     content="Background",
     shape="circle",
@@ -216,8 +215,7 @@ fig.node(
 
 # Foreground annotation on layer 2
 fig.node(
-    4,
-    4,
+    (4, 4),
     label="fg",
     content="Foreground!",
     shape="rectangle",

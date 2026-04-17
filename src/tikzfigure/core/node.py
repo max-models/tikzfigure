@@ -1,5 +1,6 @@
 from typing import TYPE_CHECKING, Any
 
+from tikzfigure.colors import ColorInput
 from tikzfigure.core.base import TikzObject
 from tikzfigure.core.coordinate import (
     CoordinateTuple2D,
@@ -9,7 +10,7 @@ from tikzfigure.core.coordinate import (
     TikzVector,
     VectorInput,
 )
-from tikzfigure.core.types import _Align, _Anchor, _Pattern, _Shading, _Shape
+from tikzfigure.core.types import _Align, _Anchor, _Option, _Pattern, _Shading, _Shape
 
 if TYPE_CHECKING:
     from tikzfigure.core.path_builder import NodePathBuilder
@@ -44,14 +45,14 @@ class Node(TikzObject):
         content: str = "",
         comment: str | None = None,
         layer: int = 0,
-        options: list | None = None,
+        options: list[_Option] | _Option | None = None,
         # Shape
         shape: _Shape = None,
         # Color
-        color: str | None = None,
-        fill: str | None = None,
-        draw: str | None = None,
-        text: str | None = None,
+        color: ColorInput | None = None,
+        fill: ColorInput | None = None,
+        draw: ColorInput | None = None,
+        text: ColorInput | None = None,
         # Opacity
         opacity: float | None = None,
         fill_opacity: float | None = None,
@@ -103,22 +104,22 @@ class Node(TikzObject):
         yslant: float | None = None,
         # Border
         rounded_corners: str | None = None,
-        double: str | None = None,
+        double: ColorInput | None = None,
         double_distance: str | None = None,
         dash_pattern: str | None = None,
         dash_phase: str | None = None,
         # Pattern / shading
         pattern: _Pattern = None,
-        pattern_color: str | None = None,
+        pattern_color: ColorInput | None = None,
         shading: _Shading = None,
         shading_angle: float | None = None,
-        left_color: str | None = None,
-        right_color: str | None = None,
-        top_color: str | None = None,
-        bottom_color: str | None = None,
-        inner_color: str | None = None,
-        outer_color: str | None = None,
-        ball_color: str | None = None,
+        left_color: ColorInput | None = None,
+        right_color: ColorInput | None = None,
+        top_color: ColorInput | None = None,
+        bottom_color: ColorInput | None = None,
+        inner_color: ColorInput | None = None,
+        outer_color: ColorInput | None = None,
+        ball_color: ColorInput | None = None,
         # Shape-specific
         regular_polygon_sides: int | None = None,
         star_points: int | None = None,
@@ -127,7 +128,7 @@ class Node(TikzObject):
         # Shadow
         shadow_xshift: str | None = None,
         shadow_yshift: str | None = None,
-        shadow_color: str | None = None,
+        shadow_color: ColorInput | None = None,
         shadow_opacity: float | None = None,
         shadow_scale: float | None = None,
         # Pin / label on node
@@ -352,7 +353,7 @@ class Node(TikzObject):
     def to(
         self,
         target: "Node",
-        options: list[str] | str | None = None,
+        options: list[_Option] | _Option | None = None,
         **kwargs: Any,
     ) -> "NodePathBuilder":
         """Create a path builder for a segment from this node to ``target``.
@@ -366,21 +367,21 @@ class Node(TikzObject):
 
         return NodePathBuilder(self).to(target, options=options, **kwargs)
 
-    def to_tikz(self) -> str:
+    def to_tikz(self, output_unit: str | None = None) -> str:
         """Generate the TikZ ``\\node`` command for this node.
 
         Returns:
             A TikZ ``\\node`` command string ending with a newline, optionally
             preceded by a comment line.
         """
-        options = self.tikz_options
+        options = self.tikz_options(output_unit)
         if options:
             options = f"[{options}]"
         if self.coordinate is None:
             node_string = f"\\node{options} ({self.label}) {{{self.content}}};\n"
         else:
             node_string = (
-                f"\\node{options} ({self.label}) at {self.coordinate.to_tikz()} "
+                f"\\node{options} ({self.label}) at {self.coordinate.to_tikz(output_unit)} "
                 f"{{{self.content}}};\n"
             )
 

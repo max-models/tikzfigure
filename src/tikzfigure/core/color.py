@@ -1,5 +1,7 @@
 from typing import Any
 
+from tikzfigure.colors import ColorInput
+
 
 class Color:
     """Represents a TikZ color definition used with ``\\colorlet``.
@@ -8,7 +10,7 @@ class Color:
         color_spec: The raw TikZ color specification string.
     """
 
-    def __init__(self, color_spec: str) -> None:
+    def __init__(self, color_spec: ColorInput) -> None:
         """Initialize a Color.
 
         Args:
@@ -21,7 +23,11 @@ class Color:
     @property
     def color_spec(self) -> str:
         """The raw TikZ color specification string."""
-        return self._color_spec
+        return str(self._color_spec)
+
+    def to_tikz(self, output_unit: str | None = None) -> str:
+        """Return the raw color specification."""
+        return self.color_spec
 
     def to_dict(self) -> dict[str, Any]:
         """Serialize this color to a plain dictionary.
@@ -29,7 +35,7 @@ class Color:
         Returns:
             A dictionary with ``type`` and ``color_spec`` keys.
         """
-        return {"type": "Color", "color_spec": self._color_spec}
+        return {"type": "Color", "color_spec": self.color_spec}
 
     @classmethod
     def from_dict(cls, d: dict[str, Any]) -> "Color":

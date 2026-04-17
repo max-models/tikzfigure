@@ -4,8 +4,9 @@ from copy import deepcopy
 from typing import Any
 
 from tikzfigure.core.node import Node
+from tikzfigure.core.types import _Option
 
-SegmentOption = dict[str, Any] | str | None
+SegmentOption = dict[str, Any] | _Option | None
 
 
 class NodePathBuilder:
@@ -17,12 +18,12 @@ class NodePathBuilder:
 
     @staticmethod
     def _normalize_segment_options(
-        options: list[str] | str | None = None,
+        options: list[_Option] | _Option | None = None,
         **kwargs: Any,
     ) -> SegmentOption:
         if options is None:
-            flag_options: list[str] = []
-        elif isinstance(options, str):
+            flag_options: list[_Option] = []
+        elif not isinstance(options, list):
             flag_options = [options]
         else:
             flag_options = list(options)
@@ -39,7 +40,7 @@ class NodePathBuilder:
     def to(
         self,
         target: Node,
-        options: list[str] | str | None = None,
+        options: list[_Option] | _Option | None = None,
         **kwargs: Any,
     ) -> NodePathBuilder:
         if not isinstance(target, Node):

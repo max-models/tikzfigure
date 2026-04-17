@@ -19,7 +19,7 @@ class RawTikz:
         """
         self.tikz_code = tikz_code
 
-    def to_tikz(self) -> str:
+    def to_tikz(self, output_unit: str | None = None) -> str:
         """Return the raw TikZ code with a trailing newline.
 
         Returns:

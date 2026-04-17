@@ -78,21 +78,21 @@ class Ellipse(TikzObject):
         """The TikZ drawing command ("draw" or "filldraw")."""
         return self._tikz_command
 
-    def to_tikz(self) -> str:
+    def to_tikz(self, output_unit: str | None = None) -> str:
         """Generate the TikZ ellipse command for this ellipse.
 
         Returns:
             A \\draw or \\filldraw command string ending with a newline,
             optionally preceded by a comment line.
         """
-        options = self.tikz_options
+        options = self.tikz_options(output_unit)
 
         if options:
             full_options = f"[{options}]"
         else:
             full_options = ""
 
-        ellipse_str = f"\\{self.tikz_command}{full_options} {self.center.to_tikz()} ellipse ({self._x_radius} and {self._y_radius});\n"
+        ellipse_str = f"\\{self.tikz_command}{full_options} {self.center.to_tikz(output_unit)} ellipse ({self._x_radius} and {self._y_radius});\n"
         ellipse_str = self.add_comment(ellipse_str)
 
         return ellipse_str

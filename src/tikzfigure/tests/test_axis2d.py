@@ -37,7 +37,7 @@ class TestPlot2D:
             x=[0, 1], y=[0, 1], options=["thick"], color="red", line_width="2pt"
         )
 
-        options_str = plot.tikz_options
+        options_str = plot.tikz_options()
         assert "thick" in options_str
         assert "color=red" in options_str
         assert "line width=2pt" in options_str
@@ -68,8 +68,8 @@ class TestPlot2D:
         plot = Plot2D(func="x^2", color="red", line_width="2pt")
 
         assert plot.is_function is True
-        assert "color=red" in plot.tikz_options
-        assert "line width=2pt" in plot.tikz_options
+        assert "color=red" in plot.tikz_options()
+        assert "line width=2pt" in plot.tikz_options()
 
     def test_plot2d_function_serialization(self):
         """Test function-based plot serialization."""

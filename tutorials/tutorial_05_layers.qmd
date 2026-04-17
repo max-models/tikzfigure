@@ -28,23 +28,20 @@ fig = TikzFigure()
 
 # Blue drawn first → red on top
 fig.node(
-    0.25,
-    1,
+    (0.25, 1),
     minimum_size="2cm",
     shape="circle",
     fill="blue",
 )
 fig.node(
-    -0.25,
-    1,
+    (-0.25, 1),
     minimum_size="2cm",
     shape="circle",
     fill="red",
 )
 
 fig.node(
-    0.05,
-    -0.3,
+    (0.05, -0.3),
     content="red on top (default)",
     draw="none",
 )
@@ -58,16 +55,14 @@ fig.show()
 fig = TikzFigure()
 
 fig.node(
-    0.25,
-    1,
+    (0.25, 1),
     minimum_size="2cm",
     shape="circle",
     fill="blue",
     layer=2,
 )
 fig.node(
-    -0.25,
-    1,
+    (-0.25, 1),
     minimum_size="2cm",
     shape="circle",
     fill="red",
@@ -75,8 +70,7 @@ fig.node(
 )
 
 fig.node(
-    0.0,
-    -0.3,
+    (0.0, -0.3),
     content="blue on top (layer=2)",
     draw="none",
 )

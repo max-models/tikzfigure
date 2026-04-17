@@ -70,21 +70,21 @@ class Rectangle(TikzObject):
         """The TikZ drawing command ("draw" or "filldraw")."""
         return self._tikz_command
 
-    def to_tikz(self) -> str:
+    def to_tikz(self, output_unit: str | None = None) -> str:
         """Generate the TikZ rectangle command for this rectangle.
 
         Returns:
             A \\draw or \\filldraw command string ending with a newline,
             optionally preceded by a comment line.
         """
-        options = self.tikz_options
+        options = self.tikz_options(output_unit)
 
         if options:
             full_options = f"[{options}]"
         else:
             full_options = ""
 
-        rect_str = f"\\{self.tikz_command}{full_options} {self.corner1.to_tikz()} rectangle {self.corner2.to_tikz()};\n"
+        rect_str = f"\\{self.tikz_command}{full_options} {self.corner1.to_tikz(output_unit)} rectangle {self.corner2.to_tikz(output_unit)};\n"
         rect_str = self.add_comment(rect_str)
 
         return rect_str

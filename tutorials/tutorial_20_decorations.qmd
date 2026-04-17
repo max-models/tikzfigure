@@ -193,8 +193,7 @@ fig.draw(
     color="blue!70",
 )
 fig.node(
-    2,
-    -0.45,
+    (2, -0.45),
     content="4 cm wide",
     draw="none",
     color="blue!70",
@@ -210,8 +209,7 @@ fig.draw(
     color="red!70",
 )
 fig.node(
-    5.0,
-    1.0,
+    (5.0, 1.0),
     content="1.5 cm",
     draw="none",
     color="red!70",

@@ -18,7 +18,7 @@ grid - `variable` for reusable TikZ constants - a practical chain-of-boxes
 diagram
 
 ```{python}
-from tikzfigure import TikzFigure
+from tikzfigure import TikzFigure, arrows
 ```
 
 ## Python loop vs TikZ `\foreach` — a side-by-side comparison
@@ -273,7 +273,7 @@ for i, step in enumerate(steps):
 for i in range(len(steps) - 1):
     fig.draw(
         [(i * 3 + 1.1, 0), (i * 3 + 1.9, 0)],
-        arrows="->",
+        arrows=arrows.forward,
         line_width=1.5,
         color="blue!60",
     )

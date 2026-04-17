@@ -7,6 +7,7 @@ from tikzfigure.core.coordinate import (
     TikzVector,
     VectorInput,
 )
+from tikzfigure.core.types import _Option
 
 
 class Line(TikzObject):
@@ -24,7 +25,7 @@ class Line(TikzObject):
         label: str = "",
         comment: str | None = None,
         layer: int = 0,
-        options: list | None = None,
+        options: list[_Option] | _Option | None = None,
         **kwargs: Any,
     ) -> None:
         """Initialize a Line.
@@ -88,27 +89,25 @@ class Line(TikzObject):
             label=self.label or "",
             comment=self.comment,
             layer=self.layer or 0,
-            options=list(self.options),
+            options=[str(option) for option in self.options],
             **dict(self.kwargs),
         )
 
-    def to_tikz(self) -> str:
+    def to_tikz(self, output_unit: str | None = None) -> str:
         """Generate the TikZ line command.
 
         Returns:
             A \\draw command string ending with a newline,
             optionally preceded by a comment line.
         """
-        options = self.tikz_options
+        options = self.tikz_options(output_unit)
 
         if options:
             full_options = f"[{options}]"
         else:
             full_options = ""
 
-        line_str = (
-            f"\\draw{full_options} {self.start.to_tikz()} -- {self.end.to_tikz()};\n"
-        )
+        line_str = f"\\draw{full_options} {self.start.to_tikz(output_unit)} -- {self.end.to_tikz(output_unit)};\n"
         line_str = self.add_comment(line_str)
 
         return line_str
