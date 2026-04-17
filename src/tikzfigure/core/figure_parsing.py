@@ -1,7 +1,12 @@
 from __future__ import annotations
 
 import re
-from typing import Any, Self
+from typing import Any
+
+try:
+    from typing import Self
+except ImportError:
+    from typing_extensions import Self
 
 from tikzfigure.core.layer import LayerCollection
 from tikzfigure.core.path import TikzPath
