@@ -22,7 +22,7 @@ from tikzfigure.core.variable import Variable
 
 def test_tikzobject_options_and_comments():
     obj = TikzObject(options=None, comment=None, layer=1, label="a", foo="bar")
-    assert obj.tikz_options == "foo=bar"
+    assert obj.tikz_options() == "foo=bar"
     assert obj.add_comment("X") == "X"
 
     obj2 = TikzObject(
@@ -32,7 +32,7 @@ def test_tikzobject_options_and_comments():
         label="b",
         fill="red",
     )
-    assert obj2.tikz_options == "draw, thick, fill=red"
+    assert obj2.tikz_options() == "draw, thick, fill=red"
     assert obj2.add_comment("Y") == "% note\nY"
 
 

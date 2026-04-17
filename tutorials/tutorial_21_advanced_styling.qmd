@@ -15,7 +15,7 @@ and line widths:
 - special shapes: star, regular polygon, cylinder
 
 ```{python}
-from tikzfigure import TikzFigure
+from tikzfigure import TikzFigure, arrows
 ```
 
 ## `double` and `double_distance`: double borders
@@ -77,8 +77,7 @@ fig.draw(
     color="black",
 )
 fig.node(
-    4,
-    -2.3,
+    (4, -2.3),
     content="railway track (double path)",
     draw="none",
     font=r"\small\itshape",
@@ -253,8 +252,7 @@ fig = TikzFigure()
 
 # Three nodes with pins in different directions
 nA = fig.node(
-    0,
-    0,
+    (0, 0),
     label="A",
     shape="circle",
     fill="orange!40",
@@ -264,8 +262,7 @@ nA = fig.node(
 )
 
 nB = fig.node(
-    4,
-    0,
+    (4, 0),
     label="B",
     shape="circle",
     fill="teal!40",
@@ -275,8 +272,7 @@ nB = fig.node(
 )
 
 nC = fig.node(
-    2,
-    3,
+    (2, 3),
     label="C",
     shape="circle",
     fill="purple!40",
@@ -285,9 +281,9 @@ nC = fig.node(
     pin="below left:origin",
 )
 
-fig.draw([nA, nB], arrows="->")
-fig.draw([nA, nC], arrows="->")
-fig.draw([nB, nC], arrows="->")
+fig.draw([nA, nB], arrows=arrows.forward)
+fig.draw([nA, nC], arrows=arrows.forward)
+fig.draw([nB, nC], arrows=arrows.forward)
 
 fig.show()
 ```

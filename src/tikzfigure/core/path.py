@@ -4,6 +4,8 @@ from tikzfigure.core.base import TikzObject
 from tikzfigure.core.constants import TAB
 from tikzfigure.core.coordinate import Coordinate, TikzCoordinate
 from tikzfigure.core.node import Node
+from tikzfigure.core.path_builder import SegmentOption
+from tikzfigure.core.types import _Option
 
 
 class TikzPath(TikzObject):
@@ -29,8 +31,8 @@ class TikzPath(TikzObject):
         layer: int = 0,
         center: bool = False,
         node_anchors: list[str | None] | None = None,
-        segment_options: list[dict | str | None] | None = None,
-        options: list | None = None,
+        segment_options: list[SegmentOption] | None = None,
+        options: list[_Option] | _Option | None = None,
         tikz_command: str = "draw",
         **kwargs: Any,
     ) -> None:
@@ -110,7 +112,7 @@ class TikzPath(TikzObject):
         return self._node_anchors
 
     @property
-    def segment_options(self) -> list[dict | str | None] | None:
+    def segment_options(self) -> list[SegmentOption] | None:
         """Per-segment TikZ options for each ``to`` connector, or ``None``."""
         return self._segment_options
 
@@ -123,7 +125,7 @@ class TikzPath(TikzObject):
     )
 
     @staticmethod
-    def _format_segment_opts(opts: dict | str) -> str:
+    def _format_segment_opts(opts: dict | _Option) -> str:
         """Render a segment-options entry as a TikZ options string.
 
         Structural keys ``"connector"`` and ``"node"`` are skipped; they
@@ -140,13 +142,13 @@ class TikzPath(TikzObject):
             A comma-separated TikZ options string suitable for use inside
             ``to[...]``.
         """
-        if isinstance(opts, str):
-            return opts
+        if not isinstance(opts, dict):
+            return str(opts)
         _skip = frozenset({"options", "connector", "node"})
         parts: list[str] = []
         flag_opts = opts.get("options", [])
         if flag_opts:
-            parts.extend(flag_opts)
+            parts.extend(str(opt) for opt in flag_opts)
         for k, v in opts.items():
             if k in _skip:
                 continue
@@ -176,7 +178,7 @@ class TikzPath(TikzObject):
         if isinstance(node_spec, str):
             return f"node{node_spec}"
         content = node_spec.get("content", "")
-        flag_opts: list[str] = list(node_spec.get("options", []))
+        flag_opts: list[str] = [str(opt) for opt in node_spec.get("options", [])]
         kw_parts: list[str] = []
         for k, v in node_spec.items():
             if k in ("content", "options"):
@@ -191,19 +193,29 @@ class TikzPath(TikzObject):
             return f"node[{opts_str}] {{{content}}}"
         return f"node {{{content}}}"
 
-    @property
-    def tikz_options(self) -> str:
+    def tikz_options(self, output_unit: str | None = None) -> str:
         """Render all options as a single TikZ option string.
+
+        Args:
+            output_unit: If provided, any :class:`~tikzfigure.units.TikzDimension`
+                values are converted to this unit before rendering.
 
         Returns:
             A comma-separated string of TikZ options combining flag-style
             and keyword options.
         """
+        from tikzfigure.units import TikzDimension
+
+        def _fmt(v: object) -> str:
+            if isinstance(v, TikzDimension):
+                return str(v.to(output_unit)) if output_unit is not None else str(v)
+            return str(v)
+
         parts = []
         if self.options:
-            parts.append(", ".join(self.options))
+            parts.append(", ".join(str(option) for option in self.options))
         kwargs_str = ", ".join(
-            f"{k.replace('_', ' ')}={v}" for k, v in self.kwargs.items()
+            f"{k.replace('_', ' ')}={_fmt(v)}" for k, v in self.kwargs.items()
         )
         if kwargs_str:
             parts.append(kwargs_str)
@@ -222,6 +234,10 @@ class TikzPath(TikzObject):
             ``["(coordA)"]``, or coordinate tuples for inline
             :class:`TikzCoordinate` waypoints.
         """
+        return self._render_label_list()
+
+    def _render_label_list(self, output_unit: str | None = None) -> list[str]:
+        """Render path waypoints, converting inline dimensions when requested."""
         label_list = []
         for i, node in enumerate(self.nodes):
             if isinstance(node, (Node, Coordinate)):
@@ -240,7 +256,10 @@ class TikzPath(TikzObject):
                 else:
                     label_list.append(f"({node.label})")
             elif isinstance(node, TikzCoordinate):
-                parts = ", ".join(str(x) for x in node.coordinate)
+                parts = ", ".join(
+                    TikzCoordinate._format_component(component, output_unit)
+                    for component in node.coordinate
+                )
                 label_list.append(f"({parts})")
         return label_list
 
@@ -249,7 +268,7 @@ class TikzPath(TikzObject):
         """The TikZ drawing command (``"draw"`` or ``"filldraw"``)."""
         return self._tikz_command
 
-    def to_tikz(self) -> str:
+    def to_tikz(self, output_unit: str | None = None) -> str:
         """Generate the TikZ path command for this path.
 
         Returns:
@@ -257,8 +276,8 @@ class TikzPath(TikzObject):
             ``\\filldraw`` command string ending with a newline, optionally
             preceded by a comment line.
         """
-        options = self.tikz_options
-        label_list = self.label_list
+        options = self.tikz_options(output_unit)
+        label_list = self._render_label_list(output_unit)
 
         if label_list:
             parts = [label_list[0]]
@@ -313,7 +332,8 @@ class TikzPath(TikzObject):
         if self.cycle:
             path_str += " -- cycle"
 
-        path_str = f"\\{self.tikz_command}[{options}] {path_str};\n"
+        option_block = f"[{options}]" if options else ""
+        path_str = f"\\{self.tikz_command}{option_block} {path_str};\n"
 
         path_str = self.add_comment(path_str)
 

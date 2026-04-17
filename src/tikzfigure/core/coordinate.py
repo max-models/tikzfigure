@@ -1,11 +1,16 @@
 from __future__ import annotations
 
 import math
-from typing import Any, TypeAlias
+from typing import TYPE_CHECKING, Any, TypeAlias
 
 from tikzfigure.core.base import TikzObject
 
-CoordinateValue: TypeAlias = float | int | str
+if TYPE_CHECKING:
+    from tikzfigure.units import TikzDimension
+
+    CoordinateValue: TypeAlias = float | int | str | TikzDimension
+else:
+    CoordinateValue: TypeAlias = float | int | str
 CoordinateTuple2D: TypeAlias = tuple[CoordinateValue, CoordinateValue]
 CoordinateTuple3D: TypeAlias = tuple[CoordinateValue, CoordinateValue, CoordinateValue]
 
@@ -136,7 +141,7 @@ class Coordinate(TikzObject):
         """Raw TikZ coordinate expression, or ``None`` if using x/y."""
         return self._at
 
-    def to_tikz(self) -> str:
+    def to_tikz(self, output_unit: str | None = None) -> str:
         """Generate the TikZ ``\\coordinate`` declaration.
 
         Returns:
@@ -148,9 +153,7 @@ class Coordinate(TikzObject):
             coord_str = f"\\coordinate ({self.label}) at {at_str};\n"
         else:
             assert self._coordinate is not None
-            coord_str = (
-                f"\\coordinate ({self.label}) at {self._coordinate.to_tikz()};\n"
-            )
+            coord_str = f"\\coordinate ({self.label}) at {self._coordinate.to_tikz(output_unit)};\n"
         return self.add_comment(coord_str)
 
     def to_dict(self) -> dict[str, Any]:
@@ -288,8 +291,14 @@ class TikzCoordinate(TikzObject):
         return self._ndim
 
     @staticmethod
-    def _format_component(value: CoordinateValue) -> str:
+    def _format_component(
+        value: CoordinateValue, output_unit: str | None = None
+    ) -> str:
         """Format one coordinate component for TikZ output."""
+        from tikzfigure.units import TikzDimension
+
+        if isinstance(value, TikzDimension):
+            return str(value.to(output_unit)) if output_unit is not None else str(value)
         value_str = str(value)
         if (
             value_str.startswith("(")
@@ -400,17 +409,17 @@ class TikzCoordinate(TikzObject):
             )
         return NotImplemented
 
-    def to_tikz(self) -> str:
+    def to_tikz(self, output_unit: str | None = None) -> str:
         """Render this coordinate as a TikZ position expression."""
         # 2-D coordinate: render as (x, y)
-        x_str = self._format_component(self.x)
-        y_str = self._format_component(self.y)
+        x_str = self._format_component(self.x, output_unit)
+        y_str = self._format_component(self.y, output_unit)
         if self.ndim == 2:
             return f"({{{x_str}}}, {{{y_str}}})"
 
         # 3-D coordinate: use axis cs for proper layering in 3D plots
         assert self.z is not None
-        z_str = self._format_component(self.z)
+        z_str = self._format_component(self.z, output_unit)
         return f"(axis cs:{{{x_str}}}, {{{y_str}}}, {{{z_str}}})"
 
     def to_dict(self) -> dict[str, Any]:

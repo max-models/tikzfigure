@@ -7,7 +7,7 @@ tikzfigure can export figures in multiple formats and lets you inspect the
 generated LaTeX code at every level.
 
 ```{python}
-from tikzfigure import TikzFigure
+from tikzfigure import TikzFigure, units
 ```
 
 ## Saving to disk
@@ -56,6 +56,29 @@ print(fig)
 
 This is useful for debugging or pasting into a `.tex` file.
 
+## Normalizing output units
+
+If you build figures with `tikzfigure.units`, you can keep dimension values
+typed in Python and choose a normalized output unit at render time.
+
+```{python}
+fig = TikzFigure()
+fig.node(
+    (0, 0),
+    content="Box",
+    shape="rectangle",
+    fill="blue!15",
+    minimum_width=1.2 * units.cm,
+    minimum_height=8 * units.mm,
+    rounded_corners=4 * units.pt,
+)
+
+print(fig.generate_tikz(output_unit="pt"))
+```
+
+This converts `TikzDimension` values during rendering, which is handy when you
+want consistent exported TikZ code without manually rewriting every dimension.
+
 ## Full standalone document
 
 `generate_standalone()` returns a complete compilable LaTeX document including
@@ -64,8 +87,7 @@ the preamble, packages, and all library imports:
 ```{python}
 fig = TikzFigure(extra_packages=["amsmath"])
 fig.node(
-    0,
-    0,
+    (0, 0),
     content=r"$\sum_{k=1}^{n} k$",
     shape="circle",
     fill="blue!20",
@@ -84,8 +106,7 @@ print(fig.generate_standalone())
 #| eval: false
 fig = TikzFigure()
 fig.node(
-    0,
-    0,
+    (0, 0),
     content="Hello",
     shape="circle",
     fill="cyan!30",
@@ -103,8 +124,7 @@ If you don't have `pdflatex` installed locally, use web-based compilation:
 #| eval: false
 fig = TikzFigure()
 fig.node(
-    0,
-    0,
+    (0, 0),
     content="Hello",
     shape="circle",
     fill="cyan!30",
@@ -117,6 +137,7 @@ fig.show(use_web_compilation=True)
 fig.savefig(
     "output.png",
     use_web_compilation=True,
+    output_unit="pt",
 )
 ```
 
@@ -132,8 +153,7 @@ notebooks. It does not affect the LaTeX output or saved files:
 # Small display
 fig = TikzFigure(figsize=(4, 2))
 fig.node(
-    0,
-    0,
+    (0, 0),
     shape="circle",
     fill="red!40",
     content="Small",
@@ -145,8 +165,7 @@ fig.show()
 # Large display (same LaTeX, bigger rendering)
 fig = TikzFigure(figsize=(8, 4))
 fig.node(
-    0,
-    0,
+    (0, 0),
     shape="circle",
     fill="blue!40",
     content="Large",

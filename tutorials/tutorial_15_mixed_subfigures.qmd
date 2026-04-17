@@ -3,7 +3,7 @@ title: "Mixed Subfigures: Plots and Diagrams"
 ---
 
 ```{python}
-from tikzfigure import TikzFigure
+from tikzfigure import TikzFigure, arrows, styles
 ```
 
 # Mixed Subfigures: Combining Plots and Diagrams
@@ -66,13 +66,14 @@ D = diagram.node(
     shape="circle",
     fill="cyan!40",
 )
-diagram.draw([A, B], arrows="->")
-diagram.draw([A, C], arrows="->")
-diagram.draw([B, D], arrows="->")
-diagram.draw([C, D], arrows="->")
+diagram.draw([A, B], arrows=arrows.forward)
+diagram.draw([A, C], arrows=arrows.forward)
+diagram.draw([B, D], arrows=arrows.forward)
+diagram.draw([C, D], arrows=arrows.forward)
 diagram.draw(
     [A, D],
-    options=["->", "dashed"],
+    arrows=arrows.forward,
+    options=[styles.dashed],
     bend_left=20,
     color="gray",
 )
@@ -147,8 +148,8 @@ end = flowchart.node(
     shape="circle",
     fill="red!40",
 )
-flowchart.draw([start, process], arrows="->")
-flowchart.draw([process, end], arrows="->")
+flowchart.draw([start, process], arrows=arrows.forward)
+flowchart.draw([process, end], arrows=arrows.forward)
 
 # Bottom-right: Diagram - network
 network = fig.subfigure(width=0.45, height=5)
@@ -193,10 +194,10 @@ n4 = network.node(
     shape="circle",
     fill="cyan!40",
 )
-network.draw([center, n1], options=["thick"])
-network.draw([center, n2], options=["thick"])
-network.draw([center, n3], options=["thick"])
-network.draw([center, n4], options=["thick"])
+network.draw([center, n1], options=[styles.thick])
+network.draw([center, n2], options=[styles.thick])
+network.draw([center, n3], options=[styles.thick])
+network.draw([center, n4], options=[styles.thick])
 
 fig.show()
 ```
@@ -291,34 +292,34 @@ end = flowchart.node(
 )
 
 # Draw paths
-flowchart.draw([start, input_node], arrows="->")
+flowchart.draw([start, input_node], arrows=arrows.forward)
 flowchart.draw(
     [input_node, check_iter],
-    arrows="->",
+    arrows=arrows.forward,
 )
 flowchart.draw(
     [check_iter, compute],
-    arrows="->",
+    arrows=arrows.forward,
     label="yes",
 )
-flowchart.draw([compute, check_conv], arrows="->")
+flowchart.draw([compute, check_conv], arrows=arrows.forward)
 flowchart.draw(
     [check_iter, output],
-    arrows="->",
+    arrows=arrows.forward,
     label="no",
 )
 flowchart.draw(
     [check_conv, compute],
-    arrows="->",
+    arrows=arrows.forward,
     label="no",
     bend_left=30,
 )
 flowchart.draw(
     [check_conv, output],
-    arrows="->",
+    arrows=arrows.forward,
     label="yes",
 )
-flowchart.draw([output, end], arrows="->")
+flowchart.draw([output, end], arrows=arrows.forward)
 
 fig.show()
 ```
@@ -398,23 +399,23 @@ s3 = states.node(
 )
 
 # Draw transitions
-states.draw([s1, s2], arrows="->", label="a")
-states.draw([s2, s3], arrows="->", label="b")
+states.draw([s1, s2], arrows=arrows.forward, label="a")
+states.draw([s2, s3], arrows=arrows.forward, label="b")
 states.draw(
     [s2, s1],
-    arrows="->",
+    arrows=arrows.forward,
     label="c",
     bend_left=20,
 )
 states.draw(
     [s3, s1],
-    arrows="->",
+    arrows=arrows.forward,
     label="d",
     bend_left=-20,
 )
 states.draw(
     [s1, s1],
-    arrows="->",
+    arrows=arrows.forward,
     label="loop",
     bend_right=30,
     color="blue",
@@ -436,9 +437,9 @@ positions directly (e.g., `node(0, 2, ...)` places at position (0, 2))
 width/height parameters
 
 **Styling:** - Node fills: `fill="cyan!40"`, `fill="red!20"`, etc. - Shapes:
-`"circle"`, `"rectangle"`, `"diamond"`, etc. - Path options: `["->"]`,
-`["<->"]`, `["dashed"]`, `["thick"]`, etc. - Bends: `bend_left=20`,
-`bend_right=30` for curved paths
+`"circle"`, `"rectangle"`, `"diamond"`, etc. - Path styling can use
+`arrows.forward`, `arrows.both`, `styles.dashed`, `styles.thick`, etc. - Bends:
+`bend_left=20`, `bend_right=30` for curved paths
 
 **Mixing in Grids:** - Call `subfigure_axis()` and `subfigure()` in any order -
 They auto-fill left-to-right, top-to-bottom - Both types render correctly in

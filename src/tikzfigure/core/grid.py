@@ -80,14 +80,14 @@ class Grid(TikzObject):
         """The TikZ drawing command ("draw" or "filldraw")."""
         return self._tikz_command
 
-    def to_tikz(self) -> str:
+    def to_tikz(self, output_unit: str | None = None) -> str:
         """Generate the TikZ grid command for this grid.
 
         Returns:
             A \\draw command string ending with a newline,
             optionally preceded by a comment line.
         """
-        options = self.tikz_options
+        options = self.tikz_options(output_unit)
 
         # Add step to options if specified
         if self._step is not None:
@@ -101,7 +101,7 @@ class Grid(TikzObject):
         else:
             full_options = ""
 
-        grid_str = f"\\{self.tikz_command}{full_options} {self.corner1.to_tikz()} grid {self.corner2.to_tikz()};\n"
+        grid_str = f"\\{self.tikz_command}{full_options} {self.corner1.to_tikz(output_unit)} grid {self.corner2.to_tikz(output_unit)};\n"
         grid_str = self.add_comment(grid_str)
 
         return grid_str

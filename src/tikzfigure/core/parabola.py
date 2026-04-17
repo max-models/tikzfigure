@@ -81,14 +81,14 @@ class Parabola(TikzObject):
         """The TikZ drawing command ("draw" or "filldraw")."""
         return self._tikz_command
 
-    def to_tikz(self) -> str:
+    def to_tikz(self, output_unit: str | None = None) -> str:
         """Generate the TikZ parabola command for this parabola.
 
         Returns:
             A \\draw or \\filldraw command string ending with a newline,
             optionally preceded by a comment line.
         """
-        options = self.tikz_options
+        options = self.tikz_options(output_unit)
 
         if options:
             full_options = f"[{options}]"
@@ -96,9 +96,9 @@ class Parabola(TikzObject):
             full_options = ""
 
         if self._bend is not None:
-            parabola_str = f"\\{self.tikz_command}{full_options} {self.start.to_tikz()} parabola bend {self._bend.to_tikz()} {self.end.to_tikz()};\n"
+            parabola_str = f"\\{self.tikz_command}{full_options} {self.start.to_tikz(output_unit)} parabola bend {self._bend.to_tikz(output_unit)} {self.end.to_tikz(output_unit)};\n"
         else:
-            parabola_str = f"\\{self.tikz_command}{full_options} {self.start.to_tikz()} parabola {self.end.to_tikz()};\n"
+            parabola_str = f"\\{self.tikz_command}{full_options} {self.start.to_tikz(output_unit)} parabola {self.end.to_tikz(output_unit)};\n"
 
         parabola_str = self.add_comment(parabola_str)
 

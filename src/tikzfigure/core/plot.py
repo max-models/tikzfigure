@@ -180,16 +180,16 @@ class Plot3D(TikzPath):
             **kwargs,
         )
 
-    def to_tikz(self) -> str:
+    def to_tikz(self, output_unit: str | None = None) -> str:
         """Generate the ``\\addplot3`` command for this 3-D plot.
 
         Returns:
             A ``\\addplot3[...]  coordinates {...};`` command string ending
             with a newline, optionally preceded by a comment line.
         """
-        plot_str = f"\\addplot3[{self.tikz_options}]"
+        plot_str = f"\\addplot3[{self.tikz_options(output_unit)}]"
         plot_str += " coordinates "
-        plot_str += "{" + " ".join(self.label_list) + "};\n"
+        plot_str += "{" + " ".join(self._render_label_list(output_unit)) + "};\n"
         plot_str = self.add_comment(plot_str)
 
         return plot_str

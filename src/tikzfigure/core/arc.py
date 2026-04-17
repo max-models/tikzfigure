@@ -87,14 +87,14 @@ class Arc(TikzObject):
         """The TikZ drawing command ("draw" or "filldraw")."""
         return self._tikz_command
 
-    def to_tikz(self) -> str:
+    def to_tikz(self, output_unit: str | None = None) -> str:
         """Generate the TikZ arc command for this arc.
 
         Returns:
             A \\draw or \\filldraw command string ending with a newline,
             optionally preceded by a comment line.
         """
-        options = self.tikz_options
+        options = self.tikz_options(output_unit)
 
         arc_options = f"start angle={self._start_angle}, end angle={self._end_angle}, radius={self._radius}"
 
@@ -103,7 +103,7 @@ class Arc(TikzObject):
         else:
             full_options = arc_options
 
-        arc_str = f"\\{self.tikz_command}[{full_options}] {self.start.to_tikz()} arc;\n"
+        arc_str = f"\\{self.tikz_command}[{full_options}] {self.start.to_tikz(output_unit)} arc;\n"
         arc_str = self.add_comment(arc_str)
 
         return arc_str

@@ -131,7 +131,7 @@ class Polygon(TikzObject):
 
         return vertices
 
-    def to_tikz(self) -> str:
+    def to_tikz(self, output_unit: str | None = None) -> str:
         """Generate the TikZ polygon command.
 
         Returns:
@@ -139,7 +139,7 @@ class Polygon(TikzObject):
             optionally preceded by a comment line.
         """
         vertices = self._get_vertices()
-        options = self.tikz_options
+        options = self.tikz_options(output_unit)
 
         # Build path from vertices
         path_parts = [f"({x}, {y})" for x, y in vertices]

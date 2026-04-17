@@ -20,7 +20,7 @@ class TikzObject:
         label: str | None = None,
         comment: str | None = None,
         layer: int | None = 0,
-        options: list | None = None,
+        options: list | str | object | None = None,
         **kwargs: Any,
     ) -> None:
         """Initialize a TikzObject.
@@ -37,6 +37,8 @@ class TikzObject:
         """
         if options is None:
             options = []
+        elif not isinstance(options, list):
+            options = [options]
 
         self._label = label
         self._comment = comment
@@ -60,7 +62,7 @@ class TikzObject:
         return self._layer
 
     @property
-    def options(self) -> list:
+    def options(self) -> list[object]:
         """Flag-style TikZ options without values."""
         return self._options
 
@@ -69,24 +71,39 @@ class TikzObject:
         """Keyword-style TikZ options as a plain dict."""
         return self._kwargs
 
-    @property
-    def tikz_options(self) -> str:
+    def tikz_options(self, output_unit: str | None = None) -> str:
         """Render all options as a single TikZ option string.
 
         Combines flag-style options and keyword options into the format
         expected inside TikZ square brackets, e.g.
         ``"thick, color=red, line width=1pt"``.
 
+        Args:
+            output_unit: If provided, any :class:`~tikzfigure.units.TikzDimension`
+                values are converted to this unit before rendering.
+
         Returns:
             A comma-separated string of TikZ options.
         """
+        from tikzfigure.arrows import TikzArrow
+        from tikzfigure.colors import TikzColor
+        from tikzfigure.styles import TikzStyle
+        from tikzfigure.units import TikzDimension
+
+        def _fmt(v: object) -> str:
+            if isinstance(v, TikzDimension):
+                return str(v.to(output_unit)) if output_unit is not None else str(v)
+            if isinstance(v, (TikzArrow, TikzColor, TikzStyle)):
+                return str(v)
+            return str(v)
+
         if len(self.options) == 0:
             options = ""
         else:
-            options = ", ".join(self.options) + ", "
+            options = ", ".join(str(option) for option in self.options) + ", "
 
         options += ", ".join(
-            f"{k.replace('_', ' ')}={v}" for k, v in self.kwargs.items()
+            f"{k.replace('_', ' ')}={_fmt(v)}" for k, v in self.kwargs.items()
         )
         return options
 
@@ -111,12 +128,22 @@ class TikzObject:
             A dictionary containing ``label``, ``comment``, ``layer``,
             ``options``, and ``kwargs`` keys.
         """
+        from tikzfigure.arrows import TikzArrow
+        from tikzfigure.colors import TikzColor
+        from tikzfigure.styles import TikzStyle
+        from tikzfigure.units import TikzDimension
+
+        def _serialize(v: object) -> object:
+            if isinstance(v, (TikzArrow, TikzColor, TikzDimension, TikzStyle)):
+                return str(v)
+            return v
+
         return {
             "label": self._label,
             "comment": self._comment,
             "layer": self._layer,
             "options": list(self._options),
-            "kwargs": dict(self._kwargs),
+            "kwargs": {k: _serialize(v) for k, v in self._kwargs.items()},
         }
 
     @classmethod

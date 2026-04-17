@@ -8,7 +8,7 @@ and `subfigure()`.
 
 ```{python}
 import math
-from tikzfigure import TikzFigure
+from tikzfigure import TikzFigure, arrows
 ```
 
 ## Side-by-side subfigures
@@ -260,8 +260,8 @@ end = flowchart.node(
     shape="circle",
     fill="red!40",
 )
-flowchart.draw([start, process], arrows="->")
-flowchart.draw([process, end], arrows="->")
+flowchart.draw([start, process], arrows=arrows.forward)
+flowchart.draw([process, end], arrows=arrows.forward)
 
 fig.show()
 ```

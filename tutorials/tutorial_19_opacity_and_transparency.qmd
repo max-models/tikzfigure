@@ -157,16 +157,14 @@ code itself, which does not include any background rectangle by default.
 fig = TikzFigure()
 
 fig.node(
-    0,
-    0,
+    (0, 0),
     shape="circle",
     fill="orange!60",
     content="Hello!",
     minimum_size="2cm",
 )
 fig.node(
-    3,
-    0,
+    (3, 0),
     shape="rectangle",
     fill="teal!40",
     content="World!",
@@ -247,8 +245,7 @@ fig.node(
     color="red!80",
 )
 fig.node(
-    0,
-    0,
+    (0, 0),
     content=r"$A \cap B$",
     draw="none",
     font=r"\small",

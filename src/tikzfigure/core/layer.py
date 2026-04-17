@@ -55,7 +55,12 @@ class Tikzlayer:
                         reqs.add(node.layer)
         return reqs
 
-    def generate_tikz(self, use_layers: bool = True, verbose: bool = False) -> str:
+    def generate_tikz(
+        self,
+        use_layers: bool = True,
+        verbose: bool = False,
+        output_unit: str | None = None,
+    ) -> str:
         """Generate the TikZ code for this layer.
 
         Args:
@@ -72,7 +77,7 @@ class Tikzlayer:
             tikz_script += f"\n% Layer {self.label}\n"
             tikz_script += f"\\begin{{pgfonlayer}}{{{self.label}}}\n"
         for item in self.items:
-            tikz_script += item.to_tikz()
+            tikz_script += item.to_tikz(output_unit)
         if use_layers:
             tikz_script += f"\\end{{pgfonlayer}}{{{self.label}}}\n"
         return tikz_script

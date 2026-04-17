@@ -17,7 +17,7 @@ This first tutorial covers the absolute basics:
 - inspecting the generated TikZ code
 
 ```{python}
-from tikzfigure import Node, TikzFigure
+from tikzfigure import Node, TikzFigure, arrows, styles
 ```
 
 ## Your first figure
@@ -30,16 +30,14 @@ compile and display the result inline.
 fig = TikzFigure()
 
 n1 = fig.node(
-    0,
-    0,
+    (0, 0),
     shape="circle",
     color="white",
     fill="blue",
     content="Hello!",
 )
 n2 = fig.node(
-    5,
-    0,
+    (5, 0),
     shape="circle",
     color="white",
     fill="red",
@@ -48,7 +46,7 @@ n2 = fig.node(
 
 fig.draw(
     [n1, n2],
-    arrows="->",
+    arrows=arrows.forward,
     line_width=2,
     color="gray",
 )
@@ -79,8 +77,7 @@ instance (`n1`) or its label (`node1`).
 fig2 = TikzFigure()
 
 n1 = Node(
-    0,
-    0,
+    (0, 0),
     label="node1",
     shape="circle",
     color="white",
@@ -88,8 +85,7 @@ n1 = Node(
     content="Hello!",
 )
 n2 = Node(
-    5,
-    0,
+    (5, 0),
     label="node2",
     shape="circle",
     color="white",
@@ -101,7 +97,7 @@ fig2.add([n1, n2])
 # Note that we can use the node labels to refer to them when drawing edges
 fig2.draw(
     ["node1", n2],
-    arrows="<-",
+    arrows=arrows.backward,
     line_width=2,
     color="gray",
 )
@@ -120,46 +116,42 @@ arrow - positive values bend it left relative to the direction of travel.
 fig = TikzFigure()
 
 A = fig.node(
-    0,
-    2,
+    (0, 2),
     label="A",
     content="A",
     shape="circle",
     fill="cyan!40",
 )
 B = fig.node(
-    3,
-    2,
+    (3, 2),
     label="B",
     content="B",
     shape="circle",
     fill="cyan!40",
 )
 C = fig.node(
-    0,
-    0,
+    (0, 0),
     label="C",
     content="C",
     shape="circle",
     fill="cyan!40",
 )
 D = fig.node(
-    3,
-    0,
+    (3, 0),
     label="D",
     content="D",
     shape="circle",
     fill="cyan!40",
 )
 
-fig.draw([A, B], arrows="->")
-fig.draw([A, C], arrows="->")
-fig.draw([B, D], arrows="->")
-fig.draw([C, D], arrows="->")
+fig.draw([A, B], arrows=arrows.forward)
+fig.draw([A, C], arrows=arrows.forward)
+fig.draw([B, D], arrows=arrows.forward)
+fig.draw([C, D], arrows=arrows.forward)
 fig.draw(
     [A, D],
-    arrows="->",
-    dashed=True,
+    arrows=arrows.forward,
+    options=[styles.dashed],
     bend_left=20,
     color="gray",
 )

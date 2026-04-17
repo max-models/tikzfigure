@@ -34,7 +34,7 @@ class Variable(TikzObject):
         super().__init__(label=label, layer=layer, comment=comment)
         self._value = value
 
-    def to_tikz(self) -> str:
+    def to_tikz(self, output_unit: str | None = None) -> str:
         """Return the TikZ representation of this variable.
 
         Returns:

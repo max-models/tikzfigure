@@ -284,14 +284,14 @@ class Axis2D(TikzObject):
         self._plots.append(plot)
         return plot
 
-    def to_tikz(self) -> str:
+    def to_tikz(self, output_unit: str | None = None) -> str:
         """Generate the pgfplots axis environment.
 
         Returns:
             A complete \\begin{axis}...\\end{axis} block with all plots.
         """
         # Build axis options
-        axis_opts = list(self.options)
+        axis_opts = [str(option) for option in self.options]
 
         # Add axis labels if provided
         if self._xlabel:
@@ -322,7 +322,7 @@ class Axis2D(TikzObject):
 
         # Add user kwargs (converted with underscore → space)
         for k, v in self.kwargs.items():
-            axis_opts.append(f"{k.replace('_', ' ')}={v}")
+            axis_opts.append(f"{k.replace('_', ' ')}={str(v)}")
 
         axis_opts_str = ", ".join(axis_opts)
 
@@ -333,13 +333,13 @@ class Axis2D(TikzObject):
         for plot in self._plots:
             if plot.is_function:
                 # Function-based plot: use pgfplots function notation
-                plot_tikz += f"\\addplot[{plot.tikz_options}] {{{plot.func}}};\n"
+                plot_tikz += (
+                    f"\\addplot[{plot.tikz_options(output_unit)}] {{{plot.func}}};\n"
+                )
             else:
                 # Data-based plot: use coordinates
                 coords_str = " ".join(f"({x},{y})" for x, y in zip(plot.x, plot.y))
-                plot_tikz += (
-                    f"\\addplot[{plot.tikz_options}] coordinates {{{coords_str}}};\n"
-                )
+                plot_tikz += f"\\addplot[{plot.tikz_options(output_unit)}] coordinates {{{coords_str}}};\n"
             if plot.label:
                 plot_labels.append(plot.label)
 
