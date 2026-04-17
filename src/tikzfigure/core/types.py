@@ -1,6 +1,6 @@
 from typing import Literal
 
-from tikzfigure.arrows import TikzArrow
+from tikzfigure.options import OptionValue
 from tikzfigure.styles import TikzStyle
 
 # ---------- Literal type aliases for IDE autocomplete ---------- #
@@ -51,7 +51,7 @@ _Anchor = (
     | None
 )
 
-_Option = str | TikzStyle | TikzArrow
+_Option = OptionValue
 _LineCap = Literal["butt", "rect", "round"] | TikzStyle | str | None
 _LineJoin = Literal["miter", "bevel", "round"] | TikzStyle | str | None
 _Align = Literal["left", "center", "right", "justify"] | str | None

@@ -11,6 +11,7 @@ from tikzfigure.core.coordinate import (
     VectorInput,
 )
 from tikzfigure.core.types import _Align, _Anchor, _Option, _Pattern, _Shading, _Shape
+from tikzfigure.options import OptionInput
 
 if TYPE_CHECKING:
     from tikzfigure.core.path_builder import NodePathBuilder
@@ -45,7 +46,7 @@ class Node(TikzObject):
         content: str = "",
         comment: str | None = None,
         layer: int = 0,
-        options: list[_Option] | _Option | None = None,
+        options: OptionInput | None = None,
         # Shape
         shape: _Shape = None,
         # Color
@@ -353,7 +354,7 @@ class Node(TikzObject):
     def to(
         self,
         target: "Node",
-        options: list[_Option] | _Option | None = None,
+        options: OptionInput | None = None,
         **kwargs: Any,
     ) -> "NodePathBuilder":
         """Create a path builder for a segment from this node to ``target``.

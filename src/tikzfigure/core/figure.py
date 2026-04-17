@@ -41,6 +41,7 @@ from tikzfigure.core.types import (
     _Shape,
 )
 from tikzfigure.core.variable import Variable
+from tikzfigure.options import OptionInput, normalize_options
 from tikzfigure.units import TikzDimension
 
 line_length = 50
@@ -120,7 +121,7 @@ class TikzFigure:
         center: bool = False,
         tikz_command: str = "draw",
         verbose: bool = False,
-        options: list[_Option] | _Option | None = None,
+        options: OptionInput | None = None,
         cycle: bool = False,
         segment_options: list[SegmentOption] | None = None,
         **kwargs: Any,
@@ -198,8 +199,7 @@ class TikzFigure:
         if verbose:
             print(f"Creating a path with the following nodes {nodes_cleaned}")
 
-        if isinstance(options, str):
-            options = [options]
+        options = normalize_options(options)
 
         resolved_anchors = (
             node_anchors if any(a is not None for a in node_anchors) else None
@@ -680,7 +680,7 @@ class TikzFigure:
         content: str = "",
         layer: int = 0,
         comment: str | None = None,
-        options: list[_Option] | _Option | None = None,
+        options: OptionInput | None = None,
         verbose: bool = False,
         # Shape
         shape: _Shape = None,
@@ -1904,7 +1904,7 @@ class TikzFigure:
         layer: int = 0,
         comment: str | None = None,
         verbose: bool = False,
-        options: list[_Option] | _Option | None = None,
+        options: OptionInput | None = None,
         # Color
         color: ColorInput | None = None,
         text: ColorInput | None = None,
@@ -1966,13 +1966,7 @@ class TikzFigure:
         Returns:
             The :class:`Line` object that was added.
         """
-        normalized_options: list[_Option] = []
-        if options is None:
-            normalized_options = []
-        elif isinstance(options, list):
-            normalized_options = list(options)
-        else:
-            normalized_options = [options]
+        normalized_options = normalize_options(options)
         if arrows:
             normalized_options.append(arrows)
 
@@ -2331,7 +2325,7 @@ class TikzFigure:
         center: bool = False,
         verbose: bool = False,
         # Path structure
-        options: list[_Option] | _Option | None = None,
+        options: OptionInput | None = None,
         cycle: bool = False,
         segment_options: list[SegmentOption] | None = None,
         # Color
@@ -2436,12 +2430,7 @@ class TikzFigure:
             The :class:`TikzPath` object that was added.
         """
         nodes, segment_options = self._coerce_path_input(nodes, segment_options)
-        if options is None:
-            normalized_options: list[_Option] = []
-        elif isinstance(options, list):
-            normalized_options = list(options)
-        else:
-            normalized_options = [options]
+        normalized_options = normalize_options(options)
         if arrows is not None:
             normalized_options.append(arrows)
         _params = locals().copy()
@@ -2493,7 +2482,7 @@ class TikzFigure:
         center: bool = False,
         verbose: bool = False,
         # Path structure
-        options: list[_Option] | _Option | None = None,
+        options: OptionInput | None = None,
         cycle: bool = False,
         segment_options: list[SegmentOption] | None = None,
         # Color
@@ -2663,12 +2652,7 @@ class TikzFigure:
             The :class:`TikzPath` object that was added.
         """
         nodes, segment_options = self._coerce_path_input(nodes, segment_options)
-        if options is None:
-            normalized_options: list[_Option] = []
-        elif isinstance(options, list):
-            normalized_options = list(options)
-        else:
-            normalized_options = [options]
+        normalized_options = normalize_options(options)
         if arrows is not None:
             normalized_options.append(arrows)
         # Snapshot explicit params before creating any locals
@@ -2727,7 +2711,7 @@ class TikzFigure:
         center: bool = False,
         verbose: bool = False,
         # Path structure
-        options: list[_Option] | _Option | None = None,
+        options: OptionInput | None = None,
         cycle: bool = False,
         segment_options: list[SegmentOption] | None = None,
         # Fill color / pattern
@@ -2823,12 +2807,7 @@ class TikzFigure:
         tikz_kwargs.update(
             {k: v for k, v in _params.items() if k not in _non_tikz and v is not None}
         )
-        if options is None:
-            options = []
-        elif isinstance(options, list):
-            options = list(options)
-        else:
-            options = [options]
+        options = normalize_options(options)
         if even_odd_rule:
             options = list(options) + ["even odd rule"]
         return self._add_path(
@@ -2852,7 +2831,7 @@ class TikzFigure:
         center: bool = False,
         verbose: bool = False,
         # Path structure
-        options: list[_Option] | _Option | None = None,
+        options: OptionInput | None = None,
         cycle: bool = False,
         segment_options: list[SegmentOption] | None = None,
         # Transformations (the most common clip options)
@@ -2930,7 +2909,7 @@ class TikzFigure:
         center: bool = False,
         verbose: bool = False,
         # Path structure
-        options: list | str | None = None,
+        options: OptionInput | None = None,
         cycle: bool = False,
         segment_options: list[SegmentOption] | None = None,
         # Path naming (most common use of \path)

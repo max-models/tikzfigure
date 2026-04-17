@@ -1,14 +1,25 @@
 import tikzfigure
 from tikzfigure import TikzFigure, arrows, styles, units
 from tikzfigure.arrows import TikzArrow
+from tikzfigure.options import normalize_options
 from tikzfigure.styles import TikzStyle
 
 
 def test_styles_and_arrows_exported_from_package():
     assert hasattr(tikzfigure, "styles")
     assert hasattr(tikzfigure, "arrows")
+    assert hasattr(tikzfigure, "options")
     assert "styles" in tikzfigure.__all__
     assert "arrows" in tikzfigure.__all__
+    assert "options" in tikzfigure.__all__
+
+
+def test_public_option_normalizer_accepts_single_values_and_sequences():
+    assert normalize_options(styles.dashed) == [styles.dashed]
+    assert normalize_options((styles.dashed, arrows.forward)) == [
+        styles.dashed,
+        arrows.forward,
+    ]
 
 
 def test_common_style_tokens_are_available():

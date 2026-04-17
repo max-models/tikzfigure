@@ -2,7 +2,7 @@ from tikzfigure.core.coordinate import TikzCoordinate, TikzVector
 from tikzfigure.core.figure import TikzFigure
 from tikzfigure.core.node import Node
 
-from . import arrows, colors, styles, units
+from . import arrows, colors, options, styles, units
 
 __all__ = [
     "TikzFigure",
@@ -11,6 +11,7 @@ __all__ = [
     "TikzVector",
     "units",
     "colors",
+    "options",
     "styles",
     "arrows",
 ]

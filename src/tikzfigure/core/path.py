@@ -6,6 +6,7 @@ from tikzfigure.core.coordinate import Coordinate, TikzCoordinate
 from tikzfigure.core.node import Node
 from tikzfigure.core.path_builder import SegmentOption
 from tikzfigure.core.types import _Option
+from tikzfigure.options import OptionInput
 
 
 class TikzPath(TikzObject):
@@ -32,7 +33,7 @@ class TikzPath(TikzObject):
         center: bool = False,
         node_anchors: list[str | None] | None = None,
         segment_options: list[SegmentOption] | None = None,
-        options: list[_Option] | _Option | None = None,
+        options: OptionInput | None = None,
         tikz_command: str = "draw",
         **kwargs: Any,
     ) -> None:

@@ -8,6 +8,7 @@ from tikzfigure.core.coordinate import (
     VectorInput,
 )
 from tikzfigure.core.types import _Option
+from tikzfigure.options import OptionInput
 
 
 class Line(TikzObject):
@@ -25,7 +26,7 @@ class Line(TikzObject):
         label: str = "",
         comment: str | None = None,
         layer: int = 0,
-        options: list[_Option] | _Option | None = None,
+        options: OptionInput | None = None,
         **kwargs: Any,
     ) -> None:
         """Initialize a Line.
