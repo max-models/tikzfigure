@@ -3,6 +3,7 @@ from typing import Any
 from tikzfigure.core.base import TikzObject
 from tikzfigure.core.coordinate import TikzCoordinate
 from tikzfigure.core.path import TikzPath
+from tikzfigure.options import OptionInput
 
 
 class Plot2D(TikzObject):
@@ -19,7 +20,7 @@ class Plot2D(TikzObject):
         func: str | None = None,
         label: str = "",
         comment: str | None = None,
-        options: list | None = None,
+        options: OptionInput | None = None,
         **kwargs: Any,
     ) -> None:
         """Initialize a Plot2D.
@@ -145,7 +146,7 @@ class Plot3D(TikzPath):
         comment: str | None = None,
         layer: int = 0,
         center: bool = False,
-        options: list | None = None,
+        options: OptionInput | None = None,
         **kwargs: Any,
     ) -> None:
         """Initialize a Plot3D.

@@ -2,6 +2,7 @@ from typing import Any
 
 from tikzfigure.core.base import TikzObject
 from tikzfigure.core.coordinate import PositionInput, TikzCoordinate
+from tikzfigure.options import OptionInput
 
 
 class Arc(TikzObject):
@@ -24,7 +25,7 @@ class Arc(TikzObject):
         label: str = "",
         comment: str | None = None,
         layer: int = 0,
-        options: list | None = None,
+        options: OptionInput | None = None,
         tikz_command: str = "draw",
         **kwargs: Any,
     ) -> None:

@@ -5,6 +5,7 @@ from typing import Any
 
 from tikzfigure.core.node import Node
 from tikzfigure.core.types import _Option
+from tikzfigure.options import OptionInput, normalize_options
 
 SegmentOption = dict[str, Any] | _Option | None
 
@@ -18,15 +19,10 @@ class NodePathBuilder:
 
     @staticmethod
     def _normalize_segment_options(
-        options: list[_Option] | _Option | None = None,
+        options: OptionInput | None = None,
         **kwargs: Any,
     ) -> SegmentOption:
-        if options is None:
-            flag_options: list[_Option] = []
-        elif not isinstance(options, list):
-            flag_options = [options]
-        else:
-            flag_options = list(options)
+        flag_options = normalize_options(options)
 
         if not flag_options and not kwargs:
             return None
@@ -40,7 +36,7 @@ class NodePathBuilder:
     def to(
         self,
         target: Node,
-        options: list[_Option] | _Option | None = None,
+        options: OptionInput | None = None,
         **kwargs: Any,
     ) -> NodePathBuilder:
         if not isinstance(target, Node):

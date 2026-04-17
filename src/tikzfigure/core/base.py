@@ -1,5 +1,7 @@
 from typing import Any
 
+from tikzfigure.options import OptionInput, OptionValue, normalize_options
+
 
 class TikzObject:
     """Base class for all TikZ elements.
@@ -20,7 +22,7 @@ class TikzObject:
         label: str | None = None,
         comment: str | None = None,
         layer: int | None = 0,
-        options: list | str | object | None = None,
+        options: OptionInput | None = None,
         **kwargs: Any,
     ) -> None:
         """Initialize a TikzObject.
@@ -35,15 +37,10 @@ class TikzObject:
                 converted to spaces in the output
                 (e.g. ``line_width="1pt"`` → ``line width=1pt``).
         """
-        if options is None:
-            options = []
-        elif not isinstance(options, list):
-            options = [options]
-
         self._label = label
         self._comment = comment
         self._layer = layer
-        self._options = options
+        self._options = normalize_options(options)
         self._kwargs = kwargs
 
     @property
@@ -62,7 +59,7 @@ class TikzObject:
         return self._layer
 
     @property
-    def options(self) -> list[object]:
+    def options(self) -> list[OptionValue]:
         """Flag-style TikZ options without values."""
         return self._options
 

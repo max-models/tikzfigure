@@ -2,6 +2,7 @@ from typing import Any
 
 from tikzfigure.core.base import TikzObject
 from tikzfigure.core.plot import Plot2D
+from tikzfigure.options import OptionInput
 
 
 class Axis2D(TikzObject):
@@ -25,7 +26,7 @@ class Axis2D(TikzObject):
         layer: int = 0,
         width: str | int | float | None = None,
         height: str | int | float | None = None,
-        options: list | None = None,
+        options: OptionInput | None = None,
         **kwargs: Any,
     ) -> None:
         """Initialize a 2D axis.
