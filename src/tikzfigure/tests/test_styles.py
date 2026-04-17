@@ -51,6 +51,13 @@ def test_line_accepts_style_values_for_caps_and_joins():
     )
 
 
+def test_line_accepts_style_tokens_in_options():
+    fig = TikzFigure()
+    line = fig.line((0, 0), (1, 0), options=[styles.dashed], color="green")
+
+    assert "\\draw[dashed, color=green] ({0}, {0}) -- ({1}, {0});" in line.to_tikz()
+
+
 def test_path_builder_accepts_style_objects():
     fig = TikzFigure()
     a = fig.add_node(x=0, y=0, label="A")

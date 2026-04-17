@@ -1904,6 +1904,7 @@ class TikzFigure:
         layer: int = 0,
         comment: str | None = None,
         verbose: bool = False,
+        options: list[_Option] | _Option | None = None,
         # Color
         color: ColorInput | None = None,
         text: ColorInput | None = None,
@@ -1941,6 +1942,8 @@ class TikzFigure:
             layer: Target layer index. Defaults to ``0``.
             comment: Optional comment prepended in the TikZ output.
             verbose: If ``True``, print a debug message.
+            options: Flag-style TikZ options without values
+                (e.g. ``["dashed", "thick"]``).
             color: Line color (e.g. ``"red"``, ``"blue!50"``).
             text: Text color.
             opacity: Overall opacity (0–1).
@@ -1963,9 +1966,15 @@ class TikzFigure:
         Returns:
             The :class:`Line` object that was added.
         """
-        options: list[_Option] = []
+        normalized_options: list[_Option] = []
+        if options is None:
+            normalized_options = []
+        elif isinstance(options, list):
+            normalized_options = list(options)
+        else:
+            normalized_options = [options]
         if arrows:
-            options.append(arrows)
+            normalized_options.append(arrows)
 
         line_kwargs: dict[str, Any] = {}
         if color is not None:
@@ -2008,7 +2017,7 @@ class TikzFigure:
             end=end,
             comment=comment,
             layer=layer,
-            options=options,
+            options=normalized_options,
             **line_kwargs,
         )
 
