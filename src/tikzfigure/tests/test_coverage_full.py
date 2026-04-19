@@ -62,10 +62,10 @@ def test_tikzfigure_to_dict_from_dict_roundtrip():
         grid=True,
         figsize=(8, 5),
         description="desc",
-        extra_packages=["pgfplots"],
         document_setup="\\usepackage{xcolor}",
         figure_setup="scale=1.5",
     )
+    fig.add_package("pgfplots")
 
     # Add nodes, a path, a variable, a color, raw tikz, and a loop
     n1 = fig.add_node(x=0, y=0, label="A", content="Hello", fill="red")
@@ -108,6 +108,16 @@ def test_tikzfigure_to_dict_from_dict_roundtrip():
 
     # TikZ output should be identical
     assert fig.generate_tikz() == fig2.generate_tikz()
+
+
+def test_tikzfigure_add_package_deduplicates_and_trims():
+    fig = TikzFigure()
+
+    fig.add_package(" amsmath ")
+    fig.add_package("amsmath")
+
+    assert fig.extra_packages == ["amsmath"]
+    assert "\\usepackage{amsmath}" in fig.generate_standalone()
 
 
 def test_color_variable_coordinate():

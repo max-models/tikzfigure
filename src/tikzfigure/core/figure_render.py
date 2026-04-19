@@ -16,7 +16,8 @@ TIKZFIGURE_HEADER = line_separator + version_string + link_string + line_separat
 
 
 class FigureRenderMixin:
-    _extra_packages: list[Any] | None
+    _extra_packages: list[str] | None
+    _tikz_libraries: list[str]
     _figure_setup: str | None
     _show_axes: bool
     _grid: bool
@@ -37,6 +38,9 @@ class FigureRenderMixin:
 
     @property
     def variables(self) -> list[Any]:
+        raise NotImplementedError
+
+    def add_package(self, package: str) -> None:
         raise NotImplementedError
 
     @property
@@ -81,11 +85,7 @@ class FigureRenderMixin:
         output_unit: str | None = None,
     ) -> str:
         if self.axes and "pgfplots" not in (self._extra_packages or []):
-            extra_packages = self._extra_packages
-            if extra_packages is None:
-                extra_packages = []
-                self._extra_packages = extra_packages
-            extra_packages.append("pgfplots")
+            self.add_package("pgfplots")
 
         tikz_script = ""
         if not skip_header:
@@ -266,8 +266,9 @@ class FigureRenderMixin:
             "\\usepackage{pgfplots}\n"
             "\\pgfplotsset{compat=newest}\n"
             "\\usepgfplotslibrary{groupplots}\n"
-            "\\usetikzlibrary{arrows.meta}\n"
         )
+        tikz_libraries = list(dict.fromkeys(["arrows.meta", *self._tikz_libraries]))
+        latex_document += f"\\usetikzlibrary{{{','.join(tikz_libraries)}}}\n"
         if self._extra_packages:
             for pkg in self._extra_packages:
                 latex_document += f"\\usepackage{{{pkg}}}\n"

@@ -1,5 +1,5 @@
 import os
-from typing import Any
+from typing import Any, overload
 
 from tikzfigure.arrows import ArrowInput
 from tikzfigure.colors import ColorInput
@@ -38,12 +38,29 @@ from tikzfigure.core.types import (
     _Pattern,
     _Shading,
     _Shape,
+    _TikzLibraryLiteral,
 )
 from tikzfigure.core.variable import Variable
 from tikzfigure.options import OptionInput, normalize_options
 from tikzfigure.units import TikzDimension
 
 WEB_COMPILATION_ENV_VAR = "TIKZFIGURE_USE_WEB_COMPILATION"
+
+
+def _normalize_tikz_libraries(*libraries: str) -> list[str]:
+    normalized: list[str] = []
+    seen: set[str] = set()
+
+    for raw_value in libraries:
+        for part in raw_value.split(","):
+            name = part.strip()
+            if name == "":
+                raise ValueError("TikZ library names must not be empty.")
+            if name not in seen:
+                seen.add(name)
+                normalized.append(name)
+
+    return normalized
 
 
 class TikzFigure(
@@ -271,7 +288,10 @@ class TikzFigure(
         self._show_axes: bool = show_axes
         self._tikz_code: str | None = tikz_code
         self._figure_setup: str | None = figure_setup
-        self._extra_packages: list | None = extra_packages
+        self._extra_packages: list[str] | None = (
+            list(extra_packages) if extra_packages else None
+        )
+        self._tikz_libraries: list[str] = []
         self._document_setup: str | None = document_setup
         # Initialize lists to hold Node and Path objects
         # TODO: nodes, paths, layers should have @property and @setter methods
@@ -333,6 +353,9 @@ class TikzFigure(
             "extra_packages": (
                 list(self._extra_packages) if self._extra_packages else None
             ),
+            "tikz_libraries": list(self._tikz_libraries)
+            if self._tikz_libraries
+            else None,
             "document_setup": self._document_setup,
             "figure_setup": self._figure_setup,
             "figsize": list(self._figsize),
@@ -376,6 +399,9 @@ class TikzFigure(
 
         for color_entry in d.get("colors", []):
             fig._colors.append((color_entry["name"], Color.from_dict(color_entry)))
+
+        if d.get("tikz_libraries"):
+            fig._tikz_libraries = _normalize_tikz_libraries(*d["tikz_libraries"])
 
         # Build node/coordinate lookup across all layers for path deserialization
         layers_data: dict[Any, list[dict[str, Any]]] = d.get("layers", {})
@@ -502,6 +528,40 @@ class TikzFigure(
 
         self._colors.append((name, color))
         return color
+
+    def add_package(self, package: str) -> None:
+        """Add a LaTeX package to the standalone preamble.
+
+        Examples:
+            >>> fig = TikzFigure()
+            >>> fig.add_package("amsmath")
+        """
+        package_name = package.strip()
+        if package_name == "":
+            raise ValueError("Package names must not be empty.")
+
+        if self._extra_packages is None:
+            self._extra_packages = []
+        if package_name not in self._extra_packages:
+            self._extra_packages.append(package_name)
+
+    @overload
+    def usetikzlibrary(self, *libraries: _TikzLibraryLiteral) -> None: ...
+
+    @overload
+    def usetikzlibrary(self, *libraries: str) -> None: ...
+
+    def usetikzlibrary(self, *libraries: str) -> None:
+        """Register TikZ libraries for standalone output and compilation.
+
+        Examples:
+            >>> fig = TikzFigure()
+            >>> fig.usetikzlibrary("calc", "intersections")
+            >>> fig.usetikzlibrary("positioning,quotes")
+        """
+        for library in _normalize_tikz_libraries(*libraries):
+            if library not in self._tikz_libraries:
+                self._tikz_libraries.append(library)
 
     def add_node(
         self,
@@ -2284,9 +2344,14 @@ class TikzFigure(
         return self._document_setup
 
     @property
-    def extra_packages(self) -> list | None:
+    def extra_packages(self) -> list[str] | None:
         """Extra LaTeX packages included in the standalone preamble."""
-        return self._extra_packages
+        return list(self._extra_packages) if self._extra_packages is not None else None
+
+    @property
+    def tikz_libraries(self) -> list[str]:
+        """TikZ libraries loaded in standalone output via ``\\usetikzlibrary``."""
+        return list(self._tikz_libraries)
 
     @property
     def ndim(self) -> int:
