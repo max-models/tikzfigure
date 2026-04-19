@@ -3,8 +3,10 @@ from collections.abc import Sequence
 from typing import Any
 
 from tikzfigure.core.base import TikzObject
+from tikzfigure.core.coordinate import Coordinate
 from tikzfigure.core.node import Node
 from tikzfigure.core.path import TikzPath
+from tikzfigure.core.raw import RawTikz
 
 
 class Loop(TikzObject):
@@ -105,9 +107,33 @@ class Loop(TikzObject):
         self._items.append(loop)
         return loop
 
+    def add_raw(self, tikz_code: str) -> RawTikz:
+        raw = RawTikz(tikz_code)
+        self._items.append(raw)
+        return raw
+
+    def add_scope(
+        self,
+        comment: str | None = None,
+        options: Any = None,
+        **kwargs: Any,
+    ) -> Any:
+        from tikzfigure.core.scope import Scope
+
+        scope = Scope(
+            layer=self.layer or 0,
+            comment=comment,
+            options=options,
+            **kwargs,
+        )
+        self._items.append(scope)
+        return scope
+
     node = add_node
     path = add_path
     loop = add_loop
+    raw = add_raw
+    scope = add_scope
 
     def to_tikz(self, output_unit: str | None = None) -> str:
         """Generate the TikZ ``\\foreach`` code for this loop.
@@ -143,7 +169,11 @@ class Loop(TikzObject):
         return d
 
     @classmethod
-    def from_dict(cls, d: dict[str, Any]) -> "Loop":
+    def from_dict(
+        cls,
+        d: dict[str, Any],
+        node_lookup: dict[str, Node | Coordinate] | None = None,
+    ) -> "Loop":
         """Reconstruct a Loop from a dictionary.
 
         Args:
@@ -158,20 +188,31 @@ class Loop(TikzObject):
             layer=d.get("layer", 0),
             comment=d.get("comment"),
         )
-        node_lookup: dict[str, Node] = {}
+        local_lookup: dict[str, Node | Coordinate] = dict(node_lookup or {})
         for item_data in d.get("items", []):
             item_type = item_data.get("type")
             if item_type == "Node":
                 node = Node.from_dict(item_data)
                 loop._items.append(node)
                 if node.label is not None:
-                    node_lookup[node.label] = node
+                    local_lookup[node.label] = node
+            elif item_type == "Coordinate":
+                coord = Coordinate.from_dict(item_data)
+                loop._items.append(coord)
+                if coord.label:
+                    local_lookup[coord.label] = coord
             elif item_type == "Path":
                 loop._items.append(
-                    TikzPath.from_dict(item_data, node_lookup=node_lookup)
+                    TikzPath.from_dict(item_data, node_lookup=local_lookup)
                 )
             elif item_type == "Loop":
-                loop._items.append(Loop.from_dict(item_data))
+                loop._items.append(Loop.from_dict(item_data, node_lookup=local_lookup))
+            elif item_type == "Scope":
+                from tikzfigure.core.scope import Scope
+
+                loop._items.append(Scope.from_dict(item_data, node_lookup=local_lookup))
+            elif item_type == "RawTikz":
+                loop._items.append(RawTikz.from_dict(item_data))
         return loop
 
     def __enter__(self) -> "Loop":

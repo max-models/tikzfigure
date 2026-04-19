@@ -94,15 +94,11 @@ class TikzObject:
                 return str(v)
             return str(v)
 
-        if len(self.options) == 0:
-            options = ""
-        else:
-            options = ", ".join(str(option) for option in self.options) + ", "
-
-        options += ", ".join(
-            f"{k.replace('_', ' ')}={_fmt(v)}" for k, v in self.kwargs.items()
-        )
-        return options
+        parts: list[str] = []
+        if self.options:
+            parts.extend(str(option) for option in self.options)
+        parts.extend(f"{k.replace('_', ' ')}={_fmt(v)}" for k, v in self.kwargs.items())
+        return ", ".join(parts)
 
     def add_comment(self, string_in: str) -> str:
         """Prepend a TikZ comment line to a string if a comment is set.
@@ -139,7 +135,7 @@ class TikzObject:
             "label": self._label,
             "comment": self._comment,
             "layer": self._layer,
-            "options": list(self._options),
+            "options": [_serialize(option) for option in self._options],
             "kwargs": {k: _serialize(v) for k, v in self._kwargs.items()},
         }
 
