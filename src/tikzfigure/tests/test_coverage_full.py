@@ -74,6 +74,7 @@ def test_tikzfigure_to_dict_from_dict_roundtrip():
     fig.add_raw("\\draw (0,0) -- (1,1);")
     fig.add_variable("myvar", 42)
     fig.colorlet("mycolor", "blue!30")
+    fig.add_style("important line", options=["very thick"], inner_sep="1ex")
 
     loop = fig.add_loop("i", [1, 2, 3])
     ln = loop.add_node(x="\\i", y=0, label="L\\i", content="")
@@ -88,6 +89,13 @@ def test_tikzfigure_to_dict_from_dict_roundtrip():
     assert d["grid"] is True
     assert d["figsize"] == [8, 5]
     assert d["extra_packages"] == ["pgfplots"]
+    assert d["named_styles"] == [
+        {
+            "name": "important line",
+            "options": ["very thick"],
+            "kwargs": {"inner_sep": "1ex"},
+        }
+    ]
     assert len(d["variables"]) == 1
     assert d["variables"][0]["value"] == 42
     assert len(d["colors"]) == 1
@@ -101,6 +109,13 @@ def test_tikzfigure_to_dict_from_dict_roundtrip():
     assert fig2._grid is True
     assert fig2._figsize == (8, 5)
     assert fig2._extra_packages == ["pgfplots"]
+    assert fig2.named_styles == [
+        {
+            "name": "important line",
+            "options": ["very thick"],
+            "kwargs": {"inner_sep": "1ex"},
+        }
+    ]
     assert len(fig2._variables) == 1
     assert fig2._variables[0].value == 42
     assert len(fig2._colors) == 1

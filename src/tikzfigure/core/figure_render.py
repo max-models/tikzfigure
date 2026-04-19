@@ -18,6 +18,7 @@ TIKZFIGURE_HEADER = line_separator + version_string + link_string + line_separat
 class FigureRenderMixin:
     _extra_packages: list[str] | None
     _tikz_libraries: list[str]
+    _named_styles: list[dict[str, Any]]
     _figure_setup: str | None
     _show_axes: bool
     _grid: bool
@@ -42,6 +43,61 @@ class FigureRenderMixin:
 
     def add_package(self, package: str) -> None:
         raise NotImplementedError
+
+    @property
+    def named_styles(self) -> list[dict[str, Any]]:
+        raise NotImplementedError
+
+    @staticmethod
+    def _format_tikz_value(value: object, output_unit: str | None = None) -> str:
+        from tikzfigure.arrows import TikzArrow
+        from tikzfigure.colors import TikzColor
+        from tikzfigure.styles import TikzStyle
+        from tikzfigure.units import TikzDimension
+
+        if isinstance(value, TikzDimension):
+            return str(value.to(output_unit)) if output_unit is not None else str(value)
+        if isinstance(value, (TikzArrow, TikzColor, TikzStyle)):
+            return str(value)
+        return str(value)
+
+    def _render_named_style(
+        self,
+        style_def: dict[str, Any],
+        output_unit: str | None = None,
+    ) -> str:
+        parts = [
+            self._format_tikz_value(option, output_unit)
+            for option in style_def["options"]
+        ]
+        parts.extend(
+            f"{key.replace('_', ' ')}={self._format_tikz_value(value, output_unit)}"
+            for key, value in style_def["kwargs"].items()
+        )
+        return f"{style_def['name']}/.style={{{', '.join(parts)}}}"
+
+    def _render_figure_option_block(self, output_unit: str | None = None) -> str:
+        items: list[str] = []
+        if self._figure_setup:
+            items.append(self._figure_setup)
+        items.extend(
+            self._render_named_style(style_def, output_unit)
+            for style_def in self._named_styles
+        )
+        if not items:
+            return ""
+        if (
+            len(items) == 1
+            and not self._named_styles
+            and self._figure_setup is not None
+        ):
+            return f"[{items[0]}]"
+        return "[\n" + ",\n".join(f"{TAB}{item}" for item in items) + "\n]"
+
+    def _tikzpicture_opening(self, output_unit: str | None = None) -> str:
+        return (
+            f"\\begin{{tikzpicture}}{self._render_figure_option_block(output_unit)}\n"
+        )
 
     @property
     def colors(self) -> list[tuple[str, Any]]:
@@ -90,9 +146,7 @@ class FigureRenderMixin:
         tikz_script = ""
         if not skip_header:
             tikz_script += TIKZFIGURE_HEADER
-        tikz_script += "\\begin{tikzpicture}\n"
-        if self._figure_setup:
-            tikz_script += f"[{self._figure_setup}]\n"
+        tikz_script += self._tikzpicture_opening(output_unit)
 
         if len(self.variables) > 0:
             for variable in self.variables:
@@ -194,12 +248,7 @@ class FigureRenderMixin:
         tikz_script += "\\end{tikzpicture}"
 
         if self._subfigure_axes or self._subfigure_grid:
-            subfig_tikz = "\\begin{tikzpicture}\n"
-            if self._figure_setup:
-                subfig_tikz = subfig_tikz.replace(
-                    "\\begin{tikzpicture}\n",
-                    f"\\begin{{tikzpicture}}[{self._figure_setup}]\n",
-                )
+            subfig_tikz = self._tikzpicture_opening(output_unit)
 
             for variable in self.variables:
                 subfig_tikz += (

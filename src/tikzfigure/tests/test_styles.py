@@ -78,3 +78,49 @@ def test_path_builder_accepts_style_objects():
     path = fig.draw(a.to(b).to(c, options=styles.bend_left(), looseness=1.2))
 
     assert "\\draw (A) to (B) to[bend left, looseness=1.2] (C);" in path.to_tikz()
+
+
+def test_figure_add_style_renders_named_styles_in_tikzpicture_options():
+    fig = TikzFigure(figure_setup="scale=3")
+    axes = fig.add_style("axes")
+    fig.add_style("important line", options=[styles.very_thick])
+    fig.add_style(
+        "information text",
+        options=[styles.style("rounded corners")],
+        fill="red!10",
+        inner_sep="1ex",
+    )
+    path = fig.draw([(0, 0), (1, 0)], options=[axes], color="black")
+
+    tikz = fig.generate_tikz()
+
+    assert "\\begin{tikzpicture}[" in tikz
+    assert "scale=3" in tikz
+    assert "axes/.style={}" in tikz
+    assert "important line/.style={very thick}" in tikz
+    assert (
+        "information text/.style={rounded corners, fill=red!10, inner sep=1ex}" in tikz
+    )
+    assert "\\draw[axes, color=black] (0, 0) to (1, 0);" in path.to_tikz()
+
+
+def test_add_style_updates_existing_named_style():
+    fig = TikzFigure()
+
+    fig.add_style("important line", options=[styles.thick])
+    token = fig.add_style("important line", options=[styles.very_thick])
+
+    assert str(token) == "important line"
+    assert fig.named_styles == [
+        {"name": "important line", "options": [styles.very_thick], "kwargs": {}}
+    ]
+
+
+def test_figure_add_style_respects_output_unit_conversion():
+    fig = TikzFigure()
+    fig.add_style("callout", inner_sep=2 * units.cm)
+
+    tikz = fig.generate_tikz(output_unit="pt")
+
+    assert "callout/.style={inner sep=" in tikz
+    assert "pt" in tikz

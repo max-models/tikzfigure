@@ -42,6 +42,7 @@ from tikzfigure.core.types import (
 )
 from tikzfigure.core.variable import Variable
 from tikzfigure.options import OptionInput, normalize_options
+from tikzfigure.styles import TikzStyle
 from tikzfigure.units import TikzDimension
 
 WEB_COMPILATION_ENV_VAR = "TIKZFIGURE_USE_WEB_COMPILATION"
@@ -61,6 +62,17 @@ def _normalize_tikz_libraries(*libraries: str) -> list[str]:
                 normalized.append(name)
 
     return normalized
+
+
+def _serialize_tikz_value(value: object) -> object:
+    from tikzfigure.arrows import TikzArrow
+    from tikzfigure.colors import TikzColor
+    from tikzfigure.styles import TikzStyle
+    from tikzfigure.units import TikzDimension
+
+    if isinstance(value, (TikzArrow, TikzColor, TikzDimension, TikzStyle)):
+        return str(value)
+    return value
 
 
 class TikzFigure(
@@ -292,6 +304,7 @@ class TikzFigure(
             list(extra_packages) if extra_packages else None
         )
         self._tikz_libraries: list[str] = []
+        self._named_styles: list[dict[str, Any]] = []
         self._document_setup: str | None = document_setup
         # Initialize lists to hold Node and Path objects
         # TODO: nodes, paths, layers should have @property and @setter methods
@@ -356,6 +369,21 @@ class TikzFigure(
             "tikz_libraries": list(self._tikz_libraries)
             if self._tikz_libraries
             else None,
+            "named_styles": [
+                {
+                    "name": style_def["name"],
+                    "options": [
+                        _serialize_tikz_value(option) for option in style_def["options"]
+                    ],
+                    "kwargs": {
+                        key: _serialize_tikz_value(value)
+                        for key, value in style_def["kwargs"].items()
+                    },
+                }
+                for style_def in self._named_styles
+            ]
+            if self._named_styles
+            else None,
             "document_setup": self._document_setup,
             "figure_setup": self._figure_setup,
             "figsize": list(self._figsize),
@@ -402,6 +430,15 @@ class TikzFigure(
 
         if d.get("tikz_libraries"):
             fig._tikz_libraries = _normalize_tikz_libraries(*d["tikz_libraries"])
+        if d.get("named_styles"):
+            fig._named_styles = [
+                {
+                    "name": style_def["name"],
+                    "options": normalize_options(style_def.get("options")),
+                    "kwargs": dict(style_def.get("kwargs", {})),
+                }
+                for style_def in d["named_styles"]
+            ]
 
         # Build node/coordinate lookup across all layers for path deserialization
         layers_data: dict[Any, list[dict[str, Any]]] = d.get("layers", {})
@@ -544,6 +581,38 @@ class TikzFigure(
             self._extra_packages = []
         if package_name not in self._extra_packages:
             self._extra_packages.append(package_name)
+
+    def add_style(
+        self,
+        name: str,
+        options: OptionInput | None = None,
+        **kwargs: Any,
+    ) -> TikzStyle:
+        """Define or update a named TikZ style at figure scope.
+
+        Examples:
+            >>> fig = TikzFigure()
+            >>> axes = fig.add_style("axes")
+            >>> fig.add_style("important line", options=["very thick"])
+            >>> fig.add_style("information text", fill="red!10", inner_sep="1ex")
+            >>> fig.draw([(0, 0), (1, 0)], options=[axes])
+        """
+        style_name = name.strip()
+        if style_name == "":
+            raise ValueError("Style names must not be empty.")
+
+        style_def = {
+            "name": style_name,
+            "options": normalize_options(options),
+            "kwargs": dict(kwargs),
+        }
+        for index, existing in enumerate(self._named_styles):
+            if existing["name"] == style_name:
+                self._named_styles[index] = style_def
+                break
+        else:
+            self._named_styles.append(style_def)
+        return TikzStyle(style_name)
 
     @overload
     def usetikzlibrary(self, *libraries: _TikzLibraryLiteral) -> None: ...
@@ -2347,6 +2416,18 @@ class TikzFigure(
     def extra_packages(self) -> list[str] | None:
         """Extra LaTeX packages included in the standalone preamble."""
         return list(self._extra_packages) if self._extra_packages is not None else None
+
+    @property
+    def named_styles(self) -> list[dict[str, Any]]:
+        """Named TikZ styles defined at figure scope."""
+        return [
+            {
+                "name": style_def["name"],
+                "options": list(style_def["options"]),
+                "kwargs": dict(style_def["kwargs"]),
+            }
+            for style_def in self._named_styles
+        ]
 
     @property
     def tikz_libraries(self) -> list[str]:
