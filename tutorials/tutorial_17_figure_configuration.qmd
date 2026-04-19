@@ -8,6 +8,7 @@ is set up in LaTeX. This tutorial covers:
 
 - `figure_setup`: global TikZ options applied to the entire `tikzpicture`
   environment
+- `add_style()`: named TikZ styles at figure scope
 - `grid`: debug grid overlay
 - `document_setup`: raw LaTeX preamble additions (for `\usetikzlibrary` etc.)
 - `add_package()`: additional LaTeX packages
@@ -92,6 +93,55 @@ for i in range(len(nodes) - 1):
         arrows=arrows.forward,
         color="gray!70",
     )
+
+fig.show()
+```
+
+{{< include includes/tikz_code_callout.qmd >}}
+
+## `add_style()`: named TikZ styles at figure scope
+
+Use `add_style()` when you want reusable named styles inside the
+`tikzpicture[...]` options block. This is the first-class equivalent of writing
+entries such as `important line/.style={very thick}` by hand.
+
+`add_style()` returns a reusable style token, so you can immediately apply the
+new style in later drawing calls.
+
+```{python}
+fig = TikzFigure()
+
+axes = fig.add_style("axes")
+important_line = fig.add_style("important line", options=["very thick"])
+information_text = fig.add_style(
+    "information text",
+    options=["rounded corners"],
+    fill="red!10",
+    inner_sep="1ex",
+)
+
+fig.draw(
+    [(-1, 0), (2, 0)],
+    options=[axes, arrows.forward],
+    color="gray!70",
+)
+fig.draw(
+    [(0, -1), (0, 2)],
+    options=[axes, arrows.forward],
+    color="gray!70",
+)
+fig.draw(
+    [(0, 0), (1.2, 1.4)],
+    options=[important_line],
+    color="blue!70",
+)
+fig.node(
+    (2.3, 1.1),
+    content="Named styles\nstay reusable",
+    options=[information_text],
+    text_width="3.2cm",
+    anchor="west",
+)
 
 fig.show()
 ```
