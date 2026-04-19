@@ -7,7 +7,7 @@ Run from anywhere:
 
 from pathlib import Path
 
-from tikzfigure import TikzFigure
+from tikzfigure import TikzFigure, shapes
 
 OUT = Path(__file__).resolve().parent.parent / "public" / "quickstart" / "output.png"
 OUT.parent.mkdir(parents=True, exist_ok=True)
@@ -19,21 +19,21 @@ def main() -> None:
         0,
         0,
         content="A",
-        shape="circle",
+        shape=shapes.circle,
         fill="cyan!40",
     )
     b = fig.add_node(
         3,
         0,
         content="B",
-        shape="circle",
+        shape=shapes.circle,
         fill="cyan!40",
     )
     c = fig.add_node(
         0,
         -2,
         content="C",
-        shape="circle",
+        shape=shapes.circle,
         fill="cyan!40",
     )
 

@@ -1,6 +1,10 @@
 from typing import Literal
 
+from tikzfigure.decorations import TikzDecoration
+from tikzfigure.marks import TikzMark
 from tikzfigure.options import OptionValue
+from tikzfigure.patterns import TikzPattern
+from tikzfigure.shapes import TikzShape
 from tikzfigure.styles import TikzStyle
 
 # ---------- Literal type aliases for IDE autocomplete ---------- #
@@ -25,6 +29,7 @@ _Shape = (
         "cross out",
         "strike out",
     ]
+    | TikzShape
     | str
     | None
 )
@@ -72,6 +77,7 @@ _Pattern = (
         "bricks",
         "checkerboard",
     ]
+    | TikzPattern
     | str
     | None
 )
@@ -101,6 +107,7 @@ _Mark = (
         "10-pointed star",
         "ball",
     ]
+    | TikzMark
     | str
     | None
 )
@@ -121,6 +128,7 @@ _Decoration = (
         "expanding waves",
         "footprints",
     ]
+    | TikzDecoration
     | str
     | None
 )

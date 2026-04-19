@@ -6,7 +6,7 @@ jupyter: python3
 Customize plot appearance with colors, markers, line styles, and custom ticks.
 
 ```{python}
-from tikzfigure import TikzFigure, styles
+from tikzfigure import TikzFigure, marks, styles
 ```
 
 ## Colors and markers
@@ -32,14 +32,14 @@ ax.add_plot(
     temp_seattle,
     label="Seattle",
     color="blue",
-    mark="o",
+    mark=marks.circle,
 )
 ax.add_plot(
     months,
     temp_phoenix,
     label="Phoenix",
     color="red",
-    mark="square",
+    mark=marks.square,
 )
 
 ax.set_legend(position="north west")
@@ -48,8 +48,9 @@ fig.show()
 
 {{< include includes/tikz_code_callout.qmd >}}
 
-**Available markers:** `o` (circle), `*` (star), `square`, `triangle`,
-`diamond`, `x`, `+`
+**Available markers:** raw strings still work, and so do objects like
+`marks.circle`, `marks.asterisk`, `marks.square`, `marks.triangle`,
+`marks.diamond`, `marks.x`, and `marks.plus`
 
 **Available colors:** `red`, `blue`, `green`, `black`, plus mixing like
 `blue!50!red`
