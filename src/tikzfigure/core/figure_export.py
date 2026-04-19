@@ -1,10 +1,13 @@
 from __future__ import annotations
 
+import logging
 import os
 import subprocess
 import tempfile
 from pathlib import Path
 from typing import Any
+
+logger = logging.getLogger(__name__)
 
 
 class FigureExportMixin:
@@ -39,7 +42,7 @@ class FigureExportMixin:
         try:
             self._check(output_unit=output_unit)
         except Exception as exc:
-            print(f"Warning: TikzFigure._check() failed: {exc}")
+            logger.warning("TikzFigure._check() failed: %s", exc)
 
     def compile_pdf(
         self,

@@ -612,7 +612,7 @@ def test_savefig_tikz_pdf_png_and_invalid(tmp_path, monkeypatch):
         fig.savefig(filename=str(tmp_path / "out.txt"))
 
 
-def test_savefig_check_warning_does_not_block_save(tmp_path, monkeypatch, capsys):
+def test_savefig_check_warning_does_not_block_save(tmp_path, monkeypatch, caplog):
     fig = TikzFigure()
     tikz_path = tmp_path / "out.tikz"
 
@@ -621,16 +621,15 @@ def test_savefig_check_warning_does_not_block_save(tmp_path, monkeypatch, capsys
 
     monkeypatch.setattr(fig, "_check", fail_check)
 
-    fig.savefig(filename=str(tikz_path), check=True)
+    with caplog.at_level("WARNING"):
+        fig.savefig(filename=str(tikz_path), check=True)
 
     assert tikz_path.exists()
-    assert (
-        "Warning: TikzFigure._check() failed: broken check" in capsys.readouterr().out
-    )
+    assert "TikzFigure._check() failed: broken check" in caplog.text
 
 
 def test_compile_pdf_check_warning_does_not_block_compile(
-    tmp_path, monkeypatch, capsys
+    tmp_path, monkeypatch, caplog
 ):
     fig = TikzFigure()
     output_pdf = tmp_path / "checked.pdf"
@@ -648,12 +647,11 @@ def test_compile_pdf_check_warning_does_not_block_compile(
         fake_web_compile,
     )
 
-    fig.compile_pdf(filename=output_pdf, use_web_compilation=True, check=True)
+    with caplog.at_level("WARNING"):
+        fig.compile_pdf(filename=output_pdf, use_web_compilation=True, check=True)
 
     assert output_pdf.exists()
-    assert (
-        "Warning: TikzFigure._check() failed: broken check" in capsys.readouterr().out
-    )
+    assert "TikzFigure._check() failed: broken check" in caplog.text
 
 
 def test_show_suppressed(monkeypatch, capsys):
@@ -840,7 +838,7 @@ def test_show_backends_and_errors(monkeypatch, capsys):
         fig.show(backend="unknown")
 
 
-def test_show_check_warning_does_not_block_backend(monkeypatch, capsys):
+def test_show_check_warning_does_not_block_backend(monkeypatch, caplog):
     fig = TikzFigure()
     monkeypatch.delenv("tikzfigure_NO_SHOW", raising=False)
     monkeypatch.delenv("PYTEST_CURRENT_TEST", raising=False)
@@ -860,12 +858,11 @@ def test_show_check_warning_does_not_block_backend(monkeypatch, capsys):
         fig, "_show_matplotlib", lambda **_: called.__setitem__("matplotlib", True)
     )
 
-    fig.show(backend="matplotlib", check=True)
+    with caplog.at_level("WARNING"):
+        fig.show(backend="matplotlib", check=True)
 
     assert called["matplotlib"] is True
-    assert (
-        "Warning: TikzFigure._check() failed: broken check" in capsys.readouterr().out
-    )
+    assert "TikzFigure._check() failed: broken check" in caplog.text
 
 
 def test_add_tabs_custom():
