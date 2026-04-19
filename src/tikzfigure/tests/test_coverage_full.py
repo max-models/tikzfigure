@@ -612,6 +612,50 @@ def test_savefig_tikz_pdf_png_and_invalid(tmp_path, monkeypatch):
         fig.savefig(filename=str(tmp_path / "out.txt"))
 
 
+def test_savefig_check_warning_does_not_block_save(tmp_path, monkeypatch, capsys):
+    fig = TikzFigure()
+    tikz_path = tmp_path / "out.tikz"
+
+    def fail_check(output_unit=None):
+        raise AssertionError("broken check")
+
+    monkeypatch.setattr(fig, "_check", fail_check)
+
+    fig.savefig(filename=str(tikz_path), check=True)
+
+    assert tikz_path.exists()
+    assert (
+        "Warning: TikzFigure._check() failed: broken check" in capsys.readouterr().out
+    )
+
+
+def test_compile_pdf_check_warning_does_not_block_compile(
+    tmp_path, monkeypatch, capsys
+):
+    fig = TikzFigure()
+    output_pdf = tmp_path / "checked.pdf"
+
+    def fail_check(output_unit=None):
+        raise AssertionError("broken check")
+
+    def fake_web_compile(latex_document, filename, verbose=False):
+        with open(filename, "wb") as f:
+            f.write(b"%PDF-1.4")
+
+    monkeypatch.setattr(fig, "_check", fail_check)
+    monkeypatch.setattr(
+        "tikzfigure.core.web_compiler.compile_with_latex_on_http",
+        fake_web_compile,
+    )
+
+    fig.compile_pdf(filename=output_pdf, use_web_compilation=True, check=True)
+
+    assert output_pdf.exists()
+    assert (
+        "Warning: TikzFigure._check() failed: broken check" in capsys.readouterr().out
+    )
+
+
 def test_show_suppressed(monkeypatch, capsys):
     fig = TikzFigure()
     monkeypatch.setenv("tikzfigure_NO_SHOW", "1")
@@ -794,6 +838,34 @@ def test_show_backends_and_errors(monkeypatch, capsys):
 
     with pytest.raises(ValueError, match="Unknown backend"):
         fig.show(backend="unknown")
+
+
+def test_show_check_warning_does_not_block_backend(monkeypatch, capsys):
+    fig = TikzFigure()
+    monkeypatch.delenv("tikzfigure_NO_SHOW", raising=False)
+    monkeypatch.delenv("PYTEST_CURRENT_TEST", raising=False)
+
+    ipy_module = ModuleType("IPython")
+    ipy_module.__path__ = []
+    ipy_module.get_ipython = lambda: None
+    monkeypatch.setitem(sys.modules, "IPython", ipy_module)
+
+    called = {"matplotlib": False}
+
+    def fail_check(output_unit=None):
+        raise AssertionError("broken check")
+
+    monkeypatch.setattr(fig, "_check", fail_check)
+    monkeypatch.setattr(
+        fig, "_show_matplotlib", lambda **_: called.__setitem__("matplotlib", True)
+    )
+
+    fig.show(backend="matplotlib", check=True)
+
+    assert called["matplotlib"] is True
+    assert (
+        "Warning: TikzFigure._check() failed: broken check" in capsys.readouterr().out
+    )
 
 
 def test_add_tabs_custom():
