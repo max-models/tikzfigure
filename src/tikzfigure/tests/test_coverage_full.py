@@ -20,6 +20,15 @@ from tikzfigure.core.plot import Plot3D
 from tikzfigure.core.variable import Variable
 
 
+class DummyTikzObject(TikzObject):
+    def to_tikz(self, output_unit: str | None = None) -> str:
+        options = self.tikz_options(output_unit)
+        body = "\\dummy"
+        if options:
+            body += f"[{options}]"
+        return self.add_comment(body + ";\n")
+
+
 def test_tikzobject_options_and_comments():
     obj = TikzObject(options=None, comment=None, layer=1, label="a", foo="bar")
     assert obj.tikz_options() == "foo=bar"
@@ -74,6 +83,27 @@ def test_tikzobject_rich_values_round_trip():
     assert obj2.options == [styles.dashed, arrows.forward]
     assert obj2.kwargs["fill"] == colors.red.mix(colors.blue, 25)
     assert obj2.kwargs["inner_sep"] == 2 * units.cm
+
+
+def test_tikzobject_check_requires_to_tikz():
+    obj = TikzObject(label="plain")
+
+    with pytest.raises(NotImplementedError, match="must implement to_tikz"):
+        obj._check()
+
+
+def test_tikzobject_check_round_trips_concrete_subclass():
+    obj = DummyTikzObject(
+        label="dummy",
+        comment="note",
+        options=[styles.dashed],
+        draw=colors.red,
+    )
+
+    restored = obj._check()
+
+    assert isinstance(restored, DummyTikzObject)
+    assert restored == obj
 
 
 def test_tikzfigure_to_dict_from_dict_roundtrip():
@@ -167,6 +197,18 @@ def test_tikzfigure_to_dict_from_dict_roundtrip():
 
     # TikZ output should be identical
     assert fig.generate_tikz() == fig2.generate_tikz()
+
+
+def test_tikzfigure_check_round_trips():
+    fig = TikzFigure(figure_setup="scale=2")
+    fig.add_style("important", options=[styles.very_thick])
+    fig.add_node(x=0, y=0, label="A", content="A", fill=colors.red)
+    fig.draw([(0, 0), (1, 0)], options=[styles.dashed], color=colors.blue)
+
+    restored = fig._check()
+
+    assert isinstance(restored, TikzFigure)
+    assert restored.generate_tikz() == fig.generate_tikz()
 
 
 def test_tikzfigure_add_package_deduplicates_and_trims():

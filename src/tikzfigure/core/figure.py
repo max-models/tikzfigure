@@ -5,7 +5,6 @@ from tikzfigure.arrows import ArrowInput
 from tikzfigure.colors import ColorInput
 from tikzfigure.core.arc import Arc
 from tikzfigure.core.axis import Axis2D
-from tikzfigure.core.base import TikzObject
 from tikzfigure.core.circle import Circle
 from tikzfigure.core.color import Color
 from tikzfigure.core.coordinate import Coordinate, PositionInput, TikzCoordinate
@@ -525,6 +524,22 @@ class TikzFigure(
             fig.axes.append(axis)
 
         return fig
+
+    def _check(self, output_unit: str | None = None) -> "TikzFigure":
+        """Round-trip through dict/TikZ serialization and verify equivalence."""
+        data = self.to_dict()
+        restored = type(self).from_dict(data)
+        if restored.to_dict() != data:
+            raise AssertionError(
+                "TikzFigure changed after to_dict()/from_dict() round-trip."
+            )
+
+        original_tikz = self.generate_tikz(output_unit=output_unit)
+        restored_tikz = restored.generate_tikz(output_unit=output_unit)
+        if original_tikz != restored_tikz:
+            raise AssertionError("TikzFigure changed after generate_tikz() round-trip.")
+
+        return restored
 
     # ------------------------------------------------------------- #
     # Public methods
