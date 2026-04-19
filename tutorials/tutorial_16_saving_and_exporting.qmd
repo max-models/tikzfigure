@@ -85,7 +85,8 @@ want consistent exported TikZ code without manually rewriting every dimension.
 the preamble, packages, and all library imports:
 
 ```{python}
-fig = TikzFigure(extra_packages=["amsmath"])
+fig = TikzFigure()
+fig.add_package("amsmath")
 fig.node(
     (0, 0),
     content=r"$\sum_{k=1}^{n} k$",

@@ -172,9 +172,9 @@ document_setup = r"""
 \renewcommand*\familydefault{\sfdefault}
 """
 fig = TikzFigure(
-    extra_packages=["worldflags"],
     document_setup=document_setup,
 )
+fig.add_package("worldflags")
 
 # Outer border
 border = [
