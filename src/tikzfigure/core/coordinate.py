@@ -6,6 +6,9 @@ from typing import TYPE_CHECKING, Any, TypeAlias
 from tikzfigure.core.base import TikzObject
 
 if TYPE_CHECKING:
+    from tikzfigure.core.node import Node
+    from tikzfigure.core.path_builder import NodePathBuilder
+    from tikzfigure.options import OptionInput
     from tikzfigure.units import TikzDimension
 
     CoordinateValue: TypeAlias = float | int | str | TikzDimension
@@ -128,6 +131,24 @@ class Coordinate(TikzObject):
         if self._coordinate is None:
             return None
         return self._coordinate.z
+
+    def to(
+        self,
+        target: "Node | Coordinate",
+        options: "OptionInput | None" = None,
+        **kwargs: Any,
+    ) -> "NodePathBuilder":
+        """Create a path builder for a segment from this coordinate to ``target``.
+
+        The returned builder always starts with ``self`` and records the segment
+        options for the edge from ``self`` to ``target``. Chain additional
+        ``.to(...)`` or ``.arc(...)`` calls on the builder to add more path
+        segments. Only :class:`~tikzfigure.core.node.Node` and
+        :class:`Coordinate` targets are accepted by ``.to(...)``.
+        """
+        from tikzfigure.core.path_builder import NodePathBuilder
+
+        return NodePathBuilder(self).to(target, options=options, **kwargs)
 
     @property
     def ndim(self) -> int:

@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING, Any
 from tikzfigure.colors import ColorInput
 from tikzfigure.core.base import TikzObject
 from tikzfigure.core.coordinate import (
+    Coordinate,
     CoordinateTuple2D,
     CoordinateTuple3D,
     CoordinateValue,
@@ -353,7 +354,7 @@ class Node(TikzObject):
 
     def to(
         self,
-        target: "Node",
+        target: "Node | Coordinate",
         options: OptionInput | None = None,
         **kwargs: Any,
     ) -> "NodePathBuilder":
@@ -362,7 +363,8 @@ class Node(TikzObject):
         The returned builder always starts with ``self`` and records the segment
         options for the edge from ``self`` to ``target``. Chain additional
         ``.to(...)`` or ``.arc(...)`` calls on the builder to add more path
-        segments. Only :class:`Node` targets are accepted by ``.to(...)``.
+        segments. Only :class:`Node` and :class:`Coordinate` targets are
+        accepted by ``.to(...)``.
         """
         from tikzfigure.core.path_builder import NodePathBuilder
 

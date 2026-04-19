@@ -1,0 +1,246 @@
+---
+title: "Karl's Students Figure"
+jupyter: python3
+---
+
+This tutorial recreates the classic **"A picture for Karl's students"** example
+from the TikZ/PGF manual using the current `tikzfigure` Python API.
+
+Most of the figure maps directly to high-level helpers:
+
+- figure-scoped named styles via `add_style()`
+- local option blocks via `scope()`
+- named colors via `colorlet()`
+- arc path segments via `.arc(...)` / arc segment options
+- per-segment labels via `"node"` in `segment_options`
+
+The main approximation is the tangent intersection point: instead of using
+TikZ's `intersections` library, this tutorial computes that helper point in
+Python and then draws the same geometry through the API.
+
+```{python}
+import math
+
+from tikzfigure import TikzFigure, arrows, colors, styles, units
+```
+
+## Recreating the figure
+
+```{python}
+alpha_deg = 30
+alpha = math.radians(alpha_deg)
+
+# Helper geometry computed in Python
+point_on_circle = (math.cos(alpha), math.sin(alpha))
+projection_on_x = (point_on_circle[0], 0)
+tangent_point = (1, math.tan(alpha))
+angle_label = (
+    0.2 * math.cos(alpha / 2),
+    0.2 * math.sin(alpha / 2),
+)
+
+fig = TikzFigure(
+    figure_setup="scale=3, line cap=round",
+    figsize=(13, 7),
+)
+fig.add_package("amsmath")
+
+axes = fig.add_style("axes")
+important_line = fig.add_style("important line", options=[styles.very_thick])
+information_text = fig.add_style(
+    "information text",
+    options=["rounded corners"],
+    fill=colors.red.mix(percent=10),
+    inner_sep="1ex",
+)
+
+fig.colorlet("anglecolor", colors.green.mix(colors.black, percent=50))
+fig.colorlet("sincolor", colors.red)
+fig.colorlet("tancolor", colors.orange.mix(colors.black, percent=80))
+fig.colorlet("coscolor", colors.blue)
+
+# Background grid and unit circle
+fig.grid(
+    (-1.4, -1.4),
+    (1.4, 1.4),
+    step="0.5cm",
+    color=colors.lightgray,
+    line_width="0.2pt",
+)
+fig.circle((0, 0), "1cm")
+
+# Axes, ticks, and axis labels
+with fig.scope(options=[axes]) as local:
+    local.draw(
+        [(-1.5, 0), (1.5, 0)],
+        options=[arrows.forward],
+        color=colors.black,
+        segment_options=[
+            {
+                "connector": "--",
+                "node": {"content": r"$x$", "right": True},
+            }
+        ],
+    )
+    local.draw(
+        [(0, -1.5), (0, 1.5)],
+        options=[arrows.forward],
+        color=colors.black,
+        segment_options=[
+            {
+                "connector": "--",
+                "node": {"content": r"$y$", "above": True},
+            }
+        ],
+    )
+
+    for x, xtext in [
+        (-1, "-1"),
+        (-0.5, r"-\frac{1}{2}"),
+        (1, "1"),
+    ]:
+        local.draw(
+            [(x, 1 * units.pt), (x, -1 * units.pt)],
+            color=colors.black,
+            segment_options=[{"connector": "--"}],
+        )
+        local.node(
+            (x, -5 * units.pt),
+            content=rf"${xtext}$",
+            fill=colors.white,
+            draw="none",
+            anchor="north",
+        )
+
+    for y, ytext in [
+        (-1, "-1"),
+        (-0.5, r"-\frac{1}{2}"),
+        (0.5, r"\frac{1}{2}"),
+        (1, "1"),
+    ]:
+        local.draw(
+            [(1 * units.pt, y), (-1 * units.pt, y)],
+            color=colors.black,
+            segment_options=[{"connector": "--"}],
+        )
+        local.node(
+            (-5 * units.pt, y),
+            content=rf"${ytext}$",
+            fill=colors.white,
+            draw="none",
+            anchor="east",
+        )
+
+# Angle wedge
+fig.filldraw(
+    [(0, 0), (3 * units.mm, 0)],
+    fill=colors.green.mix(percent=20),
+    draw="anglecolor",
+    segment_options=[
+        {"connector": "--"},
+        {
+            "connector": "arc",
+            "start_angle": 0,
+            "end_angle": alpha_deg,
+            "radius": "3mm",
+        },
+    ],
+)
+fig.node(
+    angle_label,
+    content=r"$\alpha$",
+    text="anglecolor",
+    draw="none",
+)
+
+# Sine and cosine legs
+fig.draw(
+    [point_on_circle, projection_on_x],
+    options=[important_line],
+    color="sincolor",
+    segment_options=[
+        {
+            "connector": "--",
+            "node": {
+                "content": r"$\sin \alpha$",
+                "left": "1pt",
+                "fill": "white",
+            },
+        }
+    ],
+)
+fig.draw(
+    [projection_on_x, (0, 0)],
+    options=[important_line],
+    color="coscolor",
+    segment_options=[
+        {
+            "connector": "--",
+            "node": {
+                "content": r"$\cos \alpha$",
+                "below": "2pt",
+                "fill": "white",
+            },
+        }
+    ],
+)
+
+# Tangent segment and sloped radius line
+tan_label = (
+    r"$\displaystyle \tan \alpha \color{black}="
+    r"\frac{{\color{red}\sin \alpha}}{{\color{blue}\cos \alpha}}$"
+)
+tan_base = fig.add_coordinate("tan_base", (1, 0))
+tan_tip = fig.add_coordinate("tan_tip", tangent_point)
+
+fig.draw(
+    tan_base.to(
+        tan_tip,
+        options=[styles.very_thick],
+        node={
+            "content": tan_label,
+            "right": "1pt",
+            "fill": "white",
+        },
+    ),
+    color="tancolor",
+)
+fig.draw(
+    [(0, 0), tangent_point],
+    color=colors.black,
+    segment_options=[{"connector": "--"}],
+)
+
+# Explanatory text box
+info_text = r"""
+The {\color{anglecolor} angle $\alpha$} is $30^\circ$ in this
+example ($\pi/6$ in radians). The {\color{sincolor}sine of
+$\alpha$}, which is the height of the red line, is
+\[
+{\color{sincolor}\sin \alpha} = 1/2.
+\]
+The blue cosine segment and orange tangent segment complete
+the same right-triangle picture.
+"""
+
+fig.node(
+    (1.85, 0.45),
+    anchor="west",
+    text_width="6cm",
+    align="left",
+    options=[information_text],
+    content=info_text,
+)
+
+fig.show()
+```
+
+{{< include includes/tikz_code_callout.qmd >}}
+
+Even without a first-class intersections helper yet, the current API already
+gets very close to the original:
+
+- named styles and local scopes match the manual structure closely
+- arc segments, labeled paths, and xcolor mixes all stay in the Python layer
+- only the tangent helper point is computed numerically instead of through a
+  TikZ library-driven intersection
