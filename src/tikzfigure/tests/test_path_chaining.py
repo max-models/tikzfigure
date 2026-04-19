@@ -1,8 +1,9 @@
 import pytest
 
-from tikzfigure import TikzFigure
+from tikzfigure import TikzFigure, colors, styles
 from tikzfigure.core.coordinate import Coordinate
 from tikzfigure.core.node import Node
+from tikzfigure.core.path import TikzPath
 from tikzfigure.core.path_builder import NodePathBuilder
 
 
@@ -174,6 +175,45 @@ def test_draw_allows_segments_after_arc():
         "\\draw[color=blue] (A) to (B) arc[start angle=0, end angle=90, radius=3mm] to (C);"
         in path.to_tikz().replace("\n\t", " ")
     )
+
+
+def test_path_to_dict_from_dict_preserves_rich_segment_options():
+    fig = TikzFigure()
+    a = fig.add_node(x=0, y=0, label="A")
+    b = fig.add_node(x=1, y=0, label="B")
+
+    path = fig.draw(
+        a.to(
+            b,
+            options=[styles.bend_left()],
+            node={
+                "content": "label",
+                "fill": colors.white,
+            },
+        ),
+        color=colors.red,
+    )
+
+    data = path.to_dict()
+
+    assert data["kwargs"]["color"]["__tikzfigure_serialized_type__"] == "TikzColor"
+    assert (
+        data["segment_options"][0]["options"][0]["__tikzfigure_serialized_type__"]
+        == "TikzStyle"
+    )
+    assert (
+        data["segment_options"][0]["node"]["fill"]["__tikzfigure_serialized_type__"]
+        == "TikzColor"
+    )
+
+    restored = TikzPath.from_dict(data, node_lookup={"A": a, "B": b})
+    assert restored.kwargs["color"] == colors.red
+    assert restored.segment_options == [
+        {
+            "options": [styles.bend_left()],
+            "node": {"content": "label", "fill": colors.white},
+        }
+    ]
 
 
 def test_draw_rejects_extra_segment_options_when_builder_is_used():

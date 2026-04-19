@@ -7,6 +7,7 @@ from tikzfigure.core.coordinate import (
     TikzVector,
     VectorInput,
 )
+from tikzfigure.core.serialization import deserialize_tikz_value, serialize_tikz_value
 from tikzfigure.core.types import _Option
 from tikzfigure.options import OptionInput
 
@@ -172,7 +173,10 @@ class Line(TikzObject):
                 "end": self._end.to_dict(),
             }
         )
-        return d
+        serialized = serialize_tikz_value(d)
+        if not isinstance(serialized, dict):
+            raise TypeError("Serialized line data must remain a dict.")
+        return serialized
 
     @classmethod
     def from_dict(cls, d: dict[str, Any]) -> "Line":
@@ -184,28 +188,17 @@ class Line(TikzObject):
         Returns:
             A new Line instance.
         """
-        start = TikzCoordinate.from_dict(d["start"])
-        end = TikzCoordinate.from_dict(d["end"])
+        restored = deserialize_tikz_value(d)
+        if not isinstance(restored, dict):
+            raise TypeError("Serialized line data must deserialize to a dict.")
+        start = TikzCoordinate.from_dict(restored["start"])
+        end = TikzCoordinate.from_dict(restored["end"])
         return cls(
             start=start,
             end=end,
-            label=d.get("label", ""),
-            comment=d.get("comment"),
-            layer=d.get("layer", 0),
-            options=d.get("options", []),
-            **{
-                k: v
-                for k, v in d.items()
-                if k
-                not in [
-                    "type",
-                    "start",
-                    "end",
-                    "label",
-                    "comment",
-                    "layer",
-                    "options",
-                    "kwargs",
-                ]
-            },
+            label=restored.get("label", ""),
+            comment=restored.get("comment"),
+            layer=restored.get("layer", 0),
+            options=restored.get("options", []),
+            **restored.get("kwargs", {}),
         )

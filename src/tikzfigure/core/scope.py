@@ -11,6 +11,7 @@ from tikzfigure.core.node import Node
 from tikzfigure.core.path import TikzPath
 from tikzfigure.core.path_builder import NodePathBuilder, SegmentOption
 from tikzfigure.core.raw import RawTikz
+from tikzfigure.core.serialization import deserialize_tikz_value, serialize_tikz_value
 from tikzfigure.options import OptionInput
 
 
@@ -229,7 +230,10 @@ class Scope(FigurePathMixin, TikzObject):
                 "items": [item.to_dict() for item in self._items],
             }
         )
-        return d
+        serialized = serialize_tikz_value(d)
+        if not isinstance(serialized, dict):
+            raise TypeError("Serialized scope data must remain a dict.")
+        return serialized
 
     @classmethod
     def from_dict(
@@ -239,15 +243,18 @@ class Scope(FigurePathMixin, TikzObject):
     ) -> "Scope":
         from tikzfigure.core.loop import Loop
 
+        restored = deserialize_tikz_value(d)
+        if not isinstance(restored, dict):
+            raise TypeError("Serialized scope data must deserialize to a dict.")
         scope = cls(
-            label=d.get("label", ""),
-            comment=d.get("comment"),
-            layer=d.get("layer", 0),
-            options=d.get("options"),
-            **d.get("kwargs", {}),
+            label=restored.get("label", ""),
+            comment=restored.get("comment"),
+            layer=restored.get("layer", 0),
+            options=restored.get("options"),
+            **restored.get("kwargs", {}),
         )
         local_lookup: dict[str, Node | Coordinate] = dict(node_lookup or {})
-        for item_data in d.get("items", []):
+        for item_data in restored.get("items", []):
             item_type = item_data.get("type")
             if item_type == "Node":
                 node = Node.from_dict(item_data)

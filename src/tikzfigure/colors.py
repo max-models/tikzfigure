@@ -64,6 +64,11 @@ class TikzColor:
     def __repr__(self) -> str:
         return f"TikzColor({self.color_spec!r})"
 
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, TikzColor):
+            return NotImplemented
+        return self.color_spec == other.color_spec
+
     def __hash__(self) -> int:
         return hash(self.color_spec)
 

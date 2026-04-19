@@ -2,6 +2,7 @@ from typing import Any
 
 from tikzfigure.core.base import TikzObject
 from tikzfigure.core.coordinate import PositionInput, TikzCoordinate
+from tikzfigure.core.serialization import deserialize_tikz_value, serialize_tikz_value
 from tikzfigure.options import OptionInput
 
 
@@ -122,7 +123,10 @@ class Parabola(TikzObject):
                 "tikz_command": self._tikz_command,
             }
         )
-        return d
+        serialized = serialize_tikz_value(d)
+        if not isinstance(serialized, dict):
+            raise TypeError("Serialized parabola data must remain a dict.")
+        return serialized
 
     @classmethod
     def from_dict(cls, d: dict[str, Any]) -> "Parabola":
@@ -134,33 +138,22 @@ class Parabola(TikzObject):
         Returns:
             A new Parabola instance.
         """
-        start = TikzCoordinate.from_dict(d["start"])
-        end = TikzCoordinate.from_dict(d["end"])
-        bend = TikzCoordinate.from_dict(d["bend"]) if d.get("bend") else None
+        restored = deserialize_tikz_value(d)
+        if not isinstance(restored, dict):
+            raise TypeError("Serialized parabola data must deserialize to a dict.")
+        start = TikzCoordinate.from_dict(restored["start"])
+        end = TikzCoordinate.from_dict(restored["end"])
+        bend = (
+            TikzCoordinate.from_dict(restored["bend"]) if restored.get("bend") else None
+        )
         return cls(
             start=start,
             end=end,
             bend=bend,
-            label=d.get("label", ""),
-            comment=d.get("comment"),
-            layer=d.get("layer", 0),
-            options=d.get("options", []),
-            tikz_command=d.get("tikz_command", "draw"),
-            **{
-                k: v
-                for k, v in d.items()
-                if k
-                not in [
-                    "type",
-                    "start",
-                    "end",
-                    "bend",
-                    "label",
-                    "comment",
-                    "layer",
-                    "options",
-                    "tikz_command",
-                    "kwargs",
-                ]
-            },
+            label=restored.get("label", ""),
+            comment=restored.get("comment"),
+            layer=restored.get("layer", 0),
+            options=restored.get("options", []),
+            tikz_command=restored.get("tikz_command", "draw"),
+            **restored.get("kwargs", {}),
         )

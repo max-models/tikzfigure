@@ -1,5 +1,6 @@
 from typing import Any
 
+from tikzfigure.core.serialization import deserialize_tikz_value, serialize_tikz_value
 from tikzfigure.options import OptionInput, OptionValue, normalize_options
 
 
@@ -121,22 +122,12 @@ class TikzObject:
             A dictionary containing ``label``, ``comment``, ``layer``,
             ``options``, and ``kwargs`` keys.
         """
-        from tikzfigure.arrows import TikzArrow
-        from tikzfigure.colors import TikzColor
-        from tikzfigure.styles import TikzStyle
-        from tikzfigure.units import TikzDimension
-
-        def _serialize(v: object) -> object:
-            if isinstance(v, (TikzArrow, TikzColor, TikzDimension, TikzStyle)):
-                return str(v)
-            return v
-
         return {
             "label": self._label,
             "comment": self._comment,
             "layer": self._layer,
-            "options": [_serialize(option) for option in self._options],
-            "kwargs": {k: _serialize(v) for k, v in self._kwargs.items()},
+            "options": serialize_tikz_value(self._options),
+            "kwargs": serialize_tikz_value(self._kwargs),
         }
 
     @classmethod
@@ -149,12 +140,17 @@ class TikzObject:
         Returns:
             A new instance of the calling class populated from *d*.
         """
-        kwargs = d.get("kwargs", {})
+        options = deserialize_tikz_value(d.get("options"))
+        kwargs = deserialize_tikz_value(d.get("kwargs", {}))
+        if not isinstance(options, list):
+            raise TypeError("Serialized options must deserialize to a list.")
+        if not isinstance(kwargs, dict):
+            raise TypeError("Serialized kwargs must deserialize to a dict.")
         return cls(
             label=d.get("label"),
             comment=d.get("comment"),
             layer=d.get("layer"),
-            options=d.get("options"),
+            options=options,
             **kwargs,
         )
 

@@ -47,6 +47,11 @@ class TikzDimension:
     def __repr__(self) -> str:
         return f"TikzDimension({self.value!r}, {self.unit!r})"
 
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, TikzDimension):
+            return NotImplemented
+        return self.unit == other.unit and float(self.value) == float(other.value)
+
 
 class _Unit:
     """Sentinel for a TikZ unit. Supports multiplication: 2.5 * units.cm."""

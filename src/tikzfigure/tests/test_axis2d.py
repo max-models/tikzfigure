@@ -1,6 +1,6 @@
 import pytest
 
-from tikzfigure import TikzFigure
+from tikzfigure import TikzFigure, colors, styles
 from tikzfigure.core.axis import Axis2D
 from tikzfigure.core.plot import Plot2D
 
@@ -547,6 +547,40 @@ class TestAxis2DSerialization:
 
         assert axis2.width == axis1.width
         assert axis2.height == axis1.height
+
+    def test_axis2d_round_trip_preserves_rich_options_and_plot_kwargs(self):
+        axis1 = Axis2D(
+            xlabel="X",
+            ylabel="Y",
+            options=[styles.dashed],
+            axis_line_style=styles.dotted,
+        )
+        axis1.add_plot(
+            [0, 1],
+            [0, 1],
+            label="plot1",
+            options=[styles.very_thick],
+            color=colors.red,
+        )
+
+        d = axis1.to_dict()
+
+        assert d["options"][0]["__tikzfigure_serialized_type__"] == "TikzStyle"
+        assert (
+            d["kwargs"]["axis_line_style"]["__tikzfigure_serialized_type__"]
+            == "TikzStyle"
+        )
+        assert (
+            d["plots"][0]["kwargs"]["color"]["__tikzfigure_serialized_type__"]
+            == "TikzColor"
+        )
+
+        axis2 = Axis2D.from_dict(d)
+
+        assert axis2.options == [styles.dashed]
+        assert axis2.kwargs["axis_line_style"] == styles.dotted
+        assert axis2.plots[0].options == [styles.very_thick]
+        assert axis2.plots[0].kwargs["color"] == colors.red
 
 
 class TestTikzFigure:

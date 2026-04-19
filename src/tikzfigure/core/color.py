@@ -1,6 +1,7 @@
 from typing import Any
 
 from tikzfigure.colors import ColorInput
+from tikzfigure.core.serialization import deserialize_tikz_value, serialize_tikz_value
 
 
 class Color:
@@ -35,7 +36,12 @@ class Color:
         Returns:
             A dictionary with ``type`` and ``color_spec`` keys.
         """
-        return {"type": "Color", "color_spec": self.color_spec}
+        serialized = serialize_tikz_value(
+            {"type": "Color", "color_spec": self._color_spec}
+        )
+        if not isinstance(serialized, dict):
+            raise TypeError("Serialized color data must remain a dict.")
+        return serialized
 
     @classmethod
     def from_dict(cls, d: dict[str, Any]) -> "Color":
@@ -47,7 +53,10 @@ class Color:
         Returns:
             A new :class:`Color` instance.
         """
-        return cls(color_spec=d["color_spec"])
+        restored = deserialize_tikz_value(d)
+        if not isinstance(restored, dict):
+            raise TypeError("Serialized color data must deserialize to a dict.")
+        return cls(color_spec=restored["color_spec"])
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, Color):

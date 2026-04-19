@@ -7,6 +7,7 @@ from tikzfigure.core.coordinate import Coordinate
 from tikzfigure.core.node import Node
 from tikzfigure.core.path import TikzPath
 from tikzfigure.core.raw import RawTikz
+from tikzfigure.core.serialization import deserialize_tikz_value, serialize_tikz_value
 
 
 class Loop(TikzObject):
@@ -166,7 +167,10 @@ class Loop(TikzObject):
                 "items": [item.to_dict() for item in self._items],
             }
         )
-        return d
+        serialized = serialize_tikz_value(d)
+        if not isinstance(serialized, dict):
+            raise TypeError("Serialized loop data must remain a dict.")
+        return serialized
 
     @classmethod
     def from_dict(
@@ -182,14 +186,17 @@ class Loop(TikzObject):
         Returns:
             A new :class:`Loop` instance with all nested items restored.
         """
+        restored = deserialize_tikz_value(d)
+        if not isinstance(restored, dict):
+            raise TypeError("Serialized loop data must deserialize to a dict.")
         loop = cls(
-            variable=d["variable"],
-            values=d["values"],
-            layer=d.get("layer", 0),
-            comment=d.get("comment"),
+            variable=restored["variable"],
+            values=restored["values"],
+            layer=restored.get("layer", 0),
+            comment=restored.get("comment"),
         )
         local_lookup: dict[str, Node | Coordinate] = dict(node_lookup or {})
-        for item_data in d.get("items", []):
+        for item_data in restored.get("items", []):
             item_type = item_data.get("type")
             if item_type == "Node":
                 node = Node.from_dict(item_data)

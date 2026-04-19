@@ -3,6 +3,7 @@ from typing import Any
 from tikzfigure.core.base import TikzObject
 from tikzfigure.core.coordinate import TikzCoordinate
 from tikzfigure.core.path import TikzPath
+from tikzfigure.core.serialization import deserialize_tikz_value, serialize_tikz_value
 from tikzfigure.options import OptionInput
 
 
@@ -87,16 +88,21 @@ class Plot2D(TikzObject):
         Returns:
             A dictionary with type, x, y, func, label, comment, options, and kwargs.
         """
-        return {
-            "type": "Plot2D",
-            "x": self.x if not self.is_function else None,
-            "y": self.y if not self.is_function else None,
-            "func": self.func,
-            "label": self.label,
-            "comment": self.comment,
-            "options": self.options,
-            "kwargs": self.kwargs,
-        }
+        serialized = serialize_tikz_value(
+            {
+                "type": "Plot2D",
+                "x": self.x if not self.is_function else None,
+                "y": self.y if not self.is_function else None,
+                "func": self.func,
+                "label": self.label,
+                "comment": self.comment,
+                "options": self.options,
+                "kwargs": self.kwargs,
+            }
+        )
+        if not isinstance(serialized, dict):
+            raise TypeError("Serialized Plot2D data must remain a dict.")
+        return serialized
 
     @classmethod
     def from_dict(cls, d: dict[str, Any]) -> "Plot2D":
@@ -108,23 +114,29 @@ class Plot2D(TikzObject):
         Returns:
             A new Plot2D instance.
         """
-        func = d.get("func")
+        restored = deserialize_tikz_value(d)
+        if not isinstance(restored, dict):
+            raise TypeError("Serialized Plot2D data must deserialize to a dict.")
+        kwargs = restored.get("kwargs", {})
+        if not isinstance(kwargs, dict):
+            raise TypeError("Serialized Plot2D kwargs must deserialize to a dict.")
+        func = restored.get("func")
         if func is not None:
             return cls(
                 func=func,
-                label=d.get("label", ""),
-                comment=d.get("comment"),
-                options=d.get("options"),
-                **d.get("kwargs", {}),
+                label=restored.get("label", ""),
+                comment=restored.get("comment"),
+                options=restored.get("options"),
+                **kwargs,
             )
         else:
             return cls(
-                x=d.get("x", []),
-                y=d.get("y", []),
-                label=d.get("label", ""),
-                comment=d.get("comment"),
-                options=d.get("options"),
-                **d.get("kwargs", {}),
+                x=restored.get("x", []),
+                y=restored.get("y", []),
+                label=restored.get("label", ""),
+                comment=restored.get("comment"),
+                options=restored.get("options"),
+                **kwargs,
             )
 
 
@@ -204,7 +216,10 @@ class Plot3D(TikzPath):
         """
         d = super().to_dict()
         d["type"] = "Plot3D"
-        return d
+        serialized = serialize_tikz_value(d)
+        if not isinstance(serialized, dict):
+            raise TypeError("Serialized Plot3D data must remain a dict.")
+        return serialized
 
     @classmethod
     def from_dict(
@@ -220,20 +235,25 @@ class Plot3D(TikzPath):
         Returns:
             A new :class:`Plot3D` instance.
         """
-        nodes_data = d.get("nodes", [])
+        restored = deserialize_tikz_value(d)
+        if not isinstance(restored, dict):
+            raise TypeError("Serialized Plot3D data must deserialize to a dict.")
+        nodes_data = restored.get("nodes", [])
         x = [n["x"] for n in nodes_data]
         y = [n["y"] for n in nodes_data]
         z = [n["z"] for n in nodes_data]
-        kwargs = d.get("kwargs", {})
+        kwargs = restored.get("kwargs", {})
+        if not isinstance(kwargs, dict):
+            raise TypeError("Serialized Plot3D kwargs must deserialize to a dict.")
         return cls(
             x=x,
             y=y,
             z=z,
-            cycle=d.get("cycle", False),
-            label=d.get("label", ""),
-            comment=d.get("comment"),
-            layer=d.get("layer", 0),
-            center=d.get("center", False),
-            options=d.get("options"),
+            cycle=restored.get("cycle", False),
+            label=restored.get("label", ""),
+            comment=restored.get("comment"),
+            layer=restored.get("layer", 0),
+            center=restored.get("center", False),
+            options=restored.get("options"),
             **kwargs,
         )

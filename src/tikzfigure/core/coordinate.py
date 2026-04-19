@@ -4,6 +4,7 @@ import math
 from typing import TYPE_CHECKING, Any, TypeAlias
 
 from tikzfigure.core.base import TikzObject
+from tikzfigure.core.serialization import deserialize_tikz_value, serialize_tikz_value
 
 if TYPE_CHECKING:
     from tikzfigure.core.node import Node
@@ -194,7 +195,10 @@ class Coordinate(TikzObject):
                 "at": self._at,
             }
         )
-        return d
+        serialized = serialize_tikz_value(d)
+        if not isinstance(serialized, dict):
+            raise TypeError("Serialized coordinate data must remain a dict.")
+        return serialized
 
     @classmethod
     def from_dict(cls, d: dict[str, Any]) -> "Coordinate":
@@ -206,14 +210,17 @@ class Coordinate(TikzObject):
         Returns:
             A new :class:`Coordinate` instance.
         """
+        restored = deserialize_tikz_value(d)
+        if not isinstance(restored, dict):
+            raise TypeError("Serialized coordinate data must deserialize to a dict.")
         return cls(
-            label=d.get("label", ""),
-            x=d.get("x"),
-            y=d.get("y"),
-            z=d.get("z"),
-            at=d.get("at"),
-            layer=d.get("layer", 0),
-            comment=d.get("comment"),
+            label=restored.get("label", ""),
+            x=restored.get("x"),
+            y=restored.get("y"),
+            z=restored.get("z"),
+            at=restored.get("at"),
+            layer=restored.get("layer", 0),
+            comment=restored.get("comment"),
         )
 
 
@@ -450,13 +457,18 @@ class TikzCoordinate(TikzObject):
             A dictionary with ``type``, ``x``, ``y``, ``z``, and ``layer``
             keys.
         """
-        return {
-            "type": "TikzCoordinate",
-            "x": self._x,
-            "y": self._y,
-            "z": self._z,
-            "layer": self._layer,
-        }
+        serialized = serialize_tikz_value(
+            {
+                "type": "TikzCoordinate",
+                "x": self._x,
+                "y": self._y,
+                "z": self._z,
+                "layer": self._layer,
+            }
+        )
+        if not isinstance(serialized, dict):
+            raise TypeError("Serialized TikzCoordinate data must remain a dict.")
+        return serialized
 
     @classmethod
     def from_dict(cls, d: dict[str, Any]) -> "TikzCoordinate":
@@ -468,7 +480,17 @@ class TikzCoordinate(TikzObject):
         Returns:
             A new :class:`TikzCoordinate` instance.
         """
-        return cls(x=d["x"], y=d["y"], z=d.get("z"), layer=d.get("layer", 0))
+        restored = deserialize_tikz_value(d)
+        if not isinstance(restored, dict):
+            raise TypeError(
+                "Serialized TikzCoordinate data must deserialize to a dict."
+            )
+        return cls(
+            x=restored["x"],
+            y=restored["y"],
+            z=restored.get("z"),
+            layer=restored.get("layer", 0),
+        )
 
 
 class TikzVector(TikzCoordinate):
@@ -587,7 +609,15 @@ class TikzVector(TikzCoordinate):
     @classmethod
     def from_dict(cls, d: dict[str, Any]) -> "TikzVector":
         """Reconstruct a TikzVector from a dictionary."""
-        return cls(x=d["x"], y=d["y"], z=d.get("z"), layer=d.get("layer", 0))
+        restored = deserialize_tikz_value(d)
+        if not isinstance(restored, dict):
+            raise TypeError("Serialized TikzVector data must deserialize to a dict.")
+        return cls(
+            x=restored["x"],
+            y=restored["y"],
+            z=restored.get("z"),
+            layer=restored.get("layer", 0),
+        )
 
 
 PositionInput: TypeAlias = CoordinateTuple2D | CoordinateTuple3D | TikzCoordinate

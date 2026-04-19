@@ -44,6 +44,10 @@ def test_scope_round_trips_through_figure_dict():
     fig2 = TikzFigure.from_dict(data)
 
     assert data["layers"][0][0]["type"] == "Scope"
+    assert data["layers"][0][0]["options"][0] == {
+        "__tikzfigure_serialized_type__": "TikzStyle",
+        "style_spec": "dashed",
+    }
     assert fig2.generate_tikz() == fig.generate_tikz()
 
 

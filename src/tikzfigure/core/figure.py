@@ -28,6 +28,7 @@ from tikzfigure.core.polygon import Polygon, Square, Triangle
 from tikzfigure.core.raw import RawTikz
 from tikzfigure.core.rectangle import Rectangle
 from tikzfigure.core.scope import Scope
+from tikzfigure.core.serialization import deserialize_tikz_value, serialize_tikz_value
 from tikzfigure.core.types import (
     _Align,
     _Anchor,
@@ -63,17 +64,6 @@ def _normalize_tikz_libraries(*libraries: str) -> list[str]:
                 normalized.append(name)
 
     return normalized
-
-
-def _serialize_tikz_value(value: object) -> object:
-    from tikzfigure.arrows import TikzArrow
-    from tikzfigure.colors import TikzColor
-    from tikzfigure.styles import TikzStyle
-    from tikzfigure.units import TikzDimension
-
-    if isinstance(value, (TikzArrow, TikzColor, TikzDimension, TikzStyle)):
-        return str(value)
-    return value
 
 
 class TikzFigure(
@@ -359,46 +349,46 @@ class TikzFigure(
         layers_dict: dict[Any, list[dict[str, Any]]] = {}
         for layer_label, layer in self._layers.layers.items():
             layers_dict[layer_label] = [item.to_dict() for item in layer.items]
-        return {
-            "type": "TikzFigure",
-            "ndim": self._ndim,
-            "label": self._label,
-            "grid": self._grid,
-            "show_axes": self._show_axes,
-            "extra_packages": (
-                list(self._extra_packages) if self._extra_packages else None
-            ),
-            "tikz_libraries": list(self._tikz_libraries)
-            if self._tikz_libraries
-            else None,
-            "named_styles": [
-                {
-                    "name": style_def["name"],
-                    "options": [
-                        _serialize_tikz_value(option) for option in style_def["options"]
-                    ],
-                    "kwargs": {
-                        key: _serialize_tikz_value(value)
-                        for key, value in style_def["kwargs"].items()
-                    },
-                }
-                for style_def in self._named_styles
-            ]
-            if self._named_styles
-            else None,
-            "document_setup": self._document_setup,
-            "figure_setup": self._figure_setup,
-            "figsize": list(self._figsize),
-            "description": self._description,
-            "subfigure_rows": self._subfigure_rows,
-            "subfigure_cols": self._subfigure_cols,
-            "layers": layers_dict,
-            "variables": [v.to_dict() for v in self._variables],
-            "colors": [
-                {"name": name, **color.to_dict()} for name, color in self._colors
-            ],
-            "axes": [axis.to_dict() for axis in self._axes],
-        }
+        serialized = serialize_tikz_value(
+            {
+                "type": "TikzFigure",
+                "ndim": self._ndim,
+                "label": self._label,
+                "grid": self._grid,
+                "show_axes": self._show_axes,
+                "extra_packages": (
+                    list(self._extra_packages) if self._extra_packages else None
+                ),
+                "tikz_libraries": list(self._tikz_libraries)
+                if self._tikz_libraries
+                else None,
+                "named_styles": [
+                    {
+                        "name": style_def["name"],
+                        "options": style_def["options"],
+                        "kwargs": style_def["kwargs"],
+                    }
+                    for style_def in self._named_styles
+                ]
+                if self._named_styles
+                else None,
+                "document_setup": self._document_setup,
+                "figure_setup": self._figure_setup,
+                "figsize": list(self._figsize),
+                "description": self._description,
+                "subfigure_rows": self._subfigure_rows,
+                "subfigure_cols": self._subfigure_cols,
+                "layers": layers_dict,
+                "variables": [v.to_dict() for v in self._variables],
+                "colors": [
+                    {"name": name, **color.to_dict()} for name, color in self._colors
+                ],
+                "axes": [axis.to_dict() for axis in self._axes],
+            }
+        )
+        if not isinstance(serialized, dict):
+            raise TypeError("Serialized figure data must remain a dict.")
+        return serialized
 
     @classmethod
     def from_dict(cls, d: dict[str, Any]) -> "TikzFigure":
@@ -410,40 +400,44 @@ class TikzFigure(
         Returns:
             A fully restored :class:`TikzFigure` instance.
         """
+        restored = deserialize_tikz_value(d)
+        if not isinstance(restored, dict):
+            raise TypeError("Serialized figure data must deserialize to a dict.")
+
         fig = cls(
-            ndim=d.get("ndim", 2),
-            label=d.get("label"),
-            grid=d.get("grid", False),
-            extra_packages=d.get("extra_packages"),
-            document_setup=d.get("document_setup"),
-            figure_setup=d.get("figure_setup"),
-            figsize=tuple(d.get("figsize", [10, 6])),
-            description=d.get("description"),
-            show_axes=d.get("show_axes", False),
-            rows=d.get("subfigure_rows"),
-            cols=d.get("subfigure_cols"),
+            ndim=restored.get("ndim", 2),
+            label=restored.get("label"),
+            grid=restored.get("grid", False),
+            extra_packages=restored.get("extra_packages"),
+            document_setup=restored.get("document_setup"),
+            figure_setup=restored.get("figure_setup"),
+            figsize=tuple(restored.get("figsize", [10, 6])),
+            description=restored.get("description"),
+            show_axes=restored.get("show_axes", False),
+            rows=restored.get("subfigure_rows"),
+            cols=restored.get("subfigure_cols"),
         )
 
-        for var_dict in d.get("variables", []):
+        for var_dict in restored.get("variables", []):
             fig._variables.append(Variable.from_dict(var_dict))
 
-        for color_entry in d.get("colors", []):
+        for color_entry in restored.get("colors", []):
             fig._colors.append((color_entry["name"], Color.from_dict(color_entry)))
 
-        if d.get("tikz_libraries"):
-            fig._tikz_libraries = _normalize_tikz_libraries(*d["tikz_libraries"])
-        if d.get("named_styles"):
+        if restored.get("tikz_libraries"):
+            fig._tikz_libraries = _normalize_tikz_libraries(*restored["tikz_libraries"])
+        if restored.get("named_styles"):
             fig._named_styles = [
                 {
                     "name": style_def["name"],
                     "options": normalize_options(style_def.get("options")),
                     "kwargs": dict(style_def.get("kwargs", {})),
                 }
-                for style_def in d["named_styles"]
+                for style_def in restored["named_styles"]
             ]
 
         # Build node/coordinate lookup across all layers for path deserialization
-        layers_data: dict[Any, list[dict[str, Any]]] = d.get("layers", {})
+        layers_data: dict[Any, list[dict[str, Any]]] = restored.get("layers", {})
         node_lookup: dict[str, Node | Coordinate] = {}
         for items_data in layers_data.values():
             for item_data in items_data:
@@ -526,7 +520,7 @@ class TikzFigure(
             fig._node_counter = max_auto + 1
 
         # Reconstruct axes
-        for axis_data in d.get("axes", []):
+        for axis_data in restored.get("axes", []):
             axis = Axis2D.from_dict(axis_data)
             fig.axes.append(axis)
 

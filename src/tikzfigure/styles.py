@@ -23,6 +23,11 @@ class TikzStyle:
     def __repr__(self) -> str:
         return f"TikzStyle({self.style_spec!r})"
 
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, TikzStyle):
+            return NotImplemented
+        return self.style_spec == other.style_spec
+
     def __hash__(self) -> int:
         return hash(self.style_spec)
 

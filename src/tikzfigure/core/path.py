@@ -5,6 +5,7 @@ from tikzfigure.core.constants import TAB
 from tikzfigure.core.coordinate import Coordinate, TikzCoordinate
 from tikzfigure.core.node import Node
 from tikzfigure.core.path_builder import SegmentOption
+from tikzfigure.core.serialization import deserialize_tikz_value, serialize_tikz_value
 from tikzfigure.core.types import _Option
 from tikzfigure.options import OptionInput
 
@@ -369,7 +370,10 @@ class TikzPath(TikzObject):
                 "tikz_command": self._tikz_command,
             }
         )
-        return d
+        serialized = serialize_tikz_value(d)
+        if not isinstance(serialized, dict):
+            raise TypeError("Serialized path data must remain a dict.")
+        return serialized
 
     @classmethod
     def from_dict(
@@ -386,24 +390,29 @@ class TikzPath(TikzObject):
         Returns:
             A new :class:`TikzPath` instance with nodes resolved.
         """
+        restored = deserialize_tikz_value(d)
+        if not isinstance(restored, dict):
+            raise TypeError("Serialized path data must deserialize to a dict.")
         node_lookup = node_lookup or {}
         nodes = []
-        for node_data in d.get("nodes", []):
+        for node_data in restored.get("nodes", []):
             if node_data["type"] in ("NodeRef", "CoordinateRef"):
                 nodes.append(node_lookup[node_data["label"]])
             elif node_data["type"] == "TikzCoordinate":
                 nodes.append(TikzCoordinate.from_dict(node_data))
-        kwargs = d.get("kwargs", {})
+        kwargs = restored.get("kwargs", {})
+        if not isinstance(kwargs, dict):
+            raise TypeError("Serialized path kwargs must deserialize to a dict.")
         return cls(
             nodes=nodes,
-            cycle=d.get("cycle", False),
-            label=d.get("label", ""),
-            comment=d.get("comment"),
-            layer=d.get("layer", 0),
-            center=d.get("center", False),
-            node_anchors=d.get("node_anchors"),
-            segment_options=d.get("segment_options"),
-            options=d.get("options"),
-            tikz_command=d.get("tikz_command", "draw"),
+            cycle=restored.get("cycle", False),
+            label=restored.get("label", ""),
+            comment=restored.get("comment"),
+            layer=restored.get("layer", 0),
+            center=restored.get("center", False),
+            node_anchors=restored.get("node_anchors"),
+            segment_options=restored.get("segment_options"),
+            options=restored.get("options"),
+            tikz_command=restored.get("tikz_command", "draw"),
             **kwargs,
         )
