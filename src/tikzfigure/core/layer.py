@@ -47,12 +47,22 @@ class Tikzlayer:
         Returns:
             A set of layer labels that must be rendered before this layer.
         """
+
+        def _iter_paths(items: list[Any]) -> list[TikzPath]:
+            paths: list[TikzPath] = []
+            for item in items:
+                if isinstance(item, TikzPath):
+                    paths.append(item)
+                nested_items = getattr(item, "items", None)
+                if nested_items is not None:
+                    paths.extend(_iter_paths(nested_items))
+            return paths
+
         reqs = set()
-        for item in self.items:
-            if isinstance(item, TikzPath):
-                for node in item._nodes:
-                    if not node.layer == self.label:
-                        reqs.add(node.layer)
+        for item in _iter_paths(self.items):
+            for node in item._nodes:
+                if not node.layer == self.label:
+                    reqs.add(node.layer)
         return reqs
 
     def generate_tikz(
@@ -180,10 +190,22 @@ class LayerCollection:
             ValueError: If no node or coordinate with the given label exists
                 in any layer.
         """
-        for layer in self.layers.values():
-            for item in layer.items:
+
+        def _search(items: list[Any]) -> Node | Coordinate | None:
+            for item in items:
                 if isinstance(item, (Node, Coordinate)) and item.label == node_label:
                     return item
+                nested_items = getattr(item, "items", None)
+                if nested_items is not None:
+                    found = _search(nested_items)
+                    if found is not None:
+                        return found
+            return None
+
+        for layer in self.layers.values():
+            found = _search(layer.items)
+            if found is not None:
+                return found
         raise ValueError(f"Node with label {node_label} not found in any layer!")
 
     def _get_items_by_type(self, item_type: type) -> list[Any]:

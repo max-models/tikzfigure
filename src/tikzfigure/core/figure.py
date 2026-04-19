@@ -27,6 +27,7 @@ from tikzfigure.core.plot import Plot3D
 from tikzfigure.core.polygon import Polygon, Square, Triangle
 from tikzfigure.core.raw import RawTikz
 from tikzfigure.core.rectangle import Rectangle
+from tikzfigure.core.scope import Scope
 from tikzfigure.core.types import (
     _Align,
     _Anchor,
@@ -474,7 +475,15 @@ class TikzFigure(
                 elif item_type == "Plot3D":
                     fig.layers.add_item(Plot3D.from_dict(item_data), layer=layer_label)
                 elif item_type == "Loop":
-                    fig.layers.add_item(Loop.from_dict(item_data), layer=layer_label)
+                    fig.layers.add_item(
+                        Loop.from_dict(item_data, node_lookup=node_lookup),
+                        layer=layer_label,
+                    )
+                elif item_type == "Scope":
+                    fig.layers.add_item(
+                        Scope.from_dict(item_data, node_lookup=node_lookup),
+                        layer=layer_label,
+                    )
                 elif item_type == "RawTikz":
                     fig.layers.add_item(RawTikz.from_dict(item_data), layer=layer_label)
                 elif item_type == "Arc":
@@ -2404,6 +2413,25 @@ class TikzFigure(
         self.layers.add_item(item=loop_obj, layer=layer, verbose=verbose)
         return loop_obj
 
+    def add_scope(
+        self,
+        layer: int = 0,
+        comment: str | None = None,
+        options: OptionInput | None = None,
+        verbose: bool = False,
+        **kwargs: Any,
+    ) -> Scope:
+        """Add a TikZ ``scope`` block with local options to the figure."""
+        scope_obj = Scope(
+            layer=layer,
+            comment=comment,
+            options=options,
+            node_resolver=self.layers.get_node,
+            **kwargs,
+        )
+        self.layers.add_item(item=scope_obj, layer=layer, verbose=verbose)
+        return scope_obj
+
     # ---------------------------------------------------------------- #
     # Properties
 
@@ -2471,6 +2499,7 @@ class TikzFigure(
     raw = add_raw
     subfigure = FigureLayoutMixin.add_subfigure
     loop = add_loop
+    scope = add_scope
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, TikzFigure):

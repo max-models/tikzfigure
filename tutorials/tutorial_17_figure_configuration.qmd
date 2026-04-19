@@ -9,6 +9,7 @@ is set up in LaTeX. This tutorial covers:
 - `figure_setup`: global TikZ options applied to the entire `tikzpicture`
   environment
 - `add_style()`: named TikZ styles at figure scope
+- `scope()`: local option blocks inside the figure
 - `grid`: debug grid overlay
 - `document_setup`: raw LaTeX preamble additions (for `\usetikzlibrary` etc.)
 - `add_package()`: additional LaTeX packages
@@ -17,7 +18,7 @@ is set up in LaTeX. This tutorial covers:
 - `figsize`: display-size hint for Jupyter
 
 ```{python}
-from tikzfigure import TikzFigure, arrows
+from tikzfigure import TikzFigure, arrows, styles
 ```
 
 ## `figure_setup`: global TikZ options
@@ -140,6 +141,56 @@ fig.node(
     content="Named styles\nstay reusable",
     options=[information_text],
     text_width="3.2cm",
+    anchor="west",
+)
+
+fig.show()
+```
+
+{{< include includes/tikz_code_callout.qmd >}}
+
+## `scope()`: local option blocks inside the figure
+
+Use `scope()` when a style or transformation should only apply to part of the
+figure. It wraps nested drawing commands in `\begin{scope}[...] ... \end{scope}`
+with local options.
+
+This is useful for small grouped coordinate systems, shifted sub-drawings, or
+temporary style changes that should not affect the rest of the figure.
+
+```{python}
+fig = TikzFigure()
+
+axes = fig.add_style("axes")
+
+with fig.scope(options=[axes], xshift="0.5cm", yshift="0.3cm") as local:
+    local.draw([(-1, 0), (2, 0)], options=[arrows.forward], color="gray!70")
+    local.draw([(0, -1), (0, 2)], options=[arrows.forward], color="gray!70")
+
+    A = local.node(
+        (0.8, 1.1),
+        label="A",
+        content="A",
+        shape="circle",
+        fill="blue!20",
+    )
+    B = local.node(
+        (1.6, 0.4),
+        label="B",
+        content="B",
+        shape="circle",
+        fill="orange!20",
+    )
+    local.draw(
+        [A, B],
+        options=[styles.thick],
+        color="purple!70",
+    )
+
+fig.node(
+    (3.2, 1.2),
+    content="Outside the scope",
+    draw="none",
     anchor="west",
 )
 
