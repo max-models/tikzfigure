@@ -167,8 +167,9 @@ class TikzFigure(
 
         Args:
             nodes: Items to connect. Each element may be a :class:`Node`,
-                a node label string (optionally with a ``.anchor`` suffix),
-                or an ``(x, y)`` / ``(x, y, z)`` coordinate tuple.
+                :class:`Coordinate`, a node label string (optionally with a
+                ``.anchor`` suffix), or an ``(x, y)`` / ``(x, y, z)``
+                coordinate tuple.
             layer: Target layer index. Defaults to ``0``.
             comment: Optional comment prepended in the TikZ output.
             center: If ``True``, connect all nodes through ``.center``
@@ -199,7 +200,7 @@ class TikzFigure(
         node_anchors: list[str | None] = []
 
         for node in nodes:
-            if isinstance(node, Node):
+            if isinstance(node, (Node, Coordinate)):
                 nodes_cleaned.append(node)
                 node_anchors.append(None)
             elif isinstance(node, str):

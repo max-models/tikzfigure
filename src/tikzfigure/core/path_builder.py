@@ -3,19 +3,21 @@ from __future__ import annotations
 from copy import deepcopy
 from typing import Any
 
+from tikzfigure.core.coordinate import Coordinate
 from tikzfigure.core.node import Node
 from tikzfigure.core.types import _Option
 from tikzfigure.options import OptionInput, normalize_options
 from tikzfigure.units import TikzDimension
 
 SegmentOption = dict[str, Any] | _Option | None
+PathPoint = Node | Coordinate
 
 
 class NodePathBuilder:
     """Internal fluent builder for chained path segments."""
 
-    def __init__(self, start: Node) -> None:
-        self._nodes: list[Node] = [start]
+    def __init__(self, start: PathPoint) -> None:
+        self._nodes: list[PathPoint] = [start]
         self._segment_options: list[SegmentOption] = []
 
     @staticmethod
@@ -36,12 +38,14 @@ class NodePathBuilder:
 
     def to(
         self,
-        target: Node,
+        target: PathPoint,
         options: OptionInput | None = None,
         **kwargs: Any,
     ) -> NodePathBuilder:
-        if not isinstance(target, Node):
-            raise TypeError("NodePathBuilder.to() only supports Node targets in v1.")
+        if not isinstance(target, (Node, Coordinate)):
+            raise TypeError(
+                "NodePathBuilder.to() only supports Node or Coordinate targets."
+            )
 
         self._nodes.append(target)
         self._segment_options.append(
@@ -70,7 +74,7 @@ class NodePathBuilder:
         return self
 
     @property
-    def nodes(self) -> list[Node]:
+    def nodes(self) -> list[PathPoint]:
         return list(self._nodes)
 
     @property

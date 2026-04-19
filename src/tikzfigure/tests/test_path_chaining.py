@@ -1,6 +1,7 @@
 import pytest
 
 from tikzfigure import TikzFigure
+from tikzfigure.core.coordinate import Coordinate
 from tikzfigure.core.node import Node
 from tikzfigure.core.path_builder import NodePathBuilder
 
@@ -54,8 +55,23 @@ def test_segment_options_returns_defensive_copy():
 def test_node_to_rejects_non_node_targets():
     a = Node(0, 0, label="A")
 
-    with pytest.raises(TypeError, match="only supports Node targets"):
+    with pytest.raises(TypeError, match="only supports Node or Coordinate targets"):
         a.to("B")  # type: ignore[arg-type]
+
+
+def test_coordinate_to_returns_builder_and_tracks_segment_options():
+    a = Coordinate("A", (0, 0))
+    b = Coordinate("B", (1, 0))
+    c = Coordinate("C", (2, 0))
+
+    builder = a.to(b).to(c, node={"content": "label", "above": True})
+
+    assert isinstance(builder, NodePathBuilder)
+    assert builder.nodes == [a, b, c]
+    assert builder.segment_options == [
+        None,
+        {"node": {"content": "label", "above": True}},
+    ]
 
 
 def test_normalize_segment_options_returns_none_for_empty_list():
@@ -95,6 +111,21 @@ def test_draw_accepts_node_path_builder_and_reuses_segment_options():
         "\\draw[color=blue] (A) to (B) to[bend left, looseness=1.2] (C);"
         in path.to_tikz()
     )
+
+
+def test_draw_accepts_coordinate_path_builder_and_reuses_segment_options():
+    fig = TikzFigure()
+    a = fig.add_coordinate("A", (0, 0))
+    b = fig.add_coordinate("B", (1, 0))
+
+    path = fig.draw(
+        a.to(b, node={"content": "label", "above": True}),
+        color="blue",
+    )
+
+    assert path.nodes == [a, b]
+    assert path.segment_options == [{"node": {"content": "label", "above": True}}]
+    assert "\\draw[color=blue] (A) to node[above] {label} (B);" in path.to_tikz()
 
 
 def test_filldraw_accepts_node_path_builder():

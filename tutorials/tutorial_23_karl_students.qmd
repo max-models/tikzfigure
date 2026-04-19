@@ -190,20 +190,20 @@ tan_label = (
     r"$\displaystyle \tan \alpha \color{black}="
     r"\frac{{\color{red}\sin \alpha}}{{\color{blue}\cos \alpha}}$"
 )
+tan_base = fig.add_coordinate("tan_base", (1, 0))
+tan_tip = fig.add_coordinate("tan_tip", tangent_point)
+
 fig.draw(
-    [(1, 0), tangent_point],
-    options=[styles.very_thick],
+    tan_base.to(
+        tan_tip,
+        options=[styles.very_thick],
+        node={
+            "content": tan_label,
+            "right": "1pt",
+            "fill": "white",
+        },
+    ),
     color="tancolor",
-    segment_options=[
-        {
-            "connector": "--",
-            "node": {
-                "content": tan_label,
-                "right": "1pt",
-                "fill": "white",
-            },
-        }
-    ],
 )
 fig.draw(
     [(0, 0), tangent_point],
