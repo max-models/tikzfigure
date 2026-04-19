@@ -375,6 +375,13 @@ class TikzPath(TikzObject):
             raise TypeError("Serialized path data must remain a dict.")
         return serialized
 
+    def _restore_from_check_dict(self, d: dict[str, Any]) -> TikzObject:
+        node_lookup: dict[str, Node | Coordinate] = {}
+        for node in self._nodes:
+            if isinstance(node, (Node, Coordinate)) and node.label:
+                node_lookup[node.label] = node
+        return type(self).from_dict(d, node_lookup=node_lookup)
+
     @classmethod
     def from_dict(
         cls, d: dict[str, Any], node_lookup: dict[str, Any] | None = None

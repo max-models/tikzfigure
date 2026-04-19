@@ -11,6 +11,9 @@ class FigureExportMixin:
     def _resolve_use_web_compilation(self, use_web_compilation: bool) -> bool:
         raise NotImplementedError
 
+    def _check(self, output_unit: str | None = None) -> Any:
+        raise NotImplementedError
+
     def generate_standalone(
         self,
         skip_header: bool = False,
@@ -28,17 +31,29 @@ class FigureExportMixin:
     ) -> str:
         raise NotImplementedError
 
+    def _run_optional_check(
+        self, check: bool = False, output_unit: str | None = None
+    ) -> None:
+        if not check:
+            return
+        try:
+            self._check(output_unit=output_unit)
+        except Exception as exc:
+            print(f"Warning: TikzFigure._check() failed: {exc}")
+
     def compile_pdf(
         self,
         filename: Path | str = Path("output.pdf"),
         verbose: bool = False,
         use_web_compilation: bool = False,
         output_unit: str | None = None,
+        check: bool = False,
     ) -> None:
         if isinstance(filename, str):
             filename = Path(filename)
 
         use_web_compilation = self._resolve_use_web_compilation(use_web_compilation)
+        self._run_optional_check(check=check, output_unit=output_unit)
         latex_document = self.generate_standalone(output_unit=output_unit)
         if verbose:
             print(latex_document)
@@ -121,11 +136,13 @@ class FigureExportMixin:
         transparent: bool = True,
         use_web_compilation: bool = False,
         output_unit: str | None = None,
+        check: bool = False,
     ) -> None:
         if isinstance(filename, str):
             filename = Path(filename)
 
         use_web_compilation = self._resolve_use_web_compilation(use_web_compilation)
+        self._run_optional_check(check=check, output_unit=output_unit)
         ext = filename.suffix.lower()
 
         if ext == ".pdf":
@@ -298,8 +315,10 @@ class FigureExportMixin:
         transparent: bool = True,
         use_web_compilation: bool = False,
         output_unit: str | None = None,
+        check: bool = False,
     ) -> None:
         use_web_compilation = self._resolve_use_web_compilation(use_web_compilation)
+        self._run_optional_check(check=check, output_unit=output_unit)
 
         if os.environ.get("tikzfigure_NO_SHOW") == "1" or os.environ.get(
             "PYTEST_CURRENT_TEST"

@@ -216,6 +216,19 @@ def test_path_to_dict_from_dict_preserves_rich_segment_options():
     ]
 
 
+def test_path_check_round_trips_with_node_references():
+    fig = TikzFigure()
+    a = fig.add_node(x=0, y=0, label="A")
+    b = fig.add_node(x=1, y=0, label="B")
+
+    path = fig.draw(a.to(b, options=[styles.bend_left()], looseness=1.2), color="blue")
+
+    restored = path._check()
+
+    assert isinstance(restored, TikzPath)
+    assert restored.to_tikz() == path.to_tikz()
+
+
 def test_draw_rejects_extra_segment_options_when_builder_is_used():
     fig = TikzFigure()
     a = fig.add_node(x=0, y=0, label="A")

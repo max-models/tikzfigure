@@ -115,6 +115,15 @@ class TikzObject:
             return f"% {self.comment}\n{string_in}"
         return string_in
 
+    def to_tikz(self, output_unit: str | None = None) -> str:
+        """Render this object as TikZ.
+
+        Concrete :class:`TikzObject` subclasses are expected to implement this.
+        """
+        raise NotImplementedError(
+            f"{self.__class__.__name__} must implement to_tikz()."
+        )
+
     def to_dict(self) -> dict[str, Any]:
         """Serialize this object to a plain dictionary.
 
@@ -153,6 +162,28 @@ class TikzObject:
             options=options,
             **kwargs,
         )
+
+    def _restore_from_check_dict(self, d: dict[str, Any]) -> "TikzObject":
+        """Reconstruct this object from serialized data for `_check()`."""
+        return type(self).from_dict(d)
+
+    def _check(self, output_unit: str | None = None) -> "TikzObject":
+        """Round-trip through dict/TikZ serialization and verify equivalence."""
+        data = self.to_dict()
+        restored = self._restore_from_check_dict(data)
+        if restored != self:
+            raise AssertionError(
+                f"{self.__class__.__name__} changed after to_dict()/from_dict() round-trip."
+            )
+
+        original_tikz = self.to_tikz(output_unit)
+        restored_tikz = restored.to_tikz(output_unit)
+        if original_tikz != restored_tikz:
+            raise AssertionError(
+                f"{self.__class__.__name__} changed after to_tikz() round-trip."
+            )
+
+        return restored
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, TikzObject):
