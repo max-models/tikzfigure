@@ -20,7 +20,7 @@ class TikzPath(TikzObject):
         label_list: Rendered list of TikZ reference strings for each node.
         node_anchors: Per-node anchor overrides (e.g. ``["center", None]``).
         segment_options: Per-segment TikZ options dicts for each ``to``
-            connector between nodes.
+            connector or extra path operation in the sequence.
     """
 
     def __init__(
@@ -53,16 +53,18 @@ class TikzPath(TikzObject):
                 string (e.g. ``"center"``, ``"north"``) or ``None`` to use
                 the default or global *center* flag.  When provided, a
                 per-node anchor takes precedence over *center*.
-            segment_options: Per-segment options for each connector between
-                consecutive nodes.  The list has at most ``len(nodes) - 1``
-                entries.  Each entry is ``None`` (plain ``to``), a raw
-                options string, or a dict recognising these special keys:
+            segment_options: Per-segment options for each connector or extra
+                path operation. Entries that consume a target waypoint map to
+                the next item in *nodes*; operations like ``arc`` consume no
+                additional waypoint and can appear between ordinary segments.
+                Each entry is ``None`` (plain ``to``), a raw options string,
+                or a dict recognising these special keys:
 
                 * ``"connector"`` — the TikZ path operation to use between
                   the two waypoints.  Defaults to ``"to"``; other accepted
                   values are ``"--"``, ``".."``, ``"|-"``, ``"-|"``,
-                  ``"sin"``, and ``"cos"``.  Only ``"to"`` supports bracket
-                  options.
+                  ``"sin"``, ``"cos"``, and ``"arc"``.  ``"to"`` and
+                  ``"arc"`` support bracket options.
                 * ``"node"`` — an inline node placed along the segment.
                   Either a raw string suffix (e.g. ``"[above] {text}"``)
                   or a dict with a ``"content"`` key and node-option keys.
@@ -117,8 +119,8 @@ class TikzPath(TikzObject):
         """Per-segment TikZ options for each ``to`` connector, or ``None``."""
         return self._segment_options
 
-    #: Connector types that accept bracket options via ``to[...]``.
-    _TO_CONNECTORS: frozenset[str] = frozenset({"to"})
+    #: Connector types that accept bracket options.
+    _BRACKET_CONNECTORS: frozenset[str] = frozenset({"to", "arc"})
 
     #: Connector types that are emitted as-is with no bracket options.
     _PLAIN_CONNECTORS: frozenset[str] = frozenset(
@@ -126,7 +128,9 @@ class TikzPath(TikzObject):
     )
 
     @staticmethod
-    def _format_segment_opts(opts: dict | _Option) -> str:
+    def _format_segment_opts(
+        opts: dict | _Option, output_unit: str | None = None
+    ) -> str:
         """Render a segment-options entry as a TikZ options string.
 
         Structural keys ``"connector"`` and ``"node"`` are skipped; they
@@ -143,17 +147,24 @@ class TikzPath(TikzObject):
             A comma-separated TikZ options string suitable for use inside
             ``to[...]``.
         """
+        from tikzfigure.units import TikzDimension
+
+        def _fmt(v: object) -> str:
+            if isinstance(v, TikzDimension):
+                return str(v.to(output_unit)) if output_unit is not None else str(v)
+            return str(v)
+
         if not isinstance(opts, dict):
             return str(opts)
         _skip = frozenset({"options", "connector", "node"})
         parts: list[str] = []
         flag_opts = opts.get("options", [])
         if flag_opts:
-            parts.extend(str(opt) for opt in flag_opts)
+            parts.extend(_fmt(opt) for opt in flag_opts)
         for k, v in opts.items():
             if k in _skip:
                 continue
-            parts.append(f"{k.replace('_', ' ')}={v}")
+            parts.append(f"{k.replace('_', ' ')}={_fmt(v)}")
         return ", ".join(parts)
 
     @staticmethod
@@ -282,51 +293,42 @@ class TikzPath(TikzObject):
 
         if label_list:
             parts = [label_list[0]]
-            for i in range(1, len(label_list)):
-                seg = (
-                    self._segment_options[i - 1]
-                    if self._segment_options and i - 1 < len(self._segment_options)
-                    else None
-                )
-
-                # --- connector type ---
+            next_label_index = 1
+            for seg in self._segment_options or []:
                 connector = "to"
                 if isinstance(seg, dict):
                     connector = seg.get("connector", "to")
 
-                # --- TikZ options for this segment ---
-                if seg is not None and connector in self._TO_CONNECTORS:
-                    opts_str = self._format_segment_opts(seg)
-                    if opts_str:
-                        parts.append(f"to[{opts_str}]")
-                    else:
-                        parts.append("to")
+                if seg is not None and connector in self._BRACKET_CONNECTORS:
+                    opts_str = self._format_segment_opts(seg, output_unit)
+                    parts.append(f"{connector}[{opts_str}]" if opts_str else connector)
                 else:
-                    # plain connectors (--  ..  |-  -|  sin  cos) take no brackets
                     parts.append(connector)
 
-                # --- optional inline node label ---
                 if isinstance(seg, dict) and "node" in seg:
                     parts.append(self._format_path_node(seg["node"]))
 
-                parts.append(label_list[i])
+                if connector != "arc":
+                    if next_label_index >= len(label_list):
+                        raise ValueError(
+                            "Path segment options consume more waypoints than provided."
+                        )
+                    parts.append(label_list[next_label_index])
+                    next_label_index += 1
+
+            while next_label_index < len(label_list):
+                parts.append("to")
+                parts.append(label_list[next_label_index])
+                next_label_index += 1
 
             # For short paths, keep everything on one line.
             # For longer paths, put connectors on separate lines for readability.
-            if len(label_list) <= 3:
+            if len(label_list) <= 3 and "arc" not in parts:
                 path_str = " ".join(parts)
             else:
                 path_str = parts[0]
-                for ipart, part in enumerate(parts):
-                    if ipart == 0:
-                        continue
-                    if ipart % 2 == 0:
-                        # node label on same line
-                        path_str += f" {part}"
-                    else:
-                        # connector on new line
-                        path_str += f"\n{TAB}{part}"
-                # path_str = "\n  ".join(parts)
+                for part in parts[1:]:
+                    path_str += f"\n{TAB}{part}"
         else:
             path_str = ""
 

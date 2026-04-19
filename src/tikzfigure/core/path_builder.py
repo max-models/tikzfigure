@@ -6,12 +6,13 @@ from typing import Any
 from tikzfigure.core.node import Node
 from tikzfigure.core.types import _Option
 from tikzfigure.options import OptionInput, normalize_options
+from tikzfigure.units import TikzDimension
 
 SegmentOption = dict[str, Any] | _Option | None
 
 
 class NodePathBuilder:
-    """Internal fluent builder for node-to-node path segments."""
+    """Internal fluent builder for chained path segments."""
 
     def __init__(self, start: Node) -> None:
         self._nodes: list[Node] = [start]
@@ -45,6 +46,26 @@ class NodePathBuilder:
         self._nodes.append(target)
         self._segment_options.append(
             self._normalize_segment_options(options=options, **kwargs)
+        )
+        return self
+
+    def arc(
+        self,
+        start_angle: float,
+        end_angle: float,
+        radius: float | str | TikzDimension,
+        options: OptionInput | None = None,
+        **kwargs: Any,
+    ) -> NodePathBuilder:
+        self._segment_options.append(
+            self._normalize_segment_options(
+                options=options,
+                connector="arc",
+                start_angle=start_angle,
+                end_angle=end_angle,
+                radius=radius,
+                **kwargs,
+            )
         )
         return self
 
