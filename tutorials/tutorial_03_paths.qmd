@@ -238,6 +238,55 @@ fig.show()
 
 {{< include includes/tikz_code_callout.qmd >}}
 
+Arc segments fit into the same fluent API. Unlike `.to(...)`, `.arc(...)` does
+not consume another waypoint — it appends a TikZ `arc[...]` operation at the
+current point, and you can keep chaining afterward:
+
+```{python}
+fig = TikzFigure()
+
+A = fig.node(
+    (0, 0),
+    label="A",
+    shape="circle",
+    fill="teal!25",
+    draw="teal!70",
+    minimum_size="1cm",
+    content="A",
+)
+B = fig.node(
+    (4, 0),
+    label="B",
+    shape="circle",
+    fill="orange!25",
+    draw="orange!70",
+    minimum_size="1cm",
+    content="B",
+)
+C = fig.node(
+    (7, 1.5),
+    label="C",
+    shape="circle",
+    fill="purple!25",
+    draw="purple!70",
+    minimum_size="1cm",
+    content="C",
+)
+
+fig.draw(
+    A.to(B)
+    .arc(start_angle=-90, end_angle=90, radius="1.5cm")
+    .to(C, options=styles.bend_right()),
+    arrows=arrows.forward,
+    options=[styles.thick],
+    color="blue!70",
+)
+
+fig.show()
+```
+
+{{< include includes/tikz_code_callout.qmd >}}
+
 Use `"out"` and `"in"` keys for explicit departure and arrival angles (in
 degrees). This gives precise control over how each segment enters and leaves its
 endpoints — useful when `bend_left`/`bend_right` doesn't give you the exact
