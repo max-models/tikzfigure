@@ -10,7 +10,7 @@ is set up in LaTeX. This tutorial covers:
   environment
 - `grid`: debug grid overlay
 - `document_setup`: raw LaTeX preamble additions (for `\usetikzlibrary` etc.)
-- `extra_packages`: additional LaTeX packages
+- `add_package()`: additional LaTeX packages
 - `generate_standalone()`: inspecting the full compilable document
 - `label`: wrapping the figure in a `\begin{figure}` environment
 - `figsize`: display-size hint for Jupyter
@@ -215,14 +215,17 @@ fig.show()
 
 {{< include includes/tikz_code_callout.qmd >}}
 
-## `extra_packages`: additional LaTeX packages
+## `add_package()`: additional LaTeX packages
 
-Pass a list of package names to `extra_packages`. Each name becomes a
-`\usepackage{name}` line in the standalone preamble. This is useful when your
-figure content uses macros from packages like `amsmath` or `xcolor`.
+Call `add_package()` for each package you want in the standalone preamble. Each
+package name becomes a `\usepackage{name}` line in the standalone preamble. This
+is useful when your figure content uses macros from packages like `amsmath` or
+`xcolor`.
 
 ```{python}
-fig = TikzFigure(extra_packages=["amsmath", "xcolor"])
+fig = TikzFigure()
+fig.add_package("amsmath")
+fig.add_package("xcolor")
 
 # amsmath lets us use \dfrac inside node content
 fig.node(
@@ -253,14 +256,13 @@ fig.show()
 ## `generate_standalone()`: inspecting the full document
 
 `generate_standalone()` returns a complete compilable LaTeX document including
-the preamble. This shows exactly how `document_setup` and `extra_packages` are
-woven into the output.
+the preamble. This shows exactly how `document_setup`, `add_package()`, and
+`usetikzlibrary()` are woven into the output.
 
 ```{python}
-fig = TikzFigure(
-    document_setup=r"\usetikzlibrary{positioning}",
-    extra_packages=["amsmath"],
-)
+fig = TikzFigure()
+fig.add_package("amsmath")
+fig.usetikzlibrary("positioning")
 
 fig.node(
     (0, 0),

@@ -531,9 +531,8 @@ When you add `\usetikzlibrary{calc}` via `document_setup`, the `at` parameter of
 places a point a fraction `t` of the way from `A` to `B`.
 
 ```{python}
-fig = TikzFigure(
-    document_setup=r"\usetikzlibrary{calc}",
-)
+fig = TikzFigure()
+fig.usetikzlibrary("calc")
 
 fig.node(
     (0, 0),
