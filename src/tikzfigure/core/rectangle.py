@@ -2,6 +2,7 @@ from typing import Any
 
 from tikzfigure.core.base import TikzObject
 from tikzfigure.core.coordinate import PositionInput, TikzCoordinate
+from tikzfigure.core.serialization import deserialize_tikz_value, serialize_tikz_value
 from tikzfigure.options import OptionInput
 
 
@@ -105,7 +106,10 @@ class Rectangle(TikzObject):
                 "tikz_command": self._tikz_command,
             }
         )
-        return d
+        serialized = serialize_tikz_value(d)
+        if not isinstance(serialized, dict):
+            raise TypeError("Serialized rectangle data must remain a dict.")
+        return serialized
 
     @classmethod
     def from_dict(cls, d: dict[str, Any]) -> "Rectangle":
@@ -117,30 +121,18 @@ class Rectangle(TikzObject):
         Returns:
             A new Rectangle instance.
         """
-        corner1 = TikzCoordinate.from_dict(d["corner1"])
-        corner2 = TikzCoordinate.from_dict(d["corner2"])
+        restored = deserialize_tikz_value(d)
+        if not isinstance(restored, dict):
+            raise TypeError("Serialized rectangle data must deserialize to a dict.")
+        corner1 = TikzCoordinate.from_dict(restored["corner1"])
+        corner2 = TikzCoordinate.from_dict(restored["corner2"])
         return cls(
             corner1=corner1,
             corner2=corner2,
-            label=d.get("label", ""),
-            comment=d.get("comment"),
-            layer=d.get("layer", 0),
-            options=d.get("options", []),
-            tikz_command=d.get("tikz_command", "draw"),
-            **{
-                k: v
-                for k, v in d.items()
-                if k
-                not in [
-                    "type",
-                    "corner1",
-                    "corner2",
-                    "label",
-                    "comment",
-                    "layer",
-                    "options",
-                    "tikz_command",
-                    "kwargs",
-                ]
-            },
+            label=restored.get("label", ""),
+            comment=restored.get("comment"),
+            layer=restored.get("layer", 0),
+            options=restored.get("options", []),
+            tikz_command=restored.get("tikz_command", "draw"),
+            **restored.get("kwargs", {}),
         )

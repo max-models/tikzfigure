@@ -103,6 +103,27 @@ def test_coordinate_value_accepts_tikz_dimension():
     assert c.x is d
 
 
+def test_coordinate_to_dict_from_dict_preserves_tikz_dimension():
+    coord = TikzCoordinate(2.5 * units.cm, 1.0 * units.cm)
+
+    data = coord.to_dict()
+
+    assert data["x"] == {
+        "__tikzfigure_serialized_type__": "TikzDimension",
+        "value": 2.5,
+        "unit": "cm",
+    }
+    assert data["y"] == {
+        "__tikzfigure_serialized_type__": "TikzDimension",
+        "value": 1.0,
+        "unit": "cm",
+    }
+
+    restored = TikzCoordinate.from_dict(data)
+    assert restored.x == 2.5 * units.cm
+    assert restored.y == 1.0 * units.cm
+
+
 def test_node_to_tikz_with_dimension_options():
     n = Node(x=0, y=0, label="n1", minimum_width=2.5 * units.cm)
     tikz = n.to_tikz()

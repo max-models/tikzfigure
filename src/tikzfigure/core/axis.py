@@ -2,6 +2,7 @@ from typing import Any
 
 from tikzfigure.core.base import TikzObject
 from tikzfigure.core.plot import Plot2D
+from tikzfigure.core.serialization import deserialize_tikz_value, serialize_tikz_value
 from tikzfigure.options import OptionInput
 
 
@@ -367,21 +368,26 @@ class Axis2D(TikzObject):
         Returns:
             A dictionary with all axis state and plots.
         """
-        return {
-            "type": "Axis2D",
-            "xlabel": self._xlabel,
-            "ylabel": self._ylabel,
-            "xlim": self._xlim,
-            "ylim": self._ylim,
-            "grid": self._grid,
-            "width": self._width,
-            "height": self._height,
-            "plots": [plot.to_dict() for plot in self._plots],
-            "ticks": self._ticks,
-            "legend_pos": self._legend_pos,
-            "options": self.options,
-            "kwargs": self.kwargs,
-        }
+        serialized = serialize_tikz_value(
+            {
+                "type": "Axis2D",
+                "xlabel": self._xlabel,
+                "ylabel": self._ylabel,
+                "xlim": self._xlim,
+                "ylim": self._ylim,
+                "grid": self._grid,
+                "width": self._width,
+                "height": self._height,
+                "plots": [plot.to_dict() for plot in self._plots],
+                "ticks": self._ticks,
+                "legend_pos": self._legend_pos,
+                "options": self.options,
+                "kwargs": self.kwargs,
+            }
+        )
+        if not isinstance(serialized, dict):
+            raise TypeError("Serialized axis data must remain a dict.")
+        return serialized
 
     @classmethod
     def from_dict(cls, d: dict[str, Any]) -> "Axis2D":
@@ -393,27 +399,33 @@ class Axis2D(TikzObject):
         Returns:
             A new Axis2D instance.
         """
+        restored = deserialize_tikz_value(d)
+        if not isinstance(restored, dict):
+            raise TypeError("Serialized axis data must deserialize to a dict.")
+        kwargs = restored.get("kwargs", {})
+        if not isinstance(kwargs, dict):
+            raise TypeError("Serialized axis kwargs must deserialize to a dict.")
         axis = cls(
-            xlabel=d.get("xlabel", ""),
-            ylabel=d.get("ylabel", ""),
-            xlim=d.get("xlim"),
-            ylim=d.get("ylim"),
-            grid=d.get("grid", True),
-            width=d.get("width"),
-            height=d.get("height"),
-            options=d.get("options"),
-            **d.get("kwargs", {}),
+            xlabel=restored.get("xlabel", ""),
+            ylabel=restored.get("ylabel", ""),
+            xlim=restored.get("xlim"),
+            ylim=restored.get("ylim"),
+            grid=restored.get("grid", True),
+            width=restored.get("width"),
+            height=restored.get("height"),
+            options=restored.get("options"),
+            **kwargs,
         )
 
         # Restore plots
-        for plot_dict in d.get("plots", []):
+        for plot_dict in restored.get("plots", []):
             plot = Plot2D.from_dict(plot_dict)
             axis._plots.append(plot)
 
         # Restore ticks
-        axis._ticks = d.get("ticks", {})
+        axis._ticks = restored.get("ticks", {})
 
         # Restore legend position
-        axis._legend_pos = d.get("legend_pos")
+        axis._legend_pos = restored.get("legend_pos")
 
         return axis

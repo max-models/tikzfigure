@@ -44,11 +44,21 @@ def test_node_accepts_tikz_color():
     assert "draw=ProcessBlue" in tikz
 
 
-def test_node_to_dict_stringifies_tikz_color():
+def test_node_to_dict_serializes_tikz_color_explicitly():
     node = Node(0, 0, fill=colors.red, draw=colors.AliceBlue)
     data = node.to_dict()
-    assert data["kwargs"]["fill"] == "red"
-    assert data["kwargs"]["draw"] == "AliceBlue"
+    assert data["kwargs"]["fill"] == {
+        "__tikzfigure_serialized_type__": "TikzColor",
+        "color_spec": "red",
+    }
+    assert data["kwargs"]["draw"] == {
+        "__tikzfigure_serialized_type__": "TikzColor",
+        "color_spec": "AliceBlue",
+    }
+
+    restored = Node.from_dict(data)
+    assert restored.kwargs["fill"] == colors.red
+    assert restored.kwargs["draw"] == colors.AliceBlue
 
 
 def test_colorlet_accepts_tikz_color():

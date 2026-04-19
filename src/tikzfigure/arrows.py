@@ -21,6 +21,11 @@ class TikzArrow:
     def __repr__(self) -> str:
         return f"TikzArrow({self.arrow_spec!r})"
 
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, TikzArrow):
+            return NotImplemented
+        return self.arrow_spec == other.arrow_spec
+
     def __hash__(self) -> int:
         return hash(self.arrow_spec)
 

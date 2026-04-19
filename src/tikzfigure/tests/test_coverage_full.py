@@ -8,7 +8,7 @@ from types import ModuleType
 
 import pytest
 
-from tikzfigure import TikzCoordinate, TikzVector
+from tikzfigure import TikzCoordinate, TikzVector, arrows, colors, styles, units
 from tikzfigure.core.base import TikzObject
 from tikzfigure.core.color import Color
 from tikzfigure.core.figure import TikzFigure
@@ -55,6 +55,27 @@ def test_tikzobject_to_dict_from_dict():
     assert obj2.kwargs == {"fill": "red"}
 
 
+def test_tikzobject_rich_values_round_trip():
+    obj = TikzObject(
+        label="rich",
+        options=[styles.dashed, arrows.forward],
+        fill=colors.red.mix(colors.blue, 25),
+        inner_sep=2 * units.cm,
+    )
+
+    d = obj.to_dict()
+
+    assert d["options"][0]["__tikzfigure_serialized_type__"] == "TikzStyle"
+    assert d["options"][1]["__tikzfigure_serialized_type__"] == "TikzArrow"
+    assert d["kwargs"]["fill"]["__tikzfigure_serialized_type__"] == "TikzColor"
+    assert d["kwargs"]["inner_sep"]["__tikzfigure_serialized_type__"] == "TikzDimension"
+
+    obj2 = TikzObject.from_dict(d)
+    assert obj2.options == [styles.dashed, arrows.forward]
+    assert obj2.kwargs["fill"] == colors.red.mix(colors.blue, 25)
+    assert obj2.kwargs["inner_sep"] == 2 * units.cm
+
+
 def test_tikzfigure_to_dict_from_dict_roundtrip():
     fig = TikzFigure(
         ndim=2,
@@ -74,7 +95,12 @@ def test_tikzfigure_to_dict_from_dict_roundtrip():
     fig.add_raw("\\draw (0,0) -- (1,1);")
     fig.add_variable("myvar", 42)
     fig.colorlet("mycolor", "blue!30")
-    fig.add_style("important line", options=["very thick"], inner_sep="1ex")
+    fig.add_style(
+        "important line",
+        options=[styles.very_thick],
+        fill=colors.red.mix(percent=10),
+        inner_sep=1 * units.ex,
+    )
 
     loop = fig.add_loop("i", [1, 2, 3])
     ln = loop.add_node(x="\\i", y=0, label="L\\i", content="")
@@ -92,8 +118,23 @@ def test_tikzfigure_to_dict_from_dict_roundtrip():
     assert d["named_styles"] == [
         {
             "name": "important line",
-            "options": ["very thick"],
-            "kwargs": {"inner_sep": "1ex"},
+            "options": [
+                {
+                    "__tikzfigure_serialized_type__": "TikzStyle",
+                    "style_spec": "very thick",
+                }
+            ],
+            "kwargs": {
+                "fill": {
+                    "__tikzfigure_serialized_type__": "TikzColor",
+                    "color_spec": "red!10",
+                },
+                "inner_sep": {
+                    "__tikzfigure_serialized_type__": "TikzDimension",
+                    "value": 1,
+                    "unit": "ex",
+                },
+            },
         }
     ]
     assert len(d["variables"]) == 1
@@ -112,8 +153,11 @@ def test_tikzfigure_to_dict_from_dict_roundtrip():
     assert fig2.named_styles == [
         {
             "name": "important line",
-            "options": ["very thick"],
-            "kwargs": {"inner_sep": "1ex"},
+            "options": [styles.very_thick],
+            "kwargs": {
+                "fill": colors.red.mix(percent=10),
+                "inner_sep": 1 * units.ex,
+            },
         }
     ]
     assert len(fig2._variables) == 1

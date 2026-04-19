@@ -3,6 +3,7 @@ from typing import Any
 
 from tikzfigure.core.base import TikzObject
 from tikzfigure.core.coordinate import PositionInput, TikzCoordinate
+from tikzfigure.core.serialization import deserialize_tikz_value, serialize_tikz_value
 from tikzfigure.options import OptionInput
 
 
@@ -174,7 +175,10 @@ class Polygon(TikzObject):
                 "tikz_command": self._tikz_command,
             }
         )
-        return d
+        serialized = serialize_tikz_value(d)
+        if not isinstance(serialized, dict):
+            raise TypeError("Serialized polygon data must remain a dict.")
+        return serialized
 
     @classmethod
     def from_dict(cls, d: dict[str, Any]) -> "Polygon":
@@ -186,35 +190,21 @@ class Polygon(TikzObject):
         Returns:
             A new Polygon instance.
         """
-        center = TikzCoordinate.from_dict(d["center"])
+        restored = deserialize_tikz_value(d)
+        if not isinstance(restored, dict):
+            raise TypeError("Serialized polygon data must deserialize to a dict.")
+        center = TikzCoordinate.from_dict(restored["center"])
         return cls(
             center=center,
-            radius=d["radius"],
-            sides=d["sides"],
-            rotation=d.get("rotation", 0),
-            label=d.get("label", ""),
-            comment=d.get("comment"),
-            layer=d.get("layer", 0),
-            options=d.get("options", []),
-            tikz_command=d.get("tikz_command", "draw"),
-            **{
-                k: v
-                for k, v in d.items()
-                if k
-                not in [
-                    "type",
-                    "center",
-                    "radius",
-                    "sides",
-                    "rotation",
-                    "label",
-                    "comment",
-                    "layer",
-                    "options",
-                    "tikz_command",
-                    "kwargs",
-                ]
-            },
+            radius=restored["radius"],
+            sides=restored["sides"],
+            rotation=restored.get("rotation", 0),
+            label=restored.get("label", ""),
+            comment=restored.get("comment"),
+            layer=restored.get("layer", 0),
+            options=restored.get("options", []),
+            tikz_command=restored.get("tikz_command", "draw"),
+            **restored.get("kwargs", {}),
         )
 
 
@@ -271,7 +261,10 @@ class Triangle(Polygon):
         """
         d = super().to_dict()
         d["type"] = "Triangle"
-        return d
+        serialized = serialize_tikz_value(d)
+        if not isinstance(serialized, dict):
+            raise TypeError("Serialized triangle data must remain a dict.")
+        return serialized
 
     @classmethod
     def from_dict(cls, d: dict[str, Any]) -> "Triangle":
@@ -283,34 +276,20 @@ class Triangle(Polygon):
         Returns:
             A new Triangle instance.
         """
-        center = TikzCoordinate.from_dict(d["center"])
+        restored = deserialize_tikz_value(d)
+        if not isinstance(restored, dict):
+            raise TypeError("Serialized triangle data must deserialize to a dict.")
+        center = TikzCoordinate.from_dict(restored["center"])
         return cls(
             center=center,
-            radius=d["radius"],
-            rotation=d.get("rotation", 0),
-            label=d.get("label", ""),
-            comment=d.get("comment"),
-            layer=d.get("layer", 0),
-            options=d.get("options", []),
-            tikz_command=d.get("tikz_command", "draw"),
-            **{
-                k: v
-                for k, v in d.items()
-                if k
-                not in [
-                    "type",
-                    "center",
-                    "radius",
-                    "sides",
-                    "rotation",
-                    "label",
-                    "comment",
-                    "layer",
-                    "options",
-                    "tikz_command",
-                    "kwargs",
-                ]
-            },
+            radius=restored["radius"],
+            rotation=restored.get("rotation", 0),
+            label=restored.get("label", ""),
+            comment=restored.get("comment"),
+            layer=restored.get("layer", 0),
+            options=restored.get("options", []),
+            tikz_command=restored.get("tikz_command", "draw"),
+            **restored.get("kwargs", {}),
         )
 
 
@@ -367,7 +346,10 @@ class Square(Polygon):
         """
         d = super().to_dict()
         d["type"] = "Square"
-        return d
+        serialized = serialize_tikz_value(d)
+        if not isinstance(serialized, dict):
+            raise TypeError("Serialized square data must remain a dict.")
+        return serialized
 
     @classmethod
     def from_dict(cls, d: dict[str, Any]) -> "Square":
@@ -379,32 +361,18 @@ class Square(Polygon):
         Returns:
             A new Square instance.
         """
-        center = TikzCoordinate.from_dict(d["center"])
+        restored = deserialize_tikz_value(d)
+        if not isinstance(restored, dict):
+            raise TypeError("Serialized square data must deserialize to a dict.")
+        center = TikzCoordinate.from_dict(restored["center"])
         return cls(
             center=center,
-            radius=d["radius"],
-            rotation=d.get("rotation", 45),
-            label=d.get("label", ""),
-            comment=d.get("comment"),
-            layer=d.get("layer", 0),
-            options=d.get("options", []),
-            tikz_command=d.get("tikz_command", "draw"),
-            **{
-                k: v
-                for k, v in d.items()
-                if k
-                not in [
-                    "type",
-                    "center",
-                    "radius",
-                    "sides",
-                    "rotation",
-                    "label",
-                    "comment",
-                    "layer",
-                    "options",
-                    "tikz_command",
-                    "kwargs",
-                ]
-            },
+            radius=restored["radius"],
+            rotation=restored.get("rotation", 45),
+            label=restored.get("label", ""),
+            comment=restored.get("comment"),
+            layer=restored.get("layer", 0),
+            options=restored.get("options", []),
+            tikz_command=restored.get("tikz_command", "draw"),
+            **restored.get("kwargs", {}),
         )

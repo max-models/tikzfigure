@@ -11,6 +11,7 @@ from tikzfigure.core.coordinate import (
     TikzVector,
     VectorInput,
 )
+from tikzfigure.core.serialization import deserialize_tikz_value, serialize_tikz_value
 from tikzfigure.core.types import _Align, _Anchor, _Option, _Pattern, _Shading, _Shape
 from tikzfigure.options import OptionInput
 
@@ -408,7 +409,10 @@ class Node(TikzObject):
                 "content": self._content,
             }
         )
-        return d
+        serialized = serialize_tikz_value(d)
+        if not isinstance(serialized, dict):
+            raise TypeError("Serialized node data must remain a dict.")
+        return serialized
 
     @classmethod
     def from_dict(cls, d: dict[str, Any]) -> "Node":
@@ -420,15 +424,20 @@ class Node(TikzObject):
         Returns:
             A new :class:`Node` instance.
         """
-        kwargs = d.get("kwargs", {})
+        restored = deserialize_tikz_value(d)
+        if not isinstance(restored, dict):
+            raise TypeError("Serialized node data must deserialize to a dict.")
+        kwargs = restored.get("kwargs", {})
+        if not isinstance(kwargs, dict):
+            raise TypeError("Serialized node kwargs must deserialize to a dict.")
         return cls(
-            x=d.get("x"),
-            y=d.get("y"),
-            z=d.get("z"),
-            label=d.get("label", ""),
-            content=d.get("content", ""),
-            comment=d.get("comment"),
-            layer=d.get("layer", 0),
-            options=d.get("options"),
+            x=restored.get("x"),
+            y=restored.get("y"),
+            z=restored.get("z"),
+            label=restored.get("label", ""),
+            content=restored.get("content", ""),
+            comment=restored.get("comment"),
+            layer=restored.get("layer", 0),
+            options=restored.get("options"),
             **kwargs,
         )

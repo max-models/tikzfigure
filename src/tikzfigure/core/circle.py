@@ -2,6 +2,7 @@ from typing import Any
 
 from tikzfigure.core.base import TikzObject
 from tikzfigure.core.coordinate import PositionInput, TikzCoordinate
+from tikzfigure.core.serialization import deserialize_tikz_value, serialize_tikz_value
 from tikzfigure.options import OptionInput
 
 
@@ -105,7 +106,10 @@ class Circle(TikzObject):
                 "tikz_command": self._tikz_command,
             }
         )
-        return d
+        serialized = serialize_tikz_value(d)
+        if not isinstance(serialized, dict):
+            raise TypeError("Serialized circle data must remain a dict.")
+        return serialized
 
     @classmethod
     def from_dict(cls, d: dict[str, Any]) -> "Circle":
@@ -117,29 +121,17 @@ class Circle(TikzObject):
         Returns:
             A new Circle instance.
         """
-        center = TikzCoordinate.from_dict(d["center"])
+        restored = deserialize_tikz_value(d)
+        if not isinstance(restored, dict):
+            raise TypeError("Serialized circle data must deserialize to a dict.")
+        center = TikzCoordinate.from_dict(restored["center"])
         return cls(
             center=center,
-            radius=d["radius"],
-            label=d.get("label", ""),
-            comment=d.get("comment"),
-            layer=d.get("layer", 0),
-            options=d.get("options", []),
-            tikz_command=d.get("tikz_command", "draw"),
-            **{
-                k: v
-                for k, v in d.items()
-                if k
-                not in [
-                    "type",
-                    "center",
-                    "radius",
-                    "label",
-                    "comment",
-                    "layer",
-                    "options",
-                    "tikz_command",
-                    "kwargs",
-                ]
-            },
+            radius=restored["radius"],
+            label=restored.get("label", ""),
+            comment=restored.get("comment"),
+            layer=restored.get("layer", 0),
+            options=restored.get("options", []),
+            tikz_command=restored.get("tikz_command", "draw"),
+            **restored.get("kwargs", {}),
         )

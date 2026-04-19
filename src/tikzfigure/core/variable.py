@@ -1,6 +1,7 @@
 from typing import Any
 
 from tikzfigure.core.base import TikzObject
+from tikzfigure.core.serialization import deserialize_tikz_value, serialize_tikz_value
 
 
 class Variable(TikzObject):
@@ -56,7 +57,10 @@ class Variable(TikzObject):
         """
         d = super().to_dict()
         d.update({"type": "Variable", "value": self._value})
-        return d
+        serialized = serialize_tikz_value(d)
+        if not isinstance(serialized, dict):
+            raise TypeError("Serialized variable data must remain a dict.")
+        return serialized
 
     @classmethod
     def from_dict(cls, d: dict[str, Any]) -> "Variable":
@@ -68,9 +72,12 @@ class Variable(TikzObject):
         Returns:
             A new :class:`Variable` instance.
         """
+        restored = deserialize_tikz_value(d)
+        if not isinstance(restored, dict):
+            raise TypeError("Serialized variable data must deserialize to a dict.")
         return cls(
-            label=d["label"],
-            value=d["value"],
-            layer=d.get("layer", 0),
-            comment=d.get("comment"),
+            label=restored["label"],
+            value=restored["value"],
+            layer=restored.get("layer", 0),
+            comment=restored.get("comment"),
         )
