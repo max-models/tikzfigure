@@ -62,6 +62,19 @@ def test_normalize_segment_options_returns_none_for_empty_list():
     assert NodePathBuilder._normalize_segment_options(options=[]) is None
 
 
+def test_builder_tracks_arc_segment_without_extra_waypoint():
+    a = Node(0, 0, label="A")
+    b = Node(1, 0, label="B")
+
+    builder = a.to(b).arc(start_angle=0, end_angle=90, radius="3mm")
+
+    assert builder.nodes == [a, b]
+    assert builder.segment_options == [
+        None,
+        {"connector": "arc", "start_angle": 0, "end_angle": 90, "radius": "3mm"},
+    ]
+
+
 def test_draw_accepts_node_path_builder_and_reuses_segment_options():
     fig = TikzFigure()
     a = fig.add_node(x=0, y=0, label="A")
@@ -97,6 +110,39 @@ def test_filldraw_accepts_node_path_builder():
 
     assert path.tikz_command == "filldraw"
     assert path.segment_options == [None, {"options": ["bend right"]}]
+
+
+def test_draw_renders_arc_path_segment_from_builder():
+    fig = TikzFigure()
+    a = fig.add_node(x=0, y=0, label="A")
+    b = fig.add_node(x=1, y=0, label="B")
+
+    path = fig.draw(a.to(b).arc(start_angle=0, end_angle=90, radius="3mm"))
+
+    assert path.segment_options == [
+        None,
+        {"connector": "arc", "start_angle": 0, "end_angle": 90, "radius": "3mm"},
+    ]
+    assert "\\draw (A) to (B) arc[start angle=0, end angle=90, radius=3mm];" in (
+        path.to_tikz()
+    )
+
+
+def test_draw_allows_segments_after_arc():
+    fig = TikzFigure()
+    a = fig.add_node(x=0, y=0, label="A")
+    b = fig.add_node(x=1, y=0, label="B")
+    c = fig.add_node(x=2, y=1, label="C")
+
+    path = fig.draw(
+        a.to(b).arc(start_angle=0, end_angle=90, radius="3mm").to(c),
+        color="blue",
+    )
+
+    assert (
+        "\\draw[color=blue] (A) to (B) arc[start angle=0, end angle=90, radius=3mm] to (C);"
+        in path.to_tikz().replace("\n\t", " ")
+    )
 
 
 def test_draw_rejects_extra_segment_options_when_builder_is_used():

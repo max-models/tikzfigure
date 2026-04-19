@@ -361,8 +361,8 @@ class Node(TikzObject):
 
         The returned builder always starts with ``self`` and records the segment
         options for the edge from ``self`` to ``target``. Chain additional
-        ``.to(...)`` calls on the builder to add more node-to-node segments.
-        Only :class:`Node` targets are accepted in this API.
+        ``.to(...)`` or ``.arc(...)`` calls on the builder to add more path
+        segments. Only :class:`Node` targets are accepted by ``.to(...)``.
         """
         from tikzfigure.core.path_builder import NodePathBuilder
 
