@@ -145,6 +145,14 @@ class Scope(FigurePathMixin, TikzObject):
         return path
 
     def add_node(self, *args: Any, **kwargs: Any) -> Node:
+        if len(args) == 1 and isinstance(args[0], Node):
+            if kwargs:
+                raise ValueError(
+                    "When passing an existing Node to add_node(), do not also provide node-construction arguments."
+                )
+            node = args[0]
+            self._items.append(node)
+            return node
         kwargs.setdefault("layer", self._container_layer())
         node = Node(*args, **kwargs)
         self._items.append(node)
