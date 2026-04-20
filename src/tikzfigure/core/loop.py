@@ -36,15 +36,39 @@ class Loop(TikzObject):
         Args:
             variable: Loop variable name (without the leading backslash),
                 e.g. ``"i"`` produces ``\\foreach \\i in {...}``.
-            values: Sequence of values to iterate over.
+            values: Sequence of values to iterate over. Python ``range`` inputs
+                are rendered using TikZ's compact ``start,next,...,last``
+                syntax when possible.
             layer: Layer index this loop belongs to. Defaults to ``0``.
             comment: Optional comment prepended in the TikZ output.
         """
         self._variable: str = variable
+        self._range_spec = self._extract_range_spec(values)
         self._values: list[Any] = list(values)
         self._items: list[Any] = []
 
         super().__init__(layer=layer, comment=comment)
+
+    @staticmethod
+    def _extract_range_spec(
+        values: Sequence[Any],
+    ) -> dict[str, int] | None:
+        if not isinstance(values, range):
+            return None
+        return {
+            "start": values.start,
+            "stop": values.stop,
+            "step": values.step,
+        }
+
+    def _set_values(self, values: Sequence[Any]) -> None:
+        self._range_spec = self._extract_range_spec(values)
+        self._values = list(values)
+
+    def _render_values(self) -> str:
+        if self._range_spec is not None and len(self._values) >= 3:
+            return f"{self._values[0]},{self._values[1]},...,{self._values[-1]}"
+        return ",".join(str(v) for v in self.values)
 
     @property
     def variable(self) -> str:
@@ -184,7 +208,7 @@ class Loop(TikzObject):
             A string containing the complete ``\\foreach`` block, including
             all nested items.
         """
-        values_str = ",".join(str(v) for v in self.values)
+        values_str = self._render_values()
         tikz_body = "".join([item.to_tikz(output_unit) for item in self.items])
         loop_str = f"\\foreach \\{self.variable} in {{{values_str}}}{{\n{tikz_body}}}% {{\\end foreach}}\n"
 
@@ -205,6 +229,9 @@ class Loop(TikzObject):
                 "type": "Loop",
                 "variable": self._variable,
                 "values": list(self._values),
+                "range_spec": dict(self._range_spec)
+                if self._range_spec is not None
+                else None,
                 "items": [item.to_dict() for item in self._items],
             }
         )
@@ -230,9 +257,18 @@ class Loop(TikzObject):
         restored = deserialize_tikz_value(d)
         if not isinstance(restored, dict):
             raise TypeError("Serialized loop data must deserialize to a dict.")
+        range_spec = restored.get("range_spec")
+        if isinstance(range_spec, dict):
+            values: Sequence[Any] = range(
+                int(range_spec["start"]),
+                int(range_spec["stop"]),
+                int(range_spec["step"]),
+            )
+        else:
+            values = restored["values"]
         loop = cls(
             variable=restored["variable"],
-            values=restored["values"],
+            values=values,
             layer=restored.get("layer", 0),
             comment=restored.get("comment"),
         )
@@ -272,7 +308,7 @@ class Loop(TikzObject):
         if "variable" in remaining:
             clone._variable = remaining.pop("variable")
         if "values" in remaining:
-            clone._values = list(remaining.pop("values"))
+            clone._set_values(remaining.pop("values"))
 
         return self._apply_base_copy_overrides(clone, remaining, allow_kwargs=False)  # type: ignore[return-value]
 
