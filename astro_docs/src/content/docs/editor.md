@@ -9,6 +9,9 @@ Build TikZ figures visually in your browser. Add nodes, connect them with edges,
 edit properties, then export the generated TikZ code or compile to PDF — all
 without installing anything.
 
+**This is a very early beta test of the browser GUI**, it's not very useful yet
+unfortunately! (one day though)
+
 <div style="margin: 2em 0;">
   <a href="/tikzfigure/tikz-editor.html" target="_blank" rel="noopener noreferrer" style="display:inline-block; padding: 0.6em 1.4em; background: #6e3ff3; color: white; border-radius: 8px; text-decoration: none; font-weight: bold;">Open Editor ↗</a>
 </div>
