@@ -9,6 +9,7 @@ from tikzfigure.core.axis import Axis2D
 from tikzfigure.core.circle import Circle
 from tikzfigure.core.color import Color
 from tikzfigure.core.coordinate import Coordinate, PositionInput, TikzCoordinate
+from tikzfigure.core.declared_function import DeclaredFunction
 from tikzfigure.core.ellipse import Ellipse
 from tikzfigure.core.figure_export import FigureExportMixin
 from tikzfigure.core.figure_layout import FigureLayoutMixin
@@ -23,7 +24,7 @@ from tikzfigure.core.node import Node
 from tikzfigure.core.parabola import Parabola
 from tikzfigure.core.path import TikzPath
 from tikzfigure.core.path_builder import NodePathBuilder, SegmentOption
-from tikzfigure.core.plot import Plot3D
+from tikzfigure.core.plot import Plot3D, TikzPlot
 from tikzfigure.core.polygon import Polygon, Square, Triangle
 from tikzfigure.core.raw import RawTikz
 from tikzfigure.core.rectangle import Rectangle
@@ -309,6 +310,7 @@ class TikzFigure(
         # TODO: nodes, paths, layers should have @property and @setter methods
         self._layers: LayerCollection = LayerCollection()
         self._variables: list[Variable] = []
+        self._declared_functions: list[DeclaredFunction] = []
         self._colors: list[tuple[str, Color]] = []
         self._ndim: int = ndim
         self._axes: list[Axis2D] = []
@@ -387,6 +389,9 @@ class TikzFigure(
                 "subfigure_cols": self._subfigure_cols,
                 "layers": layers_dict,
                 "variables": [v.to_dict() for v in self._variables],
+                "declared_functions": [
+                    function.to_dict() for function in self._declared_functions
+                ],
                 "colors": [
                     {"name": name, **color.to_dict()} for name, color in self._colors
                 ],
@@ -427,6 +432,9 @@ class TikzFigure(
 
         for var_dict in restored.get("variables", []):
             fig._variables.append(Variable.from_dict(var_dict))
+
+        for function_dict in restored.get("declared_functions", []):
+            fig._declared_functions.append(DeclaredFunction.from_dict(function_dict))
 
         for color_entry in restored.get("colors", []):
             fig._colors.append((color_entry["name"], Color.from_dict(color_entry)))
@@ -476,6 +484,10 @@ class TikzFigure(
                     )
                 elif item_type == "Plot3D":
                     fig.layers.add_item(Plot3D.from_dict(item_data), layer=layer_label)
+                elif item_type == "TikzPlot":
+                    fig.layers.add_item(
+                        TikzPlot.from_dict(item_data), layer=layer_label
+                    )
                 elif item_type == "Loop":
                     fig.layers.add_item(
                         Loop.from_dict(item_data, node_lookup=node_lookup),
@@ -1470,6 +1482,54 @@ class TikzFigure(
         # TODO: Allow for special variables in each layer
         # self.layers.add_item(item=variable, layer=layer, verbose=verbose)
         return variable
+
+    def declare_function(
+        self,
+        name: str,
+        args: str | list[str] | tuple[str, ...],
+        body: Any,
+        comment: str | None = None,
+        verbose: bool = False,
+    ) -> DeclaredFunction:
+        """Declare a reusable PGF math function for this figure."""
+        declared = DeclaredFunction(name=name, args=args, body=body, comment=comment)
+        self._declared_functions.append(declared)
+        if verbose:
+            print(f"Declared PGF function {name}")
+        return declared
+
+    def add_plot(
+        self,
+        x: Any,
+        y: Any | None = None,
+        *,
+        variable: str = "x",
+        domain: tuple[Any, Any] | str | None = None,
+        samples: int | None = None,
+        smooth: bool = False,
+        layer: int = 0,
+        comment: str | None = None,
+        verbose: bool = False,
+        options: OptionInput | None = None,
+        tikz_command: str = "draw",
+        **kwargs: Any,
+    ) -> TikzPlot:
+        """Add a plain TikZ expression plot outside a pgfplots axis."""
+        plot = TikzPlot(
+            x=x,
+            y=y,
+            variable=variable,
+            domain=domain,
+            samples=samples,
+            smooth=smooth,
+            layer=layer,
+            comment=comment,
+            options=options,
+            tikz_command=tikz_command,
+            **kwargs,
+        )
+        self.layers.add_item(item=plot, layer=layer, verbose=verbose)
+        return plot
 
     def add_raw(
         self,
@@ -2884,6 +2944,11 @@ class TikzFigure(
         return self._variables
 
     @property
+    def declared_functions(self) -> list[DeclaredFunction]:
+        """List of declared PGF functions available in this figure."""
+        return self._declared_functions
+
+    @property
     def axes(self) -> list[Axis2D]:
         """List of :class:`Axis2D` objects created in this figure."""
         return self._axes
@@ -2897,7 +2962,9 @@ class TikzFigure(
     node = add_node
     coordinate = add_coordinate
     variable = add_variable
+    function = declare_function
     raw = add_raw
+    plot = add_plot
     spy = add_spy
     spy_scope = add_spy_scope
     subfigure = FigureLayoutMixin.add_subfigure

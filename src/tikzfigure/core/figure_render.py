@@ -41,6 +41,10 @@ class FigureRenderMixin:
     def variables(self) -> list[Any]:
         raise NotImplementedError
 
+    @property
+    def declared_functions(self) -> list[Any]:
+        raise NotImplementedError
+
     def add_package(self, package: str) -> None:
         raise NotImplementedError
 
@@ -154,6 +158,10 @@ class FigureRenderMixin:
                     f"\\pgfmathsetmacro{{\\{variable.label}}}{{{variable.value}}}\n"
                 )
 
+        if len(self.declared_functions) > 0:
+            for function in self.declared_functions:
+                tikz_script += function.to_tikz(output_unit)
+
         if len(self.colors) > 0:
             for name, color in self.colors:
                 tikz_script += f"\\colorlet{{{name}}}{{{color.color_spec}}}\n"
@@ -254,6 +262,8 @@ class FigureRenderMixin:
                 subfig_tikz += (
                     f"\\pgfmathsetmacro{{\\{variable.label}}}{{{variable.value}}}\n"
                 )
+            for function in self.declared_functions:
+                subfig_tikz += function.to_tikz(output_unit)
             for name, color in self.colors:
                 subfig_tikz += f"\\colorlet{{{name}}}{{{color.color_spec}}}\n"
 

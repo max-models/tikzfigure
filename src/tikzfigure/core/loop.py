@@ -6,6 +6,7 @@ from tikzfigure.core.base import TikzObject
 from tikzfigure.core.coordinate import Coordinate
 from tikzfigure.core.node import Node
 from tikzfigure.core.path import TikzPath
+from tikzfigure.core.plot import TikzPlot
 from tikzfigure.core.raw import RawTikz
 from tikzfigure.core.serialization import deserialize_tikz_value, serialize_tikz_value
 
@@ -121,6 +122,37 @@ class Loop(TikzObject):
         self._items.append(raw)
         return raw
 
+    def add_plot(
+        self,
+        x: Any,
+        y: Any | None = None,
+        *,
+        variable: str = "x",
+        domain: tuple[Any, Any] | str | None = None,
+        samples: int | None = None,
+        smooth: bool = False,
+        comment: str | None = None,
+        options: Any = None,
+        tikz_command: str = "draw",
+        **kwargs: Any,
+    ) -> TikzPlot:
+        """Add a plain TikZ expression plot inside this loop body."""
+        plot = TikzPlot(
+            x=x,
+            y=y,
+            variable=variable,
+            domain=domain,
+            samples=samples,
+            smooth=smooth,
+            comment=comment,
+            options=options,
+            tikz_command=tikz_command,
+            layer=self.layer or 0,
+            **kwargs,
+        )
+        self._items.append(plot)
+        return plot
+
     def add_scope(
         self,
         comment: str | None = None,
@@ -142,6 +174,7 @@ class Loop(TikzObject):
     path = add_path
     loop = add_loop
     raw = add_raw
+    plot = add_plot
     scope = add_scope
 
     def to_tikz(self, output_unit: str | None = None) -> str:
@@ -226,6 +259,8 @@ class Loop(TikzObject):
                 from tikzfigure.core.scope import Scope
 
                 loop._items.append(Scope.from_dict(item_data, node_lookup=local_lookup))
+            elif item_type == "TikzPlot":
+                loop._items.append(TikzPlot.from_dict(item_data))
             elif item_type == "RawTikz":
                 loop._items.append(RawTikz.from_dict(item_data))
         return loop
