@@ -257,3 +257,17 @@ class Plot3D(TikzPath):
             options=restored.get("options"),
             **kwargs,
         )
+
+    def _copy_init_kwargs(self) -> dict[str, Any]:
+        return {
+            "x": [self._copy_value(node.x) for node in self.nodes],
+            "y": [self._copy_value(node.y) for node in self.nodes],
+            "z": [self._copy_value(node.z) for node in self.nodes],
+            "cycle": self._copy_value(self.cycle),
+            "label": self._copy_value(self.label),
+            "comment": self._copy_value(self.comment),
+            "layer": self._copy_value(self.layer),
+            "center": self._copy_value(self.center),
+            "options": self._copy_value(self.options),
+            **self._copy_value(self.kwargs),
+        }

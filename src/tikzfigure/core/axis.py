@@ -429,3 +429,21 @@ class Axis2D(TikzObject):
         axis._legend_pos = restored.get("legend_pos")
 
         return axis
+
+    def _copy_init_kwargs(self) -> dict[str, Any]:
+        init_kwargs = super()._copy_init_kwargs()
+        init_kwargs["_plots"] = [plot.copy() for plot in self._plots]
+        init_kwargs["_ticks"] = self._copy_value(self._ticks)
+        init_kwargs["_legend_pos"] = self._copy_value(self._legend_pos)
+        return init_kwargs
+
+    def _copy_from_init_kwargs(self, init_kwargs: dict[str, Any]) -> "Axis2D":
+        plots = init_kwargs.pop("_plots", [])
+        ticks = init_kwargs.pop("_ticks", {})
+        legend_pos = init_kwargs.pop("_legend_pos", None)
+
+        axis = type(self)(**init_kwargs)
+        axis._plots = plots
+        axis._ticks = ticks
+        axis._legend_pos = legend_pos
+        return axis

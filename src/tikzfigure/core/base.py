@@ -1,3 +1,4 @@
+import inspect
 from typing import Any
 
 from tikzfigure.core.serialization import deserialize_tikz_value, serialize_tikz_value
@@ -162,6 +163,90 @@ class TikzObject:
             options=options,
             **kwargs,
         )
+
+    @staticmethod
+    def _copy_value(value: Any) -> Any:
+        """Clone plain serializable data while preserving external object refs."""
+        return deserialize_tikz_value(serialize_tikz_value(value))
+
+    def _copy_init_kwargs(self) -> dict[str, Any]:
+        """Build constructor kwargs representing the current object state."""
+        signature = inspect.signature(type(self).__init__)
+        init_kwargs: dict[str, Any] = {}
+        extra_kwargs = self._copy_value(self.kwargs)
+        if not isinstance(extra_kwargs, dict):
+            raise TypeError("TikZ object kwargs must copy as a dictionary.")
+
+        has_var_keyword = False
+        for name, parameter in signature.parameters.items():
+            if name == "self":
+                continue
+            if parameter.kind == inspect.Parameter.VAR_KEYWORD:
+                has_var_keyword = True
+                continue
+            if parameter.kind == inspect.Parameter.VAR_POSITIONAL:
+                continue
+            if name == "options":
+                init_kwargs[name] = self._copy_value(self.options)
+                continue
+            if name in extra_kwargs:
+                init_kwargs[name] = extra_kwargs.pop(name)
+                continue
+
+            descriptor = getattr(type(self), name, None)
+            if isinstance(descriptor, property):
+                init_kwargs[name] = self._copy_value(getattr(self, name))
+                continue
+
+            private_name = f"_{name}"
+            if hasattr(self, private_name):
+                init_kwargs[name] = self._copy_value(getattr(self, private_name))
+
+        if has_var_keyword:
+            init_kwargs.update(extra_kwargs)
+
+        return init_kwargs
+
+    def _copy_from_init_kwargs(self, init_kwargs: dict[str, Any]) -> "TikzObject":
+        """Reconstruct an object from copied constructor kwargs."""
+        return type(self)(**init_kwargs)
+
+    def copy(self, **overrides: Any) -> "TikzObject":
+        """Return a copy of this object with optional constructor-style overrides."""
+        init_kwargs = self._copy_init_kwargs()
+        init_kwargs.update(
+            {key: self._copy_value(value) for key, value in overrides.items()}
+        )
+        return self._copy_from_init_kwargs(init_kwargs)
+
+    def _apply_base_copy_overrides(
+        self,
+        clone: "TikzObject",
+        overrides: dict[str, Any],
+        *,
+        allow_kwargs: bool = True,
+    ) -> "TikzObject":
+        """Apply common TikzObject overrides to an already-cloned object."""
+        remaining = {key: self._copy_value(value) for key, value in overrides.items()}
+
+        if "label" in remaining:
+            clone._label = remaining.pop("label")
+        if "comment" in remaining:
+            clone._comment = remaining.pop("comment")
+        if "layer" in remaining:
+            clone._layer = remaining.pop("layer")
+        if "options" in remaining:
+            clone._options = normalize_options(remaining.pop("options"))
+
+        if remaining:
+            if not allow_kwargs:
+                invalid = ", ".join(sorted(remaining))
+                raise TypeError(
+                    f"{self.__class__.__name__}.copy() got unexpected override(s): {invalid}"
+                )
+            clone._kwargs.update(remaining)
+
+        return clone
 
     def _restore_from_check_dict(self, d: dict[str, Any]) -> "TikzObject":
         """Reconstruct this object from serialized data for `_check()`."""

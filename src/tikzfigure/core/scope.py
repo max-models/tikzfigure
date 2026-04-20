@@ -280,6 +280,11 @@ class Scope(FigurePathMixin, TikzObject):
                 scope._items.append(RawTikz.from_dict(item_data))
         return scope
 
+    def copy(self, **overrides: Any) -> "Scope":
+        clone = type(self).from_dict(self.to_dict())
+        clone._node_resolver = self._node_resolver
+        return self._apply_base_copy_overrides(clone, overrides)  # type: ignore[return-value]
+
     def __enter__(self) -> "Scope":
         return self
 

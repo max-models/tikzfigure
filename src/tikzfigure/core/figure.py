@@ -541,6 +541,53 @@ class TikzFigure(
 
         return restored
 
+    @staticmethod
+    def _copy_value(value: Any) -> Any:
+        return deserialize_tikz_value(serialize_tikz_value(value))
+
+    def copy(self, **overrides: Any) -> "TikzFigure":
+        """Return a deep copy of this figure with optional figure-level overrides."""
+        clone = type(self).from_dict(self.to_dict())
+        remaining = {key: self._copy_value(value) for key, value in overrides.items()}
+
+        if "ndim" in remaining:
+            clone._ndim = remaining.pop("ndim")
+        if "label" in remaining:
+            clone._label = remaining.pop("label")
+        if "grid" in remaining:
+            clone._grid = remaining.pop("grid")
+        if "show_axes" in remaining:
+            clone._show_axes = remaining.pop("show_axes")
+        if "extra_packages" in remaining:
+            value = remaining.pop("extra_packages")
+            clone._extra_packages = None if value is None else list(value)
+        if "tikz_libraries" in remaining:
+            value = remaining.pop("tikz_libraries")
+            clone._tikz_libraries = (
+                [] if value is None else _normalize_tikz_libraries(*value)
+            )
+        if "named_styles" in remaining:
+            value = remaining.pop("named_styles")
+            clone._named_styles = [] if value is None else list(value)
+        if "document_setup" in remaining:
+            clone._document_setup = remaining.pop("document_setup")
+        if "figure_setup" in remaining:
+            clone._figure_setup = remaining.pop("figure_setup")
+        if "figsize" in remaining:
+            clone._figsize = tuple(remaining.pop("figsize"))
+        if "description" in remaining:
+            clone._description = remaining.pop("description")
+        if "rows" in remaining:
+            clone._subfigure_rows = remaining.pop("rows")
+        if "cols" in remaining:
+            clone._subfigure_cols = remaining.pop("cols")
+
+        if remaining:
+            invalid = ", ".join(sorted(remaining))
+            raise TypeError(f"TikzFigure.copy() got unexpected override(s): {invalid}")
+
+        return clone
+
     # ------------------------------------------------------------- #
     # Public methods
 

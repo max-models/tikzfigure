@@ -58,6 +58,16 @@ class Color:
             raise TypeError("Serialized color data must deserialize to a dict.")
         return cls(color_spec=restored["color_spec"])
 
+    def copy(self, **overrides: Any) -> "Color":
+        """Return a copy of this color definition with optional overrides."""
+        clone = type(self).from_dict(self.to_dict())
+        if "color_spec" in overrides:
+            clone._color_spec = overrides.pop("color_spec")
+        if overrides:
+            invalid = ", ".join(sorted(overrides))
+            raise TypeError(f"Color.copy() got unexpected override(s): {invalid}")
+        return clone
+
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, Color):
             return NotImplemented
