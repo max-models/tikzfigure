@@ -3,8 +3,12 @@
   "type": "module",
   "version": "0.0.1",
   "scripts": {
+    "docs:api": "python scripts/generate_api_docs.py",
+    "predev": "python scripts/generate_api_docs.py",
     "dev": "astro dev",
+    "prestart": "python scripts/generate_api_docs.py",
     "start": "astro dev",
+    "prebuild": "python scripts/generate_api_docs.py",
     "build": "astro build",
     "preview": "astro preview",
     "astro": "astro"
