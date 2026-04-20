@@ -109,40 +109,24 @@ fig2.show()
 
 ## A simple directed graph
 
-Here we place four nodes and connect them with arrows. `bend_left` curves the
-arrow - positive values bend it left relative to the direction of travel.
+Here we place four nodes and connect them with arrows. `fig.add_copy(...)`
+clones a node and inserts the clone into the current figure in one step. If the
+source node only has an auto-generated label, the new copy gets the next
+automatic `node<N>` label in this figure. `bend_left` curves the arrow -
+positive values bend it left relative to the direction of travel.
 
 ```{python}
 fig = TikzFigure()
 
 A = fig.node(
     (0, 2),
-    label="A",
     content="A",
     shape="circle",
     fill="cyan!40",
 )
-B = fig.node(
-    (3, 2),
-    label="B",
-    content="B",
-    shape="circle",
-    fill="cyan!40",
-)
-C = fig.node(
-    (0, 0),
-    label="C",
-    content="C",
-    shape="circle",
-    fill="cyan!40",
-)
-D = fig.node(
-    (3, 0),
-    label="D",
-    content="D",
-    shape="circle",
-    fill="cyan!40",
-)
+B = fig.add_copy(A, x=3, y=2, content="B")
+C = fig.add_copy(A, x=0, y=0, content="C")
+D = fig.add_copy(A, x=3, y=0, content="D")
 
 fig.draw([A, B], arrows=arrows.forward)
 fig.draw([A, C], arrows=arrows.forward)
@@ -151,7 +135,7 @@ fig.draw([C, D], arrows=arrows.forward)
 fig.draw(
     [A, D],
     arrows=arrows.forward,
-    options=[styles.dashed],
+    options=styles.dashed,
     bend_left=20,
     color="gray",
 )

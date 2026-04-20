@@ -266,6 +266,7 @@ class Node(TikzObject):
             self._coordinate = TikzCoordinate(x=x, y=y, z=z, layer=layer)
 
         self._content = content
+        self._user_supplied_label = label != ""
         super().__init__(
             label=label,
             comment=comment,
@@ -329,6 +330,46 @@ class Node(TikzObject):
                 "This node does not have explicit coordinates, so geometric operations are unavailable."
             )
         return self.coordinate
+
+    def copy(self, **overrides: Any) -> "Node":
+        """Return a copy of this node with optional constructor-style overrides."""
+        normalized_overrides = dict(overrides)
+        position_sentinel = object()
+
+        position = normalized_overrides.pop("pos", position_sentinel)
+        if position is position_sentinel:
+            position = normalized_overrides.pop("position", position_sentinel)
+
+        if position is not position_sentinel:
+            if any(axis in normalized_overrides for axis in ("x", "y", "z")):
+                raise ValueError(
+                    "Provide either pos/position or x/y/z overrides, not both."
+                )
+            normalized_overrides["x"] = position
+            normalized_overrides["y"] = None
+            normalized_overrides["z"] = None
+
+        if "x" in normalized_overrides:
+            x_override = normalized_overrides["x"]
+            if isinstance(x_override, (tuple, TikzCoordinate)):
+                if "y" in overrides or "z" in overrides:
+                    raise ValueError(
+                        "When overriding x with a coordinate tuple/TikzCoordinate, do not also override y or z."
+                    )
+                normalized_overrides["y"] = None
+                normalized_overrides["z"] = None
+            elif x_override is None and "y" not in overrides and "z" not in overrides:
+                normalized_overrides["y"] = None
+                normalized_overrides["z"] = None
+
+        clone = super().copy(**normalized_overrides)
+        if not isinstance(clone, Node):
+            raise TypeError("Node.copy() must return a Node instance.")
+        if "label" in overrides:
+            clone._user_supplied_label = normalized_overrides["label"] != ""
+        else:
+            clone._user_supplied_label = self._user_supplied_label
+        return clone
 
     @staticmethod
     def _coerce_coordinate(other: "Node | TikzCoordinate") -> TikzCoordinate:
@@ -407,6 +448,7 @@ class Node(TikzObject):
                 "y": self.y,
                 "z": self.z,
                 "content": self._content,
+                "user_supplied_label": self._user_supplied_label,
             }
         )
         serialized = serialize_tikz_value(d)
@@ -430,7 +472,7 @@ class Node(TikzObject):
         kwargs = restored.get("kwargs", {})
         if not isinstance(kwargs, dict):
             raise TypeError("Serialized node kwargs must deserialize to a dict.")
-        return cls(
+        node = cls(
             x=restored.get("x"),
             y=restored.get("y"),
             z=restored.get("z"),
@@ -441,3 +483,7 @@ class Node(TikzObject):
             options=restored.get("options"),
             **kwargs,
         )
+        node._user_supplied_label = restored.get(
+            "user_supplied_label", node.label != ""
+        )
+        return node

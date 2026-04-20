@@ -26,10 +26,14 @@ TAB = "    "
 
 def iter_tutorial_sources() -> list[Path]:
     """Return all tutorial sources in a stable order for sharding/building."""
-    qmds = sorted(TUTORIALS_SRC.glob("*.qmd"))
+    qmds = sorted(
+        path
+        for path in TUTORIALS_SRC.rglob("*.qmd")
+        if "includes" not in path.relative_to(TUTORIALS_SRC).parts
+    )
     nbs = sorted(
         nb
-        for nb in TUTORIALS_SRC.glob("*.ipynb")
+        for nb in TUTORIALS_SRC.rglob("*.ipynb")
         if ".ipynb_checkpoints" not in nb.parts
     )
     return sorted([*qmds, *nbs], key=lambda path: path.name)
@@ -215,7 +219,7 @@ def copy_assets(src_files_dir: Path, tutorial_name: str) -> None:
 
 def process_qmd(qmd_path: Path) -> None:
     name = qmd_path.stem
-    print(f"Rendering {qmd_path.name} ...")
+    print(f"Rendering {qmd_path.relative_to(TUTORIALS_SRC)} ...")
     with tempfile.TemporaryDirectory() as tmp:
         tmp_dir = Path(tmp)
         # Copy the .qmd into its own isolated directory so concurrent Quarto
@@ -262,7 +266,7 @@ def process_qmd(qmd_path: Path) -> None:
 
 def process_notebook(nb_path: Path) -> None:
     name = nb_path.stem
-    print(f"Converting {nb_path.name} ...")
+    print(f"Converting {nb_path.relative_to(TUTORIALS_SRC)} ...")
     with tempfile.TemporaryDirectory() as tmp:
         tmp_dir = Path(tmp)
         subprocess.run(
@@ -303,6 +307,11 @@ def main() -> None:
         help="Process a specific tutorial by name (without extension)",
     )
     parser.add_argument(
+        "--directory",
+        type=str,
+        help="Process tutorials from one top-level tutorials subdirectory.",
+    )
+    parser.add_argument(
         "--shard-count",
         type=int,
         help="Split tutorials into this many deterministic shards.",
@@ -321,6 +330,12 @@ def main() -> None:
 
     if args.name:
         tutorials = [tutorial for tutorial in tutorials if args.name in tutorial.stem]
+    if args.directory:
+        tutorials = [
+            tutorial
+            for tutorial in tutorials
+            if tutorial.relative_to(TUTORIALS_SRC).parts[0] == args.directory
+        ]
 
     tutorials = select_tutorial_shard(tutorials, args.shard_count, args.shard_index)
 
@@ -331,6 +346,10 @@ def main() -> None:
         print(
             f"Processing shard {args.shard_index + 1}/{args.shard_count} "
             f"({len(tutorials)} tutorial(s))."
+        )
+    elif args.directory:
+        print(
+            f"Processing {len(tutorials)} tutorial(s) in directory {args.directory!r}."
         )
     elif args.name:
         print(f"Processing {len(tutorials)} tutorial(s) matching {args.name!r}.")

@@ -19,7 +19,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shard-index: [0, 1, 2, 3]
+        tutorial-dir: [fundamentals, drawing, plots, advanced, showcases, integrations]
 
     runs-on: ubuntu-latest
     container:
@@ -32,18 +32,18 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Build tutorial shard
+      - name: Build tutorial directory
         uses: ./.github/actions/build-docs
         with:
           python-version: "3.12"
           build-site: "false"
-          tutorial-build-args: --serial --shard-count 4 --shard-index ${{ matrix.shard-index }}
+          tutorial-build-args: --serial --directory ${{ matrix.tutorial-dir }}
 
-      - name: Upload tutorial shard artifact
+      - name: Upload tutorial directory artifact
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: tutorials-shard-${{ matrix.shard-index }}
+          name: tutorials-dir-${{ matrix.tutorial-dir }}
           path: |
             astro_docs/src/content/docs/tutorials/
             astro_docs/public/tutorials/
@@ -62,10 +62,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Download tutorial shard artifacts
+      - name: Download tutorial directory artifacts
         uses: actions/download-artifact@v4
         with:
-          pattern: tutorials-shard-*
+          pattern: tutorials-dir-*
           path: astro_docs
           merge-multiple: true
 
