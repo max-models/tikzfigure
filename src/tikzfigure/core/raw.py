@@ -47,6 +47,16 @@ class RawTikz:
         """
         return cls(tikz_code=d["tikz_code"])
 
+    def copy(self, **overrides: Any) -> "RawTikz":
+        """Return a copy of this raw block with optional overrides."""
+        clone = type(self).from_dict(self.to_dict())
+        if "tikz_code" in overrides:
+            clone.tikz_code = overrides.pop("tikz_code")
+        if overrides:
+            invalid = ", ".join(sorted(overrides))
+            raise TypeError(f"RawTikz.copy() got unexpected override(s): {invalid}")
+        return clone
+
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, RawTikz):
             return NotImplemented

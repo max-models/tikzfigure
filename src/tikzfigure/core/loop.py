@@ -222,6 +222,17 @@ class Loop(TikzObject):
                 loop._items.append(RawTikz.from_dict(item_data))
         return loop
 
+    def copy(self, **overrides: Any) -> "Loop":
+        clone = type(self).from_dict(self.to_dict())
+        remaining = {key: self._copy_value(value) for key, value in overrides.items()}
+
+        if "variable" in remaining:
+            clone._variable = remaining.pop("variable")
+        if "values" in remaining:
+            clone._values = list(remaining.pop("values"))
+
+        return self._apply_base_copy_overrides(clone, remaining, allow_kwargs=False)  # type: ignore[return-value]
+
     def __enter__(self) -> "Loop":
         """Enter the context manager, returning this loop."""
         return self
