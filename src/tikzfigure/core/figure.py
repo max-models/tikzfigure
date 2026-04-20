@@ -1,3 +1,4 @@
+import logging
 import os
 from typing import Any, overload
 
@@ -28,6 +29,12 @@ from tikzfigure.core.raw import RawTikz
 from tikzfigure.core.rectangle import Rectangle
 from tikzfigure.core.scope import Scope
 from tikzfigure.core.serialization import deserialize_tikz_value, serialize_tikz_value
+from tikzfigure.core.spy import (
+    Spy,
+    SpyScopeMode,
+    build_spy_command_parts,
+    build_spy_scope_parts,
+)
 from tikzfigure.core.types import (
     _Align,
     _Anchor,
@@ -47,6 +54,7 @@ from tikzfigure.styles import TikzStyle
 from tikzfigure.units import TikzDimension
 
 WEB_COMPILATION_ENV_VAR = "TIKZFIGURE_USE_WEB_COMPILATION"
+logger = logging.getLogger(__name__)
 
 
 def _normalize_tikz_libraries(*libraries: str) -> list[str]:
@@ -478,6 +486,11 @@ class TikzFigure(
                         Scope.from_dict(item_data, node_lookup=node_lookup),
                         layer=layer_label,
                     )
+                elif item_type == "Spy":
+                    fig.layers.add_item(
+                        Spy.from_dict(item_data, node_lookup=node_lookup),
+                        layer=layer_label,
+                    )
                 elif item_type == "RawTikz":
                     fig.layers.add_item(RawTikz.from_dict(item_data), layer=layer_label)
                 elif item_type == "Arc":
@@ -591,6 +604,227 @@ class TikzFigure(
     # ------------------------------------------------------------- #
     # Public methods
 
+    def _sync_node_counter_from_label(self, label: str | None) -> None:
+        """Advance the auto-label counter past an existing ``node<N>`` label."""
+        if label is None or not label.startswith("node"):
+            return
+        try:
+            self._node_counter = max(self._node_counter, int(label[4:]) + 1)
+        except ValueError:
+            return
+
+    def _assign_auto_node_label(self, node: Node) -> None:
+        """Assign the next auto-generated node label when needed."""
+        if node.label == "":
+            node._label = f"node{self._node_counter}"
+            self._node_counter += 1
+
+    def _append_figure_setup_items(self, items: list[str]) -> None:
+        cleaned = [item.strip() for item in items if item.strip()]
+        if not cleaned:
+            return
+        if self._figure_setup is None or self._figure_setup.strip() == "":
+            self._figure_setup = ", ".join(cleaned)
+            return
+        self._figure_setup = f"{self._figure_setup}, " + ", ".join(cleaned)
+
+    def _figure_has_spy_scope(self) -> bool:
+        if self._figure_setup is None:
+            return False
+        return any(
+            key in self._figure_setup
+            for key in ("spy scope", "spy using outlines", "spy using overlays")
+        )
+
+    def _ensure_figure_spy_scope(self) -> None:
+        """Ensure the figure loads the spy library and has a usable top-level scope."""
+        self.usetikzlibrary("spy")
+        if not self._figure_has_spy_scope():
+            self._append_figure_setup_items(["spy scope"])
+
+    def configure_spy_scope(
+        self,
+        *,
+        mode: SpyScopeMode = "scope",
+        options: OptionInput | None = None,
+        magnification: float | None = None,
+        lens: OptionInput | str | None = None,
+        lens_kwargs: dict[str, Any] | None = None,
+        size: str | object | None = None,
+        width: str | object | None = None,
+        height: str | object | None = None,
+        connect_spies: bool = False,
+        every_spy_in_node_options: OptionInput | None = None,
+        every_spy_in_node_style: dict[str, Any] | None = None,
+        every_spy_on_node_options: OptionInput | None = None,
+        every_spy_on_node_style: dict[str, Any] | None = None,
+        spy_connection_path: str | None = None,
+        **kwargs: Any,
+    ) -> None:
+        """Append figure-wide defaults for subsequent spy commands.
+
+        This updates ``figure_setup`` with a top-level spy scope configuration,
+        which is useful when several ``fig.spy(...)`` calls should share the
+        same magnification, lens, node styling, or connection-path settings.
+        """
+        self.usetikzlibrary("spy")
+        scope_options, scope_kwargs = build_spy_scope_parts(
+            mode=mode,
+            options=options,
+            magnification=magnification,
+            lens=lens,
+            lens_kwargs=lens_kwargs,
+            size=size,
+            width=width,
+            height=height,
+            connect_spies=connect_spies,
+            every_spy_in_node_options=every_spy_in_node_options,
+            every_spy_in_node_style=every_spy_in_node_style,
+            every_spy_on_node_options=every_spy_on_node_options,
+            every_spy_on_node_style=every_spy_on_node_style,
+            spy_connection_path=spy_connection_path,
+            **kwargs,
+        )
+        figure_items = scope_options + [
+            f"{key}={value}" for key, value in scope_kwargs.items()
+        ]
+        self._append_figure_setup_items(figure_items)
+
+    def add_spy(
+        self,
+        on: Any,
+        *,
+        layer: int = 0,
+        comment: str | None = None,
+        verbose: bool = False,
+        options: OptionInput | None = None,
+        magnification: float | None = None,
+        lens: OptionInput | str | None = None,
+        lens_kwargs: dict[str, Any] | None = None,
+        size: str | object | None = None,
+        width: str | object | None = None,
+        height: str | object | None = None,
+        connect_spies: bool = False,
+        at: Any = None,
+        node_label: str | None = None,
+        node_options: OptionInput | None = None,
+        node_style: dict[str, Any] | None = None,
+        **kwargs: Any,
+    ) -> Spy:
+        """Add a top-level ``\\spy`` command to the figure.
+
+        If the figure does not yet have any spy-scope configuration, this
+        method enables a bare ``spy scope`` automatically so the generated
+        command works without extra setup.
+        """
+        self._ensure_figure_spy_scope()
+        spy_options, spy_kwargs = build_spy_command_parts(
+            options=options,
+            magnification=magnification,
+            lens=lens,
+            lens_kwargs=lens_kwargs,
+            size=size,
+            width=width,
+            height=height,
+            connect_spies=connect_spies,
+            **kwargs,
+        )
+        spy = Spy(
+            on=on,
+            at=at,
+            node_label=node_label,
+            node_options=node_options,
+            node_style=node_style,
+            comment=comment,
+            layer=layer,
+            options=spy_options,
+            **spy_kwargs,
+        )
+        self.layers.add_item(item=spy, layer=layer, verbose=verbose)
+        return spy
+
+    def add_spy_scope(
+        self,
+        layer: int = 0,
+        comment: str | None = None,
+        verbose: bool = False,
+        mode: SpyScopeMode = "scope",
+        options: OptionInput | None = None,
+        magnification: float | None = None,
+        lens: OptionInput | str | None = None,
+        lens_kwargs: dict[str, Any] | None = None,
+        size: str | object | None = None,
+        width: str | object | None = None,
+        height: str | object | None = None,
+        connect_spies: bool = False,
+        every_spy_in_node_options: OptionInput | None = None,
+        every_spy_in_node_style: dict[str, Any] | None = None,
+        every_spy_on_node_options: OptionInput | None = None,
+        every_spy_on_node_style: dict[str, Any] | None = None,
+        spy_connection_path: str | None = None,
+        **kwargs: Any,
+    ) -> Scope:
+        """Create a nested scope with local spy defaults.
+
+        Use this when spy behavior should apply only to a region of the figure,
+        or when you want nested spy configurations such as an outer
+        ``outlines`` scope with an inner ``overlays`` scope.
+        """
+        self.usetikzlibrary("spy")
+        scope_options, scope_kwargs = build_spy_scope_parts(
+            mode=mode,
+            options=options,
+            magnification=magnification,
+            lens=lens,
+            lens_kwargs=lens_kwargs,
+            size=size,
+            width=width,
+            height=height,
+            connect_spies=connect_spies,
+            every_spy_in_node_options=every_spy_in_node_options,
+            every_spy_in_node_style=every_spy_in_node_style,
+            every_spy_on_node_options=every_spy_on_node_options,
+            every_spy_on_node_style=every_spy_on_node_style,
+            spy_connection_path=spy_connection_path,
+            **kwargs,
+        )
+        scope_obj = Scope(
+            layer=layer,
+            comment=comment,
+            options=scope_options,
+            node_resolver=self.layers.get_node,
+            library_loader=self.usetikzlibrary,
+            **scope_kwargs,
+        )
+        self.layers.add_item(item=scope_obj, layer=layer, verbose=verbose)
+        return scope_obj
+
+    def add_copy(self, node: Node, verbose: bool = False, **overrides: Any) -> Node:
+        """Copy a node into this figure, applying optional constructor-style overrides.
+
+        If the source node has an explicit label and no ``label=...`` override is
+        provided, the copied node keeps that label and a warning is logged. Nodes
+        whose label was auto-generated by a figure are treated as unlabeled here
+        and receive a fresh ``node<N>`` label from this figure.
+        """
+        copied = node.copy(**overrides)
+
+        if "label" in overrides:
+            copied._user_supplied_label = copied.label != ""
+        elif copied._user_supplied_label:
+            logger.warning(
+                "TikzFigure.add_copy() preserved explicit label %r on copied node; pass label=... to override it.",
+                copied.label,
+            )
+        else:
+            copied._label = ""
+
+        copied._user_supplied_label = copied.label != ""
+        self._assign_auto_node_label(copied)
+        self._sync_node_counter_from_label(copied.label)
+        self.layers.add_item(item=copied, layer=copied.layer or 0, verbose=verbose)
+        return copied
+
     def add(
         self, items: list | tuple | Node, layer: int = 0, verbose: bool = False
     ) -> None:
@@ -606,9 +840,8 @@ class TikzFigure(
 
         for item in items:
             if isinstance(item, Node):
-                if item.label == "":
-                    item._label = f"node{self._node_counter}"
-                self._node_counter += 1
+                self._assign_auto_node_label(item)
+                self._sync_node_counter_from_label(item.label)
                 self.layers.add_item(item=item, layer=layer, verbose=verbose)
 
     def colorlet(
@@ -706,6 +939,7 @@ class TikzFigure(
             | str
             | tuple[float | int | str, float | int | str]
             | tuple[float | int | str, float | int | str, float | int | str]
+            | Node
             | TikzCoordinate
             | None
         ) = None,
@@ -907,6 +1141,105 @@ class TikzFigure(
         Returns:
             The :class:`Node` object that was added.
         """
+        if isinstance(x, Node):
+            has_extra_args = (
+                y is not None
+                or z is not None
+                or label is not None
+                or content != ""
+                or layer != 0
+                or comment is not None
+                or options is not None
+                or verbose
+                or any(
+                    value is not None
+                    for value in (
+                        shape,
+                        color,
+                        fill,
+                        draw,
+                        text,
+                        opacity,
+                        fill_opacity,
+                        draw_opacity,
+                        text_opacity,
+                        minimum_width,
+                        minimum_height,
+                        minimum_size,
+                        inner_sep,
+                        inner_xsep,
+                        inner_ysep,
+                        outer_sep,
+                        outer_xsep,
+                        outer_ysep,
+                        line_width,
+                        font,
+                        text_width,
+                        text_height,
+                        text_depth,
+                        align,
+                        anchor,
+                        above,
+                        below,
+                        left,
+                        right,
+                        above_left,
+                        above_right,
+                        below_left,
+                        below_right,
+                        above_of,
+                        below_of,
+                        left_of,
+                        right_of,
+                        node_distance,
+                        rotate,
+                        xshift,
+                        yshift,
+                        scale,
+                        xscale,
+                        yscale,
+                        xslant,
+                        yslant,
+                        rounded_corners,
+                        double,
+                        double_distance,
+                        dash_pattern,
+                        dash_phase,
+                        pattern,
+                        pattern_color,
+                        shading,
+                        shading_angle,
+                        left_color,
+                        right_color,
+                        top_color,
+                        bottom_color,
+                        inner_color,
+                        outer_color,
+                        ball_color,
+                        regular_polygon_sides,
+                        star_points,
+                        star_point_ratio,
+                        star_point_height,
+                        shadow_xshift,
+                        shadow_yshift,
+                        shadow_color,
+                        shadow_opacity,
+                        shadow_scale,
+                        pin,
+                    )
+                )
+                or bool(kwargs)
+            )
+            if has_extra_args:
+                raise ValueError(
+                    "When passing an existing Node to add_node(), do not also provide node-construction arguments."
+                )
+            node = x
+            self._assign_auto_node_label(node)
+            self._sync_node_counter_from_label(node.label)
+            self.layers.add_item(item=node, layer=node.layer or 0, verbose=verbose)
+            return node
+
         _params = locals().copy()
         _non_tikz = {
             "self",
@@ -934,12 +1267,18 @@ class TikzFigure(
         if isinstance(options, str):
             options = [options]
 
-        if label is None and isinstance(x, str) and y is None and z is None:
+        label_from_x = label is None and isinstance(x, str) and y is None and z is None
+        explicit_label = label not in (None, "")
+
+        if label_from_x:
+            assert isinstance(x, str)
             label = x
             x = None
+            explicit_label = True
 
         if label is None:
             label = f"node{self._node_counter}"
+            explicit_label = False
         node = Node(
             x=x,
             y=y,
@@ -951,6 +1290,7 @@ class TikzFigure(
             options=options,
             **tikz_kwargs,
         )
+        node._user_supplied_label = explicit_label
         self._node_counter += 1
         self.layers.add_item(item=node, layer=layer, verbose=verbose)
         return node
@@ -2396,7 +2736,7 @@ class TikzFigure(
         ylabel: str = "",
         xlim: tuple[float, float] | None = None,
         ylim: tuple[float, float] | None = None,
-        grid: bool = True,
+        grid: bool | str = True,
         width: str | int | float | None = None,
         height: str | int | float | None = None,
         layer: int = 0,
@@ -2410,7 +2750,8 @@ class TikzFigure(
             ylabel: Label for y-axis. Defaults to "".
             xlim: (min, max) tuple for x-axis limits, or None for auto.
             ylim: (min, max) tuple for y-axis limits, or None for auto.
-            grid: Enable grid lines. Defaults to True.
+            grid: Enable grid lines. Pass ``True`` / ``False`` for the usual
+                pgfplots values or a string such as ``"major"``.
             width: Width of the axis as a string (e.g., "8cm"), number in cm,
                 or None for auto. Defaults to None.
             height: Height of the axis as a string (e.g., "6cm"), number in cm,
@@ -2433,6 +2774,8 @@ class TikzFigure(
             label="",
             comment=comment,
             layer=layer,
+            library_loader=self.usetikzlibrary,
+            spy_scope_enabler=self._ensure_figure_spy_scope,
             **kwargs,
         )
         self.axes.append(axis)
@@ -2484,6 +2827,7 @@ class TikzFigure(
             comment=comment,
             options=options,
             node_resolver=self.layers.get_node,
+            library_loader=self.usetikzlibrary,
             **kwargs,
         )
         self.layers.add_item(item=scope_obj, layer=layer, verbose=verbose)
@@ -2554,6 +2898,8 @@ class TikzFigure(
     coordinate = add_coordinate
     variable = add_variable
     raw = add_raw
+    spy = add_spy
+    spy_scope = add_spy_scope
     subfigure = FigureLayoutMixin.add_subfigure
     loop = add_loop
     scope = add_scope

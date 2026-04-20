@@ -52,6 +52,7 @@ optional-dependencies.docs = [
   "mkdocstrings[python]",
   "nbconvert",
   "numpy",
+  "pydoc-markdown",
   "scipy",
   "tikzfigure[vis]",
 ]

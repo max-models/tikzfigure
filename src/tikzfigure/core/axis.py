@@ -1,8 +1,17 @@
+from collections.abc import Callable
 from typing import Any
 
 from tikzfigure.core.base import TikzObject
+from tikzfigure.core.coordinate import (
+    Coordinate,
+    CoordinateTuple2D,
+    CoordinateTuple3D,
+    CoordinateValue,
+    TikzCoordinate,
+)
 from tikzfigure.core.plot import Plot2D
 from tikzfigure.core.serialization import deserialize_tikz_value, serialize_tikz_value
+from tikzfigure.core.spy import Spy, build_spy_command_parts
 from tikzfigure.options import OptionInput
 
 
@@ -21,13 +30,15 @@ class Axis2D(TikzObject):
         ylabel: str = "",
         xlim: tuple[float, float] | None = None,
         ylim: tuple[float, float] | None = None,
-        grid: bool = True,
+        grid: bool | str = True,
         label: str = "",
         comment: str | None = None,
         layer: int = 0,
         width: str | int | float | None = None,
         height: str | int | float | None = None,
         options: OptionInput | None = None,
+        library_loader: Callable[[str], None] | None = None,
+        spy_scope_enabler: Callable[[], None] | None = None,
         **kwargs: Any,
     ) -> None:
         """Initialize a 2D axis.
@@ -37,7 +48,8 @@ class Axis2D(TikzObject):
             ylabel: Label for y-axis. Defaults to "".
             xlim: (min, max) tuple for x-axis limits, or None for auto.
             ylim: (min, max) tuple for y-axis limits, or None for auto.
-            grid: Enable grid lines. Defaults to True.
+            grid: Enable grid lines. Pass ``True`` / ``False`` for the usual
+                pgfplots values or a string such as ``"major"``.
             label: Unique identifier (inherited from TikzObject).
             comment: Optional comment prepended in output.
             layer: Layer index. Defaults to 0.
@@ -71,8 +83,11 @@ class Axis2D(TikzObject):
         self._width: str | None = self._normalize_dimension(width, "width")
         self._height: str | None = self._normalize_dimension(height, "height")
         self._plots: list[Plot2D] = []
+        self._items: list[Coordinate | Spy] = []
         self._ticks: dict[str, tuple[list[float], list[str] | None]] = {}
         self._legend_pos: str | None = None
+        self._library_loader = library_loader
+        self._spy_scope_enabler = spy_scope_enabler
 
     @staticmethod
     def _normalize_dimension(
@@ -152,8 +167,8 @@ class Axis2D(TikzObject):
         return self._ylim
 
     @property
-    def grid(self) -> bool:
-        """Whether grid is enabled."""
+    def grid(self) -> bool | str:
+        """Grid setting for pgfplots."""
         return self._grid
 
     @property
@@ -170,6 +185,11 @@ class Axis2D(TikzObject):
     def plots(self) -> list[Plot2D]:
         """List of Plot2D objects in this axis."""
         return self._plots
+
+    @property
+    def items(self) -> list[Coordinate | Spy]:
+        """List of non-plot commands rendered inside this axis."""
+        return self._items
 
     def set_xlabel(self, label: str) -> None:
         """Set x-axis label.
@@ -213,11 +233,12 @@ class Axis2D(TikzObject):
         self._validate_limits((min_val, max_val), "ylim")
         self._ylim = (min_val, max_val)
 
-    def set_grid(self, enabled: bool) -> None:
-        """Enable or disable grid.
+    def set_grid(self, enabled: bool | str) -> None:
+        """Set the pgfplots grid mode.
 
         Args:
-            enabled: True to show grid, False to hide.
+            enabled: ``True`` / ``False`` or a pgfplots grid mode string such
+                as ``"major"`` or ``"both"``.
         """
         self._grid = enabled
 
@@ -286,6 +307,82 @@ class Axis2D(TikzObject):
         self._plots.append(plot)
         return plot
 
+    def add_coordinate(
+        self,
+        label: str,
+        x: CoordinateValue
+        | CoordinateTuple2D
+        | CoordinateTuple3D
+        | TikzCoordinate
+        | None = None,
+        y: CoordinateValue | None = None,
+        z: CoordinateValue | None = None,
+        at: str | None = None,
+        comment: str | None = None,
+    ) -> Coordinate:
+        """Add a named coordinate inside the axis environment."""
+        coord = Coordinate(
+            label=label,
+            x=x,
+            y=y,
+            z=z,
+            at=at,
+            layer=self.layer if self.layer is not None else 0,
+            comment=comment,
+        )
+        self._items.append(coord)
+        return coord
+
+    def add_spy(
+        self,
+        on: Any,
+        *,
+        comment: str | None = None,
+        options: OptionInput | None = None,
+        magnification: float | None = None,
+        lens: OptionInput | str | None = None,
+        lens_kwargs: dict[str, Any] | None = None,
+        size: str | object | None = None,
+        width: str | object | None = None,
+        height: str | object | None = None,
+        connect_spies: bool = False,
+        at: Any = None,
+        node_label: str | None = None,
+        node_options: OptionInput | None = None,
+        node_style: dict[str, Any] | None = None,
+        **kwargs: Any,
+    ) -> Spy:
+        """Add a ``\\spy`` command inside the axis environment."""
+        if self._library_loader is not None:
+            self._library_loader("spy")
+        if self._spy_scope_enabler is not None:
+            self._spy_scope_enabler()
+
+        spy_options, spy_kwargs = build_spy_command_parts(
+            options=options,
+            magnification=magnification,
+            lens=lens,
+            lens_kwargs=lens_kwargs,
+            size=size,
+            width=width,
+            height=height,
+            connect_spies=connect_spies,
+            **kwargs,
+        )
+        spy = Spy(
+            on=on,
+            at=at,
+            node_label=node_label,
+            node_options=node_options,
+            node_style=node_style,
+            comment=comment,
+            layer=self.layer if self.layer is not None else 0,
+            options=spy_options,
+            **spy_kwargs,
+        )
+        self._items.append(spy)
+        return spy
+
     def to_tikz(self, output_unit: str | None = None) -> str:
         """Generate the pgfplots axis environment.
 
@@ -310,7 +407,10 @@ class Axis2D(TikzObject):
             axis_opts.append(f"ymax={self._ylim[1]}")
 
         # Add grid setting
-        axis_opts.append(f"grid={'true' if self._grid else 'false'}")
+        if isinstance(self._grid, str):
+            axis_opts.append(f"grid={self._grid}")
+        else:
+            axis_opts.append(f"grid={'true' if self._grid else 'false'}")
 
         # Add width and height if specified
         if self._width:
@@ -345,6 +445,8 @@ class Axis2D(TikzObject):
             if plot.label:
                 plot_labels.append(plot.label)
 
+        item_tikz = "".join(item.to_tikz(output_unit) for item in self._items)
+
         # Build legend if plots have labels
         legend_tikz = ""
         if plot_labels and self._legend_pos is not None:
@@ -354,6 +456,7 @@ class Axis2D(TikzObject):
         # Assemble full axis
         axis_tikz = f"\\begin{{axis}}[{axis_opts_str}]\n"
         axis_tikz += plot_tikz
+        axis_tikz += item_tikz
         axis_tikz += legend_tikz
         axis_tikz += "\\end{axis}\n"
 
@@ -379,6 +482,7 @@ class Axis2D(TikzObject):
                 "width": self._width,
                 "height": self._height,
                 "plots": [plot.to_dict() for plot in self._plots],
+                "items": [item.to_dict() for item in self._items],
                 "ticks": self._ticks,
                 "legend_pos": self._legend_pos,
                 "options": self.options,
@@ -422,6 +526,26 @@ class Axis2D(TikzObject):
             plot = Plot2D.from_dict(plot_dict)
             axis._plots.append(plot)
 
+        for item_dict in restored.get("items", []):
+            if not isinstance(item_dict, dict):
+                raise TypeError("Serialized axis items must deserialize to dicts.")
+            item_type = item_dict.get("type")
+            if item_type == "Coordinate":
+                axis._items.append(Coordinate.from_dict(item_dict))
+            elif item_type == "Spy":
+                coordinate_lookup: dict[str, Coordinate] = {}
+                for item in axis._items:
+                    if not isinstance(item, Coordinate):
+                        continue
+                    label = item.label
+                    if isinstance(label, str) and label != "":
+                        coordinate_lookup[label] = item
+                axis._items.append(
+                    Spy.from_dict(item_dict, node_lookup=coordinate_lookup)
+                )
+            else:
+                raise ValueError(f"Unknown serialized axis item type: {item_type!r}")
+
         # Restore ticks
         axis._ticks = restored.get("ticks", {})
 
@@ -433,17 +557,23 @@ class Axis2D(TikzObject):
     def _copy_init_kwargs(self) -> dict[str, Any]:
         init_kwargs = super()._copy_init_kwargs()
         init_kwargs["_plots"] = [plot.copy() for plot in self._plots]
+        init_kwargs["_items"] = [item.copy() for item in self._items]
         init_kwargs["_ticks"] = self._copy_value(self._ticks)
         init_kwargs["_legend_pos"] = self._copy_value(self._legend_pos)
         return init_kwargs
 
     def _copy_from_init_kwargs(self, init_kwargs: dict[str, Any]) -> "Axis2D":
         plots = init_kwargs.pop("_plots", [])
+        items = init_kwargs.pop("_items", [])
         ticks = init_kwargs.pop("_ticks", {})
         legend_pos = init_kwargs.pop("_legend_pos", None)
 
         axis = type(self)(**init_kwargs)
         axis._plots = plots
+        axis._items = items
         axis._ticks = ticks
         axis._legend_pos = legend_pos
         return axis
+
+    coordinate = add_coordinate
+    spy = add_spy

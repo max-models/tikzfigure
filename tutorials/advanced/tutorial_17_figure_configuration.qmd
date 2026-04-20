@@ -35,33 +35,13 @@ fig = TikzFigure(
     figure_setup="every node/.append style={draw, fill=blue!10, minimum size=1.2cm}",
 )
 
-A = fig.node(
-    (0, 0),
-    label="A",
-    content="A",
-)
-B = fig.node(
-    (2, 0),
-    label="B",
-    content="B",
-)
-C = fig.node(
-    (4, 0),
-    label="C",
-    content="C",
-)
-D = fig.node(
-    (1, 2),
-    label="D",
-    content="D",
-)
-E = fig.node(
-    (3, 2),
-    label="E",
-    content="E",
-)
+A = fig.node((0, 0), content="A")
+B = fig.node((2, 0), content="B")
+C = fig.node((4, 0), content="C")
+D = fig.node((1, 2), content="D")
+E = fig.node((3, 2), content="E")
 
-fig.draw([A, B], arrows=arrows.forward)
+fig.draw([A, B, C], arrows=arrows.forward)
 fig.draw([D, E], arrows=arrows.forward)
 
 fig.show()

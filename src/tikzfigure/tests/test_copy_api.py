@@ -24,6 +24,65 @@ def test_node_copy_allows_style_and_position_overrides():
     assert "fill=red" in b.to_tikz()
 
 
+def test_node_copy_accepts_pos_override_for_tuple_coordinates():
+    fig = TikzFigure()
+    a = fig.node((0, 2), label="A", content="A", shape=shapes.circle, fill=colors.blue)
+    copied = a.copy(pos=(3, 2), label="B", content="B")
+
+    b = fig.add_node(copied)
+
+    assert b is copied
+    assert b is not a
+    assert b.label == "B"
+    assert b.x == 3
+    assert b.y == 2
+    assert "pos" not in b.kwargs
+    assert "(B) at ({3}, {2})" in b.to_tikz()
+
+
+def test_node_copy_preserves_auto_generated_label_outside_figure_insertion():
+    fig = TikzFigure()
+    a = fig.node((0, 2), content="A", shape=shapes.circle, fill=colors.blue)
+
+    b = a.copy(x=3, y=2, content="B")
+    assert a.label == "node0"
+    assert b.label == "node0"
+    assert "(node0)" in a.to_tikz()
+    assert "(node0)" in b.to_tikz()
+
+
+def test_add_copy_assigns_fresh_label_for_auto_labeled_source():
+    fig = TikzFigure()
+    a = fig.node((0, 2), content="A", shape=shapes.circle, fill=colors.blue)
+
+    b = fig.add_copy(a, x=3, y=2, content="B")
+    c = fig.add_copy(a, x=0, y=0, content="C")
+    d = fig.add_copy(a, x=3, y=0, content="D")
+
+    assert a.label == "node0"
+    assert b.label == "node1"
+    assert c.label == "node2"
+    assert d.label == "node3"
+    assert [item.label for item in fig.layers.layers[0].items[:4]] == [
+        "node0",
+        "node1",
+        "node2",
+        "node3",
+    ]
+
+
+def test_add_copy_preserves_explicit_label_and_warns(caplog):
+    source = TikzFigure()
+    a = source.node((0, 0), label="A", content="A", shape=shapes.circle)
+    target = TikzFigure()
+
+    with caplog.at_level("WARNING"):
+        b = target.add_copy(a, x=1, y=0, content="B")
+
+    assert b.label == "A"
+    assert "preserved explicit label 'A' on copied node" in caplog.text
+
+
 def test_path_copy_reuses_referenced_nodes_and_overrides_kwargs():
     fig = TikzFigure()
     a = fig.add_node(0, 0, label="A")
