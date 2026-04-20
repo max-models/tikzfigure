@@ -61,6 +61,7 @@ export default defineConfig({
             { label: "3D Figures", slug: "tutorials/tutorial_08_3d_figures" },
             { label: "Raw TikZ", slug: "tutorials/tutorial_09_raw_tikz" },
             { label: "Math Expressions", slug: "tutorials/tutorial_10_math_expressions" },
+            { label: "Tokamak X-Point", slug: "tutorials/tutorial_25_parametric_tikz_plots" },
             { label: "Figure Configuration", slug: "tutorials/tutorial_17_figure_configuration" },
             { label: "Shading and Patterns", slug: "tutorials/tutorial_18_shading_and_patterns" },
             { label: "Opacity", slug: "tutorials/tutorial_19_opacity_and_transparency" },

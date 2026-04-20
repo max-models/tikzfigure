@@ -657,9 +657,45 @@ referenced anywhere in the figure.
 
 The `Variable` object that was added.
 
+<a id="tikzfigure.core.figure.TikzFigure.declare_function"></a>
+
+#### TikzFigure.declare\_function
+
+```python
+def declare_function(name: str,
+                     args: str | list[str] | tuple[str, ...],
+                     body: Any,
+                     comment: str | None = None,
+                     verbose: bool = False) -> DeclaredFunction
+```
+
+Declare a reusable PGF math function for this figure.
+
+<a id="tikzfigure.core.figure.TikzFigure.add_plot"></a>
+
+##### TikzFigure.add\_plot
+
+```python
+def add_plot(x: Any,
+             y: Any | None = None,
+             *,
+             variable: str = "x",
+             domain: tuple[Any, Any] | str | None = None,
+             samples: int | None = None,
+             smooth: bool = False,
+             layer: int = 0,
+             comment: str | None = None,
+             verbose: bool = False,
+             options: OptionInput | None = None,
+             tikz_command: str = "draw",
+             **kwargs: Any) -> TikzPlot
+```
+
+Add a plain TikZ expression plot outside a pgfplots axis.
+
 <a id="tikzfigure.core.figure.TikzFigure.add_raw"></a>
 
-#### TikzFigure.add\_raw
+##### TikzFigure.add\_raw
 
 ```python
 def add_raw(tikz_code: str, layer: int = 0, verbose: bool = False) -> RawTikz
@@ -1537,6 +1573,17 @@ def variables() -> list
 ```
 
 List of `Variable` objects defined in this figure.
+
+<a id="tikzfigure.core.figure.TikzFigure.declared_functions"></a>
+
+##### TikzFigure.declared\_functions
+
+```python
+@property
+def declared_functions() -> list[DeclaredFunction]
+```
+
+List of declared PGF functions available in this figure.
 
 <a id="tikzfigure.core.figure.TikzFigure.axes"></a>
 

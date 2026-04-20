@@ -224,7 +224,7 @@ The `math` module includes 60+ PGF functions:
 
 **Rounding:** `abs`, `ceil`, `floor`, `round` (⚠️ shadows Python built-ins)
 
-**Power & logarithm:** `sqrt`, `pow`, `ln`, `log2`, `log10`
+**Power & logarithm:** `sqrt`, `pow`, `exp`, `ln`, `log2`, `log10`
 
 **Min/max:** `min`, `max` (⚠️ shadows Python built-ins)
 
@@ -387,6 +387,14 @@ fig.show()
 
 Notice how the loop variable `\i` is embedded in the math expressions. TikZ
 evaluates `\i * 45` at each iteration, then passes it to `cos()` and `sin()`.
+
+## Next step: parametric TikZ plots
+
+If you want to go further and use declared PGF functions together with plain
+TikZ `plot(...)` commands, continue with [Tokamak X-Point with Parametric TikZ
+Plots](tutorial_25_parametric_tikz_plots.qmd). That tutorial starts with a
+single simple sampled curve and builds up step by step to a stylized tokamak
+separatrix / X-point drawing.
 
 ## Warning: shadowing Python built-ins
 

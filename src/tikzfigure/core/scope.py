@@ -10,6 +10,7 @@ from tikzfigure.core.figure_paths import FigurePathMixin
 from tikzfigure.core.node import Node
 from tikzfigure.core.path import TikzPath
 from tikzfigure.core.path_builder import NodePathBuilder, SegmentOption
+from tikzfigure.core.plot import TikzPlot
 from tikzfigure.core.raw import RawTikz
 from tikzfigure.core.serialization import deserialize_tikz_value, serialize_tikz_value
 from tikzfigure.core.spy import (
@@ -192,6 +193,37 @@ class Scope(FigurePathMixin, TikzObject):
         self._items.append(raw)
         return raw
 
+    def add_plot(
+        self,
+        x: Any,
+        y: Any | None = None,
+        *,
+        variable: str = "x",
+        domain: tuple[Any, Any] | str | None = None,
+        samples: int | None = None,
+        smooth: bool = False,
+        comment: str | None = None,
+        options: OptionInput | None = None,
+        tikz_command: str = "draw",
+        **kwargs: Any,
+    ) -> TikzPlot:
+        """Add a plain TikZ expression plot inside this scope."""
+        plot = TikzPlot(
+            x=x,
+            y=y,
+            variable=variable,
+            domain=domain,
+            samples=samples,
+            smooth=smooth,
+            comment=comment,
+            options=options,
+            tikz_command=tikz_command,
+            layer=self._container_layer(),
+            **kwargs,
+        )
+        self._items.append(plot)
+        return plot
+
     def add_spy(
         self,
         on: Any,
@@ -337,6 +369,7 @@ class Scope(FigurePathMixin, TikzObject):
     node = add_node
     coordinate = add_coordinate
     raw = add_raw
+    plot = add_plot
     spy = add_spy
     spy_scope = add_spy_scope
     loop = add_loop
@@ -405,6 +438,8 @@ class Scope(FigurePathMixin, TikzObject):
                 )
             elif item_type == "Spy":
                 scope._items.append(Spy.from_dict(item_data, node_lookup=local_lookup))
+            elif item_type == "TikzPlot":
+                scope._items.append(TikzPlot.from_dict(item_data))
             elif item_type == "RawTikz":
                 scope._items.append(RawTikz.from_dict(item_data))
         return scope

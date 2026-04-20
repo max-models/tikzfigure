@@ -221,6 +221,12 @@ def tanh(x: Any) -> Expr:
     return Expr(f"tanh({x_str})")
 
 
+def exp(x: Any) -> Expr:
+    """Exponential: exp(x)."""
+    x_str = x.pgf if isinstance(x, Expr) else x
+    return Expr(f"exp({x_str})")
+
+
 # --- Angle conversion ---
 
 
@@ -294,6 +300,12 @@ def ln(x: Any) -> Expr:
     """Natural logarithm: ln(x)."""
     x_str = x.pgf if isinstance(x, Expr) else x
     return Expr(f"ln({x_str})")
+
+
+def func(name: str, *args: Any) -> Expr:
+    """Call an arbitrary PGF math function by name."""
+    rendered_args = [arg.pgf if isinstance(arg, Expr) else str(arg) for arg in args]
+    return Expr(f"{name}({', '.join(rendered_args)})")
 
 
 def log2(x: Any) -> Expr:

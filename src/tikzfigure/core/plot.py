@@ -4,7 +4,7 @@ from tikzfigure.core.base import TikzObject
 from tikzfigure.core.coordinate import TikzCoordinate
 from tikzfigure.core.path import TikzPath
 from tikzfigure.core.serialization import deserialize_tikz_value, serialize_tikz_value
-from tikzfigure.options import OptionInput
+from tikzfigure.options import OptionInput, normalize_options
 
 
 class Plot2D(TikzObject):
@@ -138,6 +138,153 @@ class Plot2D(TikzObject):
                 options=restored.get("options"),
                 **kwargs,
             )
+
+
+class TikzPlot(TikzObject):
+    """A plain TikZ ``\\draw ... plot (...)`` command outside pgfplots axes.
+
+    Use this for function-style or parametric plots directly in a TikZ picture.
+    Unlike :class:`Plot2D`, this renders standard TikZ path plots rather than
+    ``\\addplot`` commands inside an ``axis`` environment.
+    """
+
+    def __init__(
+        self,
+        x: Any,
+        y: Any | None = None,
+        *,
+        variable: str = "x",
+        domain: tuple[Any, Any] | str | None = None,
+        samples: int | None = None,
+        smooth: bool = False,
+        tikz_command: str = "draw",
+        label: str = "",
+        comment: str | None = None,
+        layer: int = 0,
+        options: OptionInput | None = None,
+        **kwargs: Any,
+    ) -> None:
+        """Initialize a plain TikZ expression plot.
+
+        Args:
+            x: X expression for a parametric plot, or the Y expression for a
+                regular function plot.
+            y: Y expression for a parametric plot. When omitted, ``x`` is
+                treated as the Y expression and the x-coordinate becomes the
+                loop variable.
+            variable: Sampling variable name. Leading backslash is optional.
+            domain: Plot domain as ``(start, end)`` or ``"start:end"``.
+            samples: Optional sample count.
+            smooth: If ``True``, add the ``smooth`` path option.
+            tikz_command: Path command to use, typically ``"draw"``.
+            label: Internal label used in serialization/copy workflows.
+            comment: Optional comment prepended in the TikZ output.
+            layer: Layer index.
+            options: Flag-style TikZ options.
+            **kwargs: Keyword-style TikZ options.
+        """
+        normalized_options = normalize_options(options)
+        if smooth and "smooth" not in [str(option) for option in normalized_options]:
+            normalized_options.append("smooth")
+
+        normalized_kwargs = dict(kwargs)
+        normalized_kwargs["variable"] = self._normalize_variable(variable)
+        if domain is not None:
+            normalized_kwargs["domain"] = self._normalize_domain(domain)
+        if samples is not None:
+            normalized_kwargs["samples"] = samples
+
+        super().__init__(
+            label=label,
+            comment=comment,
+            layer=layer,
+            options=normalized_options,
+            **normalized_kwargs,
+        )
+        self._x = str(x)
+        self._y = None if y is None else str(y)
+        self._tikz_command = tikz_command
+
+    @staticmethod
+    def _normalize_variable(variable: str) -> str:
+        return variable if variable.startswith("\\") else f"\\{variable}"
+
+    @staticmethod
+    def _normalize_domain(domain: tuple[Any, Any] | str) -> str:
+        if isinstance(domain, str):
+            return domain
+        return f"{domain[0]}:{domain[1]}"
+
+    @property
+    def x(self) -> str:
+        """Primary expression string supplied to the plot."""
+        return self._x
+
+    @property
+    def y(self) -> str | None:
+        """Optional second expression for parametric plots."""
+        return self._y
+
+    @property
+    def tikz_command(self) -> str:
+        """TikZ path command used to render this plot."""
+        return self._tikz_command
+
+    @property
+    def is_parametric(self) -> bool:
+        """Whether the plot uses separate x/y expressions."""
+        return self._y is not None
+
+    def _render_plot_coordinate(self) -> str:
+        if self._y is None:
+            variable = self.kwargs["variable"]
+            return f"({{{variable}}}, {{{self._x}}})"
+        return f"({{{self._x}}}, {{{self._y}}})"
+
+    def to_tikz(self, output_unit: str | None = None) -> str:
+        """Generate the plain TikZ ``plot`` command."""
+        options = self.tikz_options(output_unit)
+        plot_str = f"\\{self._tikz_command}"
+        if options:
+            plot_str += f"[{options}]"
+        plot_str += f" plot {self._render_plot_coordinate()};\n"
+        return self.add_comment(plot_str)
+
+    def to_dict(self) -> dict[str, Any]:
+        """Serialize this plot to a plain dictionary."""
+        d = super().to_dict()
+        d.update(
+            {
+                "type": "TikzPlot",
+                "x": self._x,
+                "y": self._y,
+                "tikz_command": self._tikz_command,
+            }
+        )
+        serialized = serialize_tikz_value(d)
+        if not isinstance(serialized, dict):
+            raise TypeError("Serialized TikzPlot data must remain a dict.")
+        return serialized
+
+    @classmethod
+    def from_dict(cls, d: dict[str, Any]) -> "TikzPlot":
+        """Reconstruct a :class:`TikzPlot` from a dictionary."""
+        restored = deserialize_tikz_value(d)
+        if not isinstance(restored, dict):
+            raise TypeError("Serialized TikzPlot data must deserialize to a dict.")
+        kwargs = restored.get("kwargs", {})
+        if not isinstance(kwargs, dict):
+            raise TypeError("Serialized TikzPlot kwargs must deserialize to a dict.")
+        return cls(
+            x=restored["x"],
+            y=restored.get("y"),
+            tikz_command=restored.get("tikz_command", "draw"),
+            label=restored.get("label", ""),
+            comment=restored.get("comment"),
+            layer=restored.get("layer", 0),
+            options=restored.get("options"),
+            **kwargs,
+        )
 
 
 class Plot3D(TikzPath):
