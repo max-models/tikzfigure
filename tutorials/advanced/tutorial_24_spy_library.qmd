@@ -1,0 +1,331 @@
+---
+title: "Spy Library"
+jupyter: python3
+---
+
+This tutorial introduces the dedicated spy API for inset zoom views and
+magnified regions.
+
+The examples now start simple and then build up:
+
+1. one basic spy inset on a small drawing
+2. custom spy-in node shapes and sizes
+3. figure-wide defaults with `configure_spy_scope(...)`
+4. the classic pgfplots spy example from the TikZ manual
+5. local spy defaults with `spy_scope(...)`
+6. nested spy scopes with a custom connection path
+
+```{python}
+import math
+
+from tikzfigure import TikzFigure, colors, shapes
+```
+
+## A minimal spy example
+
+The smallest useful pattern is just a drawing plus one spy inset. `fig.spy(...)`
+automatically enables a basic `spy scope` on the figure.
+
+```{python}
+fig = TikzFigure()
+
+fig.draw([(-0.3, 0), (2.8, 0)], color=colors.black, line_width="0.8pt")
+fig.draw([(0, -0.8), (0, 1.2)], color=colors.lightgray)
+fig.draw([(1.2, -0.6), (1.2, 0.9)], color=colors.lightgray)
+fig.draw([(0, 0), (2.2, 0.8)], color=colors.blue, line_width="1.1pt")
+
+fig.spy(
+    on=(1.2, 0.45),
+    at=(4.0, 0.9),
+    magnification=3,
+    size="1.3cm",
+)
+
+fig.show()
+```
+
+{{< include includes/tikz_code_callout.qmd >}}
+
+This already gives you the core spy behavior:
+
+- `on=...` picks the center of the region to magnify
+- `at=...` places the inset node
+- `magnification=` controls zoom
+- `size=` controls the inset size
+
+## Customizing the spy-in node
+
+You can style the spy-in node just like a normal TikZ node. Here we use a small
+zig-zag path and highlight two different details.
+
+```{python}
+fig = TikzFigure()
+
+ridge = [(-0.2, 0), (0.8, 0.9), (1.5, 0.3), (2.3, 1.1), (3.0, 0.5)]
+fig.draw(ridge, color=colors.black, line_width="1pt")
+
+for point in ridge:
+    fig.node(
+        point,
+        shape="circle",
+        minimum_size="4pt",
+        inner_sep="0pt",
+        fill=colors.orange.mix(percent=20),
+        draw=colors.black,
+    )
+
+fig.spy(
+    on=(0.8, 0.9),
+    at=(4.4, 1.1),
+    options=[colors.red],
+    magnification=4,
+    size="1.35cm",
+    connect_spies=True,
+    node_options=[shapes.circle],
+    node_style={"draw": colors.red, "line_width": "0.8pt", "fill": colors.white},
+)
+
+fig.spy(
+    on=(2.3, 1.1),
+    at=(4.3, -0.2),
+    options=[colors.blue],
+    magnification=5,
+    width="1.8cm",
+    height="1.0cm",
+    node_label="peak detail",
+    node_options=[shapes.rectangle],
+    node_style={
+        "draw": colors.blue,
+        "rounded_corners": "2pt",
+        "fill": colors.white,
+    },
+)
+
+fig.show()
+```
+
+{{< include includes/tikz_code_callout.qmd >}}
+
+This adds a few new pieces:
+
+- `connect_spies=True` draws the default connector
+- `node_options=[...]` controls flag-style node options like shapes
+- `node_style={...}` controls keyword-style node options like `draw=...`
+- `node_label="peak detail"` names the spy-in node
+- `width=` and `height=` let you use non-square spy nodes
+
+## Figure-wide defaults with `configure_spy_scope(...)`
+
+If several spies in the same figure should share defaults, configure the
+tikzpicture-level spy scope once and then use `fig.spy(...)` repeatedly.
+
+This simple city-block map uses the same inset style for multiple locations.
+
+```{python}
+fig = TikzFigure()
+
+fig.configure_spy_scope(
+    mode="outlines",
+    options=[shapes.rectangle],
+    magnification=4,
+    width="1.9cm",
+    height="1.0cm",
+    connect_spies=True,
+    every_spy_in_node_style={
+        "draw": colors.green.mix(colors.black, percent=35),
+        "fill": colors.white,
+        "rounded_corners": "2pt",
+    },
+    every_spy_on_node_style={
+        "draw": colors.green.mix(colors.black, percent=15),
+        "fill": colors.green,
+        "fill_opacity": 0.08,
+    },
+)
+
+fig.draw(
+    [(-0.2, -0.2), (4.8, -0.2), (4.8, 3.2), (-0.2, 3.2)],
+    cycle=True,
+    fill=colors.gray.mix(percent=12),
+    draw="none",
+)
+
+for x in [1.4, 3.2]:
+    fig.draw([(x, -0.2), (x, 3.2)], color=colors.white, line_width="10pt")
+for y in [1.0, 2.2]:
+    fig.draw([(-0.2, y), (4.8, y)], color=colors.white, line_width="10pt")
+
+blocks = [
+    ((0.15, 0.15), (1.05, 0.75), colors.orange.mix(percent=18), "cafe"),
+    ((1.75, 0.15), (2.85, 0.75), colors.blue.mix(percent=14), "library"),
+    ((3.55, 0.15), (4.45, 0.75), colors.red.mix(percent=12), "gallery"),
+    ((0.15, 1.35), (1.05, 2.95), colors.green.mix(percent=16), "park"),
+    ((1.75, 1.35), (2.85, 2.95), colors.yellow.mix(percent=16), "market"),
+    ((3.55, 1.35), (4.45, 2.95), colors.purple.mix(percent=10), "museum"),
+]
+
+for lower_left, upper_right, fill_color, label in blocks:
+    x0, y0 = lower_left
+    x1, y1 = upper_right
+    fig.draw(
+        [(x0, y0), (x1, y0), (x1, y1), (x0, y1)],
+        cycle=True,
+        rounded_corners="2pt",
+        fill=fill_color,
+        draw=fill_color.mix(colors.black, percent=20),
+    )
+    fig.node(((x0 + x1) / 2, (y0 + y1) / 2), content=label, draw="none", font=r"\small")
+
+fig.spy(on=(0.55, 2.1), at=(6.4, 2.45), options=[colors.green])
+fig.spy(on=(2.3, 2.15), at=(6.4, 0.8), options=[colors.orange])
+
+fig.show()
+```
+
+{{< include includes/tikz_code_callout.qmd >}}
+
+This is a good pattern when you want:
+
+- the same magnification for all spies
+- the same inset shape and border styling
+- the same spy-on styling
+
+## Reproducing the classic pgfplots spy example
+
+Here is the classic pgfplots example from the TikZ manual, reproduced using only
+the Python API.
+
+```{python}
+fig = TikzFigure()
+
+fig.configure_spy_scope(
+    mode="outlines",
+    options=[shapes.rectangle],
+    magnification=3,
+    connect_spies=True,
+)
+
+ax = fig.axis2d(
+    xlim=(-5, 5),
+    grid="major",
+    options=["no markers"],
+    domain="-5:5",
+    enlargelimits="false",
+)
+
+ax.add_plot(func="x^2", color=colors.red)
+ax.add_plot(func="x^3", color=colors.blue)
+
+spypoint = ax.coordinate("spypoint", at="axis cs:0,0")
+spyviewer = ax.coordinate("spyviewer", at="axis cs:0.5,-90")
+ax.spy(
+    on=spypoint,
+    at=spyviewer,
+    width="6cm",
+    height="1cm",
+    node_style={"fill": colors.white},
+)
+
+fig.show()
+```
+
+{{< include includes/tikz_code_callout.qmd >}}
+
+This matches the original idea closely:
+
+- `mode="outlines"` maps to `spy using outlines={...}`
+- `options=[shapes.rectangle]` makes the inset rectangular
+- `ax.coordinate(...)` and `ax.spy(...)` keep everything inside the `axis`
+  environment
+
+## Local spy defaults with `spy_scope(...)`
+
+Use `spy_scope(...)` when spy settings should only apply to part of the figure.
+This mirrors the TikZ manual more closely than a figure-wide spy scope.
+
+Here the spy scope is used on a small transit-map sketch, and one spy zooms in
+directly on a labeled `Node` object.
+
+```{python}
+def add_station(scope, position, size="3pt", fill=colors.white, label=None):
+    return scope.node(
+        position,
+        label=label,
+        shape="circle",
+        minimum_size=size,
+        inner_sep="0pt",
+        fill=fill,
+        draw=colors.black,
+        line_width="0.3pt",
+    )
+
+
+fig = TikzFigure()
+
+with fig.spy_scope(
+    mode="outlines",
+    options=[shapes.circle],
+    magnification=4,
+    size="1.5cm",
+    connect_spies=True,
+    every_spy_in_node_options=[shapes.circle],
+    every_spy_in_node_style={
+        "draw": colors.orange.mix(colors.black, percent=28),
+        "line_width": "0.9pt",
+        "fill": colors.white,
+    },
+    every_spy_on_node_options=[shapes.circle],
+    every_spy_on_node_style={
+        "draw": colors.orange.mix(colors.black, percent=18),
+        "fill": colors.orange,
+        "fill_opacity": 0.08,
+    },
+) as metro:
+    red_line = [(-0.1, -0.5), (0.9, 0.1), (1.9, 0.7), (3.0, 1.2), (4.0, 1.55)]
+    blue_line = [(0.1, 1.35), (1.1, 0.95), (2.0, 0.65), (3.1, 0.1), (4.1, -0.4)]
+
+    for line_points, line_color in [(red_line, colors.red), (blue_line, colors.blue)]:
+        metro.draw(line_points, color=line_color, line_width="2.6pt")
+        for point in line_points:
+            add_station(metro, point)
+
+    central = add_station(
+        metro,
+        (2.0, 0.65),
+        size="5pt",
+        fill=colors.yellow.mix(percent=18),
+        label="central_hub",
+    )
+    metro.node((2.0, 0.2), content="Central", draw="none", font=r"\small\bfseries")
+
+    metro.spy(
+        on=central,
+        at=(5.7, 1.2),
+        options=[colors.orange],
+        node_label="central interchange",
+    )
+    metro.spy(
+        on=(3.95, 1.5),
+        at=(5.7, -0.45),
+        options=[colors.blue],
+        width="1.8cm",
+        height="1.0cm",
+        node_options=[shapes.rectangle],
+        node_style={
+            "draw": colors.blue,
+            "rounded_corners": "2pt",
+            "fill": colors.white,
+        },
+    )
+
+fig.show()
+```
+
+{{< include includes/tikz_code_callout.qmd >}}
+
+The `outlines` preset gives a nice default look:
+
+- the spy-in node is drawn prominently
+- the spy-on node is outlined more lightly
+- both are easy to recolor and reshape
+- `on=` can target a `Node` directly, not just a coordinate tuple
