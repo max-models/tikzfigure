@@ -17,7 +17,7 @@ All shading examples require `\usetikzlibrary{shadings}` and all pattern
 examples require `\usetikzlibrary{patterns}`, both passed via `document_setup`.
 
 ```{python}
-from tikzfigure import TikzFigure
+from tikzfigure import TikzFigure, patterns, shapes
 ```
 
 ## Axis shading: horizontal and vertical gradients
@@ -41,7 +41,7 @@ pairs = [
 for i, (lc, rc) in enumerate(pairs):
     fig.node(
         (i * 3, 1.5),
-        shape="rectangle",
+        shape=shapes.rectangle,
         shading="axis",
         left_color=lc,
         right_color=rc,
@@ -68,7 +68,7 @@ vert_pairs = [
 for i, (tc, bc) in enumerate(vert_pairs):
     fig.node(
         (i * 3, -1),
-        shape="rectangle",
+        shape=shapes.rectangle,
         shading="axis",
         top_color=tc,
         bottom_color=bc,
@@ -111,7 +111,7 @@ glows = [
 for i, (ic, oc) in enumerate(glows):
     fig.node(
         (i * 2.5, 0),
-        shape="circle",
+        shape=shapes.circle,
         shading="radial",
         inner_color=ic,
         outer_color=oc,
@@ -207,21 +207,21 @@ fig = TikzFigure(
     document_setup=r"\usetikzlibrary{patterns}",
 )
 
-patterns = [
-    ("north east lines", "blue!60"),
-    ("north west lines", "red!60"),
-    ("dots", "black"),
-    ("crosshatch", "teal"),
-    ("grid", "orange!80"),
-    ("checkerboard", "purple!60"),
+patterns_used = [
+    (patterns.north_east_lines, "blue!60"),
+    (patterns.north_west_lines, "red!60"),
+    (patterns.dots, "black"),
+    (patterns.crosshatch, "teal"),
+    (patterns.grid, "orange!80"),
+    (patterns.checkerboard, "purple!60"),
 ]
 
-for i, (pat, pc) in enumerate(patterns):
+for i, (pat, pc) in enumerate(patterns_used):
     col = i % 3
     row = i // 3
     fig.node(
         (col * 3.5, row * (-2.5)),
-        shape="rectangle",
+        shape=shapes.rectangle,
         pattern=pat,
         pattern_color=pc,
         minimum_width="2.5cm",
@@ -259,7 +259,7 @@ fig = TikzFigure(
 # Shaded background panel
 fig.node(
     (3, 1),
-    shape="rectangle",
+    shape=shapes.rectangle,
     shading="axis",
     top_color="blue!20",
     bottom_color="white",
@@ -271,7 +271,7 @@ fig.node(
 # Ball-shaded decorative sphere
 fig.node(
     (0.5, 2),
-    shape="circle",
+    shape=shapes.circle,
     shading="ball",
     ball_color="cyan",
     minimum_size="1.2cm",
@@ -281,14 +281,14 @@ fig.node(
 # Patterned foreground nodes
 for i, (pat, fc) in enumerate(
     [
-        ("north east lines", "red!40"),
-        ("dots", "green!40"),
-        ("crosshatch", "orange!40"),
+        (patterns.north_east_lines, "red!40"),
+        (patterns.dots, "green!40"),
+        (patterns.crosshatch, "orange!40"),
     ],
 ):
     fig.node(
         (2 + i * 2, 1),
-        shape="rectangle",
+        shape=shapes.rectangle,
         pattern=pat,
         pattern_color=fc,
         fill="white",

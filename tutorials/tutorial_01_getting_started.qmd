@@ -17,7 +17,7 @@ This first tutorial covers the absolute basics:
 - inspecting the generated TikZ code
 
 ```{python}
-from tikzfigure import Node, TikzFigure, arrows, styles
+from tikzfigure import Node, TikzFigure, arrows, shapes, styles
 ```
 
 ## Your first figure
@@ -31,14 +31,14 @@ fig = TikzFigure()
 
 n1 = fig.node(
     (0, 0),
-    shape="circle",
+    shape=shapes.circle,
     color="white",
     fill="blue",
     content="Hello!",
 )
 n2 = fig.node(
     (5, 0),
-    shape="circle",
+    shape=shapes.circle,
     color="white",
     fill="red",
     content="Hi!",

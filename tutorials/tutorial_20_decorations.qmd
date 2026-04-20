@@ -21,7 +21,7 @@ All morphing decoration examples require
 decoration additionally requires `\usetikzlibrary{decorations.pathreplacing}`.
 
 ```{python}
-from tikzfigure import TikzFigure
+from tikzfigure import TikzFigure, decorations, shapes, styles
 ```
 
 ## `decoration="zigzag"`
@@ -35,8 +35,8 @@ fig = TikzFigure(
 
 fig.draw(
     [(0, 0), (6, 0)],
-    options=["decorate"],
-    decoration="zigzag",
+    options=[styles.decorate],
+    decoration=decorations.zigzag,
     line_width=2,
     color="red",
 )
@@ -58,8 +58,8 @@ fig = TikzFigure(
 
 fig.draw(
     [(0, 0), (6, 0)],
-    options=["decorate"],
-    decoration="snake",
+    options=[styles.decorate],
+    decoration=decorations.snake,
     line_width=2,
     color="blue",
 )
@@ -81,8 +81,8 @@ fig = TikzFigure(
 
 fig.draw(
     [(0, 0), (6, 0)],
-    options=["decorate"],
-    decoration="coil",
+    options=[styles.decorate],
+    decoration=decorations.coil,
     line_width=1.5,
     color="teal",
 )
@@ -104,8 +104,8 @@ fig = TikzFigure(
 
 fig.draw(
     [(0, 0), (6, 0)],
-    options=["decorate"],
-    decoration="bumps",
+    options=[styles.decorate],
+    decoration=decorations.bumps,
     line_width=2,
     color="orange",
 )
@@ -125,18 +125,18 @@ fig = TikzFigure(
     document_setup=r"\usetikzlibrary{decorations.pathmorphing}",
 )
 
-decorations = [
-    ("zigzag", "red"),
-    ("snake", "blue"),
-    ("coil", "teal"),
-    ("bumps", "orange"),
+decoration_specs = [
+    (decorations.zigzag, "red"),
+    (decorations.snake, "blue"),
+    (decorations.coil, "teal"),
+    (decorations.bumps, "orange"),
 ]
 
-for i, (dec, color) in enumerate(decorations):
+for i, (dec, color) in enumerate(decoration_specs):
     y = -i * 1.4
     fig.draw(
         [(0, y), (5, y)],
-        options=["decorate"],
+        options=[styles.decorate],
         decoration=dec,
         line_width=2,
         color=color,
@@ -176,7 +176,7 @@ fig = TikzFigure(
 # The region being annotated
 fig.node(
     (2, 1),
-    shape="rectangle",
+    shape=shapes.rectangle,
     fill="blue!15",
     draw="blue!50",
     minimum_width="4cm",
@@ -187,8 +187,8 @@ fig.node(
 # Horizontal brace below the rectangle (right-to-left so the brace opens upward)
 fig.draw(
     [(4, 0.1), (0, 0.1)],
-    options=["decorate"],
-    decoration="brace",
+    options=[styles.decorate],
+    decoration=decorations.brace,
     line_width=1.5,
     color="blue!70",
 )
@@ -203,8 +203,8 @@ fig.node(
 # Vertical brace on the right side (bottom-to-top so the brace opens rightward)
 fig.draw(
     [(4.15, 0.25), (4.15, 1.75)],
-    options=["decorate"],
-    decoration="brace",
+    options=[styles.decorate],
+    decoration=decorations.brace,
     line_width=1.5,
     color="red!70",
 )
