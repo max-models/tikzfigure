@@ -12,6 +12,12 @@ from tikzfigure.core.path import TikzPath
 from tikzfigure.core.path_builder import NodePathBuilder, SegmentOption
 from tikzfigure.core.raw import RawTikz
 from tikzfigure.core.serialization import deserialize_tikz_value, serialize_tikz_value
+from tikzfigure.core.spy import (
+    Spy,
+    SpyScopeMode,
+    build_spy_command_parts,
+    build_spy_scope_parts,
+)
 from tikzfigure.options import OptionInput
 
 
@@ -25,10 +31,12 @@ class Scope(FigurePathMixin, TikzObject):
         layer: int = 0,
         options: OptionInput | None = None,
         node_resolver: Callable[[str], Node | Coordinate] | None = None,
+        library_loader: Callable[[str], None] | None = None,
         **kwargs: Any,
     ) -> None:
         self._items: list[Any] = []
         self._node_resolver = node_resolver
+        self._library_loader = library_loader
         super().__init__(
             label=label,
             comment=comment,
@@ -184,6 +192,114 @@ class Scope(FigurePathMixin, TikzObject):
         self._items.append(raw)
         return raw
 
+    def add_spy(
+        self,
+        on: Any,
+        *,
+        comment: str | None = None,
+        options: OptionInput | None = None,
+        magnification: float | None = None,
+        lens: OptionInput | str | None = None,
+        lens_kwargs: dict[str, Any] | None = None,
+        size: str | object | None = None,
+        width: str | object | None = None,
+        height: str | object | None = None,
+        connect_spies: bool = False,
+        at: Any = None,
+        node_label: str | None = None,
+        node_options: OptionInput | None = None,
+        node_style: dict[str, Any] | None = None,
+        **kwargs: Any,
+    ) -> Spy:
+        """Add a ``\\spy`` command inside this scope.
+
+        This is the scoped counterpart to ``TikzFigure.spy(...)`` and is most
+        useful inside a spy scope created with ``scope.spy_scope(...)`` or
+        ``figure.spy_scope(...)``.
+        """
+        if self._library_loader is not None:
+            self._library_loader("spy")
+        spy_options, spy_kwargs = build_spy_command_parts(
+            options=options,
+            magnification=magnification,
+            lens=lens,
+            lens_kwargs=lens_kwargs,
+            size=size,
+            width=width,
+            height=height,
+            connect_spies=connect_spies,
+            **kwargs,
+        )
+        spy = Spy(
+            on=on,
+            at=at,
+            node_label=node_label,
+            node_options=node_options,
+            node_style=node_style,
+            comment=comment,
+            layer=self._container_layer(),
+            options=spy_options,
+            **spy_kwargs,
+        )
+        self._items.append(spy)
+        return spy
+
+    def add_spy_scope(
+        self,
+        *,
+        comment: str | None = None,
+        mode: SpyScopeMode = "scope",
+        options: OptionInput | None = None,
+        magnification: float | None = None,
+        lens: OptionInput | str | None = None,
+        lens_kwargs: dict[str, Any] | None = None,
+        size: str | object | None = None,
+        width: str | object | None = None,
+        height: str | object | None = None,
+        connect_spies: bool = False,
+        every_spy_in_node_options: OptionInput | None = None,
+        every_spy_in_node_style: dict[str, Any] | None = None,
+        every_spy_on_node_options: OptionInput | None = None,
+        every_spy_on_node_style: dict[str, Any] | None = None,
+        spy_connection_path: str | None = None,
+        **kwargs: Any,
+    ) -> "Scope":
+        """Create a nested scope configured for local spy defaults.
+
+        The returned scope can be used as a context manager. Its local options
+        are translated to TikZ ``spy scope``, ``spy using outlines``, or
+        ``spy using overlays`` settings depending on ``mode``.
+        """
+        if self._library_loader is not None:
+            self._library_loader("spy")
+        scope_options, scope_kwargs = build_spy_scope_parts(
+            mode=mode,
+            options=options,
+            magnification=magnification,
+            lens=lens,
+            lens_kwargs=lens_kwargs,
+            size=size,
+            width=width,
+            height=height,
+            connect_spies=connect_spies,
+            every_spy_in_node_options=every_spy_in_node_options,
+            every_spy_in_node_style=every_spy_in_node_style,
+            every_spy_on_node_options=every_spy_on_node_options,
+            every_spy_on_node_style=every_spy_on_node_style,
+            spy_connection_path=spy_connection_path,
+            **kwargs,
+        )
+        scope = Scope(
+            comment=comment,
+            layer=self._container_layer(),
+            options=scope_options,
+            node_resolver=self.get_node,
+            library_loader=self._library_loader,
+            **scope_kwargs,
+        )
+        self._items.append(scope)
+        return scope
+
     def add_loop(
         self,
         variable: str,
@@ -212,6 +328,7 @@ class Scope(FigurePathMixin, TikzObject):
             layer=self._container_layer(),
             options=options,
             node_resolver=self.get_node,
+            library_loader=self._library_loader,
             **kwargs,
         )
         self._items.append(scope)
@@ -220,6 +337,8 @@ class Scope(FigurePathMixin, TikzObject):
     node = add_node
     coordinate = add_coordinate
     raw = add_raw
+    spy = add_spy
+    spy_scope = add_spy_scope
     loop = add_loop
     scope = add_scope
 
@@ -284,6 +403,8 @@ class Scope(FigurePathMixin, TikzObject):
                 scope._items.append(
                     Scope.from_dict(item_data, node_lookup=local_lookup)
                 )
+            elif item_type == "Spy":
+                scope._items.append(Spy.from_dict(item_data, node_lookup=local_lookup))
             elif item_type == "RawTikz":
                 scope._items.append(RawTikz.from_dict(item_data))
         return scope
@@ -291,6 +412,7 @@ class Scope(FigurePathMixin, TikzObject):
     def copy(self, **overrides: Any) -> "Scope":
         clone = type(self).from_dict(self.to_dict())
         clone._node_resolver = self._node_resolver
+        clone._library_loader = self._library_loader
         return self._apply_base_copy_overrides(clone, overrides)  # type: ignore[return-value]
 
     def __enter__(self) -> "Scope":
