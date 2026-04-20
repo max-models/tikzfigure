@@ -24,6 +24,38 @@ BASE_PATH = "/tikzfigure"
 TAB = "    "
 
 
+def iter_tutorial_sources() -> list[Path]:
+    """Return all tutorial sources in a stable order for sharding/building."""
+    qmds = sorted(TUTORIALS_SRC.glob("*.qmd"))
+    nbs = sorted(
+        nb
+        for nb in TUTORIALS_SRC.glob("*.ipynb")
+        if ".ipynb_checkpoints" not in nb.parts
+    )
+    return sorted([*qmds, *nbs], key=lambda path: path.name)
+
+
+def select_tutorial_shard(
+    tutorials: list[Path], shard_count: int | None, shard_index: int | None
+) -> list[Path]:
+    """Return the subset of tutorials assigned to a shard."""
+    if shard_count is None and shard_index is None:
+        return tutorials
+    if shard_count is None or shard_index is None:
+        raise ValueError("shard_count and shard_index must be provided together.")
+    if shard_count < 1:
+        raise ValueError("shard_count must be at least 1.")
+    if not 0 <= shard_index < shard_count:
+        raise ValueError(
+            f"shard_index must be between 0 and {shard_count - 1}, got {shard_index}."
+        )
+    return [
+        tutorial
+        for position, tutorial in enumerate(tutorials)
+        if position % shard_count == shard_index
+    ]
+
+
 def extract_title(content: str, fallback: str) -> str:
     """Extract title from YAML frontmatter or first # heading."""
     fm_match = re.match(r"^---\n(.*?)\n---", content, re.DOTALL)
@@ -270,21 +302,40 @@ def main() -> None:
         type=str,
         help="Process a specific tutorial by name (without extension)",
     )
+    parser.add_argument(
+        "--shard-count",
+        type=int,
+        help="Split tutorials into this many deterministic shards.",
+    )
+    parser.add_argument(
+        "--shard-index",
+        type=int,
+        help="Process only one zero-based shard from --shard-count.",
+    )
     args = parser.parse_args()
 
     CONTENT_DST.mkdir(parents=True, exist_ok=True)
     PUBLIC_DST.mkdir(parents=True, exist_ok=True)
 
-    qmds = sorted(TUTORIALS_SRC.glob("*.qmd"))
-    nbs = sorted(
-        nb
-        for nb in TUTORIALS_SRC.glob("*.ipynb")
-        if ".ipynb_checkpoints" not in nb.parts
-    )
+    tutorials = iter_tutorial_sources()
 
     if args.name:
-        qmds = [qmd for qmd in qmds if args.name in qmd.stem]
-        nbs = [nb for nb in nbs if args.name in nb.stem]
+        tutorials = [tutorial for tutorial in tutorials if args.name in tutorial.stem]
+
+    tutorials = select_tutorial_shard(tutorials, args.shard_count, args.shard_index)
+
+    qmds = [tutorial for tutorial in tutorials if tutorial.suffix == ".qmd"]
+    nbs = [tutorial for tutorial in tutorials if tutorial.suffix == ".ipynb"]
+
+    if args.shard_count is not None and args.shard_index is not None:
+        print(
+            f"Processing shard {args.shard_index + 1}/{args.shard_count} "
+            f"({len(tutorials)} tutorial(s))."
+        )
+    elif args.name:
+        print(f"Processing {len(tutorials)} tutorial(s) matching {args.name!r}.")
+    else:
+        print(f"Processing {len(tutorials)} tutorial(s).")
 
     if args.serial:
         for qmd in qmds:
