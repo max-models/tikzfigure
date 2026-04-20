@@ -5,6 +5,18 @@ inputs:
     description: "Python version to use"
     required: false
     default: "3.12"
+  build-tutorials:
+    description: "Whether to generate tutorial markdown/assets"
+    required: false
+    default: "true"
+  tutorial-build-args:
+    description: "Extra arguments passed to build_tutorials.py"
+    required: false
+    default: ""
+  build-site:
+    description: "Whether to build the Astro site"
+    required: false
+    default: "true"
 runs:
   using: "composite"
   steps:
@@ -26,15 +38,18 @@ runs:
         python -m pip install ".[docs]"
 
     - name: Build tutorials (Quarto + Jupyter → Markdown)
+      if: ${{ inputs.build-tutorials == 'true' }}
       shell: bash
-      run: python astro_docs/scripts/build_tutorials.py --serial
+      run: python astro_docs/scripts/build_tutorials.py ${{ inputs.tutorial-build-args }}
 
     - name: Build and upload site
+      if: ${{ inputs.build-site == 'true' }}
       uses: withastro/action@v5
       with:
         path: astro_docs
 
     - name: Rebuild without base path for local artifact inspection
+      if: ${{ inputs.build-site == 'true' }}
       shell: bash
       working-directory: astro_docs
       run: npx astro build --base /

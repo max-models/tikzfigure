@@ -15,7 +15,12 @@ defaults:
     shell: bash
 
 jobs:
-  test-docs:
+  build-tutorial-shards:
+    strategy:
+      fail-fast: false
+      matrix:
+        shard-index: [0, 1, 2, 3]
+
     runs-on: ubuntu-latest
     container:
       image: ghcr.io/max-models/tikzpics/texlive-quarto:latest
@@ -27,10 +32,48 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Build tutorial shard
+        uses: ./.github/actions/build-docs
+        with:
+          python-version: "3.12"
+          build-site: "false"
+          tutorial-build-args: --serial --shard-count 4 --shard-index ${{ matrix.shard-index }}
+
+      - name: Upload tutorial shard artifact
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: tutorials-shard-${{ matrix.shard-index }}
+          path: |
+            astro_docs/src/content/docs/tutorials/
+            astro_docs/public/tutorials/
+          retention-days: 7
+
+  test-docs:
+    needs: build-tutorial-shards
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/max-models/tikzpics/texlive-quarto:latest
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download tutorial shard artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: tutorials-shard-*
+          path: astro_docs
+          merge-multiple: true
+
       - name: Build documentation
         uses: ./.github/actions/build-docs
         with:
           python-version: "3.12"
+          build-tutorials: "false"
 
       - name: Upload docs artifact
         uses: actions/upload-artifact@v4
