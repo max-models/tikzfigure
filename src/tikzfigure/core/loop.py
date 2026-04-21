@@ -1,22 +1,49 @@
 import types
 from collections.abc import Sequence
-from typing import Any
+from typing import Any, Callable
 
 from tikzfigure.core.base import TikzObject
 from tikzfigure.core.coordinate import Coordinate
+from tikzfigure.core.figure_paths import FigurePathMixin
 from tikzfigure.core.node import Node
 from tikzfigure.core.path import TikzPath
+from tikzfigure.core.path_builder import NodePathBuilder, SegmentOption
 from tikzfigure.core.plot import TikzPlot
 from tikzfigure.core.raw import RawTikz
 from tikzfigure.core.serialization import deserialize_tikz_value, serialize_tikz_value
+from tikzfigure.math import Expr
+from tikzfigure.options import OptionInput
 
 
-class Loop(TikzObject):
+class LoopVariable(Expr):
+    """Expression-like handle returned by :class:`Loop` context managers.
+
+    The handle behaves like the loop variable itself in PGF math expressions
+    while still delegating ``node()``, ``plot()``, ``loop()``, and similar body
+    builder methods to the underlying :class:`Loop`.
+    """
+
+    def __init__(self, loop: "Loop") -> None:
+        self._loop = loop
+        super().__init__(f"\\{loop.variable}")
+
+    @property
+    def var(self) -> "LoopVariable":
+        """Return the loop variable expression itself."""
+        return self
+
+    def __getattr__(self, name: str) -> Any:
+        return getattr(self._loop, name)
+
+
+class Loop(FigurePathMixin, TikzObject):
     """A TikZ ``\\foreach`` loop that repeats items over a sequence of values.
 
     Loops can be nested and may contain nodes, paths, and other loops.
     They act as context managers so nested content can be added inside a
-    ``with`` block.
+    ``with`` block. Inside that block, the bound value can be used directly as
+    the iteration variable in expressions while still exposing ``node()``,
+    ``plot()``, ``loop()``, and related methods.
 
     Attributes:
         variable: The loop variable name (without the leading backslash).
@@ -30,6 +57,10 @@ class Loop(TikzObject):
         values: Sequence[Any],
         layer: int = 0,
         comment: str | None = None,
+        node_resolver: Callable[[str], Node | Coordinate] | None = None,
+        library_loader: Callable[[str], None] | None = None,
+        enter_callback: Callable[[Any], None] | None = None,
+        exit_callback: Callable[[Any], None] | None = None,
     ) -> None:
         """Initialize a Loop.
 
@@ -43,9 +74,14 @@ class Loop(TikzObject):
             comment: Optional comment prepended in the TikZ output.
         """
         self._variable: str = variable
+        self._var = LoopVariable(self)
         self._range_spec = self._extract_range_spec(values)
         self._values: list[Any] = list(values)
         self._items: list[Any] = []
+        self._node_resolver = node_resolver
+        self._library_loader = library_loader
+        self._enter_callback = enter_callback
+        self._exit_callback = exit_callback
 
         super().__init__(layer=layer, comment=comment)
 
@@ -76,6 +112,11 @@ class Loop(TikzObject):
         return self._variable
 
     @property
+    def var(self) -> LoopVariable:
+        """Expression handle for the loop variable (for example ``\\i``)."""
+        return self._var
+
+    @property
     def values(self) -> list[Any]:
         """Sequence of values the loop iterates over."""
         return self._values
@@ -84,6 +125,114 @@ class Loop(TikzObject):
     def items(self) -> list[Any]:
         """TikZ objects contained in this loop body."""
         return self._items
+
+    def _container_layer(self) -> int:
+        return self.layer if self.layer is not None else 0
+
+    @staticmethod
+    def _coerce_path_input(
+        nodes: list[Any] | NodePathBuilder,
+        segment_options: list[SegmentOption] | None = None,
+    ) -> tuple[list[Any], list[SegmentOption] | None]:
+        if isinstance(nodes, NodePathBuilder):
+            if segment_options is not None:
+                raise ValueError(
+                    "segment_options cannot be passed to draw()/filldraw() when using a NodePathBuilder."
+                )
+            return nodes.nodes, nodes.segment_options
+        return nodes, segment_options
+
+    def get_node(self, node_label: str) -> Node | Coordinate:
+        def _search(items: list[Any]) -> Node | Coordinate | None:
+            for item in items:
+                if isinstance(item, (Node, Coordinate)) and item.label == node_label:
+                    return item
+                nested_items = getattr(item, "items", None)
+                if nested_items is not None:
+                    found = _search(nested_items)
+                    if found is not None:
+                        return found
+            return None
+
+        found = _search(self._items)
+        if found is not None:
+            return found
+        if self._node_resolver is not None:
+            return self._node_resolver(node_label)
+        raise ValueError(f"Node with label {node_label} not found in this loop!")
+
+    def _add_path(
+        self,
+        nodes: list[Any],
+        layer: int = 0,
+        comment: str | None = None,
+        center: bool = False,
+        tikz_command: str = "draw",
+        verbose: bool = False,
+        options: OptionInput | None = None,
+        cycle: bool = False,
+        segment_options: list[SegmentOption] | None = None,
+        **kwargs: Any,
+    ) -> TikzPath:
+        del layer
+        if not isinstance(nodes, list):
+            raise ValueError("nodes parameter must be a list of node names.")
+
+        resolved_layer = self._container_layer()
+        nodes_cleaned: list[Node | Coordinate | Any] = []
+        node_anchors: list[str | None] = []
+
+        for node in nodes:
+            if isinstance(node, (Node, Coordinate)):
+                nodes_cleaned.append(node)
+                node_anchors.append(None)
+            elif isinstance(node, str):
+                try:
+                    nodes_cleaned.append(self.get_node(node))
+                    node_anchors.append(None)
+                except ValueError:
+                    if "." in node:
+                        label_part, anchor_part = node.rsplit(".", 1)
+                        nodes_cleaned.append(self.get_node(label_part))
+                        node_anchors.append(anchor_part)
+                    else:
+                        raise
+            elif isinstance(node, (tuple, list)):
+                from tikzfigure.core.coordinate import TikzCoordinate
+
+                coords = tuple(node)
+                nodes_cleaned.append(TikzCoordinate(*coords, layer=resolved_layer))  # type: ignore[misc]
+                node_anchors.append(None)
+            else:
+                from tikzfigure.core.coordinate import TikzCoordinate
+
+                if isinstance(node, TikzCoordinate):
+                    nodes_cleaned.append(node)
+                    node_anchors.append(None)
+                else:
+                    raise NotImplementedError(
+                        f"Node type {type(node)} not implemented for Loop._add_path"
+                    )
+
+        resolved_anchors = (
+            node_anchors if any(anchor is not None for anchor in node_anchors) else None
+        )
+        path = TikzPath(
+            nodes=nodes_cleaned,
+            comment=comment,
+            center=center,
+            node_anchors=resolved_anchors,
+            segment_options=segment_options,
+            tikz_command=tikz_command,
+            options=options,
+            cycle=cycle,
+            layer=resolved_layer,
+            **kwargs,
+        )
+        self._items.append(path)
+        if verbose:
+            print(f"Added {path} to loop")
+        return path
 
     def add_node(self, *args: Any, **kwargs: Any) -> Node:
         """Add a node inside this loop body.
@@ -108,7 +257,17 @@ class Loop(TikzObject):
         return node
 
     def add_path(
-        self, nodes: list[Any], comment: str | None = None, **kwargs: Any
+        self,
+        nodes: list[Any] | NodePathBuilder,
+        layer: int = 0,
+        comment: str | None = None,
+        center: bool = False,
+        tikz_command: str = "draw",
+        verbose: bool = False,
+        options: OptionInput | None = None,
+        cycle: bool = False,
+        segment_options: list[SegmentOption] | None = None,
+        **kwargs: Any,
     ) -> TikzPath:
         """Add a path inside this loop body.
 
@@ -120,9 +279,40 @@ class Loop(TikzObject):
         Returns:
             The newly created :class:`TikzPath`.
         """
-        path = TikzPath(nodes, comment=comment, layer=self.layer or 0, **kwargs)
-        self._items.append(path)
-        return path
+        nodes, segment_options = self._coerce_path_input(nodes, segment_options)
+        return self._add_path(
+            nodes=nodes,
+            layer=layer,
+            comment=comment,
+            center=center,
+            tikz_command=tikz_command,
+            verbose=verbose,
+            options=options,
+            cycle=cycle,
+            segment_options=segment_options,
+            **kwargs,
+        )
+
+    def add_coordinate(
+        self,
+        label: str,
+        x: Any = None,
+        y: Any = None,
+        z: Any = None,
+        at: str | None = None,
+        comment: str | None = None,
+    ) -> Coordinate:
+        coord = Coordinate(
+            label=label,
+            x=x,
+            y=y,
+            z=z,
+            at=at,
+            layer=self._container_layer(),
+            comment=comment,
+        )
+        self._items.append(coord)
+        return coord
 
     def add_loop(
         self, variable: str, values: Sequence[Any], comment: str | None = None
@@ -137,7 +327,16 @@ class Loop(TikzObject):
         Returns:
             The newly created nested :class:`Loop`.
         """
-        loop = Loop(variable, values, layer=self.layer or 0, comment=comment)
+        loop = Loop(
+            variable,
+            values,
+            layer=self.layer or 0,
+            comment=comment,
+            node_resolver=self.get_node,
+            library_loader=self._library_loader,
+            enter_callback=self._enter_callback,
+            exit_callback=self._exit_callback,
+        )
         self._items.append(loop)
         return loop
 
@@ -189,13 +388,53 @@ class Loop(TikzObject):
             layer=self.layer or 0,
             comment=comment,
             options=options,
+            node_resolver=self.get_node,
+            library_loader=self._library_loader,
             **kwargs,
         )
+        scope._enter_callback = self._enter_callback
+        scope._exit_callback = self._exit_callback
         self._items.append(scope)
         return scope
 
+    def path(
+        self,
+        nodes: list[Any],
+        layer: int = 0,
+        comment: str | None = None,
+        center: bool = False,
+        verbose: bool = False,
+        options: OptionInput | None = None,
+        cycle: bool = False,
+        segment_options: list[SegmentOption] | None = None,
+        name_path: str | None = None,
+        pos: float | None = None,
+        rotate: float | None = None,
+        xshift: str | None = None,
+        yshift: str | None = None,
+        scale: float | None = None,
+        **kwargs: Any,
+    ) -> TikzPath:
+        return self.add_path(
+            nodes=nodes,
+            layer=layer,
+            comment=comment,
+            center=center,
+            verbose=verbose,
+            options=options,
+            cycle=cycle,
+            segment_options=segment_options,
+            name_path=name_path,
+            pos=pos,
+            rotate=rotate,
+            xshift=xshift,
+            yshift=yshift,
+            scale=scale,
+            **kwargs,
+        )
+
     node = add_node
-    path = add_path
+    coordinate = add_coordinate
     loop = add_loop
     raw = add_raw
     plot = add_plot
@@ -303,18 +542,23 @@ class Loop(TikzObject):
 
     def copy(self, **overrides: Any) -> "Loop":
         clone = type(self).from_dict(self.to_dict())
+        clone._node_resolver = self._node_resolver
+        clone._library_loader = self._library_loader
         remaining = {key: self._copy_value(value) for key, value in overrides.items()}
 
         if "variable" in remaining:
             clone._variable = remaining.pop("variable")
+            clone._var = LoopVariable(clone)
         if "values" in remaining:
             clone._set_values(remaining.pop("values"))
 
         return self._apply_base_copy_overrides(clone, remaining, allow_kwargs=False)  # type: ignore[return-value]
 
-    def __enter__(self) -> "Loop":
-        """Enter the context manager, returning this loop."""
-        return self
+    def __enter__(self) -> LoopVariable:
+        """Enter the context manager, returning the loop variable handle."""
+        if self._enter_callback is not None:
+            self._enter_callback(self)
+        return self.var
 
     def __exit__(
         self,
@@ -323,4 +567,5 @@ class Loop(TikzObject):
         traceback: types.TracebackType | None,
     ) -> None:
         """Exit the context manager (no-op; content is already collected)."""
-        pass
+        if self._exit_callback is not None:
+            self._exit_callback(self)

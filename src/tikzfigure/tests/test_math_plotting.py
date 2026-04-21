@@ -33,11 +33,10 @@ def test_figure_round_trips_declared_functions_and_expression_plots():
         (1 - exp(-2 * Var("x"))) / (1 + exp(-2 * Var("x"))),
     )
 
-    r = Var("r")
     theta = Var("theta")
 
-    with fig.loop("r", [0, 1, 2]) as loop:
-        loop.plot(
+    with fig.loop("r", [0, 1, 2]) as r:
+        fig.plot(
             Var("scale") * arcth(th(r) * cos(theta)),
             Var("scale") * arcth(th(r) * sin(theta)),
             variable="theta",

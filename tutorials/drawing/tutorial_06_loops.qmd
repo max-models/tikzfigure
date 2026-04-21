@@ -74,8 +74,9 @@ Notice how `\foreach \i in {0,1,2,3,4}` replaces five separate `\node` commands.
 ## Basic loop: a row of circles
 
 `fig.loop(var, iterable)` returns a context manager. Inside the `with` block,
-use `loop.node()` and `loop.draw()`. The loop variable `\i` (or whatever name
-you choose) is available in any string passed as a coordinate or option.
+the bound name behaves like the loop variable itself, while ordinary
+`fig.node()`, `fig.draw()`, and `fig.plot()` calls automatically attach to the
+active loop.
 
 ```{python}
 fig = TikzFigure()
@@ -84,12 +85,12 @@ with fig.loop(
     "i",
     range(6),
     comment="Row of circles",
-) as loop:
-    loop.node(
-        (r"2*\i", 0),
+) as i:
+    fig.node(
+        (2 * i, 0),
         shape="circle",
         fill="blue!40",
-        content=r"\i",
+        content=i,
         minimum_size="0.8cm",
     )
 
@@ -111,12 +112,12 @@ with fig.loop(
     "i",
     range(1, 10),
     comment="Colour gradient",
-) as loop:
-    loop.node(
-        (r"2*\i", 0),
+) as i:
+    fig.node(
+        (2 * i, 0),
         shape="circle",
         fill=r"blue!\i0!red",
-        content=r"\i",
+        content=i,
         minimum_size="1cm",
         color="white",
         font=r"\bfseries",
@@ -129,7 +130,7 @@ fig.show()
 
 ## Nested loops: a 5x4 grid of nodes
 
-Use a second `loop.loop()` inside the first to create a 2-D grid. The inner loop
+Use a second `fig.loop()` inside the first to create a 2-D grid. The inner loop
 variable `\j` is independent of the outer `\i`.
 
 ```{python}
@@ -139,17 +140,17 @@ with fig.loop(
     "i",
     range(5),
     comment="Outer loop (columns)",
-) as loop_i:
-    with loop_i.loop(
+) as i:
+    with fig.loop(
         "j",
         range(4),
         comment="Inner loop (rows)",
-    ) as loop_j:
-        loop_j.node(
-            (r"2*\i", r"2*\j"),
+    ) as j:
+        fig.node(
+            (2 * i, 2 * j),
             shape="rectangle",
             fill="orange!30",
-            content=r"(\i,\j)",
+            content=f"({i},{j})",
             minimum_size="0.9cm",
         )
 
