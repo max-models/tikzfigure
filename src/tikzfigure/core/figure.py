@@ -139,6 +139,26 @@ class TikzFigure(
         """Resolve the effective web compilation setting."""
         return use_web_compilation or self._env_requests_web_compilation()
 
+    def _current_container(self) -> Loop | Scope | None:
+        if not self._active_container_stack:
+            return None
+        return self._active_container_stack[-1]
+
+    def _enter_container(self, container: Loop | Scope) -> None:
+        self._active_container_stack.append(container)
+
+    def _exit_container(self, container: Loop | Scope) -> None:
+        if (
+            not self._active_container_stack
+            or self._active_container_stack[-1] is not container
+        ):
+            raise RuntimeError("Active TikZ container stack is out of sync.")
+        self._active_container_stack.pop()
+
+    def _attach_container_callbacks(self, container: Loop | Scope) -> None:
+        container._enter_callback = self._enter_container
+        container._exit_callback = self._exit_container
+
     def _add_path(
         self,
         nodes: list[Any],
@@ -191,6 +211,21 @@ class TikzFigure(
             NotImplementedError: If an element of *nodes* has an
                 unrecognised type.
         """
+        active_container = self._current_container()
+        if active_container is not None:
+            return active_container._add_path(
+                nodes=nodes,
+                layer=layer,
+                comment=comment,
+                center=center,
+                tikz_command=tikz_command,
+                verbose=verbose,
+                options=options,
+                cycle=cycle,
+                segment_options=segment_options,
+                **kwargs,
+            )
+
         if not isinstance(nodes, list):
             raise ValueError("nodes parameter must be a list of node names.")
 
@@ -316,6 +351,7 @@ class TikzFigure(
         self._axes: list[Axis2D] = []
         # Subfigure axes with metadata (axis, width)
         self._subfigure_axes: list[tuple[Axis2D, float]] = []
+        self._active_container_stack: list[Loop | Scope] = []
 
         # Grid layout parameters
         self._subfigure_rows: int | None = rows
@@ -1249,6 +1285,9 @@ class TikzFigure(
             node = x
             self._assign_auto_node_label(node)
             self._sync_node_counter_from_label(node.label)
+            active_container = self._current_container()
+            if active_container is not None:
+                return active_container.add_node(node)
             self.layers.add_item(item=node, layer=node.layer or 0, verbose=verbose)
             return node
 
@@ -1304,6 +1343,9 @@ class TikzFigure(
         )
         node._user_supplied_label = explicit_label
         self._node_counter += 1
+        active_container = self._current_container()
+        if active_container is not None:
+            return active_container.add_node(node)
         self.layers.add_item(item=node, layer=layer, verbose=verbose)
         return node
 
@@ -1435,6 +1477,16 @@ class TikzFigure(
         Returns:
             The newly created :class:`Coordinate` object.
         """
+        active_container = self._current_container()
+        if active_container is not None:
+            return active_container.coordinate(
+                label=label,
+                x=x,
+                y=y,
+                z=z,
+                at=at,
+                comment=comment,
+            )
         coord = Coordinate(
             label=label,
             x=x,
@@ -1520,6 +1572,20 @@ class TikzFigure(
         **kwargs: Any,
     ) -> TikzPlot:
         """Add a plain TikZ expression plot outside a pgfplots axis."""
+        active_container = self._current_container()
+        if active_container is not None:
+            return active_container.plot(
+                x=x,
+                y=y,
+                variable=variable,
+                domain=domain,
+                samples=samples,
+                smooth=smooth,
+                comment=comment,
+                options=options,
+                tikz_command=tikz_command,
+                **kwargs,
+            )
         plot = TikzPlot(
             x=x,
             y=y,
@@ -1552,6 +1618,9 @@ class TikzFigure(
         Returns:
             The :class:`RawTikz` object that was added.
         """
+        active_container = self._current_container()
+        if active_container is not None:
+            return active_container.raw(tikz_code)
         raw_tikz = RawTikz(tikz_code=tikz_code)
 
         self.layers.add_item(
@@ -2868,14 +2937,25 @@ class TikzFigure(
             The :class:`Loop` context manager. Add nodes and paths inside a
             ``with`` block or by calling methods on the returned object.
         """
+        active_container = self._current_container()
+        node_resolver = (
+            active_container.get_node
+            if active_container is not None
+            else self.layers.get_node
+        )
         loop_obj = Loop(
             variable=variable,
             values=values,
             layer=layer,
             comment=comment,
+            node_resolver=node_resolver,
+            library_loader=self.usetikzlibrary,
         )
-
-        self.layers.add_item(item=loop_obj, layer=layer, verbose=verbose)
+        self._attach_container_callbacks(loop_obj)
+        if active_container is not None:
+            active_container.items.append(loop_obj)
+        else:
+            self.layers.add_item(item=loop_obj, layer=layer, verbose=verbose)
         return loop_obj
 
     def add_scope(
@@ -2887,15 +2967,25 @@ class TikzFigure(
         **kwargs: Any,
     ) -> Scope:
         """Add a TikZ ``scope`` block with local options to the figure."""
+        active_container = self._current_container()
+        node_resolver = (
+            active_container.get_node
+            if active_container is not None
+            else self.layers.get_node
+        )
         scope_obj = Scope(
             layer=layer,
             comment=comment,
             options=options,
-            node_resolver=self.layers.get_node,
+            node_resolver=node_resolver,
             library_loader=self.usetikzlibrary,
             **kwargs,
         )
-        self.layers.add_item(item=scope_obj, layer=layer, verbose=verbose)
+        self._attach_container_callbacks(scope_obj)
+        if active_container is not None:
+            active_container.items.append(scope_obj)
+        else:
+            self.layers.add_item(item=scope_obj, layer=layer, verbose=verbose)
         return scope_obj
 
     # ---------------------------------------------------------------- #

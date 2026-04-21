@@ -38,6 +38,8 @@ class Scope(FigurePathMixin, TikzObject):
         self._items: list[Any] = []
         self._node_resolver = node_resolver
         self._library_loader = library_loader
+        self._enter_callback: Callable[[Any], None] | None = None
+        self._exit_callback: Callable[[Any], None] | None = None
         super().__init__(
             label=label,
             comment=comment,
@@ -345,6 +347,10 @@ class Scope(FigurePathMixin, TikzObject):
             values=values,
             layer=self._container_layer(),
             comment=comment,
+            node_resolver=self.get_node,
+            library_loader=self._library_loader,
+            enter_callback=self._enter_callback,
+            exit_callback=self._exit_callback,
         )
         self._items.append(loop)
         return loop
@@ -363,6 +369,8 @@ class Scope(FigurePathMixin, TikzObject):
             library_loader=self._library_loader,
             **kwargs,
         )
+        scope._enter_callback = self._enter_callback
+        scope._exit_callback = self._exit_callback
         self._items.append(scope)
         return scope
 
@@ -451,6 +459,8 @@ class Scope(FigurePathMixin, TikzObject):
         return self._apply_base_copy_overrides(clone, overrides)  # type: ignore[return-value]
 
     def __enter__(self) -> "Scope":
+        if self._enter_callback is not None:
+            self._enter_callback(self)
         return self
 
     def __exit__(
@@ -459,4 +469,5 @@ class Scope(FigurePathMixin, TikzObject):
         exc_value: BaseException | None,
         traceback: types.TracebackType | None,
     ) -> None:
-        pass
+        if self._exit_callback is not None:
+            self._exit_callback(self)
