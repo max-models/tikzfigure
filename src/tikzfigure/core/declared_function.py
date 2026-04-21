@@ -1,17 +1,23 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from tikzfigure.core.base import TikzObject
 from tikzfigure.core.serialization import deserialize_tikz_value, serialize_tikz_value
+
+if TYPE_CHECKING:
+    from tikzfigure.math import Expr
 
 
 class DeclaredFunction(TikzObject):
     """A PGF math function declared with ``\\pgfkeys{/pgf/declare function=...}``.
 
     Declared functions are emitted near the top of the ``tikzpicture`` so they
-    can be reused in variables, coordinates, and expression-based plots.
+    can be reused in variables, coordinates, and expression-based plots. The
+    returned object is itself callable, so a declaration like
+    ``f = fig.declare_function(...)`` can later be referenced as ``f(x)`` when
+    building expressions.
     """
 
     def __init__(
@@ -54,6 +60,22 @@ class DeclaredFunction(TikzObject):
     def body(self) -> str:
         """PGF expression used as the function body."""
         return self._body
+
+    def __call__(self, *args: Any) -> Expr:
+        """Build an expression calling this declared function.
+
+        Raises:
+            ValueError: If the number of supplied arguments does not match the
+                declared function signature.
+        """
+        from tikzfigure.math import Expr
+
+        if len(args) != len(self._args):
+            raise ValueError(
+                f"{self._name} expects {len(self._args)} argument(s), got {len(args)}."
+            )
+        rendered_args = [arg.pgf if isinstance(arg, Expr) else str(arg) for arg in args]
+        return Expr(f"{self._name}({', '.join(rendered_args)})")
 
     def render_declaration(self) -> str:
         """Render the inner declaration used by PGF's ``declare function`` key."""
