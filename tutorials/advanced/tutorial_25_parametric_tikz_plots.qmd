@@ -163,15 +163,13 @@ th = fig.declare_function(
     (1 - exp(-2 * Var("x"))) / (1 + exp(-2 * Var("x"))),
 )
 
-i = Var("i")
 theta = Var("theta")
-radius = 0.2 * i
 
-curve_x = Var("scale") * arcth(th(radius) * cos(theta))
-curve_y = Var("scale") * arcth(th(radius) * sin(theta))
-
-with fig.loop("i", range(21)) as loop:
-    loop.plot(
+with fig.loop("i", range(21)) as i:
+    radius = 0.2 * i
+    curve_x = Var("scale") * arcth(th(radius) * cos(theta))
+    curve_y = Var("scale") * arcth(th(radius) * sin(theta))
+    fig.plot(
         curve_x,
         curve_y,
         variable="theta",
@@ -186,11 +184,12 @@ fig.show()
 
 {{< include includes/tikz_code_callout.qmd >}}
 
-Each loop iteration gives TikZ a different integer value of `\i`, and the
-physical radius is then derived inside the expression with `radius = 0.2 * i`.
-That keeps the loop itself compact while still producing a whole family of
-nested contours. In the tokamak picture, these read naturally as flux surfaces
-moving outward from the core.
+Each loop iteration gives TikZ a different integer value of `\i`. Because the
+context variable `i` now behaves like that TikZ variable directly, you can
+derive the physical radius inside the block with `radius = 0.2 * i` and then use
+the ordinary `fig.plot(...)` API inside the loop body. That keeps the loop
+compact while still producing a whole family of nested contours. In the tokamak
+picture, these read naturally as flux surfaces moving outward from the core.
 
 ## Adding the crossing family near the X-point
 
@@ -213,18 +212,13 @@ th = fig.declare_function(
     (1 - exp(-2 * Var("x"))) / (1 + exp(-2 * Var("x"))),
 )
 
-i = Var("i")
-r = Var("r")
 theta = Var("theta")
-radius = 0.2 * i
 
-curve_x_loop = Var("scale") * arcth(th(radius) * cos(theta))
-curve_y_loop = Var("scale") * arcth(th(radius) * sin(theta))
-curve_x_cross = Var("scale") * arcth(th(r) * cos(theta))
-curve_y_cross = Var("scale") * arcth(th(r) * sin(theta))
-
-with fig.loop("i", range(21)) as loop:
-    loop.plot(
+with fig.loop("i", range(21)) as i:
+    radius = 0.2 * i
+    curve_x_loop = Var("scale") * arcth(th(radius) * cos(theta))
+    curve_y_loop = Var("scale") * arcth(th(radius) * sin(theta))
+    fig.plot(
         curve_x_loop,
         curve_y_loop,
         variable="theta",
@@ -234,8 +228,11 @@ with fig.loop("i", range(21)) as loop:
         options=[colors.Azure4],
     )
 
-with fig.loop("theta", range(0, 361, 9)) as loop:
-    loop.plot(
+with fig.loop("theta", range(0, 361, 9)) as theta:
+    r = Var("r")
+    curve_x_cross = Var("scale") * arcth(th(r) * cos(theta))
+    curve_y_cross = Var("scale") * arcth(th(r) * sin(theta))
+    fig.plot(
         curve_x_cross,
         curve_y_cross,
         variable="r",
@@ -270,23 +267,18 @@ th = fig.declare_function(
     (1 - exp(-2 * Var("x"))) / (1 + exp(-2 * Var("x"))),
 )
 
-i = Var("i")
-r = Var("r")
 theta = Var("theta")
-radius = 0.2 * i
-
-curve_x_loop = Var("scale") * arcth(th(radius) * cos(theta))
-curve_y_loop = Var("scale") * arcth(th(radius) * sin(theta))
-curve_x_cross = Var("scale") * arcth(th(r) * cos(theta))
-curve_y_cross = Var("scale") * arcth(th(r) * sin(theta))
 
 fine_radii = range(21)
 major_radii = range(5, 21, 5)
 fine_angles = range(0, 361, 9)
 major_angles = range(0, 360, 30)
 
-with fig.loop("i", fine_radii) as loop:
-    loop.plot(
+with fig.loop("i", fine_radii) as i:
+    radius = 0.2 * i
+    curve_x_loop = Var("scale") * arcth(th(radius) * cos(theta))
+    curve_y_loop = Var("scale") * arcth(th(radius) * sin(theta))
+    fig.plot(
         curve_x_loop,
         curve_y_loop,
         variable="theta",
@@ -296,8 +288,11 @@ with fig.loop("i", fine_radii) as loop:
         options=[colors.Azure4],
     )
 
-with fig.loop("theta", fine_angles) as loop:
-    loop.plot(
+with fig.loop("theta", fine_angles) as theta:
+    r = Var("r")
+    curve_x_cross = Var("scale") * arcth(th(r) * cos(theta))
+    curve_y_cross = Var("scale") * arcth(th(r) * sin(theta))
+    fig.plot(
         curve_x_cross,
         curve_y_cross,
         variable="r",
@@ -307,8 +302,11 @@ with fig.loop("theta", fine_angles) as loop:
         options=[colors.Azure4],
     )
 
-with fig.loop("i", major_radii) as loop:
-    loop.plot(
+with fig.loop("i", major_radii) as i:
+    radius = 0.2 * i
+    curve_x_loop = Var("scale") * arcth(th(radius) * cos(theta))
+    curve_y_loop = Var("scale") * arcth(th(radius) * sin(theta))
+    fig.plot(
         curve_x_loop,
         curve_y_loop,
         variable="theta",
@@ -319,8 +317,11 @@ with fig.loop("i", major_radii) as loop:
         line_width="0.9pt",
     )
 
-with fig.loop("theta", major_angles) as loop:
-    loop.plot(
+with fig.loop("theta", major_angles) as theta:
+    r = Var("r")
+    curve_x_cross = Var("scale") * arcth(th(r) * cos(theta))
+    curve_y_cross = Var("scale") * arcth(th(r) * sin(theta))
+    fig.plot(
         curve_x_cross,
         curve_y_cross,
         variable="r",
