@@ -330,14 +330,6 @@ with fig.loop("theta", major_angles) as loop:
         line_width="0.9pt",
     )
 
-fig.node(
-    (0, 0),
-    content="",
-    minimum_size="1.2mm",
-    fill=colors.Red3,
-    shape="circle",
-)
-
 fig.show()
 ```
 
