@@ -17,8 +17,8 @@ Along the way we will use:
 
 - `fig.plot(...)` for a single sampled plot
 - `loop.plot(...)` for families of curves
-- `fig.declare_function(...)` for reusable PGF math functions
-- `func(name, ...)` for calling custom PGF functions inside expressions
+- callable objects returned by `fig.declare_function(...)`
+- `func(name, ...)` when you still want the string-based interface
 
 These plots are regular TikZ `\draw ... plot(...)` commands, not pgfplots axis
 plots.
@@ -67,7 +67,7 @@ help us bend contours into an X-point geometry.
 ```{python}
 fig = TikzFigure(figsize=(8, 4))
 
-fig.declare_function(
+th = fig.declare_function(
     "th",
     "x",
     (1 - exp(-2 * Var("x"))) / (1 + exp(-2 * Var("x"))),
@@ -78,7 +78,7 @@ x = Var("x")
 fig.draw([(-3.4, 0), (3.4, 0)], color="gray")
 fig.draw([(0, -1.1), (0, 1.1)], color="gray")
 fig.plot(
-    func("th", x),
+    th(x),
     variable="x",
     domain=(-3, 3),
     samples=150,
@@ -92,8 +92,9 @@ fig.show()
 
 {{< include includes/tikz_code_callout.qmd >}}
 
-The `func("th", x)` call is useful whenever you want to call a declared PGF
-function from Python.
+The object returned by `fig.declare_function(...)` is callable, so the most
+natural way to use it is `th(x)`. The older `func("th", x)` style still works
+when you want it.
 
 ## Your first closed flux-surface-like curve
 
@@ -106,12 +107,12 @@ fig = TikzFigure(figsize=(7, 7))
 
 fig.variable("scale", 1.25)
 fig.variable("radius", 1.6)
-fig.declare_function(
+arcth = fig.declare_function(
     "arcth",
     "x",
     0.5 * ln((1 + Var("x")) / (1 - Var("x"))),
 )
-fig.declare_function(
+th = fig.declare_function(
     "th",
     "x",
     (1 - exp(-2 * Var("x"))) / (1 + exp(-2 * Var("x"))),
@@ -120,8 +121,8 @@ fig.declare_function(
 theta = Var("theta")
 radius = Var("radius")
 
-curve_x = Var("scale") * func("arcth", func("th", radius) * cos(theta))
-curve_y = Var("scale") * func("arcth", func("th", radius) * sin(theta))
+curve_x = Var("scale") * arcth(th(radius) * cos(theta))
+curve_y = Var("scale") * arcth(th(radius) * sin(theta))
 
 fig.plot(
     curve_x,
@@ -151,12 +152,12 @@ The same parametric expression becomes much more interesting when combined with
 fig = TikzFigure(figsize=(8, 8))
 
 fig.variable("scale", 1.25)
-fig.declare_function(
+arcth = fig.declare_function(
     "arcth",
     "x",
     0.5 * ln((1 + Var("x")) / (1 - Var("x"))),
 )
-fig.declare_function(
+th = fig.declare_function(
     "th",
     "x",
     (1 - exp(-2 * Var("x"))) / (1 + exp(-2 * Var("x"))),
@@ -166,8 +167,8 @@ i = Var("i")
 theta = Var("theta")
 radius = 0.2 * i
 
-curve_x = Var("scale") * func("arcth", func("th", radius) * cos(theta))
-curve_y = Var("scale") * func("arcth", func("th", radius) * sin(theta))
+curve_x = Var("scale") * arcth(th(radius) * cos(theta))
+curve_y = Var("scale") * arcth(th(radius) * sin(theta))
 
 with fig.loop("i", range(21)) as loop:
     loop.plot(
@@ -201,12 +202,12 @@ geometry around an X-point.
 fig = TikzFigure(figsize=(8, 8))
 
 fig.variable("scale", 1.25)
-fig.declare_function(
+arcth = fig.declare_function(
     "arcth",
     "x",
     0.5 * ln((1 + Var("x")) / (1 - Var("x"))),
 )
-fig.declare_function(
+th = fig.declare_function(
     "th",
     "x",
     (1 - exp(-2 * Var("x"))) / (1 + exp(-2 * Var("x"))),
@@ -217,10 +218,10 @@ r = Var("r")
 theta = Var("theta")
 radius = 0.2 * i
 
-curve_x_loop = Var("scale") * func("arcth", func("th", radius) * cos(theta))
-curve_y_loop = Var("scale") * func("arcth", func("th", radius) * sin(theta))
-curve_x_cross = Var("scale") * func("arcth", func("th", r) * cos(theta))
-curve_y_cross = Var("scale") * func("arcth", func("th", r) * sin(theta))
+curve_x_loop = Var("scale") * arcth(th(radius) * cos(theta))
+curve_y_loop = Var("scale") * arcth(th(radius) * sin(theta))
+curve_x_cross = Var("scale") * arcth(th(r) * cos(theta))
+curve_y_cross = Var("scale") * arcth(th(r) * sin(theta))
 
 with fig.loop("i", range(21)) as loop:
     loop.plot(
@@ -258,12 +259,12 @@ surfaces and the separatrix-like branches.
 fig = TikzFigure(figsize=(9, 9))
 
 fig.variable("scale", 1.25)
-fig.declare_function(
+arcth = fig.declare_function(
     "arcth",
     "x",
     0.5 * ln((1 + Var("x")) / (1 - Var("x"))),
 )
-fig.declare_function(
+th = fig.declare_function(
     "th",
     "x",
     (1 - exp(-2 * Var("x"))) / (1 + exp(-2 * Var("x"))),
@@ -274,10 +275,10 @@ r = Var("r")
 theta = Var("theta")
 radius = 0.2 * i
 
-curve_x_loop = Var("scale") * func("arcth", func("th", radius) * cos(theta))
-curve_y_loop = Var("scale") * func("arcth", func("th", radius) * sin(theta))
-curve_x_cross = Var("scale") * func("arcth", func("th", r) * cos(theta))
-curve_y_cross = Var("scale") * func("arcth", func("th", r) * sin(theta))
+curve_x_loop = Var("scale") * arcth(th(radius) * cos(theta))
+curve_y_loop = Var("scale") * arcth(th(radius) * sin(theta))
+curve_x_cross = Var("scale") * arcth(th(r) * cos(theta))
+curve_y_cross = Var("scale") * arcth(th(r) * sin(theta))
 
 fine_radii = range(21)
 major_radii = range(5, 21, 5)

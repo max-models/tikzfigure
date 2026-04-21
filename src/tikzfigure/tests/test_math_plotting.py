@@ -22,12 +22,12 @@ def test_tikz_plot_renders_regular_function():
 def test_figure_round_trips_declared_functions_and_expression_plots():
     fig = TikzFigure()
     fig.variable("scale", 1.25)
-    fig.declare_function(
+    arcth = fig.declare_function(
         "arcth",
         "x",
         0.5 * ln((1 + Var("x")) / (1 - Var("x"))),
     )
-    fig.declare_function(
+    th = fig.declare_function(
         "th",
         "x",
         (1 - exp(-2 * Var("x"))) / (1 + exp(-2 * Var("x"))),
@@ -38,8 +38,8 @@ def test_figure_round_trips_declared_functions_and_expression_plots():
 
     with fig.loop("r", [0, 1, 2]) as loop:
         loop.plot(
-            Var("scale") * func("arcth", func("th", r) * cos(theta)),
-            Var("scale") * func("arcth", func("th", r) * sin(theta)),
+            Var("scale") * arcth(th(r) * cos(theta)),
+            Var("scale") * arcth(th(r) * sin(theta)),
             variable="theta",
             domain=(0, 360),
             samples=100,
@@ -65,3 +65,29 @@ def test_figure_round_trips_declared_functions_and_expression_plots():
 def test_math_func_helper_builds_custom_calls():
     assert str(func("arcth", Var("x"))) == "arcth(\\x)"
     assert str(exp(Var("y"))) == "exp(\\y)"
+
+
+def test_declared_function_is_callable_and_func_accepts_it():
+    fig = TikzFigure()
+    th = fig.declare_function(
+        "th",
+        "x",
+        (1 - exp(-2 * Var("x"))) / (1 + exp(-2 * Var("x"))),
+    )
+
+    assert str(th(Var("x"))) == "th(\\x)"
+    assert str(func(th, Var("x"))) == "th(\\x)"
+
+
+def test_declared_function_validates_argument_count():
+    fig = TikzFigure()
+    th = fig.declare_function("th", "x", Var("x"))
+
+    try:
+        th()
+    except ValueError as exc:
+        assert "expects 1 argument" in str(exc)
+    else:
+        raise AssertionError(
+            "DeclaredFunction should reject the wrong number of arguments."
+        )

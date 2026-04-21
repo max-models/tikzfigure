@@ -1491,7 +1491,12 @@ class TikzFigure(
         comment: str | None = None,
         verbose: bool = False,
     ) -> DeclaredFunction:
-        """Declare a reusable PGF math function for this figure."""
+        """Declare a reusable PGF math function for this figure.
+
+        The returned :class:`DeclaredFunction` is callable, so you can keep a
+        Python reference and later build expressions with ``f(x)`` instead of
+        spelling the function name again as a string.
+        """
         declared = DeclaredFunction(name=name, args=args, body=body, comment=comment)
         self._declared_functions.append(declared)
         if verbose:
