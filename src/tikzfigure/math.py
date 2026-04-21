@@ -302,8 +302,18 @@ def ln(x: Any) -> Expr:
     return Expr(f"ln({x_str})")
 
 
-def func(name: str, *args: Any) -> Expr:
-    """Call an arbitrary PGF math function by name."""
+def func(name: str | object, *args: Any) -> Expr:
+    """Call an arbitrary PGF math function by name.
+
+    ``name`` may be either a function name string such as ``"sin"`` or a
+    :class:`~tikzfigure.core.declared_function.DeclaredFunction`.
+    """
+    from tikzfigure.core.declared_function import DeclaredFunction
+
+    if isinstance(name, DeclaredFunction):
+        return name(*args)
+    if not isinstance(name, str):
+        raise TypeError("func() expects a function name string or DeclaredFunction.")
     rendered_args = [arg.pgf if isinstance(arg, Expr) else str(arg) for arg in args]
     return Expr(f"{name}({', '.join(rendered_args)})")
 
