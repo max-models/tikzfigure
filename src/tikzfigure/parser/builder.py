@@ -279,6 +279,7 @@ class TikzBuilder:
         self.diagnostics: list[Diagnostic] = []
         self._hoist_rank = -1
         self._hoisting = True
+        self._declared_layers: list[int] = []
 
     # -------------------------------------------------------------- #
     # Entry point
@@ -319,6 +320,9 @@ class TikzBuilder:
         self._reserve_auto_labels(body)
         line_offset = source.count("\n", 0, body_start)
         self._build(split_statements(body, line_offset=line_offset), _Sink(self.figure))
+        for declared in self._declared_layers:
+            # Declared but never used: keep the layer so it is declared again.
+            self.figure.layers.add_layer(declared)
 
         extra = re.search(r"\\begin\s*\{tikzpicture\}", trailer)
         if extra:
@@ -858,7 +862,10 @@ class TikzBuilder:
         if len(args) != 1 or not re.fullmatch(r"-?\d+", args[0]):
             raise Unsupported("named pgf layer")
         self._hoist("layer", sink)
-        self.figure.layers.add_layer(int(args[0]))
+        # Created on first use instead of here: layer creation order decides
+        # the order of the generated pgfonlayer blocks, so creating layers
+        # now would reorder them by declaration.
+        self._declared_layers.append(int(args[0]))
         return "PgfLayer"
 
     def _build_layer_order(
