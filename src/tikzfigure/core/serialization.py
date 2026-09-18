@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
-from typing import Any
 
 _SERIALIZED_TYPE_KEY = "__tikzfigure_serialized_type__"
 

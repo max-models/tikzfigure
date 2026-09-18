@@ -358,7 +358,7 @@ class Spy(TikzObject):
         cls,
         d: dict[str, Any],
         node_lookup: Mapping[str, Node | Coordinate] | None = None,
-    ) -> "Spy":
+    ) -> Spy:
         """Restore a ``Spy`` from serialized data."""
         restored = deserialize_tikz_value(d)
         if not isinstance(restored, dict):

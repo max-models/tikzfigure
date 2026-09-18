@@ -207,9 +207,9 @@ class FigureRenderMixin:
 
         for key, layer in self.layers.layers.items():
             reqs = layer.get_reqs()
-            if all([r == layer.label for r in reqs]):
-                ordered_layers.append(layer)
-            elif all([r in [layer.label for layer in ordered_layers] for r in reqs]):
+            if all([r == layer.label for r in reqs]) or all(
+                [r in [layer.label for layer in ordered_layers] for r in reqs]
+            ):
                 ordered_layers.append(layer)
             else:
                 buffered_layers.add(layer)

@@ -42,10 +42,8 @@ from tikzfigure.core.tikz_library import TikzLibrary
 from tikzfigure.core.types import (
     _Align,
     _Anchor,
-    _Decoration,
     _LineCap,
     _LineJoin,
-    _Mark,
     _Option,
     _Pattern,
     _Shading,
@@ -376,7 +374,7 @@ class TikzFigure(
         # Grid stores either an axis cell or a bare subfigure cell.
         self._subfigure_grid: dict[
             tuple[int, int],
-            tuple[Axis2D, float] | tuple["TikzFigure", float, str],
+            tuple[Axis2D, float] | tuple[TikzFigure, float, str],
         ] = {}
         self._is_bare_subfigure: bool = False
         self._subfigure_position: int = 0
@@ -556,11 +554,7 @@ class TikzFigure(
         for layer_label, items_data in layers_data.items():
             for item_data in items_data:
                 item_type = item_data.get("type")
-                if item_type == "Node":
-                    fig.layers.add_item(
-                        node_lookup[item_data["label"]], layer=layer_label
-                    )
-                elif item_type == "Coordinate":
+                if item_type == "Node" or item_type == "Coordinate":
                     fig.layers.add_item(
                         node_lookup[item_data["label"]], layer=layer_label
                     )
@@ -1059,7 +1053,6 @@ class TikzFigure(
         self,
         x: (
             float
-            | int
             | str
             | tuple[float | int | str, float | int | str]
             | tuple[float | int | str, float | int | str, float | int | str]
@@ -1067,8 +1060,8 @@ class TikzFigure(
             | TikzCoordinate
             | None
         ) = None,
-        y: float | int | str | None = None,
-        z: float | int | str | None = None,
+        y: float | str | None = None,
+        z: float | str | None = None,
         label: str | None = None,
         content: str = "",
         layer: int = 0,
@@ -1490,15 +1483,14 @@ class TikzFigure(
         label: str,
         x: (
             float
-            | int
             | str
             | tuple[float | int | str, float | int | str]
             | tuple[float | int | str, float | int | str, float | int | str]
             | TikzCoordinate
             | None
         ) = None,
-        y: float | int | str | None = None,
-        z: float | int | str | None = None,
+        y: float | str | None = None,
+        z: float | str | None = None,
         at: str | None = None,
         layer: int = 0,
         comment: str | None = None,
@@ -1578,7 +1570,7 @@ class TikzFigure(
     def add_variable(
         self,
         label: str,
-        value: int | float | str,
+        value: float | str,
         layer: int | None = 0,
         comment: str | None = None,
         verbose: bool = False,
@@ -2208,15 +2200,14 @@ class TikzFigure(
         rows: list[list[Any]],
         x: (
             float
-            | int
             | str
             | tuple[float | int | str, float | int | str]
             | tuple[float | int | str, float | int | str, float | int | str]
             | TikzCoordinate
             | None
         ) = None,
-        y: float | int | str | None = None,
-        z: float | int | str | None = None,
+        y: float | str | None = None,
+        z: float | str | None = None,
         label: str | None = None,
         layer: int = 0,
         comment: str | None = None,
@@ -3229,8 +3220,8 @@ class TikzFigure(
         xlog: bool = False,
         ylog: bool = False,
         grid: bool | str = True,
-        width: str | int | float | None = None,
-        height: str | int | float | None = None,
+        width: str | float | None = None,
+        height: str | float | None = None,
         layer: int = 0,
         comment: str | None = None,
         **kwargs: Any,

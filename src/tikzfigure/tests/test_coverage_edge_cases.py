@@ -226,15 +226,14 @@ class TestShowWithoutIPython:
 
         # This should trigger the non-Jupyter path (covers line 600-601 indirectly)
         # We mock the system command to avoid actually opening a viewer
-        with patch("subprocess.run"):
-            with patch("tempfile.NamedTemporaryFile"):
-                with patch("tikzfigure.core.figure.TikzFigure.savefig"):
-                    try:
-                        # In test environment, this will be suppressed anyway
-                        fig.show(backend="system")
-                    except Exception:
-                        # Expected - savefig mocking may cause issues
-                        pass
+        with patch("subprocess.run"), patch("tempfile.NamedTemporaryFile"):
+            with patch("tikzfigure.core.figure.TikzFigure.savefig"):
+                try:
+                    # In test environment, this will be suppressed anyway
+                    fig.show(backend="system")
+                except Exception:
+                    # Expected - savefig mocking may cause issues
+                    pass
 
     def test_show_except_handler_path_exists(self):
         """Test exception handling when Jupyter detection fails (covers figure.py 600-601).
@@ -280,10 +279,9 @@ class TestIPythonMagicExceptionHandling:
         nonexistent_file = "/this/path/does/not/exist.tikz"
 
         # Test that FileNotFoundError is properly raised when file doesn't exist
-        with pytest.raises(FileNotFoundError):
-            with open(nonexistent_file, "r") as f:
-                content = f.read()
-                print(content)
+        with pytest.raises(FileNotFoundError), open(nonexistent_file, "r") as f:
+            content = f.read()
+            print(content)
 
     def test_generic_exception_handling(self):
         """Test that generic exceptions can be caught (covers ipython.py line 123-124)."""

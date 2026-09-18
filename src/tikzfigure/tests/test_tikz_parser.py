@@ -35,14 +35,12 @@ def assert_stable(fig: TikzFigure) -> None:
 
 
 def test_split_statements_respects_braces_comments_and_multiline():
-    statements = split_statements(
-        r"""
+    statements = split_statements(r"""
 \node[label={a; b}] (a)
     at (0, 0) {x; y}; \draw (a) -- (1, 1); % trailing
 % about c
 \node (c) at (1, 0) {50\% done};
-"""
-    )
+""")
     assert [(s.kind, s.name) for s in statements] == [
         ("command", "node"),
         ("command", "draw"),
@@ -55,8 +53,7 @@ def test_split_statements_respects_braces_comments_and_multiline():
 
 
 def test_split_statements_environments_and_foreach():
-    statements = split_statements(
-        r"""
+    statements = split_statements(r"""
 \begin{scope}[red]
     \begin{scope}
         \draw (0, 0) -- (1, 0);
@@ -66,8 +63,7 @@ def test_split_statements_environments_and_foreach():
 \foreach \x in {1,2} {
     \node at (\x, 0) {};
 }
-"""
-    )
+""")
     assert [(s.kind, s.name) for s in statements] == [
         ("environment", "scope"),
         ("foreach", "foreach"),
@@ -135,14 +131,12 @@ def test_node_label_option_is_not_the_node_name():
 
 def test_node_options_after_name_multiline_and_relative_position():
     fig = TikzFigure.from_tikz_code(
-        picture(
-            r"""
+        picture(r"""
 \node (a) [draw]
     at (0, 0)
     {A};
 \node[right=of a] (b) {B};
-"""
-        )
+""")
     )
     a, b = items(fig)
     assert a.options == ["draw"] and a.label == "a"
@@ -158,12 +152,10 @@ def test_content_with_semicolons_braces_and_escaped_percent():
 
 def test_anonymous_nodes_do_not_collide_with_existing_auto_labels():
     fig = TikzFigure.from_tikz_code(
-        picture(
-            r"""
+        picture(r"""
 \node at (0, 0) {first};
 \node (node0) at (1, 0) {explicit};
-"""
-        )
+""")
     )
     labels = [node.label for node in items(fig)]
     assert len(set(labels)) == 2
@@ -176,13 +168,11 @@ def test_anonymous_nodes_do_not_collide_with_existing_auto_labels():
 
 def test_path_connectors_anchors_inline_nodes_and_cycle():
     fig = TikzFigure.from_tikz_code(
-        picture(
-            r"""
+        picture(r"""
 \node (a) at (0, 0) {A};
 \node (b) at (2, 0) {B};
 \draw[->, color=blue] (a.east) -- node[above, sloped] {go} (b) to[bend left] (1, -1) |- (0, -2) -- cycle;
-"""
-        )
+""")
     )
     path = items(fig)[2]
     assert isinstance(path, TikzPath)
@@ -200,13 +190,11 @@ def test_path_connectors_anchors_inline_nodes_and_cycle():
 
 def test_plain_to_path_matches_draw_api():
     parsed = TikzFigure.from_tikz_code(
-        picture(
-            r"""
+        picture(r"""
 \node (a) at (0, 0) {};
 \node (b) at (1, 0) {};
 \draw[thick] (a) to (b);
-"""
-        )
+""")
     )
     built = TikzFigure()
     built.add_node(0, 0, label="a")
@@ -231,12 +219,10 @@ def test_arc_and_fill_commands():
 
 def test_circle_and_rectangle_become_shapes():
     fig = TikzFigure.from_tikz_code(
-        picture(
-            r"""
+        picture(r"""
 \draw[thick] (0, 0) circle (1cm);
 \filldraw[fill=blue] (0, 0) rectangle ({\w}, {max(1,2)});
-"""
-        )
+""")
     )
     circle, rectangle = items(fig)
     assert isinstance(circle, Circle) and isinstance(rectangle, Rectangle)
@@ -278,13 +264,11 @@ def test_strict_mode_raises_for_raw_statements():
 
 def test_coordinates():
     fig = TikzFigure.from_tikz_code(
-        picture(
-            r"""
+        picture(r"""
 \coordinate (p) at (1, 2);
 \coordinate (q) at ($(p)!0.5!(0,0)$);
 \draw (p) -- (q);
-"""
-        )
+""")
     )
     p, q, path = items(fig)
     assert isinstance(p, Coordinate) and isinstance(q, Coordinate)
@@ -294,8 +278,7 @@ def test_coordinates():
 
 def test_scopes_and_loops_nest_and_resolve_nodes():
     result = parse_tikz(
-        picture(
-            r"""
+        picture(r"""
 \node (a) at (0, 0) {};
 \begin{scope}[xshift=1cm, red]
     \foreach \i in {1,...,3} {
@@ -303,8 +286,7 @@ def test_scopes_and_loops_nest_and_resolve_nodes():
         \draw (a) -- (n\i);
     }
 \end{scope}
-"""
-        )
+""")
     )
     scope = items(result.figure)[1]
     assert isinstance(scope, Scope)
@@ -326,16 +308,14 @@ def test_unsupported_foreach_is_raw():
 
 def test_definitions_are_hoisted_only_when_order_is_kept():
     result = parse_tikz(
-        picture(
-            r"""
+        picture(r"""
 \tikzset{hot/.style={draw=red, very thick}}
 \pgfmathsetmacro{\r}{1.5}
 \pgfkeys{/pgf/declare function={sq(\x) = \x*\x;}}
 \colorlet{soft}{blue!20}
 \draw[hot] (0, 0) -- (1, 0);
 \pgfmathsetmacro{\late}{2}
-"""
-        )
+""")
     )
     fig = result.figure
     assert [v.label for v in fig.variables] == ["r"]
@@ -353,8 +333,7 @@ def test_variable_after_color_is_not_reordered():
 
 def test_numbered_layers():
     fig = TikzFigure.from_tikz_code(
-        picture(
-            r"""
+        picture(r"""
 \pgfdeclarelayer{0}
 \pgfdeclarelayer{1}
 \pgfsetlayers{0,1}
@@ -364,8 +343,7 @@ def test_numbered_layers():
 \begin{pgfonlayer}{0}
     \draw (a) -- (1, 1);
 \end{pgfonlayer}
-"""
-        )
+""")
     )
     assert isinstance(items(fig, 1)[0], Node)
     assert isinstance(items(fig, 0)[0], TikzPath)
@@ -374,15 +352,13 @@ def test_numbered_layers():
 
 def test_named_layers_are_raw():
     result = parse_tikz(
-        picture(
-            r"""
+        picture(r"""
 \pgfdeclarelayer{background}
 \pgfsetlayers{background,main}
 \begin{pgfonlayer}{background}
     \fill (0, 0) circle (1);
 \end{pgfonlayer}
-"""
-        )
+""")
     )
     assert {d.reason for d in result.raw} == {"named pgf layer"}
 
@@ -413,8 +389,7 @@ def test_picture_options_with_style_first_stay_verbatim():
 
 def test_comments_attach_to_following_statement():
     fig = TikzFigure.from_tikz_code(
-        picture(
-            r"""
+        picture(r"""
 % first
 % about a
 \node (a) at (0, 0) {};
@@ -422,8 +397,7 @@ def test_comments_attach_to_following_statement():
 
 % about the path
 \draw (a) -- (1, 1); % trailing
-"""
-        )
+""")
     )
     first, node, standalone, path, trailing = items(fig)
     assert first.tikz_code == "% first"
@@ -442,8 +416,7 @@ def test_generated_comments_are_not_duplicated():
 
 
 def test_full_document_and_figure_environment():
-    fig = TikzFigure.from_tikz_code(
-        r"""
+    fig = TikzFigure.from_tikz_code(r"""
 \documentclass{standalone}
 \usepackage{tikz}
 \usepackage{amsmath,bm}
@@ -457,8 +430,7 @@ def test_full_document_and_figure_environment():
 \label{fig:vec}
 \end{figure}
 \end{document}
-"""
-    )
+""")
     assert fig.extra_packages == ["amsmath", "bm"]
     assert fig.tikz_libraries == ["calc", "positioning"]
     assert fig.document_setup == r"\newcommand{\myvec}[1]{\bm{#1}}"

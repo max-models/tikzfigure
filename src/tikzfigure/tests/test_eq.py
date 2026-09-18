@@ -1,5 +1,3 @@
-import pytest
-
 from tikzfigure import TikzFigure
 from tikzfigure.core.color import Color
 from tikzfigure.core.coordinate import TikzCoordinate

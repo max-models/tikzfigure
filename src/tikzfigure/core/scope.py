@@ -306,7 +306,7 @@ class Scope(FigurePathMixin, TikzObject):
         every_spy_on_node_style: dict[str, Any] | None = None,
         spy_connection_path: str | None = None,
         **kwargs: Any,
-    ) -> "Scope":
+    ) -> Scope:
         """Create a nested scope configured for local spy defaults.
 
         The returned scope can be used as a context manager. Its local options
@@ -369,7 +369,7 @@ class Scope(FigurePathMixin, TikzObject):
         comment: str | None = None,
         options: OptionInput | None = None,
         **kwargs: Any,
-    ) -> "Scope":
+    ) -> Scope:
         scope = Scope(
             comment=comment,
             layer=self._container_layer(),
@@ -417,7 +417,7 @@ class Scope(FigurePathMixin, TikzObject):
         cls,
         d: dict[str, Any],
         node_lookup: dict[str, Node | Coordinate] | None = None,
-    ) -> "Scope":
+    ) -> Scope:
         from tikzfigure.core.loop import Loop
 
         restored = deserialize_tikz_value(d)
@@ -461,13 +461,13 @@ class Scope(FigurePathMixin, TikzObject):
                 scope._items.append(RawTikz.from_dict(item_data))
         return scope
 
-    def copy(self, **overrides: Any) -> "Scope":
+    def copy(self, **overrides: Any) -> Scope:
         clone = type(self).from_dict(self.to_dict())
         clone._node_resolver = self._node_resolver
         clone._library_loader = self._library_loader
         return self._apply_base_copy_overrides(clone, overrides)  # type: ignore[return-value]
 
-    def __enter__(self) -> "Scope":
+    def __enter__(self) -> Scope:
         if self._enter_callback is not None:
             self._enter_callback(self)
         return self

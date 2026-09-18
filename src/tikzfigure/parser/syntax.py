@@ -232,8 +232,7 @@ def parse_command(text: str) -> CommandSyntax:
     if name is None:
         raise TikzParseError("expected a command")
     body = scanner.text[scanner.pos :].rstrip()
-    if body.endswith(";"):
-        body = body[:-1]
+    body = body.removesuffix(";")
     return CommandSyntax(name=name, tokens=tokenize_path(body))
 
 

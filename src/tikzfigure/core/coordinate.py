@@ -59,7 +59,7 @@ class Coordinate(TikzObject):
             CoordinateValue
             | CoordinateTuple2D
             | CoordinateTuple3D
-            | "TikzCoordinate"
+            | TikzCoordinate
             | None
         ) = None,
         y: CoordinateValue | None = None,
@@ -137,10 +137,10 @@ class Coordinate(TikzObject):
 
     def to(
         self,
-        target: "Node | Coordinate",
-        options: "OptionInput | None" = None,
+        target: Node | Coordinate,
+        options: OptionInput | None = None,
         **kwargs: Any,
-    ) -> "NodePathBuilder":
+    ) -> NodePathBuilder:
         """Create a path builder for a segment from this coordinate to ``target``.
 
         The returned builder always starts with ``self`` and records the segment
@@ -203,7 +203,7 @@ class Coordinate(TikzObject):
         return serialized
 
     @classmethod
-    def from_dict(cls, d: dict[str, Any]) -> "Coordinate":
+    def from_dict(cls, d: dict[str, Any]) -> Coordinate:
         """Reconstruct a Coordinate from a dictionary.
 
         Args:
@@ -241,7 +241,7 @@ class TikzCoordinate(TikzObject):
 
     def __init__(
         self,
-        x: CoordinateValue | CoordinateTuple2D | CoordinateTuple3D | "TikzCoordinate",
+        x: CoordinateValue | CoordinateTuple2D | CoordinateTuple3D | TikzCoordinate,
         y: CoordinateValue | None = None,
         z: CoordinateValue | None = None,
         layer: int = 0,
@@ -263,7 +263,7 @@ class TikzCoordinate(TikzObject):
 
     @staticmethod
     def _normalize_coordinate_values(
-        x: CoordinateValue | CoordinateTuple2D | CoordinateTuple3D | "TikzCoordinate",
+        x: CoordinateValue | CoordinateTuple2D | CoordinateTuple3D | TikzCoordinate,
         y: CoordinateValue | None = None,
         z: CoordinateValue | None = None,
     ) -> tuple[CoordinateValue, CoordinateValue, CoordinateValue | None]:
@@ -473,7 +473,7 @@ class TikzCoordinate(TikzObject):
         return serialized
 
     @classmethod
-    def from_dict(cls, d: dict[str, Any]) -> "TikzCoordinate":
+    def from_dict(cls, d: dict[str, Any]) -> TikzCoordinate:
         """Reconstruct a TikzCoordinate from a dictionary.
 
         Args:
@@ -584,7 +584,7 @@ class TikzVector(TikzCoordinate):
             )
         )
 
-    def __mul__(self, scalar: float | int) -> TikzVector:
+    def __mul__(self, scalar: float) -> TikzVector:
         if not isinstance(scalar, (int, float)):
             return NotImplemented
         return self._vector_from_numeric_components(
@@ -593,7 +593,7 @@ class TikzVector(TikzCoordinate):
             )
         )
 
-    def __rmul__(self, scalar: float | int) -> TikzVector:
+    def __rmul__(self, scalar: float) -> TikzVector:
         return self * scalar
 
     def __matmul__(self, other: TikzVector) -> float:
@@ -609,7 +609,7 @@ class TikzVector(TikzCoordinate):
         return d
 
     @classmethod
-    def from_dict(cls, d: dict[str, Any]) -> "TikzVector":
+    def from_dict(cls, d: dict[str, Any]) -> TikzVector:
         """Reconstruct a TikzVector from a dictionary."""
         restored = deserialize_tikz_value(d)
         if not isinstance(restored, dict):

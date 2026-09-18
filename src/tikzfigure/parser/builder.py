@@ -594,9 +594,9 @@ class TikzBuilder:
                 # layer at 0 and records the layer through LayerCollection.
                 layer=sink.layer if sink.container is not None else 0,
                 node_anchors=anchors if any(a is not None for a in anchors) else None,
-                segment_options=segments
-                if any(s is not None for s in segments)
-                else None,
+                segment_options=(
+                    segments if any(s is not None for s in segments) else None
+                ),
                 options=flags,
                 tikz_command=syntax.name,
                 **kwargs,

@@ -1,6 +1,5 @@
 """Web-based LaTeX compilation via latex-on-http API."""
 
-import json
 from pathlib import Path
 from typing import Union
 

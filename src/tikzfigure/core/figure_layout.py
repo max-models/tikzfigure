@@ -27,8 +27,8 @@ class FigureLayoutMixin:
         ylim: tuple[float, float] | None = None,
         grid: bool = True,
         width: float = 0.45,
-        height: str | int | float | None = None,
-        axis_width: str | int | float | None = None,
+        height: str | float | None = None,
+        axis_width: str | float | None = None,
         comment: str | None = None,
         **kwargs: Any,
     ) -> Axis2D:
@@ -76,8 +76,8 @@ class FigureLayoutMixin:
     def add_subfigure(
         self,
         width: float = 0.45,
-        height: str | int | float | None = None,
-    ) -> "TikzFigure":
+        height: str | float | None = None,
+    ) -> TikzFigure:
         """Create a subfigure using the full TikZ API in grid layout."""
         if width <= 0 or width > 1.0:
             raise ValueError(f"width must be in range (0.0, 1.0], got {width}")
@@ -264,7 +264,7 @@ class FigureLayoutMixin:
 
     @staticmethod
     def generate_subfigures(
-        figures: list["TikzFigure"],
+        figures: list[TikzFigure],
         labels: list[str] | None = None,
         widths: list[float] | None = None,
         spacing: str = "0.5cm",

@@ -600,8 +600,6 @@ def test_savefig_tikz_pdf_png_and_invalid(tmp_path, monkeypatch):
     def dummy_open(path):
         return DummyDoc()
 
-    import tikzfigure.core.figure as figure_module
-
     # TODO: This test doesn't work because we are lazy-loading fitz,
     # so the monkeypatch doesn't take effect.
     # monkeypatch.setattr(figure_module.fitz, "open", dummy_open)

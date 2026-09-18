@@ -125,10 +125,10 @@ class FigureExportMixin:
                         else:
                             print(str(e))
                     elif isinstance(e, FileNotFoundError):
-                        print(f"pdflatex not found: {str(e)}")
-                    print(f"\nWeb compilation also failed: {str(web_error)}")
+                        print(f"pdflatex not found: {e!s}")
+                    print(f"\nWeb compilation also failed: {web_error!s}")
                     raise RuntimeError(
-                        f"Local compilation failed. Web compilation fallback also failed: {str(web_error)}"
+                        f"Local compilation failed. Web compilation fallback also failed: {web_error!s}"
                     ) from web_error
 
     def savefig(

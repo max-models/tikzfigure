@@ -16,20 +16,20 @@ from . import (
 )
 
 __all__ = [
-    "TikzFigure",
+    "GanttChart",
     "Node",
     "TikzCoordinate",
+    "TikzFigure",
     "TikzVector",
-    "GanttChart",
-    "units",
+    "arrows",
     "colors",
-    "patterns",
     "decorations",
     "marks",
-    "shapes",
     "options",
+    "patterns",
+    "shapes",
     "styles",
-    "arrows",
+    "units",
 ]
 
 

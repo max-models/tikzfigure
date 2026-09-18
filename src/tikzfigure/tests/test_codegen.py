@@ -59,7 +59,7 @@ def test_name_and_header_options():
     ["plain", r"\draw (0,0);", 'quote"d', 3, 1.5, None, True, ["a", 1], ("x", 2)],
 )
 def test_literals_round_trip(value):
-    assert eval(literal(value)) == value  # noqa: S307
+    assert eval(literal(value)) == value
 
 
 def test_literal_rejects_unknown_objects():
