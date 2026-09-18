@@ -42,10 +42,8 @@ from tikzfigure.core.tikz_library import TikzLibrary
 from tikzfigure.core.types import (
     _Align,
     _Anchor,
-    _Decoration,
     _LineCap,
     _LineJoin,
-    _Mark,
     _Option,
     _Pattern,
     _Shading,
@@ -376,7 +374,7 @@ class TikzFigure(
         # Grid stores either an axis cell or a bare subfigure cell.
         self._subfigure_grid: dict[
             tuple[int, int],
-            tuple[Axis2D, float] | tuple["TikzFigure", float, str],
+            tuple[Axis2D, float] | tuple[TikzFigure, float, str],
         ] = {}
         self._is_bare_subfigure: bool = False
         self._subfigure_position: int = 0
@@ -400,6 +398,38 @@ class TikzFigure(
 
     # ------------------------------------------------------------- #
     # Class methods
+
+    def to_python(
+        self, name: str = "fig", header: bool = True, verify: bool = True
+    ) -> str:
+        """Return Python code that rebuilds this figure.
+
+        Useful together with :meth:`from_tikz_code` to turn existing TikZ
+        source into a tikzfigure script.
+
+        Examples:
+            >>> fig = TikzFigure()
+            >>> _ = fig.add_node(0, 0, label="a", content="A")
+            >>> print(fig.to_python(header=False), end="")
+            fig = TikzFigure()
+            fig.add_node(0, 0, label='a', content='A')
+
+        Args:
+            name: Variable name for the figure in the generated code.
+            header: Include the ``import`` lines.
+            verify: Run the generated code and check it produces the same
+                TikZ output as this figure.
+
+        Returns:
+            Python source code.
+
+        Raises:
+            CodegenError: If the figure uses features that cannot be
+                expressed as Python calls yet (pgfplots axes or subfigures).
+        """
+        from tikzfigure.codegen import figure_to_python
+
+        return figure_to_python(self, name=name, header=header, verify=verify)
 
     def to_dict(self) -> dict[str, Any]:
         """Serialize this figure to a plain dictionary.
@@ -524,11 +554,7 @@ class TikzFigure(
         for layer_label, items_data in layers_data.items():
             for item_data in items_data:
                 item_type = item_data.get("type")
-                if item_type == "Node":
-                    fig.layers.add_item(
-                        node_lookup[item_data["label"]], layer=layer_label
-                    )
-                elif item_type == "Coordinate":
+                if item_type == "Node" or item_type == "Coordinate":
                     fig.layers.add_item(
                         node_lookup[item_data["label"]], layer=layer_label
                     )
@@ -907,13 +933,13 @@ class TikzFigure(
         self.layers.add_item(item=copied, layer=copied.layer or 0, verbose=verbose)
         return copied
 
-    def add(
-        self, items: list | tuple | Node, layer: int = 0, verbose: bool = False
-    ) -> None:
+    def add(self, items: Any, layer: int = 0, verbose: bool = False) -> None:
         """Add one or more pre-built items to the figure.
 
         Args:
-            items: A single :class:`Node` or a list/tuple of items to add.
+            items: A single TikZ object (:class:`Node`, :class:`TikzPath`,
+                :class:`~tikzfigure.core.circle.Circle`, ...) or a
+                list/tuple of them.
             layer: Target layer index. Defaults to ``0``.
             verbose: If ``True``, print a debug message for each insertion.
         """
@@ -924,7 +950,7 @@ class TikzFigure(
             if isinstance(item, Node):
                 self._assign_auto_node_label(item)
                 self._sync_node_counter_from_label(item.label)
-                self.layers.add_item(item=item, layer=layer, verbose=verbose)
+            self.layers.add_item(item=item, layer=layer, verbose=verbose)
 
     def colorlet(
         self,
@@ -1027,7 +1053,6 @@ class TikzFigure(
         self,
         x: (
             float
-            | int
             | str
             | tuple[float | int | str, float | int | str]
             | tuple[float | int | str, float | int | str, float | int | str]
@@ -1035,8 +1060,8 @@ class TikzFigure(
             | TikzCoordinate
             | None
         ) = None,
-        y: float | int | str | None = None,
-        z: float | int | str | None = None,
+        y: float | str | None = None,
+        z: float | str | None = None,
         label: str | None = None,
         content: str = "",
         layer: int = 0,
@@ -1458,15 +1483,14 @@ class TikzFigure(
         label: str,
         x: (
             float
-            | int
             | str
             | tuple[float | int | str, float | int | str]
             | tuple[float | int | str, float | int | str, float | int | str]
             | TikzCoordinate
             | None
         ) = None,
-        y: float | int | str | None = None,
-        z: float | int | str | None = None,
+        y: float | str | None = None,
+        z: float | str | None = None,
         at: str | None = None,
         layer: int = 0,
         comment: str | None = None,
@@ -1546,7 +1570,7 @@ class TikzFigure(
     def add_variable(
         self,
         label: str,
-        value: int | float | str,
+        value: float | str,
         layer: int | None = 0,
         comment: str | None = None,
         verbose: bool = False,
@@ -2176,15 +2200,14 @@ class TikzFigure(
         rows: list[list[Any]],
         x: (
             float
-            | int
             | str
             | tuple[float | int | str, float | int | str]
             | tuple[float | int | str, float | int | str, float | int | str]
             | TikzCoordinate
             | None
         ) = None,
-        y: float | int | str | None = None,
-        z: float | int | str | None = None,
+        y: float | str | None = None,
+        z: float | str | None = None,
         label: str | None = None,
         layer: int = 0,
         comment: str | None = None,
@@ -3197,8 +3220,8 @@ class TikzFigure(
         xlog: bool = False,
         ylog: bool = False,
         grid: bool | str = True,
-        width: str | int | float | None = None,
-        height: str | int | float | None = None,
+        width: str | float | None = None,
+        height: str | float | None = None,
         layer: int = 0,
         comment: str | None = None,
         **kwargs: Any,

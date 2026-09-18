@@ -44,7 +44,7 @@ class DeclaredFunction(TikzObject):
     @staticmethod
     def _normalize_args(args: str | Sequence[str]) -> list[str]:
         raw_args = [args] if isinstance(args, str) else list(args)
-        return [arg[1:] if arg.startswith("\\") else arg for arg in raw_args]
+        return [arg.removeprefix("\\") for arg in raw_args]
 
     @property
     def name(self) -> str:
@@ -106,7 +106,7 @@ class DeclaredFunction(TikzObject):
         return serialized
 
     @classmethod
-    def from_dict(cls, d: dict[str, Any]) -> "DeclaredFunction":
+    def from_dict(cls, d: dict[str, Any]) -> DeclaredFunction:
         """Reconstruct a declared function from a dictionary."""
         restored = deserialize_tikz_value(d)
         if not isinstance(restored, dict):

@@ -202,14 +202,14 @@ class FigureRenderMixin:
             tikz_script += (
                 f"{TAB}\\draw[step=1cm, gray, very thin] (-10,-10) grid (10,10);\n"
             )
-        ordered_layers = []
+        ordered_layers: list[Any] = []
         buffered_layers = set()
 
         for key, layer in self.layers.layers.items():
             reqs = layer.get_reqs()
-            if all([r == layer.label for r in reqs]):
-                ordered_layers.append(layer)
-            elif all([r in [layer.label for layer in ordered_layers] for r in reqs]):
+            if all([r == layer.label for r in reqs]) or all(
+                [r in [layer.label for layer in ordered_layers] for r in reqs]
+            ):
                 ordered_layers.append(layer)
             else:
                 buffered_layers.add(layer)

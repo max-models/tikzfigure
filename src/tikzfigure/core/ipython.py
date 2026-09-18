@@ -126,4 +126,3 @@ def unload_ipython_extension(ipython: Any) -> None:
     Args:
         ipython: The active IPython shell instance. Currently unused.
     """
-    pass

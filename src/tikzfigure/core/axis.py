@@ -36,8 +36,8 @@ class Axis2D(TikzObject):
         label: str = "",
         comment: str | None = None,
         layer: int = 0,
-        width: str | int | float | None = None,
-        height: str | int | float | None = None,
+        width: str | float | None = None,
+        height: str | float | None = None,
         options: OptionInput | None = None,
         library_loader: Callable[[str], None] | None = None,
         spy_scope_enabler: Callable[[], None] | None = None,
@@ -98,9 +98,7 @@ class Axis2D(TikzObject):
         self._spy_scope_enabler = spy_scope_enabler
 
     @staticmethod
-    def _normalize_dimension(
-        value: str | int | float | None, param_name: str
-    ) -> str | None:
+    def _normalize_dimension(value: str | float | None, param_name: str) -> str | None:
         """Normalize dimension input to pgfplots format string.
 
         Args:
@@ -463,7 +461,7 @@ class Axis2D(TikzObject):
 
         # Add user kwargs (converted with underscore → space)
         for k, v in self.kwargs.items():
-            axis_opts.append(f"{k.replace('_', ' ')}={str(v)}")
+            axis_opts.append(f"{k.replace('_', ' ')}={v!s}")
 
         axis_opts_str = ", ".join(axis_opts)
 

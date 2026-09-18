@@ -71,7 +71,7 @@ class GanttChart(TikzObject):
     def rows(self) -> list[dict[str, Any]]:
         return self._rows
 
-    def add_row(self, row_type: str, **row: Any) -> "GanttChart":
+    def add_row(self, row_type: str, **row: Any) -> GanttChart:
         """Append a row and return this chart for fluent construction."""
         row = dict(row)
         row["type"] = row_type
@@ -147,7 +147,7 @@ class GanttChart(TikzObject):
         return data
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "GanttChart":
+    def from_dict(cls, data: dict[str, Any]) -> GanttChart:
         restored = cls._copy_value(data)
         if not isinstance(restored, dict):
             raise TypeError("Serialized Gantt chart data must be a dict.")

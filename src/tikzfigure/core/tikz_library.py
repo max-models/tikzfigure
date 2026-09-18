@@ -35,7 +35,7 @@ class TikzLibrary:
 
     name: ClassVar[str]
 
-    registry: ClassVar[dict[str, type["TikzLibrary"]]] = {}
+    registry: ClassVar[dict[str, type[TikzLibrary]]] = {}
 
     def __init_subclass__(cls, **kwargs: object) -> None:
         super().__init_subclass__(**kwargs)
@@ -45,7 +45,7 @@ class TikzLibrary:
         TikzLibrary.registry[name] = cls
 
     @classmethod
-    def ensure(cls, figure: "TikzFigure") -> None:
+    def ensure(cls, figure: TikzFigure) -> None:
         """Register this library on *figure*. Safe to call more than once."""
         figure.usetikzlibrary(cls.name)
 

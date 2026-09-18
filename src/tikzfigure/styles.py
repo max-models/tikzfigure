@@ -19,7 +19,7 @@ class TikzStyle(TikzToken):
 StyleInput: TypeAlias = str | TikzStyle
 
 
-def _format_measure(value: str | int | float | TikzDimension) -> str:
+def _format_measure(value: str | float | TikzDimension) -> str:
     if isinstance(value, TikzDimension):
         return str(value)
     if isinstance(value, (int, float)):
@@ -32,19 +32,19 @@ def style(style_spec: str) -> TikzStyle:
     return TikzStyle(style_spec)
 
 
-def line_width(value: str | int | float | TikzDimension) -> TikzStyle:
+def line_width(value: str | float | TikzDimension) -> TikzStyle:
     """Build a ``line width=...`` option fragment."""
     return TikzStyle(f"line width={_format_measure(value)}")
 
 
-def rounded_corners(radius: str | int | float | TikzDimension) -> TikzStyle:
+def rounded_corners(radius: str | float | TikzDimension) -> TikzStyle:
     """Build a ``rounded corners=...`` option fragment."""
     return TikzStyle(f"rounded corners={_format_measure(radius)}")
 
 
 def dash_pattern(
-    on: str | int | float | TikzDimension,
-    off: str | int | float | TikzDimension,
+    on: str | float | TikzDimension,
+    off: str | float | TikzDimension,
 ) -> TikzStyle:
     """Build a simple ``dash pattern=on ... off ...`` option fragment."""
     return TikzStyle(
@@ -95,39 +95,39 @@ miter: TikzStyle = TikzStyle("miter")
 bevel: TikzStyle = TikzStyle("bevel")
 
 __all__ = [
-    "TikzStyle",
     "StyleInput",
-    "style",
-    "line_width",
-    "rounded_corners",
-    "dash_pattern",
+    "TikzStyle",
     "bend_left",
     "bend_right",
-    "solid",
-    "dashed",
-    "dotted",
-    "densely_dashed",
-    "loosely_dashed",
-    "densely_dotted",
-    "loosely_dotted",
+    "bevel",
+    "butt",
+    "clip",
     "dash_dot",
+    "dash_pattern",
+    "dashed",
+    "decorate",
     "densely_dash_dot",
-    "loosely_dash_dot",
-    "ultra_thin",
-    "very_thin",
-    "thin",
-    "semithick",
-    "thick",
-    "very_thick",
-    "ultra_thick",
+    "densely_dashed",
+    "densely_dotted",
+    "dotted",
     "draw",
     "fill",
-    "clip",
-    "decorate",
-    "sharp_corners",
-    "butt",
+    "line_width",
+    "loosely_dash_dot",
+    "loosely_dashed",
+    "loosely_dotted",
+    "miter",
     "rect",
     "round",
-    "miter",
-    "bevel",
+    "rounded_corners",
+    "semithick",
+    "sharp_corners",
+    "solid",
+    "style",
+    "thick",
+    "thin",
+    "ultra_thick",
+    "ultra_thin",
+    "very_thick",
+    "very_thin",
 ]

@@ -37,19 +37,19 @@ latex_reversed: TikzArrow = TikzArrow("latex-")
 latex_both: TikzArrow = TikzArrow("latex-latex")
 
 __all__ = [
-    "TikzArrow",
     "ArrowInput",
-    "tip",
-    "forward",
+    "TikzArrow",
     "backward",
-    "both",
-    "bar_forward",
     "bar_backward",
     "bar_both",
-    "stealth",
-    "stealth_reversed",
-    "stealth_both",
+    "bar_forward",
+    "both",
+    "forward",
     "latex",
-    "latex_reversed",
     "latex_both",
+    "latex_reversed",
+    "stealth",
+    "stealth_both",
+    "stealth_reversed",
+    "tip",
 ]

@@ -371,7 +371,7 @@ class Plot3D(TikzPath):
     @classmethod
     def from_dict(
         cls, d: dict[str, Any], node_lookup: dict[str, Any] | None = None
-    ) -> "Plot3D":  # noqa: ARG003
+    ) -> "Plot3D":
         """Reconstruct a Plot3D from a dictionary.
 
         Args:

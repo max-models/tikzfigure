@@ -12,7 +12,7 @@ from tikzfigure.core.coordinate import (
     VectorInput,
 )
 from tikzfigure.core.serialization import deserialize_tikz_value, serialize_tikz_value
-from tikzfigure.core.types import _Align, _Anchor, _Option, _Pattern, _Shading, _Shape
+from tikzfigure.core.types import _Align, _Anchor, _Pattern, _Shading, _Shape
 from tikzfigure.options import OptionInput
 
 if TYPE_CHECKING:

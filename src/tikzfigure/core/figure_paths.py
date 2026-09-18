@@ -161,7 +161,7 @@ class FigurePathMixin:
         draw_opacity: float | None = None,
         fill_opacity: float | None = None,
         text_opacity: float | None = None,
-        line_width: str | int | float | None = None,
+        line_width: str | float | None = None,
         line_cap: _LineCap = None,
         line_join: _LineJoin = None,
         miter_limit: float | None = None,
