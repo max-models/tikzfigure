@@ -401,6 +401,38 @@ class TikzFigure(
     # ------------------------------------------------------------- #
     # Class methods
 
+    def to_python(
+        self, name: str = "fig", header: bool = True, verify: bool = True
+    ) -> str:
+        """Return Python code that rebuilds this figure.
+
+        Useful together with :meth:`from_tikz_code` to turn existing TikZ
+        source into a tikzfigure script.
+
+        Examples:
+            >>> fig = TikzFigure()
+            >>> _ = fig.add_node(0, 0, label="a", content="A")
+            >>> print(fig.to_python(header=False), end="")
+            fig = TikzFigure()
+            fig.add_node(0, 0, label='a', content='A')
+
+        Args:
+            name: Variable name for the figure in the generated code.
+            header: Include the ``import`` lines.
+            verify: Run the generated code and check it produces the same
+                TikZ output as this figure.
+
+        Returns:
+            Python source code.
+
+        Raises:
+            CodegenError: If the figure uses features that cannot be
+                expressed as Python calls yet (pgfplots axes or subfigures).
+        """
+        from tikzfigure.codegen import figure_to_python
+
+        return figure_to_python(self, name=name, header=header, verify=verify)
+
     def to_dict(self) -> dict[str, Any]:
         """Serialize this figure to a plain dictionary.
 
@@ -907,13 +939,13 @@ class TikzFigure(
         self.layers.add_item(item=copied, layer=copied.layer or 0, verbose=verbose)
         return copied
 
-    def add(
-        self, items: list | tuple | Node, layer: int = 0, verbose: bool = False
-    ) -> None:
+    def add(self, items: Any, layer: int = 0, verbose: bool = False) -> None:
         """Add one or more pre-built items to the figure.
 
         Args:
-            items: A single :class:`Node` or a list/tuple of items to add.
+            items: A single TikZ object (:class:`Node`, :class:`TikzPath`,
+                :class:`~tikzfigure.core.circle.Circle`, ...) or a
+                list/tuple of them.
             layer: Target layer index. Defaults to ``0``.
             verbose: If ``True``, print a debug message for each insertion.
         """
@@ -924,7 +956,7 @@ class TikzFigure(
             if isinstance(item, Node):
                 self._assign_auto_node_label(item)
                 self._sync_node_counter_from_label(item.label)
-                self.layers.add_item(item=item, layer=layer, verbose=verbose)
+            self.layers.add_item(item=item, layer=layer, verbose=verbose)
 
     def colorlet(
         self,

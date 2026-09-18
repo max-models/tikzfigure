@@ -18,6 +18,25 @@ python -m tikzfigure.parser.catalogue tikz_catalogue --details  # every raw stat
 The *Unsupported constructs* table ranks what forces raw fallbacks across the
 catalogue. Use it to decide what to wrap next.
 
+## TikZ to Python
+
+`tikzfigure.codegen` turns a parsed figure back into the calls that build it,
+so an existing figure can become a tikzfigure script:
+
+```bash
+python -m tikzfigure.codegen tikz_catalogue/19_commutative_diagram.tex
+```
+
+```python
+fig = TikzFigure()
+fig.add_node(0, 2, label='A', content='$A$')
+fig.add_node(2.5, 2, label='B', content='$B$')
+fig.draw(['A', 'B'], segment_options=[{'connector': '--', 'node': {'content': '$f$', 'options': ['above']}}], options=['->'])
+```
+
+`figure.to_python()` runs the generated code and compares its TikZ output with
+the figure before returning, so the result is verified rather than plausible.
+
 ## Tests
 
 `src/tikzfigure/tests/test_tikz_catalogue.py` checks every entry:

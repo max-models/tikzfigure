@@ -189,6 +189,16 @@ class Scope(FigurePathMixin, TikzObject):
         self._items.append(coord)
         return coord
 
+    def add(self, items: Any) -> None:
+        """Add one or more pre-built TikZ objects to this scope.
+
+        Args:
+            items: A single TikZ object or a list/tuple of them.
+        """
+        if not isinstance(items, list | tuple):
+            items = [items]
+        self._items.extend(items)
+
     def add_raw(self, tikz_code: str) -> RawTikz:
         raw = RawTikz(tikz_code)
         self._items.append(raw)

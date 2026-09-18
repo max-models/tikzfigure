@@ -340,6 +340,16 @@ class Loop(FigurePathMixin, TikzObject):
         self._items.append(loop)
         return loop
 
+    def add(self, items: Any) -> None:
+        """Add one or more pre-built TikZ objects to this loop.
+
+        Args:
+            items: A single TikZ object or a list/tuple of them.
+        """
+        if not isinstance(items, list | tuple):
+            items = [items]
+        self._items.extend(items)
+
     def add_raw(self, tikz_code: str) -> RawTikz:
         raw = RawTikz(tikz_code)
         self._items.append(raw)
