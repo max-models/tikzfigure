@@ -146,19 +146,22 @@ class _FigureCodegen:
 
     def emit_item(self, item: Any, target: str, layer: int, depth: int) -> None:
         in_container = target != self.name
-        for kind, emitter in (
-            (Node, self._emit_node),
-            (Coordinate, self._emit_coordinate),
-            (TikzPath, self._emit_path),
-            ((Circle, Rectangle), self._emit_shape),
-            (RawTikz, self._emit_raw),
-            (Scope, self._emit_scope),
-            (Loop, self._emit_loop),
-        ):
-            if isinstance(item, kind):
-                emitter(item, target, layer, depth, in_container)
-                return
-        self._emit_generic(item, target, layer, depth, in_container)
+        if isinstance(item, Node):
+            self._emit_node(item, target, layer, depth, in_container)
+        elif isinstance(item, Coordinate):
+            self._emit_coordinate(item, target, layer, depth, in_container)
+        elif isinstance(item, TikzPath):
+            self._emit_path(item, target, layer, depth, in_container)
+        elif isinstance(item, (Circle, Rectangle)):
+            self._emit_shape(item, target, layer, depth, in_container)
+        elif isinstance(item, RawTikz):
+            self._emit_raw(item, target, layer, depth, in_container)
+        elif isinstance(item, Scope):
+            self._emit_scope(item, target, layer, depth, in_container)
+        elif isinstance(item, Loop):
+            self._emit_loop(item, target, layer, depth, in_container)
+        else:
+            self._emit_generic(item, target, layer, depth, in_container)
 
     def _call_reproduces(
         self,

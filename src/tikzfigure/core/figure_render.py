@@ -202,7 +202,7 @@ class FigureRenderMixin:
             tikz_script += (
                 f"{TAB}\\draw[step=1cm, gray, very thin] (-10,-10) grid (10,10);\n"
             )
-        ordered_layers = []
+        ordered_layers: list[Any] = []
         buffered_layers = set()
 
         for key, layer in self.layers.layers.items():
