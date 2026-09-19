@@ -25,6 +25,11 @@ SECTIONS: list[tuple[str, str, str]] = [
     ("Figure API", "from tikzfigure import TikzFigure", "tikzfigure.core.figure"),
     ("Node API", "from tikzfigure import Node", "tikzfigure.core.node"),
     (
+        "Implicit figure API",
+        "import tikzfigure as tf",
+        "tikzfigure.pyplot",
+    ),
+    (
         "Coordinates and vectors",
         "from tikzfigure import TikzCoordinate, TikzVector",
         "tikzfigure.core.coordinate",
