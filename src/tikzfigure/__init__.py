@@ -10,10 +10,13 @@ from . import (
     marks,
     options,
     patterns,
+    pyplot,
     shapes,
     styles,
     units,
 )
+from .pyplot import *  # noqa: F403
+from .pyplot import __all__ as _pyplot_all
 
 __all__ = [
     "GanttChart",
@@ -27,9 +30,11 @@ __all__ = [
     "marks",
     "options",
     "patterns",
+    "pyplot",
     "shapes",
     "styles",
     "units",
+    *_pyplot_all,
 ]
 
 
