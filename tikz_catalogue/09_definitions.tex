@@ -1,0 +1,22 @@
+% catalogue: title = Macros, colors, functions and tikzset styles
+% catalogue: min-coverage = 0.88
+\documentclass[border=10pt]{standalone}
+\PassOptionsToPackage{dvipsnames,svgnames,x11names}{xcolor}
+\usepackage{tikz}
+\usepackage{pgfplots}
+\pgfplotsset{compat=newest}
+\usepgfplotslibrary{groupplots}
+\usetikzlibrary{arrows.meta}
+\begin{document}
+\begin{tikzpicture}
+    \tikzset{important/.style={very thick, draw=red}}
+    \pgfmathsetmacro{\radius}{1.5}
+    \pgfkeys{/pgf/declare function={sq(\x) = \x*\x;}}
+    \colorlet{soft}{blue!30}
+    \draw[important] (0, 0) -- (2, 0);
+    \fill[soft] (3, 0) circle ({\radius});
+    \node at (0, 1) {\pgfmathparse{sq(3)}\pgfmathresult};
+    \definecolor{mygreen}{RGB}{20,160,60}
+    \draw[mygreen, ultra thick] (0, -1) -- (2, -1);
+\end{tikzpicture}
+\end{document}

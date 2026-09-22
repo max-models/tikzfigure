@@ -1,0 +1,20 @@
+% catalogue: title = Edges, label and pin options, quotes
+% catalogue: min-coverage = 0.71
+\documentclass[border=10pt]{standalone}
+\PassOptionsToPackage{dvipsnames,svgnames,x11names}{xcolor}
+\usepackage{tikz}
+\usepackage{pgfplots}
+\pgfplotsset{compat=newest}
+\usepgfplotslibrary{groupplots}
+\usetikzlibrary{arrows.meta,quotes}
+\begin{document}
+\begin{tikzpicture}
+    \node[draw, label=above:top, pin=right:pin] (a) at (0, 0) {A};
+    \node[draw] (b) at (3, 0) {B};
+    \node[draw] (c) at (1.5, -2) {C};
+    \draw (a) edge[->, bend left] (b) edge[->] (c);
+    \draw (b) to["label" below] (c);
+    \path (a) edge[loop left] (a);
+    \draw (a) -- node[midway, sloped, above] {sloped} (c);
+\end{tikzpicture}
+\end{document}

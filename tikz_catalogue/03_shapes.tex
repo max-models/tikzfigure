@@ -1,0 +1,20 @@
+% catalogue: title = Circles, rectangles, arcs, grids and ellipses
+% catalogue: min-coverage = 0.57
+\documentclass[border=10pt]{standalone}
+\PassOptionsToPackage{dvipsnames,svgnames,x11names}{xcolor}
+\usepackage{tikz}
+\usepackage{pgfplots}
+\pgfplotsset{compat=newest}
+\usepgfplotslibrary{groupplots}
+\usetikzlibrary{arrows.meta}
+\begin{document}
+\begin{tikzpicture}
+    \draw[step=0.5, gray!40, very thin] (-1, -1) grid (3, 2);
+    \draw[thick] (0, 0) circle (1cm);
+    \filldraw[fill=yellow!40, draw=black] (1.5, 0) rectangle (2.5, 1.5);
+    \draw[blue] (0, 0) arc[start angle=0, end angle=120, radius=1.5];
+    \draw (0, 0) ellipse (2cm and 1cm);
+    \draw[red] (2, -0.5) circle[radius=3mm];
+    \fill[gray] (0, 0) circle (2pt);
+\end{tikzpicture}
+\end{document}

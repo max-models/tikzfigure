@@ -1,0 +1,23 @@
+% catalogue: title = Numbered pgf layers
+% catalogue: min-coverage = 1.00
+\documentclass[border=10pt]{standalone}
+\PassOptionsToPackage{dvipsnames,svgnames,x11names}{xcolor}
+\usepackage{tikz}
+\usepackage{pgfplots}
+\pgfplotsset{compat=newest}
+\usepgfplotslibrary{groupplots}
+\usetikzlibrary{arrows.meta}
+\begin{document}
+\begin{tikzpicture}
+    \pgfdeclarelayer{0}
+    \pgfdeclarelayer{1}
+    \pgfsetlayers{0,1}
+    \begin{pgfonlayer}{1}
+        \node[draw, fill=white] (a) at (0, 0) {front};
+        \node[draw, fill=white] (b) at (2, 1) {also front};
+    \end{pgfonlayer}
+    \begin{pgfonlayer}{0}
+        \draw[line width=4pt, gray] (a) -- (b);
+    \end{pgfonlayer}
+\end{tikzpicture}
+\end{document}
