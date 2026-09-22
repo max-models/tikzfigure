@@ -189,6 +189,10 @@ junit/
 # *.png
 *.jpg
 
+# ... except the committed test fixtures, which are the point of the tests.
+!src/tikzfigure/tests/snapshots/*.tex
+!tikz_catalogue/*.tex
+
 # Outputs
 tutorials/*_files/
 

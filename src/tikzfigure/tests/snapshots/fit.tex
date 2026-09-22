@@ -1,0 +1,15 @@
+\documentclass[border=10pt]{standalone}
+\PassOptionsToPackage{dvipsnames,svgnames,x11names}{xcolor}
+\usepackage{tikz}
+\usepackage{pgfplots}
+\pgfplotsset{compat=newest}
+\usepgfplotslibrary{groupplots}
+\usetikzlibrary{arrows.meta,fit}
+\begin{document}
+\begin{tikzpicture}
+    \node (a) at ({0}, {0}) {A};
+    \node (b) at ({2}, {1}) {B};
+    \node[fit=(a)(b), draw, dashed, inner sep=4pt] (node2) {};
+\end{tikzpicture}
+
+\end{document}

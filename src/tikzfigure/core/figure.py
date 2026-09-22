@@ -38,6 +38,7 @@ from tikzfigure.core.spy import (
     SpyLibrary,
     SpyScopeMode,
 )
+from tikzfigure.core.style_options import collect_style
 from tikzfigure.core.tikz_library import TikzLibrary
 from tikzfigure.core.types import (
     _Align,
@@ -103,14 +104,17 @@ class TikzFigure(
     to compile it, and :meth:`savefig` / :meth:`show` to export or display
     the result.
 
-    Compilation: By default, :meth:`compile_pdf`, :meth:`savefig`, and
-    :meth:`show` use pdflatex if available on your system. If pdflatex is
-    unavailable, tikzfigure automatically falls back to the latex-on-http
-    web API for compilation. You can explicitly request web-based compilation
-    by passing ``use_web_compilation=True`` to these methods. This allows
-    figures to be compiled and rendered without requiring a local LaTeX
-    installation. You can also force this behavior process-wide by setting
-    the ``TIKZFIGURE_USE_WEB_COMPILATION=1`` environment variable. See
+    Compilation: :meth:`compile_pdf`, :meth:`savefig`, and :meth:`show`
+    compile with a local pdflatex. If pdflatex is missing or the document
+    fails to build, they raise a :class:`RuntimeError` describing what went
+    wrong.
+
+    Without a local LaTeX installation, tikzfigure can compile through the
+    latex-on-http web API instead. That uploads the LaTeX source of the figure
+    to a third-party server, so it is opt-in and never happens on its own:
+    pass ``use_web_compilation=True`` to those methods, or set
+    ``TIKZFIGURE_USE_WEB_COMPILATION=1`` to enable it process-wide. Either way
+    a :class:`UserWarning` is emitted when a figure is uploaded. See
     https://github.com/max-models/tikzfigure for more details.
 
     Attributes:
@@ -1877,49 +1881,7 @@ class TikzFigure(
         if arrows:
             options.append(arrows)
 
-        arc_kwargs: dict[str, Any] = {}
-        if color is not None:
-            arc_kwargs["color"] = color
-        if fill is not None:
-            arc_kwargs["fill"] = fill
-        if draw is not None:
-            arc_kwargs["draw"] = draw
-        if text is not None:
-            arc_kwargs["text"] = text
-        if opacity is not None:
-            arc_kwargs["opacity"] = opacity
-        if draw_opacity is not None:
-            arc_kwargs["draw_opacity"] = draw_opacity
-        if fill_opacity is not None:
-            arc_kwargs["fill_opacity"] = fill_opacity
-        if text_opacity is not None:
-            arc_kwargs["text_opacity"] = text_opacity
-        if line_width is not None:
-            arc_kwargs["line_width"] = line_width
-        if line_cap is not None:
-            arc_kwargs["line_cap"] = line_cap
-        if line_join is not None:
-            arc_kwargs["line_join"] = line_join
-        if miter_limit is not None:
-            arc_kwargs["miter_limit"] = miter_limit
-        if dash_pattern is not None:
-            arc_kwargs["dash_pattern"] = dash_pattern
-        if dash_phase is not None:
-            arc_kwargs["dash_phase"] = dash_phase
-        if rotate is not None:
-            arc_kwargs["rotate"] = rotate
-        if xshift is not None:
-            arc_kwargs["xshift"] = xshift
-        if yshift is not None:
-            arc_kwargs["yshift"] = yshift
-        if scale is not None:
-            arc_kwargs["scale"] = scale
-        if xscale is not None:
-            arc_kwargs["xscale"] = xscale
-        if yscale is not None:
-            arc_kwargs["yscale"] = yscale
-
-        arc_kwargs.update(kwargs)
+        arc_kwargs = collect_style(locals(), kwargs)
 
         arc = Arc(
             start=start,
@@ -2007,49 +1969,7 @@ class TikzFigure(
         Returns:
             The :class:`Circle` object that was added.
         """
-        circle_kwargs: dict[str, Any] = {}
-        if color is not None:
-            circle_kwargs["color"] = color
-        if fill is not None:
-            circle_kwargs["fill"] = fill
-        if draw is not None:
-            circle_kwargs["draw"] = draw
-        if text is not None:
-            circle_kwargs["text"] = text
-        if opacity is not None:
-            circle_kwargs["opacity"] = opacity
-        if draw_opacity is not None:
-            circle_kwargs["draw_opacity"] = draw_opacity
-        if fill_opacity is not None:
-            circle_kwargs["fill_opacity"] = fill_opacity
-        if text_opacity is not None:
-            circle_kwargs["text_opacity"] = text_opacity
-        if line_width is not None:
-            circle_kwargs["line_width"] = line_width
-        if line_cap is not None:
-            circle_kwargs["line_cap"] = line_cap
-        if line_join is not None:
-            circle_kwargs["line_join"] = line_join
-        if miter_limit is not None:
-            circle_kwargs["miter_limit"] = miter_limit
-        if dash_pattern is not None:
-            circle_kwargs["dash_pattern"] = dash_pattern
-        if dash_phase is not None:
-            circle_kwargs["dash_phase"] = dash_phase
-        if rotate is not None:
-            circle_kwargs["rotate"] = rotate
-        if xshift is not None:
-            circle_kwargs["xshift"] = xshift
-        if yshift is not None:
-            circle_kwargs["yshift"] = yshift
-        if scale is not None:
-            circle_kwargs["scale"] = scale
-        if xscale is not None:
-            circle_kwargs["xscale"] = xscale
-        if yscale is not None:
-            circle_kwargs["yscale"] = yscale
-
-        circle_kwargs.update(kwargs)
+        circle_kwargs = collect_style(locals(), kwargs)
 
         circle = Circle(
             center=center,
@@ -2137,51 +2057,7 @@ class TikzFigure(
         Returns:
             The :class:`Rectangle` object that was added.
         """
-        rect_kwargs: dict[str, Any] = {}
-        if color is not None:
-            rect_kwargs["color"] = color
-        if fill is not None:
-            rect_kwargs["fill"] = fill
-        if draw is not None:
-            rect_kwargs["draw"] = draw
-        if text is not None:
-            rect_kwargs["text"] = text
-        if opacity is not None:
-            rect_kwargs["opacity"] = opacity
-        if draw_opacity is not None:
-            rect_kwargs["draw_opacity"] = draw_opacity
-        if fill_opacity is not None:
-            rect_kwargs["fill_opacity"] = fill_opacity
-        if text_opacity is not None:
-            rect_kwargs["text_opacity"] = text_opacity
-        if line_width is not None:
-            rect_kwargs["line_width"] = line_width
-        if line_cap is not None:
-            rect_kwargs["line_cap"] = line_cap
-        if line_join is not None:
-            rect_kwargs["line_join"] = line_join
-        if miter_limit is not None:
-            rect_kwargs["miter_limit"] = miter_limit
-        if dash_pattern is not None:
-            rect_kwargs["dash_pattern"] = dash_pattern
-        if dash_phase is not None:
-            rect_kwargs["dash_phase"] = dash_phase
-        if rounded_corners is not None:
-            rect_kwargs["rounded_corners"] = rounded_corners
-        if rotate is not None:
-            rect_kwargs["rotate"] = rotate
-        if xshift is not None:
-            rect_kwargs["xshift"] = xshift
-        if yshift is not None:
-            rect_kwargs["yshift"] = yshift
-        if scale is not None:
-            rect_kwargs["scale"] = scale
-        if xscale is not None:
-            rect_kwargs["xscale"] = xscale
-        if yscale is not None:
-            rect_kwargs["yscale"] = yscale
-
-        rect_kwargs.update(kwargs)
+        rect_kwargs = collect_style(locals(), kwargs)
 
         rectangle = Rectangle(
             corner1=corner1,
@@ -2450,49 +2326,7 @@ class TikzFigure(
         Returns:
             The :class:`Ellipse` object that was added.
         """
-        ellipse_kwargs: dict[str, Any] = {}
-        if color is not None:
-            ellipse_kwargs["color"] = color
-        if fill is not None:
-            ellipse_kwargs["fill"] = fill
-        if draw is not None:
-            ellipse_kwargs["draw"] = draw
-        if text is not None:
-            ellipse_kwargs["text"] = text
-        if opacity is not None:
-            ellipse_kwargs["opacity"] = opacity
-        if draw_opacity is not None:
-            ellipse_kwargs["draw_opacity"] = draw_opacity
-        if fill_opacity is not None:
-            ellipse_kwargs["fill_opacity"] = fill_opacity
-        if text_opacity is not None:
-            ellipse_kwargs["text_opacity"] = text_opacity
-        if line_width is not None:
-            ellipse_kwargs["line_width"] = line_width
-        if line_cap is not None:
-            ellipse_kwargs["line_cap"] = line_cap
-        if line_join is not None:
-            ellipse_kwargs["line_join"] = line_join
-        if miter_limit is not None:
-            ellipse_kwargs["miter_limit"] = miter_limit
-        if dash_pattern is not None:
-            ellipse_kwargs["dash_pattern"] = dash_pattern
-        if dash_phase is not None:
-            ellipse_kwargs["dash_phase"] = dash_phase
-        if rotate is not None:
-            ellipse_kwargs["rotate"] = rotate
-        if xshift is not None:
-            ellipse_kwargs["xshift"] = xshift
-        if yshift is not None:
-            ellipse_kwargs["yshift"] = yshift
-        if scale is not None:
-            ellipse_kwargs["scale"] = scale
-        if xscale is not None:
-            ellipse_kwargs["xscale"] = xscale
-        if yscale is not None:
-            ellipse_kwargs["yscale"] = yscale
-
-        ellipse_kwargs.update(kwargs)
+        ellipse_kwargs = collect_style(locals(), kwargs)
 
         ellipse = Ellipse(
             center=center,
@@ -2570,37 +2404,7 @@ class TikzFigure(
         Returns:
             The :class:`Grid` object that was added.
         """
-        grid_kwargs: dict[str, Any] = {}
-        if color is not None:
-            grid_kwargs["color"] = color
-        if opacity is not None:
-            grid_kwargs["opacity"] = opacity
-        if draw_opacity is not None:
-            grid_kwargs["draw_opacity"] = draw_opacity
-        if line_width is not None:
-            grid_kwargs["line_width"] = line_width
-        if line_cap is not None:
-            grid_kwargs["line_cap"] = line_cap
-        if line_join is not None:
-            grid_kwargs["line_join"] = line_join
-        if dash_pattern is not None:
-            grid_kwargs["dash_pattern"] = dash_pattern
-        if dash_phase is not None:
-            grid_kwargs["dash_phase"] = dash_phase
-        if rotate is not None:
-            grid_kwargs["rotate"] = rotate
-        if xshift is not None:
-            grid_kwargs["xshift"] = xshift
-        if yshift is not None:
-            grid_kwargs["yshift"] = yshift
-        if scale is not None:
-            grid_kwargs["scale"] = scale
-        if xscale is not None:
-            grid_kwargs["xscale"] = xscale
-        if yscale is not None:
-            grid_kwargs["yscale"] = yscale
-
-        grid_kwargs.update(kwargs)
+        grid_kwargs = collect_style(locals(), kwargs)
 
         grid_obj = Grid(
             corner1=corner1,
@@ -2696,49 +2500,7 @@ class TikzFigure(
         if arrows:
             options.append(arrows)
 
-        parabola_kwargs: dict[str, Any] = {}
-        if color is not None:
-            parabola_kwargs["color"] = color
-        if fill is not None:
-            parabola_kwargs["fill"] = fill
-        if draw is not None:
-            parabola_kwargs["draw"] = draw
-        if text is not None:
-            parabola_kwargs["text"] = text
-        if opacity is not None:
-            parabola_kwargs["opacity"] = opacity
-        if draw_opacity is not None:
-            parabola_kwargs["draw_opacity"] = draw_opacity
-        if fill_opacity is not None:
-            parabola_kwargs["fill_opacity"] = fill_opacity
-        if text_opacity is not None:
-            parabola_kwargs["text_opacity"] = text_opacity
-        if line_width is not None:
-            parabola_kwargs["line_width"] = line_width
-        if line_cap is not None:
-            parabola_kwargs["line_cap"] = line_cap
-        if line_join is not None:
-            parabola_kwargs["line_join"] = line_join
-        if miter_limit is not None:
-            parabola_kwargs["miter_limit"] = miter_limit
-        if dash_pattern is not None:
-            parabola_kwargs["dash_pattern"] = dash_pattern
-        if dash_phase is not None:
-            parabola_kwargs["dash_phase"] = dash_phase
-        if rotate is not None:
-            parabola_kwargs["rotate"] = rotate
-        if xshift is not None:
-            parabola_kwargs["xshift"] = xshift
-        if yshift is not None:
-            parabola_kwargs["yshift"] = yshift
-        if scale is not None:
-            parabola_kwargs["scale"] = scale
-        if xscale is not None:
-            parabola_kwargs["xscale"] = xscale
-        if yscale is not None:
-            parabola_kwargs["yscale"] = yscale
-
-        parabola_kwargs.update(kwargs)
+        parabola_kwargs = collect_style(locals(), kwargs)
 
         parabola = Parabola(
             start=start,
@@ -2826,41 +2588,7 @@ class TikzFigure(
         if arrows:
             normalized_options.append(arrows)
 
-        line_kwargs: dict[str, Any] = {}
-        if color is not None:
-            line_kwargs["color"] = color
-        if text is not None:
-            line_kwargs["text"] = text
-        if opacity is not None:
-            line_kwargs["opacity"] = opacity
-        if draw_opacity is not None:
-            line_kwargs["draw_opacity"] = draw_opacity
-        if line_width is not None:
-            line_kwargs["line_width"] = line_width
-        if line_cap is not None:
-            line_kwargs["line_cap"] = line_cap
-        if line_join is not None:
-            line_kwargs["line_join"] = line_join
-        if miter_limit is not None:
-            line_kwargs["miter_limit"] = miter_limit
-        if dash_pattern is not None:
-            line_kwargs["dash_pattern"] = dash_pattern
-        if dash_phase is not None:
-            line_kwargs["dash_phase"] = dash_phase
-        if rotate is not None:
-            line_kwargs["rotate"] = rotate
-        if xshift is not None:
-            line_kwargs["xshift"] = xshift
-        if yshift is not None:
-            line_kwargs["yshift"] = yshift
-        if scale is not None:
-            line_kwargs["scale"] = scale
-        if xscale is not None:
-            line_kwargs["xscale"] = xscale
-        if yscale is not None:
-            line_kwargs["yscale"] = yscale
-
-        line_kwargs.update(kwargs)
+        line_kwargs = collect_style(locals(), kwargs)
 
         line = Line(
             start=start,
@@ -2951,49 +2679,7 @@ class TikzFigure(
         if sides < 3:
             raise ValueError("Polygon must have at least 3 sides")
 
-        polygon_kwargs: dict[str, Any] = {}
-        if color is not None:
-            polygon_kwargs["color"] = color
-        if fill is not None:
-            polygon_kwargs["fill"] = fill
-        if draw is not None:
-            polygon_kwargs["draw"] = draw
-        if text is not None:
-            polygon_kwargs["text"] = text
-        if opacity is not None:
-            polygon_kwargs["opacity"] = opacity
-        if draw_opacity is not None:
-            polygon_kwargs["draw_opacity"] = draw_opacity
-        if fill_opacity is not None:
-            polygon_kwargs["fill_opacity"] = fill_opacity
-        if text_opacity is not None:
-            polygon_kwargs["text_opacity"] = text_opacity
-        if line_width is not None:
-            polygon_kwargs["line_width"] = line_width
-        if line_cap is not None:
-            polygon_kwargs["line_cap"] = line_cap
-        if line_join is not None:
-            polygon_kwargs["line_join"] = line_join
-        if miter_limit is not None:
-            polygon_kwargs["miter_limit"] = miter_limit
-        if dash_pattern is not None:
-            polygon_kwargs["dash_pattern"] = dash_pattern
-        if dash_phase is not None:
-            polygon_kwargs["dash_phase"] = dash_phase
-        if rotate is not None:
-            polygon_kwargs["rotate"] = rotate
-        if xshift is not None:
-            polygon_kwargs["xshift"] = xshift
-        if yshift is not None:
-            polygon_kwargs["yshift"] = yshift
-        if scale is not None:
-            polygon_kwargs["scale"] = scale
-        if xscale is not None:
-            polygon_kwargs["xscale"] = xscale
-        if yscale is not None:
-            polygon_kwargs["yscale"] = yscale
-
-        polygon_kwargs.update(kwargs)
+        polygon_kwargs = collect_style(locals(), kwargs)
 
         polygon = Polygon(
             center=center,
@@ -3056,27 +2742,7 @@ class TikzFigure(
         Returns:
             The :class:`Triangle` object that was added.
         """
-        triangle_kwargs: dict[str, Any] = {}
-        if color is not None:
-            triangle_kwargs["color"] = color
-        if fill is not None:
-            triangle_kwargs["fill"] = fill
-        if draw is not None:
-            triangle_kwargs["draw"] = draw
-        if text is not None:
-            triangle_kwargs["text"] = text
-        if opacity is not None:
-            triangle_kwargs["opacity"] = opacity
-        if draw_opacity is not None:
-            triangle_kwargs["draw_opacity"] = draw_opacity
-        if fill_opacity is not None:
-            triangle_kwargs["fill_opacity"] = fill_opacity
-        if text_opacity is not None:
-            triangle_kwargs["text_opacity"] = text_opacity
-        if line_width is not None:
-            triangle_kwargs["line_width"] = line_width
-
-        triangle_kwargs.update(kwargs)
+        triangle_kwargs = collect_style(locals(), kwargs)
 
         triangle = Triangle(
             center=center,
@@ -3138,27 +2804,7 @@ class TikzFigure(
         Returns:
             The :class:`Square` object that was added.
         """
-        square_kwargs: dict[str, Any] = {}
-        if color is not None:
-            square_kwargs["color"] = color
-        if fill is not None:
-            square_kwargs["fill"] = fill
-        if draw is not None:
-            square_kwargs["draw"] = draw
-        if text is not None:
-            square_kwargs["text"] = text
-        if opacity is not None:
-            square_kwargs["opacity"] = opacity
-        if draw_opacity is not None:
-            square_kwargs["draw_opacity"] = draw_opacity
-        if fill_opacity is not None:
-            square_kwargs["fill_opacity"] = fill_opacity
-        if text_opacity is not None:
-            square_kwargs["text_opacity"] = text_opacity
-        if line_width is not None:
-            square_kwargs["line_width"] = line_width
-
-        square_kwargs.update(kwargs)
+        square_kwargs = collect_style(locals(), kwargs)
 
         square = Square(
             center=center,

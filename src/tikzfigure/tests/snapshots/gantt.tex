@@ -1,0 +1,20 @@
+\documentclass[border=10pt]{standalone}
+\PassOptionsToPackage{dvipsnames,svgnames,x11names}{xcolor}
+\usepackage{tikz}
+\usepackage{pgfplots}
+\pgfplotsset{compat=newest}
+\usepgfplotslibrary{groupplots}
+\usetikzlibrary{arrows.meta}
+\usepackage{pgfgantt}
+\begin{document}
+\begin{tikzpicture}
+    \begin{ganttchart}[hgrid, vgrid]{0}{10}
+        \gantttitlelist{1,...,10}{1}\\
+        \ganttgroup{Planning}{1}{4}\\
+        \ganttbar{Design}{1}{4}\\
+        \ganttbar{Build}{4}{9}\\
+        \ganttmilestone{Ship}{10}\\
+    \end{ganttchart}
+\end{tikzpicture}
+
+\end{document}

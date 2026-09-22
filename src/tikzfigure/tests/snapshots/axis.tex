@@ -1,0 +1,16 @@
+\documentclass[border=10pt]{standalone}
+\PassOptionsToPackage{dvipsnames,svgnames,x11names}{xcolor}
+\usepackage{tikz}
+\usepackage{pgfplots}
+\pgfplotsset{compat=newest}
+\usepgfplotslibrary{groupplots}
+\usetikzlibrary{arrows.meta}
+\usepackage{pgfplots}
+\begin{document}
+\begin{tikzpicture}
+    \begin{axis}[xlabel=$x$, ylabel=$y$, xmin=0, xmax=10, ymin=0, ymax=100, grid=major]
+        \addplot[] coordinates {(0,0) (1,1) (2,4) (3,9)};
+    \end{axis}
+\end{tikzpicture}
+
+\end{document}

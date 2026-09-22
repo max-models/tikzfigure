@@ -140,3 +140,84 @@ def test_exported_names_are_importable():
     for name in pyplot.__all__:
         assert hasattr(tf, name), name
         assert name in tf.__all__
+
+
+# ------------------------------------------------------------- #
+# Drift between TikzFigure and the module-level mirror.
+#
+# pyplot.py hand-writes one wrapper per TikzFigure method so that editors can
+# complete and check them. That only stays true if new methods get a wrapper,
+# which is what the tests below enforce.
+
+#: TikzFigure members that deliberately have no module-level counterpart.
+#: Properties would have to become functions, which reads badly at module level
+#: (``tf.layers()``); reach for ``tf.gcf().layers`` instead. Class constants are
+#: available as ``tf.TikzFigure.GROUPPLOT_*``.
+_NOT_MIRRORED = {
+    # Properties -- use tf.gcf().<name>
+    "axes",
+    "colors",
+    "declared_functions",
+    "document_setup",
+    "extra_packages",
+    "layers",
+    "named_styles",
+    "ndim",
+    "subfigure_axes",
+    "tikz_libraries",
+    "variables",
+    # Class constants -- use tf.TikzFigure.<name>
+    "GROUPPLOT_HORIZONTAL_SEP_CM",
+    "GROUPPLOT_VERTICAL_SEP_CM",
+}
+
+
+def _public_figure_members():
+    return {name for name in dir(TikzFigure) if not name.startswith("_")}
+
+
+def test_every_figure_method_has_a_module_level_wrapper():
+    """A new TikzFigure method must get a pyplot wrapper (or be excluded)."""
+    missing = _public_figure_members() - set(pyplot.__all__) - _NOT_MIRRORED
+    assert not missing, (
+        "These TikzFigure members have no module-level counterpart in "
+        f"tikzfigure.pyplot: {sorted(missing)}. Add a wrapper to pyplot.py and "
+        "list it in __all__, or add it to _NOT_MIRRORED with a reason."
+    )
+
+
+def test_not_mirrored_list_is_not_stale():
+    """Everything in _NOT_MIRRORED still exists on TikzFigure."""
+    stale = _NOT_MIRRORED - _public_figure_members()
+    assert not stale, (
+        f"_NOT_MIRRORED lists members that no longer exist: {sorted(stale)}"
+    )
+
+
+def test_not_mirrored_members_are_not_also_exported():
+    """A member is either mirrored or excluded, never both."""
+    both = _NOT_MIRRORED & set(pyplot.__all__)
+    assert not both, f"Both excluded and exported: {sorted(both)}"
+
+
+def test_all_is_sorted_and_unique():
+    """__all__ stays sorted so additions produce clean diffs."""
+    assert pyplot.__all__ == sorted(set(pyplot.__all__))
+
+
+def test_wrappers_operate_on_the_current_figure():
+    """The newly mirrored methods act on the current figure, not a fresh one."""
+    tf.circle((0, 0), 1.0)
+
+    assert "circle" in tf.to_python()
+    assert tf.to_dict()["layers"]
+    assert tf.copy() is not tf.gcf()
+
+
+def test_from_tikz_code_becomes_the_current_figure():
+    """Parsing at module level makes the parsed figure current."""
+    fig = tf.from_tikz_code(
+        r"\begin{tikzpicture}\draw (0,0) -- (1,1);\end{tikzpicture}"
+    )
+    assert tf.gcf() is fig
+    assert "(1, 1)" in tf.generate_tikz() or "1,1" in tf.generate_tikz()

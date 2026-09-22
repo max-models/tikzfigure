@@ -1,10 +1,11 @@
 from __future__ import annotations
 
+import sys
 from typing import TYPE_CHECKING, Any
 
-try:
+if sys.version_info >= (3, 11):
     from typing import Self
-except ImportError:
+else:  # pragma: no cover - exercised on Python 3.10 only
     from typing_extensions import Self
 
 if TYPE_CHECKING:

@@ -1,7 +1,12 @@
 """Web-based LaTeX compilation via latex-on-http API."""
 
+from __future__ import annotations
+
+import warnings
 from pathlib import Path
 from typing import Union
+
+LATEX_ON_HTTP_URL = "https://latex.ytotech.com/builds/sync"
 
 
 def compile_with_latex_on_http(
@@ -15,6 +20,13 @@ def compile_with_latex_on_http(
 
     Sends LaTeX content to https://latex.ytotech.com/builds/sync with JSON body
     containing compiler (pdflatex) and resources (LaTeX content).
+
+    .. warning::
+        This uploads the full LaTeX source of your figure to a third-party
+        server. It is never used automatically; callers have to opt in via
+        ``use_web_compilation=True`` or the ``TIKZFIGURE_USE_WEB_COMPILATION``
+        environment variable. A :class:`UserWarning` is emitted on every call
+        as a reminder that the figure leaves the machine.
 
     Args:
         latex_content: The LaTeX code to compile as a string.
@@ -39,7 +51,15 @@ def compile_with_latex_on_http(
     # Create parent directories if needed
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
-    url = "https://latex.ytotech.com/builds/sync"
+    url = LATEX_ON_HTTP_URL
+
+    warnings.warn(
+        f"Compiling via the web API: the LaTeX source of this figure is being "
+        f"uploaded to {url}. Install a local LaTeX distribution to compile "
+        f"offline.",
+        UserWarning,
+        stacklevel=2,
+    )
 
     try:
         if verbose:

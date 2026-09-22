@@ -152,8 +152,8 @@ class TestWebCompiler:
             mock_subprocess.assert_not_called()
             assert output_pdf.exists()
 
-    def test_compile_pdf_with_web_fallback(self, tmp_path):
-        """Test compile_pdf() falls back to web API when pdflatex fails."""
+    def test_compile_pdf_does_not_fall_back_to_web(self, tmp_path):
+        """A pdflatex failure raises; it never silently uploads to the web API."""
         from tikzfigure import TikzFigure
 
         fig = TikzFigure()
@@ -161,33 +161,24 @@ class TestWebCompiler:
 
         output_pdf = tmp_path / "test_output.pdf"
 
-        # Mock subprocess.run and requests.post
         with (
             patch("subprocess.run") as mock_subprocess,
             patch("requests.post") as mock_post,
         ):
-            # Mock subprocess failure (pdflatex not available)
             mock_subprocess.side_effect = subprocess.CalledProcessError(1, "pdflatex")
 
-            # Mock the web compiler response
-            # API returns 201 Created on success
-            mock_response = MagicMock()
-            mock_response.status_code = 201
-            mock_response.content = b"%PDF-1.4\nPDF_CONTENT_HERE"
-            mock_post.return_value = mock_response
+            with pytest.raises(RuntimeError) as excinfo:
+                fig.compile_pdf(filename=output_pdf, use_web_compilation=False)
 
-            # Call compile_pdf without use_web_compilation (should still succeed via fallback)
-            fig.compile_pdf(filename=output_pdf, use_web_compilation=False)
+            # The error tells the user how to opt in to web compilation ...
+            assert "use_web_compilation=True" in str(excinfo.value)
+            assert "TIKZFIGURE_USE_WEB_COMPILATION" in str(excinfo.value)
+            # ... but nothing was uploaded and no file was produced.
+            mock_post.assert_not_called()
+            assert not output_pdf.exists()
 
-            # Verify subprocess.run was called first (attempted pdflatex)
-            mock_subprocess.assert_called_once()
-            # Verify requests.post was called (fell back to web API)
-            mock_post.assert_called_once()
-            # Verify the output file was created
-            assert output_pdf.exists()
-
-    def test_compile_pdf_fallback_pdflatex_not_found(self, tmp_path):
-        """Test compile_pdf() falls back to web API when pdflatex is not installed (FileNotFoundError)."""
+    def test_compile_pdf_pdflatex_not_found_raises_hint(self, tmp_path):
+        """A missing pdflatex raises a hint instead of uploading the figure."""
         from tikzfigure import TikzFigure
 
         fig = TikzFigure()
@@ -195,30 +186,36 @@ class TestWebCompiler:
 
         output_pdf = tmp_path / "test_output.pdf"
 
-        # Mock subprocess.run and requests.post
         with (
             patch("subprocess.run") as mock_subprocess,
             patch("requests.post") as mock_post,
         ):
-            # Mock FileNotFoundError (pdflatex not installed)
             mock_subprocess.side_effect = FileNotFoundError("pdflatex not found")
 
-            # Mock the web compiler response
-            # API returns 201 Created on success
+            with pytest.raises(RuntimeError) as excinfo:
+                fig.compile_pdf(filename=output_pdf, use_web_compilation=False)
+
+            assert "pdflatex was not found" in str(excinfo.value)
+            assert "use_web_compilation=True" in str(excinfo.value)
+            mock_post.assert_not_called()
+            assert not output_pdf.exists()
+
+    def test_web_compilation_warns_about_upload(self, tmp_path):
+        """Opting in to web compilation still warns that the source leaves the machine."""
+        from tikzfigure.core.web_compiler import compile_with_latex_on_http
+
+        output_pdf = tmp_path / "test_output.pdf"
+
+        with patch("requests.post") as mock_post:
             mock_response = MagicMock()
             mock_response.status_code = 201
             mock_response.content = b"%PDF-1.4\nPDF_CONTENT_HERE"
             mock_post.return_value = mock_response
 
-            # Call compile_pdf without use_web_compilation (should still succeed via fallback)
-            fig.compile_pdf(filename=output_pdf, use_web_compilation=False)
+            with pytest.warns(UserWarning, match="uploaded to"):
+                compile_with_latex_on_http("\\documentclass{article}", output_pdf)
 
-            # Verify subprocess.run was called first (attempted pdflatex)
-            mock_subprocess.assert_called_once()
-            # Verify requests.post was called (fell back to web API)
-            mock_post.assert_called_once()
-            # Verify the output file was created
-            assert output_pdf.exists()
+        assert output_pdf.exists()
 
     def test_savefig_pdf_with_web_compilation(self, tmp_path):
         """Test savefig() passes use_web_compilation through to compile_pdf()."""
