@@ -157,7 +157,7 @@ def test_tikzfigure_to_dict_from_dict_roundtrip():
             "kwargs": {
                 "fill": {
                     "__tikzfigure_serialized_type__": "TikzColor",
-                    "color_spec": "red!10",
+                    "color_spec": "red!10!white",
                 },
                 "inner_sep": {
                     "__tikzfigure_serialized_type__": "TikzDimension",

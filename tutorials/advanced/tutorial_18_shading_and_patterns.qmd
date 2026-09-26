@@ -79,7 +79,7 @@ for i, (tc, bc) in enumerate(vert_pairs):
     fig.node(
         i * 3,
         -2,
-        content=f"{tc} ↕ {bc}",
+        content=f"{tc} → {bc}",
         draw="none",
         font=r"\tiny",
         anchor="center",

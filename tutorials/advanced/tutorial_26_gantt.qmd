@@ -58,7 +58,14 @@ chart = fig.add_gantt_chart(
     options=["hgrid", "vgrid"],
 )
 
-chart.add_row("titlelist", content="Jan,Feb,Mar,Apr,May,Jun,Jul,Aug", width=1)
+chart.add_row(
+    "titlelist",
+    content="Jan,Feb,Mar,Apr,May,Jun,Jul,Aug",
+    width=1,
+    # Text labels must not be run through pgfmath's default numeric
+    # evaluation, which pgfgantt otherwise applies to titlelist entries.
+    options=[r"title list options={var=\x}"],
+)
 chart.add_row(
     "bar",
     content="Design",
@@ -116,7 +123,9 @@ def phase_rows(title, tasks, starts, durations, fill, draw):
             "content": task,
             "start": start,
             "end": start + duration,
-            "options": [f"fill={fill}", f"draw={draw}"],
+            # pgfgantt bars are styled via the `bar` style itself, not raw
+            # `fill=`/`draw=` keys (those live outside the /pgfgantt family).
+            "options": [f"bar/.append style={{fill={fill}, draw={draw}}}"],
         }
         for task, start, duration in zip(tasks, starts, durations)
     )
@@ -125,13 +134,13 @@ def phase_rows(title, tasks, starts, durations, fill, draw):
 
 rows = [{"type": "titlelist", "content": ",".join(str(i) for i in range(36))}]
 rows += phase_rows(
-    "Planning", phase1_tasks, phase1_starts, phase1_durations, "lightblue", "blue"
+    "Planning", phase1_tasks, phase1_starts, phase1_durations, "LightBlue", "blue"
 )
 rows += phase_rows(
-    "Development", phase2_tasks, phase2_starts, phase2_durations, "lightgreen", "green"
+    "Development", phase2_tasks, phase2_starts, phase2_durations, "LightGreen", "green"
 )
 rows += phase_rows(
-    "Testing", phase3_tasks, phase3_starts, phase3_durations, "lightyellow", "orange"
+    "Testing", phase3_tasks, phase3_starts, phase3_durations, "LightYellow", "orange"
 )
 
 fig = TikzFigure()
@@ -156,7 +165,7 @@ team_rows.extend(
         "content": member,
         "start": start,
         "end": start + duration,
-        "options": ["fill=coral", "draw=darkred", "fill opacity=.7"],
+        "options": ["bar/.append style={fill=Coral, draw=DarkRed, fill opacity=.7}"],
     }
     for member, start, duration in zip(team_members, task_starts, task_durations)
 )
