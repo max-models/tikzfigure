@@ -256,7 +256,7 @@ ball = fig.node(
     minimum_size="0.8cm",
 )
 fig.raw(
-    f'\\tikzset{{animate={{{ball.label}:shift="(4,0)" begin="0s" end="2s"}}}}',
+    f'\\tikzset{{animate={{{ball.label}:shift="{{(4,0)}}", begin=0s, end=2s}}}}',
 )
 
 fig.show()
