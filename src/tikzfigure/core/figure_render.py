@@ -344,5 +344,5 @@ class FigureRenderMixin:
             latex_document += "% Custom document setup\n"
             latex_document += f"{self.document_setup}\n"
 
-        latex_document += f"\\begin{{document}}\n{tikz_code}\n\\end{{document}}"
+        latex_document += f"\\begin{{document}}\n{tikz_code}\n\\end{{document}}\n"
         return latex_document
