@@ -188,7 +188,7 @@ ax1.set_legend(position="north east")
 
 ax2 = fig.axis2d(
     xlabel="Hour",
-    ylabel="Humidity (%)",
+    ylabel="Humidity (\\%)",
     xlim=(0, 24),
     ylim=(30, 90),
     grid=True,

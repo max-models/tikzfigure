@@ -68,6 +68,7 @@ raw TikZ.
 
 ```{python}
 fig = TikzFigure()
+fig.usetikzlibrary("shapes.geometric")
 
 start = fig.node(
     (2, 4),

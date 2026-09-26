@@ -27,6 +27,7 @@ The `shape` parameter accepts any TikZ node shape. Common built-in shapes are
 
 ```{python}
 fig = TikzFigure()
+fig.usetikzlibrary("shapes.geometric")
 
 fig.node(
     (0, 0),

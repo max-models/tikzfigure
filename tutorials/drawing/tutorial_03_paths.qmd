@@ -580,7 +580,7 @@ fig.draw(
     star,
     line_width=3,
     cycle=True,
-    color="gold",
+    color="Gold",
     fill="yellow!50!white",
 )
 
