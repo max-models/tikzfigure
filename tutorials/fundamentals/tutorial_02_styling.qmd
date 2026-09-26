@@ -134,7 +134,7 @@ for i, (opts, label) in enumerate(line_style_examples):
     fig.node(
         5.1,
         y,
-        content=f"\\texttt{{{label}}}",
+        content=f"\\texttt{{{label.replace('_', '\\_')}}}",
         draw="none",
         anchor="west",
     )

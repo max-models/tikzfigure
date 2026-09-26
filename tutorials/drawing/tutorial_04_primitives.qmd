@@ -250,7 +250,8 @@ fig.grid(
 fig.grid(
     (4, 0),
     (7, 3),
-    step="0.5cm, 1cm",
+    xstep="0.5cm",
+    ystep="1cm",
     color="blue!20",
 )
 

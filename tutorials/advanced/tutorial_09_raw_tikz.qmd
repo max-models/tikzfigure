@@ -230,7 +230,8 @@ The `animations` library drives per-attribute animations (color changes,
 motion along a path, ...) that get embedded in the generated PDF and play
 back in a compatible viewer (e.g. Adobe Reader). tikzfigure has no dedicated
 object model for it yet, so register the library with `usetikzlibrary(...)`
-and write the `.animate = {...}` directive with `raw(...)`.
+and write the `animate={<node>:<attribute>="<value>"}` directive with
+`raw(...)`.
 
 ```{python}
 fig = TikzFigure()
@@ -244,7 +245,7 @@ traffic_light = fig.node(
     minimum_size="1cm",
 )
 fig.raw(
-    f"\\tikzset{{{traffic_light.label}/.animate = {{fill = {{red}}}}}}",
+    f'\\tikzset{{animate={{{traffic_light.label}:fill="red"}}}}',
 )
 
 # Animate a node moving along a path (a translation over 2 seconds).
@@ -255,7 +256,7 @@ ball = fig.node(
     minimum_size="0.8cm",
 )
 fig.raw(
-    f"\\tikzset{{{ball.label}/.animate = {{translate = {{{{(4,0)}}{{2s}}}}}}}}",
+    f'\\tikzset{{animate={{{ball.label}:shift="(4,0)" begin="0s" end="2s"}}}}',
 )
 
 fig.show()
