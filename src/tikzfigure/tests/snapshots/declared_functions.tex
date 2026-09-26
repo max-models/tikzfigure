@@ -1,0 +1,14 @@
+\documentclass[border=10pt]{standalone}
+\PassOptionsToPackage{dvipsnames,svgnames,x11names}{xcolor}
+\usepackage{tikz}
+\usepackage{pgfplots}
+\pgfplotsset{compat=newest}
+\usepgfplotslibrary{groupplots}
+\usetikzlibrary{arrows.meta}
+\begin{document}
+\begin{tikzpicture}
+    \pgfkeys{/pgf/declare function={myfunc(\x) = \x^2;}}
+    \draw[variable=\x, domain=0:2, samples=20] plot ({\x}, {myfunc(\x)});
+\end{tikzpicture}
+
+\end{document}

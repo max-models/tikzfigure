@@ -7,6 +7,7 @@ from tikzfigure.core.node import Node
 from tikzfigure.core.path_builder import SegmentOption
 from tikzfigure.core.serialization import deserialize_tikz_value, serialize_tikz_value
 from tikzfigure.core.types import _Option
+from tikzfigure.math import Expr
 from tikzfigure.options import OptionInput
 
 
@@ -269,11 +270,15 @@ class TikzPath(TikzObject):
                 else:
                     label_list.append(f"({node.label})")
             elif isinstance(node, TikzCoordinate):
-                parts = ", ".join(
-                    TikzCoordinate._format_component(component, output_unit)
-                    for component in node.coordinate
-                )
-                label_list.append(f"({parts})")
+                parts = []
+                for component in node.coordinate:
+                    formatted = TikzCoordinate._format_component(component, output_unit)
+                    # PGF math expressions (e.g. sin(0)) must be braced, or
+                    # TikZ misparses the enclosing parens as a node name.
+                    if isinstance(component, Expr):
+                        formatted = f"{{{formatted}}}"
+                    parts.append(formatted)
+                label_list.append(f"({', '.join(parts)})")
         return label_list
 
     @property

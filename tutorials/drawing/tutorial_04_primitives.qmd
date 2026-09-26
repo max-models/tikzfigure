@@ -250,7 +250,8 @@ fig.grid(
 fig.grid(
     (4, 0),
     (7, 3),
-    step="0.5cm, 1cm",
+    xstep="0.5cm",
+    ystep="1cm",
     color="blue!20",
 )
 
@@ -501,6 +502,7 @@ fig.add_matrix(
         ["D", {"content": "E", "fill": "yellow!60"}, "F"],
     ],
     label="grid",
+    options="matrix of nodes",
     row_sep="5pt",
     column_sep="5pt",
     cell_style="draw, minimum size=1cm, anchor=center",
@@ -522,6 +524,7 @@ fig = TikzFigure()
 grid = fig.add_matrix(
     [["A", "B"], ["C", "D"]],
     label="grid",
+    options="matrix of nodes",
     row_sep="5pt",
     column_sep="5pt",
     cell_style="draw, minimum size=1cm, anchor=center",

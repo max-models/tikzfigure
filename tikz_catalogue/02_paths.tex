@@ -1,0 +1,23 @@
+% catalogue: title = Straight, orthogonal and curved connectors
+% catalogue: min-coverage = 1.00
+\documentclass[border=10pt]{standalone}
+\PassOptionsToPackage{dvipsnames,svgnames,x11names}{xcolor}
+\usepackage{tikz}
+\usepackage{pgfplots}
+\pgfplotsset{compat=newest}
+\usepgfplotslibrary{groupplots}
+\usetikzlibrary{arrows.meta}
+\begin{document}
+\begin{tikzpicture}
+    \node[draw] (a) at (0, 0) {A};
+    \node[draw] (b) at (3, 1) {B};
+    \node[draw] (c) at (3, -1) {C};
+    \draw[->, thick] (a) -- (b);
+    \draw[-{Stealth[length=3mm]}, blue] (a) |- (c);
+    \draw[dashed] (b.south) -- (c.north);
+    \draw[red, ->] (b) to[bend left=30] node[right] {loop} (c);
+    \draw (0, -2) -- (1, -2.5) -- (2, -2) -- cycle;
+    \fill[orange!40] (3, -2) -- (4, -2) -| (4, -3) -- cycle;
+    \draw[line width=1pt, rounded corners=4pt] (5, 1) -- (6, 1) -- (6, -1) -- (5, -1);
+\end{tikzpicture}
+\end{document}

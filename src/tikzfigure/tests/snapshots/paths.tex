@@ -1,0 +1,24 @@
+\documentclass[border=10pt]{standalone}
+\PassOptionsToPackage{dvipsnames,svgnames,x11names}{xcolor}
+\usepackage{tikz}
+\usepackage{pgfplots}
+\pgfplotsset{compat=newest}
+\usepgfplotslibrary{groupplots}
+\usetikzlibrary{arrows.meta}
+\begin{document}
+\begin{tikzpicture}
+    \draw[->, line width=1pt] ({0}, {0}) -- ({2}, {2});
+    \draw[color=red, start angle=0, end angle=120, radius=1.0] ({3}, {0}) arc;
+    \draw[color=blue] ({5}, {0}) parabola bend ({6}, {1}) ({7}, {0});
+    \draw[color=gray!40, step=0.5] ({8}, {0}) grid ({10}, {2});
+    \filldraw[fill=cyan!30, draw=black] (11, 0) to (12, 1) to (13, 0);
+    \clip (0, -2)
+        to
+        (14, -2)
+        to
+        (14, 3)
+        to
+        (0, 3);
+\end{tikzpicture}
+
+\end{document}

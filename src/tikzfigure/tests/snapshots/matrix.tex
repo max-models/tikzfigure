@@ -1,0 +1,16 @@
+\documentclass[border=10pt]{standalone}
+\PassOptionsToPackage{dvipsnames,svgnames,x11names}{xcolor}
+\usepackage{tikz}
+\usepackage{pgfplots}
+\pgfplotsset{compat=newest}
+\usepgfplotslibrary{groupplots}
+\usetikzlibrary{arrows.meta,matrix}
+\begin{document}
+\begin{tikzpicture}
+    \matrix[matrix of nodes, draw] (node0) at ({0}, {0}) {
+      a & b \\
+      c & d \\
+    };
+\end{tikzpicture}
+
+\end{document}

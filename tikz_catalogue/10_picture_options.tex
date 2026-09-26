@@ -1,0 +1,21 @@
+% catalogue: title = Global styles in tikzpicture options
+% catalogue: min-coverage = 1.00
+\documentclass[border=10pt]{standalone}
+\PassOptionsToPackage{dvipsnames,svgnames,x11names}{xcolor}
+\usepackage{tikz}
+\usepackage{pgfplots}
+\pgfplotsset{compat=newest}
+\usepgfplotslibrary{groupplots}
+\usetikzlibrary{arrows.meta}
+\begin{document}
+\begin{tikzpicture}[
+    scale=1.2,
+    >=Stealth,
+    block/.style={draw, fill=gray!20, minimum size=8mm},
+    line/.style={->, thick}
+]
+    \node[block] (a) at (0, 0) {A};
+    \node[block] (b) at (2, 0) {B};
+    \draw[line] (a) -- (b);
+\end{tikzpicture}
+\end{document}

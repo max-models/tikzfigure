@@ -27,6 +27,7 @@ The `shape` parameter accepts any TikZ node shape. Common built-in shapes are
 
 ```{python}
 fig = TikzFigure()
+fig.usetikzlibrary("shapes.geometric")
 
 fig.node(
     (0, 0),
@@ -133,7 +134,7 @@ for i, (opts, label) in enumerate(line_style_examples):
     fig.node(
         5.1,
         y,
-        content=f"\\texttt{{{label}}}",
+        content=f"\\texttt{{{label.replace('_', '\\_')}}}",
         draw="none",
         anchor="west",
     )

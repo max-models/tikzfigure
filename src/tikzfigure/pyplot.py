@@ -82,18 +82,23 @@ __all__ = [
     "close",
     "colorlet",
     "compile_pdf",
+    "configure_spy_scope",
     "coordinate",
+    "copy",
     "declare_function",
     "draw",
     "ellipse",
     "figure",
     "fill",
     "filldraw",
+    "from_dict",
+    "from_tikz_code",
     "function",
     "gantt",
     "gantt_chart",
     "gcf",
     "generate_standalone",
+    "generate_subfigures",
     "generate_tikz",
     "grid",
     "line",
@@ -117,6 +122,8 @@ __all__ = [
     "square",
     "subfigure",
     "subfigure_axis",
+    "to_dict",
+    "to_python",
     "triangle",
     "usetikzlibrary",
     "variable",
@@ -185,6 +192,47 @@ def close() -> None:
     """
     global _current_figure
     _current_figure = None
+
+
+def from_tikz_code(*args: Any, **kwargs: Any) -> TikzFigure:
+    """Parse TikZ source into a new current figure.
+
+    See :meth:`TikzFigure.from_tikz_code`. The parsed figure becomes the
+    current one, so subsequent module-level calls draw on top of it.
+    """
+    return scf(TikzFigure.from_tikz_code(*args, **kwargs))
+
+
+def from_dict(*args: Any, **kwargs: Any) -> TikzFigure:
+    """Rebuild a figure from a dict and make it current.
+
+    See :meth:`TikzFigure.from_dict`.
+    """
+    return scf(TikzFigure.from_dict(*args, **kwargs))
+
+
+def copy(*args: Any, **kwargs: Any) -> TikzFigure:
+    """Copy the current figure. See :meth:`TikzFigure.copy`.
+
+    The copy is *not* made current; pass it to :func:`scf` if you want that.
+    """
+    return gcf().copy(*args, **kwargs)
+
+
+def to_dict(*args: Any, **kwargs: Any) -> dict[str, Any]:
+    """Serialize the current figure to a dict. See :meth:`TikzFigure.to_dict`."""
+    return gcf().to_dict(*args, **kwargs)
+
+
+def to_python(*args: Any, **kwargs: Any) -> str:
+    """Emit Python that rebuilds the current figure. See :meth:`TikzFigure.to_python`."""
+    return gcf().to_python(*args, **kwargs)
+
+
+#: Combine several figures side by side. See :meth:`TikzFigure.generate_subfigures`.
+#: This one is a static helper: it takes the figures explicitly rather than
+#: operating on the current figure.
+generate_subfigures = TikzFigure.generate_subfigures
 
 
 # ------------------------------------------------------------- #
@@ -360,6 +408,11 @@ def add_spy(*args: Any, **kwargs: Any) -> Spy:
 def add_spy_scope(*args: Any, **kwargs: Any) -> Scope:
     """Add a spy scope to the current figure. See :meth:`TikzFigure.add_spy_scope`."""
     return gcf().add_spy_scope(*args, **kwargs)
+
+
+def configure_spy_scope(*args: Any, **kwargs: Any) -> None:
+    """Configure the figure-level spy scope. See :meth:`TikzFigure.configure_spy_scope`."""
+    return gcf().configure_spy_scope(*args, **kwargs)
 
 
 def add_raw(*args: Any, **kwargs: Any) -> RawTikz:

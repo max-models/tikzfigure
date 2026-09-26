@@ -1,0 +1,16 @@
+\documentclass[border=10pt]{standalone}
+\PassOptionsToPackage{dvipsnames,svgnames,x11names}{xcolor}
+\usepackage{tikz}
+\usepackage{pgfplots}
+\pgfplotsset{compat=newest}
+\usepgfplotslibrary{groupplots}
+\usetikzlibrary{arrows.meta}
+\begin{document}
+\begin{tikzpicture}
+    \pgfmathsetmacro{\R}{1.5}
+    \foreach \angle in {0,45,...,315}{
+        \node[shape=circle, fill=red!50] () at ({\R*cos(\angle)}, {\R*sin(\angle)}) {};
+    }
+\end{tikzpicture}
+
+\end{document}

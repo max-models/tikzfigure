@@ -1,0 +1,19 @@
+% catalogue: title = Trees with child syntax
+% catalogue: min-coverage = 0.00
+\documentclass[border=10pt]{standalone}
+\PassOptionsToPackage{dvipsnames,svgnames,x11names}{xcolor}
+\usepackage{tikz}
+\usepackage{pgfplots}
+\pgfplotsset{compat=newest}
+\usepgfplotslibrary{groupplots}
+\usetikzlibrary{arrows.meta}
+\begin{document}
+\begin{tikzpicture}[level distance=12mm, sibling distance=18mm]
+    \node[circle, draw] {root}
+        child { node[circle, draw] {a}
+            child { node {a1} }
+            child { node {a2} }
+        }
+        child { node[circle, draw] {b} };
+\end{tikzpicture}
+\end{document}

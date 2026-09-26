@@ -9,6 +9,17 @@ from typing import Any
 
 logger = logging.getLogger(__name__)
 
+#: Shown whenever local compilation fails, so users know the web API exists.
+#: Web compilation is never used automatically: it uploads the figure source
+#: to a third-party service, so it has to be requested explicitly.
+_WEB_COMPILATION_HINT = (
+    "If you do not have a local LaTeX installation, tikzfigure can compile the "
+    "figure with the latex-on-http web API instead. This uploads the LaTeX "
+    "source of your figure to https://latex.ytotech.com, so it is opt-in:\n"
+    "    fig.savefig('figure.pdf', use_web_compilation=True)\n"
+    "or set TIKZFIGURE_USE_WEB_COMPILATION=1 to enable it for the whole process."
+)
+
 
 class FigureExportMixin:
     def _resolve_use_web_compilation(self, use_web_compilation: bool) -> bool:
@@ -96,40 +107,18 @@ class FigureExportMixin:
                 )
                 os.remove(filename.with_suffix(".aux"))
                 os.remove(filename.with_suffix(".log"))
-            except (subprocess.CalledProcessError, FileNotFoundError) as e:
-                if verbose:
-                    if isinstance(e, FileNotFoundError):
-                        print(
-                            "pdflatex not available or compilation failed, attempting fallback to web API"
-                        )
-                    else:
-                        print(
-                            "Local pdflatex compilation failed, attempting fallback to web API..."
-                        )
-                        if e.stderr:
-                            print(e.stderr.decode())
-                        else:
-                            print(str(e))
-
-                from tikzfigure.core.web_compiler import compile_with_latex_on_http
-
-                try:
-                    compile_with_latex_on_http(
-                        latex_document, filename, verbose=verbose
-                    )
-                except RuntimeError as web_error:
-                    print("An error occurred while compiling the LaTeX document:")
-                    if isinstance(e, subprocess.CalledProcessError):
-                        if e.stderr:
-                            print(e.stderr.decode())
-                        else:
-                            print(str(e))
-                    elif isinstance(e, FileNotFoundError):
-                        print(f"pdflatex not found: {e!s}")
-                    print(f"\nWeb compilation also failed: {web_error!s}")
-                    raise RuntimeError(
-                        f"Local compilation failed. Web compilation fallback also failed: {web_error!s}"
-                    ) from web_error
+            except FileNotFoundError as e:
+                raise RuntimeError(
+                    f"pdflatex was not found on this system ({e}).\n\n"
+                    f"{_WEB_COMPILATION_HINT}"
+                ) from e
+            except subprocess.CalledProcessError as e:
+                details = e.stderr.decode() if e.stderr else str(e)
+                raise RuntimeError(
+                    "pdflatex failed to compile the figure:\n\n"
+                    f"{details}\n\n"
+                    f"{_WEB_COMPILATION_HINT}"
+                ) from e
 
     def savefig(
         self,
