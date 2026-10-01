@@ -157,7 +157,7 @@ def test_tikzfigure_to_dict_from_dict_roundtrip():
             "kwargs": {
                 "fill": {
                     "__tikzfigure_serialized_type__": "TikzColor",
-                    "color_spec": "red!10",
+                    "color_spec": "red!10!white",
                 },
                 "inner_sep": {
                     "__tikzfigure_serialized_type__": "TikzDimension",
@@ -547,19 +547,12 @@ def test_compile_pdf_success_and_failure(tmp_path, monkeypatch, capsys):
 
     monkeypatch.setattr(subprocess, "run", raise_run)
 
-    # Mock requests.post to simulate successful web compilation
-    from unittest.mock import MagicMock
-
-    import requests
-
-    mock_response = MagicMock()
-    mock_response.status_code = 200
-    mock_response.content = b"%PDF-1.4\ndummy pdf"
-    monkeypatch.setattr(requests, "post", lambda *args, **kwargs: mock_response)
-
-    fig.compile_pdf(filename=output_pdf, verbose=False)
-    # After fallback, the file should exist (created by web compiler)
-    assert output_pdf.exists()
+    # A pdflatex failure surfaces as a RuntimeError carrying the stderr and a
+    # hint about opting in to web compilation -- it does not upload anything.
+    with pytest.raises(RuntimeError) as excinfo:
+        fig.compile_pdf(filename=output_pdf, verbose=False)
+    assert "boom" in str(excinfo.value)
+    assert "use_web_compilation=True" in str(excinfo.value)
 
 
 def test_savefig_tikz_pdf_png_and_invalid(tmp_path, monkeypatch):
@@ -599,8 +592,6 @@ def test_savefig_tikz_pdf_png_and_invalid(tmp_path, monkeypatch):
 
     def dummy_open(path):
         return DummyDoc()
-
-    import tikzfigure.core.figure as figure_module
 
     # TODO: This test doesn't work because we are lazy-loading fitz,
     # so the monkeypatch doesn't take effect.
@@ -742,11 +733,9 @@ def test_show_backends_and_errors(monkeypatch, capsys):
     monkeypatch.setattr(
         fig,
         "savefig",
-        lambda filename,
-        dpi=300,
-        verbose=False,
-        transparent=False,
-        use_web_compilation=False: (None),
+        lambda filename, dpi=300, verbose=False, transparent=False, use_web_compilation=False: (
+            None
+        ),
     )
 
     fig._show_matplotlib(dpi=72, verbose=True)
@@ -788,11 +777,9 @@ def test_show_backends_and_errors(monkeypatch, capsys):
     monkeypatch.setattr(
         fig,
         "savefig",
-        lambda filename,
-        dpi=300,
-        verbose=False,
-        transparent=False,
-        use_web_compilation=False: (None),
+        lambda filename, dpi=300, verbose=False, transparent=False, use_web_compilation=False: (
+            None
+        ),
     )
 
     fig._show_pillow(dpi=72, verbose=False)

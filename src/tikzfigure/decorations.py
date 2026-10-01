@@ -2,32 +2,17 @@ from __future__ import annotations
 
 from typing import TypeAlias
 
+from tikzfigure.core.tikz_token import TikzToken
 
-class TikzDecoration:
+
+class TikzDecoration(TikzToken):
     """A reusable TikZ path-decoration specification."""
 
+    _attr = "decoration_spec"
+    decoration_spec: str
+
     def __init__(self, decoration_spec: str) -> None:
-        if decoration_spec == "":
-            raise ValueError("decoration_spec must not be empty")
-        self.decoration_spec = decoration_spec
-
-    def to_tikz(self) -> str:
-        """Return the raw TikZ decoration specification."""
-        return self.decoration_spec
-
-    def __str__(self) -> str:
-        return self.decoration_spec
-
-    def __repr__(self) -> str:
-        return f"TikzDecoration({self.decoration_spec!r})"
-
-    def __eq__(self, other: object) -> bool:
-        if not isinstance(other, TikzDecoration):
-            return NotImplemented
-        return self.decoration_spec == other.decoration_spec
-
-    def __hash__(self) -> int:
-        return hash(self.decoration_spec)
+        super().__init__(decoration_spec)
 
 
 DecorationInput: TypeAlias = str | TikzDecoration
@@ -53,20 +38,20 @@ expanding_waves: TikzDecoration = TikzDecoration("expanding waves")
 footprints: TikzDecoration = TikzDecoration("footprints")
 
 __all__ = [
-    "TikzDecoration",
     "DecorationInput",
-    "decoration",
-    "zigzag",
-    "snake",
-    "coil",
-    "bumps",
+    "TikzDecoration",
     "bent",
-    "random_steps",
-    "saw",
-    "brace",
-    "ticks",
     "border",
-    "markings",
+    "brace",
+    "bumps",
+    "coil",
+    "decoration",
     "expanding_waves",
     "footprints",
+    "markings",
+    "random_steps",
+    "saw",
+    "snake",
+    "ticks",
+    "zigzag",
 ]

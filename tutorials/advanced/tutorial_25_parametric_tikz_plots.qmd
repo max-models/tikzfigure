@@ -25,7 +25,7 @@ plots.
 
 ```{python}
 from tikzfigure import TikzFigure, colors
-from tikzfigure.math import Var, cos, exp, func, ln, sin
+from tikzfigure.math import Var, cos, exp, func, ln, max, sin, sqrt
 ```
 
 ## A first sampled curve
@@ -341,3 +341,96 @@ This final figure uses the exact same ingredients as the earlier steps: declared
 functions, composable expressions, sampled plots, and loops. The result is a
 stylized tokamak X-point drawing with a separatrix-like structure, built
 entirely from plain TikZ plots.
+
+## A flux-surface-aligned curvilinear mesh
+
+The same API can also draw a mesh aligned to an X-point map.  The next example
+adds the patch layout with native `filldraw` and `grid` calls, then uses
+`parametric_grid(...)` to draw both coordinate families of the mapped mesh.
+
+```{python}
+def add_eight_patch_background(fig, radius=6, color="Azure4"):
+    patches = [
+        [(0, 0), (radius, 0), (radius, radius), (0, radius)],
+        [(0, 0), (-radius, 0), (-radius, radius), (0, radius)],
+        [(0, 0), (radius, 0), (radius, -radius), (0, -radius)],
+        [(0, 0), (-radius, 0), (-radius, -radius), (0, -radius)],
+        [(radius, 0), (2 * radius, 0), (2 * radius, radius), (radius, radius)],
+        [(-2 * radius, 0), (-radius, 0), (-radius, radius), (-2 * radius, radius)],
+        [(0, radius), (radius, radius), (radius, 2 * radius), (0, 2 * radius)],
+        [(0, -2 * radius), (radius, -2 * radius), (radius, -radius), (0, -radius)],
+    ]
+    for patch in patches:
+        fig.filldraw(
+            patch,
+            cycle=True,
+            fill=color,
+            fill_opacity=0.06,
+            draw=color,
+            draw_opacity=0.35,
+            line_width="0.4pt",
+        )
+
+
+fig = TikzFigure(figsize=(8, 8))
+add_eight_patch_background(fig)
+fig.grid((-6, -6), (6, 6), step="1", color=colors.Azure4, opacity=0.25)
+```
+
+The square-root map and the smooth blending function are declared once as PGF
+functions.  `Var` keeps the expressions symbolic until TikZ samples the plots.
+
+```{python}
+arg_eta = Var("argEta")
+arg_xi = Var("argXi")
+x_mesh = Var("sampleParam")
+x_mesh_two = Var("sampleParamTwo")
+u_max = 6
+v_max = 6
+
+map_x = fig.function(
+    "map_x", ("x", "y"), sqrt(max(0, sqrt(Var("x")**2 + Var("y")**2) - Var("x")))
+)
+map_y = fig.function(
+    "map_y", ("x", "y"), sqrt(max(0, sqrt(Var("x")**2 + Var("y")**2) + Var("x")))
+)
+mapped_x = lambda a, b: sqrt(max(0, sqrt(a**2 + b**2) - a))
+mapped_y = lambda a, b: sqrt(max(0, sqrt(a**2 + b**2) + a))
+fig.function("smoothstep", "x", r"6*\x^5 - 15*\x^4 + 10*\x^3")
+fig.function(
+    "blend", "x",
+    r"ifthenelse(\x < 0, 0, ifthenelse(\x > 1, 1, smoothstep(\x)))",
+)
+fig.function("q", "x", r"blend(2*(\x - 0.4))")
+```
+
+`parametric_grid` emits one loop for fixed parameter values and one for the
+other parameter family.  The outer sign loops reuse the first-quadrant map in
+all four sectors; the second call draws its coordinate-swapped counterpart.
+
+```{python}
+u_values = [i / 6 for i in range(7)]
+v_values = [i / 6 for i in range(7)]
+arg_eta_two = Var("argEtaTwo")
+
+fig.parametric_grid(
+    mapped_x(arg_eta, x_mesh), mapped_y(arg_eta, x_mesh),
+    u_variable="argEta", v_variable="sampleParam",
+    u_values=u_values, v_values=v_values,
+    samples=18, smooth=True, options=[colors.Azure4],
+    line_width="0.7pt",
+)
+fig.parametric_grid(
+    mapped_y(arg_eta_two, x_mesh_two), mapped_x(arg_eta_two, x_mesh_two),
+    u_variable="argEtaTwo", v_variable="sampleParamTwo",
+    u_values=u_values, v_values=v_values,
+    samples=18, smooth=True, options=[colors.Azure4],
+    line_width="0.7pt",
+)
+
+fig.node((-2, 0.5), content=r"$\times$", text=colors.black)
+fig.node((-2, 0.0), content=r"$\bullet$", text=colors.Orange1)
+fig.show()
+```
+
+{{< include includes/tikz_code_callout.qmd >}}

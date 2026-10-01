@@ -59,6 +59,30 @@ print(fig)
 Note that to visualize the plots in a popup or in jupyterlab, install with
 `pip install "tikzfigure[vis]"`
 
+## Drawing without creating a figure
+
+For quick scripts and notebooks you can skip the `TikzFigure` object
+altogether. The module-level functions draw on an implicit *current figure*
+that is created the first time you use one, much like `matplotlib.pyplot`:
+
+```{python}
+#| label: fig-implicit
+#| fig-cap: "Figure drawn without creating a TikzFigure"
+import tikzfigure as tf
+
+tf.draw([(0, 0), (1, 1), (2, 0)], arrows="->")
+tf.circle((1, 1), radius=0.3, fill="cyan!40")
+tf.show()
+```
+
+Use `tf.figure()` to start a new figure, `tf.gcf()` to get hold of the current
+one, `tf.scf(fig)` to make an existing figure current, and `tf.close()` to
+throw the current figure away. Anything you can do on a `TikzFigure` is
+available as a module-level function.
+
+The explicit API remains the recommended one for larger figures, since it is
+the only way to work on several figures at once.
+
 ## IPython Magic Commands
 
 tikzfigure includes IPython magic commands for compiling TikZ figures directly

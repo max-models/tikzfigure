@@ -14,6 +14,7 @@ from tikzfigure.core.coordinate import (
 )
 from tikzfigure.core.node import Node
 from tikzfigure.core.serialization import deserialize_tikz_value, serialize_tikz_value
+from tikzfigure.core.tikz_library import TikzLibrary
 from tikzfigure.options import OptionInput, normalize_options
 
 SpyTargetInput: TypeAlias = (
@@ -117,54 +118,6 @@ def format_spy_target(target: SpyTargetInput, output_unit: str | None = None) ->
     return f"({stripped})"
 
 
-def build_lens_value(
-    lens: OptionInput | str | None = None,
-    lens_kwargs: Mapping[str, Any] | None = None,
-    output_unit: str | None = None,
-) -> str | None:
-    """Build the value for TikZ's ``lens={...}`` spy option."""
-    if lens is None and not lens_kwargs:
-        return None
-    if isinstance(lens, str):
-        return _wrap_braces(lens)
-    lens_body = _format_option_mapping(lens, lens_kwargs or {}, output_unit)
-    return _wrap_braces(lens_body)
-
-
-def build_spy_command_parts(
-    options: OptionInput | None = None,
-    *,
-    magnification: float | None = None,
-    lens: OptionInput | str | None = None,
-    lens_kwargs: Mapping[str, Any] | None = None,
-    size: str | object | None = None,
-    width: str | object | None = None,
-    height: str | object | None = None,
-    connect_spies: bool = False,
-    **kwargs: Any,
-) -> tuple[list[Any], dict[str, Any]]:
-    """Split spy-command inputs into normalized option tokens and keyword options."""
-    spy_options = list(normalize_options(options))
-    if connect_spies:
-        spy_options.append("connect spies")
-
-    spy_kwargs = dict(kwargs)
-    if magnification is not None:
-        spy_kwargs["magnification"] = magnification
-    if size is not None:
-        spy_kwargs["size"] = size
-    if width is not None:
-        spy_kwargs["width"] = width
-    if height is not None:
-        spy_kwargs["height"] = height
-
-    lens_value = build_lens_value(lens, lens_kwargs)
-    if lens_value is not None:
-        spy_kwargs["lens"] = lens_value
-
-    return spy_options, spy_kwargs
-
-
 def _format_style_value(
     options: OptionInput | None,
     style: Mapping[str, Any] | None,
@@ -173,63 +126,126 @@ def _format_style_value(
     return _format_option_mapping(options, style or {}, output_unit)
 
 
-def build_spy_scope_parts(
-    mode: SpyScopeMode = "scope",
-    options: OptionInput | None = None,
-    *,
-    magnification: float | None = None,
-    lens: OptionInput | str | None = None,
-    lens_kwargs: Mapping[str, Any] | None = None,
-    size: str | object | None = None,
-    width: str | object | None = None,
-    height: str | object | None = None,
-    connect_spies: bool = False,
-    every_spy_in_node_options: OptionInput | None = None,
-    every_spy_in_node_style: Mapping[str, Any] | None = None,
-    every_spy_on_node_options: OptionInput | None = None,
-    every_spy_on_node_style: Mapping[str, Any] | None = None,
-    spy_connection_path: str | None = None,
-    **kwargs: Any,
-) -> tuple[list[str], dict[str, str]]:
-    """Build scope options for ``spy scope`` or preset spy-scope variants."""
-    scope_options, scope_kwargs = build_spy_command_parts(
-        options=options,
-        magnification=magnification,
-        lens=lens,
-        lens_kwargs=lens_kwargs,
-        size=size,
-        width=width,
-        height=height,
-        connect_spies=connect_spies,
-        **kwargs,
-    )
-    body = _format_option_mapping(scope_options, scope_kwargs)
-    key = {
-        "scope": "spy scope",
-        "outlines": "spy using outlines",
-        "overlays": "spy using overlays",
-    }[mode]
-    option_token = key if body == "" and mode == "scope" else f"{key}={{{body}}}"
+class SpyLibrary(TikzLibrary):
+    """The ``spy`` library, used for inset zoom views of a figure region.
 
-    scope_style_kwargs: dict[str, str] = {}
-    if every_spy_in_node_options is not None or every_spy_in_node_style is not None:
-        scope_style_kwargs["every spy in node/.style"] = _wrap_braces(
-            _format_style_value(
-                every_spy_in_node_options,
-                every_spy_in_node_style,
-            )
-        )
-    if every_spy_on_node_options is not None or every_spy_on_node_style is not None:
-        scope_style_kwargs["every spy on node/.style"] = _wrap_braces(
-            _format_style_value(
-                every_spy_on_node_options,
-                every_spy_on_node_style,
-            )
-        )
-    if spy_connection_path is not None:
-        scope_style_kwargs["spy connection path"] = _wrap_braces(spy_connection_path)
+    Owns the option-building logic for both the ``\\spy`` command itself
+    and the enclosing ``spy scope`` / ``spy using outlines`` / ``spy using
+    overlays`` scope configuration, so :class:`~tikzfigure.core.figure.TikzFigure`,
+    :class:`~tikzfigure.core.scope.Scope`, and :class:`~tikzfigure.core.axis.Axis2D`
+    share one implementation instead of duplicating spy-option formatting.
+    """
 
-    return [option_token], scope_style_kwargs
+    name = "spy"
+
+    @staticmethod
+    def build_lens_value(
+        lens: OptionInput | str | None = None,
+        lens_kwargs: Mapping[str, Any] | None = None,
+        output_unit: str | None = None,
+    ) -> str | None:
+        """Build the value for TikZ's ``lens={...}`` spy option."""
+        if lens is None and not lens_kwargs:
+            return None
+        if isinstance(lens, str):
+            return _wrap_braces(lens)
+        lens_body = _format_option_mapping(lens, lens_kwargs or {}, output_unit)
+        return _wrap_braces(lens_body)
+
+    @staticmethod
+    def build_command_parts(
+        options: OptionInput | None = None,
+        *,
+        magnification: float | None = None,
+        lens: OptionInput | str | None = None,
+        lens_kwargs: Mapping[str, Any] | None = None,
+        size: str | object | None = None,
+        width: str | object | None = None,
+        height: str | object | None = None,
+        connect_spies: bool = False,
+        **kwargs: Any,
+    ) -> tuple[list[Any], dict[str, Any]]:
+        """Split spy-command inputs into normalized option tokens and keyword options."""
+        spy_options = list(normalize_options(options))
+        if connect_spies:
+            spy_options.append("connect spies")
+
+        spy_kwargs = dict(kwargs)
+        if magnification is not None:
+            spy_kwargs["magnification"] = magnification
+        if size is not None:
+            spy_kwargs["size"] = size
+        if width is not None:
+            spy_kwargs["width"] = width
+        if height is not None:
+            spy_kwargs["height"] = height
+
+        lens_value = SpyLibrary.build_lens_value(lens, lens_kwargs)
+        if lens_value is not None:
+            spy_kwargs["lens"] = lens_value
+
+        return spy_options, spy_kwargs
+
+    @staticmethod
+    def build_scope_parts(
+        mode: SpyScopeMode = "scope",
+        options: OptionInput | None = None,
+        *,
+        magnification: float | None = None,
+        lens: OptionInput | str | None = None,
+        lens_kwargs: Mapping[str, Any] | None = None,
+        size: str | object | None = None,
+        width: str | object | None = None,
+        height: str | object | None = None,
+        connect_spies: bool = False,
+        every_spy_in_node_options: OptionInput | None = None,
+        every_spy_in_node_style: Mapping[str, Any] | None = None,
+        every_spy_on_node_options: OptionInput | None = None,
+        every_spy_on_node_style: Mapping[str, Any] | None = None,
+        spy_connection_path: str | None = None,
+        **kwargs: Any,
+    ) -> tuple[list[str], dict[str, str]]:
+        """Build scope options for ``spy scope`` or preset spy-scope variants."""
+        scope_options, scope_kwargs = SpyLibrary.build_command_parts(
+            options=options,
+            magnification=magnification,
+            lens=lens,
+            lens_kwargs=lens_kwargs,
+            size=size,
+            width=width,
+            height=height,
+            connect_spies=connect_spies,
+            **kwargs,
+        )
+        body = _format_option_mapping(scope_options, scope_kwargs)
+        key = {
+            "scope": "spy scope",
+            "outlines": "spy using outlines",
+            "overlays": "spy using overlays",
+        }[mode]
+        option_token = key if body == "" and mode == "scope" else f"{key}={{{body}}}"
+
+        scope_style_kwargs: dict[str, str] = {}
+        if every_spy_in_node_options is not None or every_spy_in_node_style is not None:
+            scope_style_kwargs["every spy in node/.style"] = _wrap_braces(
+                _format_style_value(
+                    every_spy_in_node_options,
+                    every_spy_in_node_style,
+                )
+            )
+        if every_spy_on_node_options is not None or every_spy_on_node_style is not None:
+            scope_style_kwargs["every spy on node/.style"] = _wrap_braces(
+                _format_style_value(
+                    every_spy_on_node_options,
+                    every_spy_on_node_style,
+                )
+            )
+        if spy_connection_path is not None:
+            scope_style_kwargs["spy connection path"] = _wrap_braces(
+                spy_connection_path
+            )
+
+        return [option_token], scope_style_kwargs
 
 
 class Spy(TikzObject):
@@ -342,7 +358,7 @@ class Spy(TikzObject):
         cls,
         d: dict[str, Any],
         node_lookup: Mapping[str, Node | Coordinate] | None = None,
-    ) -> "Spy":
+    ) -> Spy:
         """Restore a ``Spy`` from serialized data."""
         restored = deserialize_tikz_value(d)
         if not isinstance(restored, dict):

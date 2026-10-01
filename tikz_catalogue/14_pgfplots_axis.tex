@@ -1,0 +1,18 @@
+% catalogue: title = pgfplots axis with addplot
+% catalogue: min-coverage = 0.00
+\documentclass[border=10pt]{standalone}
+\PassOptionsToPackage{dvipsnames,svgnames,x11names}{xcolor}
+\usepackage{tikz}
+\usepackage{pgfplots}
+\pgfplotsset{compat=newest}
+\usepgfplotslibrary{groupplots}
+\usetikzlibrary{arrows.meta}
+\begin{document}
+\begin{tikzpicture}
+    \begin{axis}[xlabel={$x$}, ylabel={$y$}, grid=major]
+        \addplot[blue, domain=-2:2] {x^2};
+        \addplot[red, only marks] coordinates {(0, 1) (1, 2) (2, 3)};
+        \legend{$x^2$, data}
+    \end{axis}
+\end{tikzpicture}
+\end{document}

@@ -163,7 +163,15 @@ class TestAxis2D:
         assert axis.ylabel == ""
         assert axis.xlim is None
         assert axis.ylim is None
+        assert axis.xlog is False
+        assert axis.ylog is False
         assert axis.grid is True
+
+    def test_axis2d_invalid_log_flags(self):
+        with pytest.raises(TypeError, match="xlog must be a bool"):
+            Axis2D(xlog="yes")  # type: ignore[arg-type]
+        with pytest.raises(TypeError, match="ylog must be a bool"):
+            Axis2D(ylog=1)  # type: ignore[arg-type]
 
     def test_axis2d_plots_list(self):
         """Test Axis2D has empty plots list on construction."""
@@ -214,6 +222,13 @@ class TestAxis2D:
         axis = Axis2D(grid=True)
         axis.set_grid(False)
         assert axis.grid is False
+
+    def test_axis2d_set_log_axes(self):
+        axis = Axis2D()
+        axis.set_xlog(True)
+        axis.set_ylog(True)
+        assert axis.xlog is True
+        assert axis.ylog is True
 
     def test_axis2d_set_ticks(self):
         """Test set_ticks method."""
@@ -339,12 +354,19 @@ class TestAxis2D:
         axis = Axis2D(grid=True)
         axis.add_plot([0, 1], [0, 1])
         tikz_with_grid = axis.to_tikz()
-        assert "grid=true" in tikz_with_grid
+        assert "grid=major" in tikz_with_grid
 
         axis2 = Axis2D(grid=False)
         axis2.add_plot([0, 1], [0, 1])
         tikz_no_grid = axis2.to_tikz()
-        assert "grid=false" in tikz_no_grid
+        assert "grid=none" in tikz_no_grid
+
+    def test_axis2d_to_tikz_with_log_axes(self):
+        axis = Axis2D(xlog=True, ylog=True)
+        axis.add_plot([1, 10, 100], [1, 10, 100])
+        tikz = axis.to_tikz()
+        assert "xmode=log" in tikz
+        assert "ymode=log" in tikz
 
     def test_axis2d_to_tikz_multiple_plots(self):
         """Test to_tikz with multiple plots."""
@@ -517,6 +539,12 @@ class TestAxis2DSerialization:
         assert d["width"] == "8cm"
         assert d["height"] == "6cm"
 
+    def test_axis2d_to_dict_with_log_axes(self):
+        axis = Axis2D(xlabel="X", ylabel="Y", xlog=True, ylog=False)
+        d = axis.to_dict()
+        assert d["xlog"] is True
+        assert d["ylog"] is False
+
     def test_axis2d_from_dict_with_dimensions(self):
         """Test that Axis2D.from_dict() restores width and height."""
         d = {
@@ -536,6 +564,26 @@ class TestAxis2DSerialization:
         axis = Axis2D.from_dict(d)
         assert axis.width == "8cm"
         assert axis.height == "6cm"
+
+    def test_axis2d_from_dict_with_log_axes(self):
+        d = {
+            "type": "Axis2D",
+            "xlabel": "X",
+            "ylabel": "Y",
+            "xlim": None,
+            "ylim": None,
+            "xlog": True,
+            "ylog": False,
+            "grid": True,
+            "plots": [],
+            "ticks": {},
+            "legend_pos": None,
+            "options": [],
+            "kwargs": {},
+        }
+        axis = Axis2D.from_dict(d)
+        assert axis.xlog is True
+        assert axis.ylog is False
 
     def test_axis2d_round_trip_with_dimensions(self):
         """Test that Axis2D serialization round-trip preserves dimensions."""
@@ -726,6 +774,12 @@ class TestTikzFigureAxis2D:
         assert ax.width == "8cm"
         assert ax.height == "6cm"
 
+    def test_tikzfigure_axis2d_with_log_axes(self):
+        fig = TikzFigure()
+        ax = fig.axis2d(xlabel="X", ylabel="Y", xlog=True, ylog=True)
+        assert ax.xlog is True
+        assert ax.ylog is True
+
 
 class TestTikzFigureSerialization:
     def test_tikzfigure_to_dict_with_axes(self):
@@ -790,9 +844,10 @@ class TestSubfigures:
     def test_subfigure_axis_with_height(self):
         """Test that subfigure_axis() accepts height parameter."""
         fig = TikzFigure()
-        ax1 = fig.subfigure_axis(xlabel="X", width=0.45, height=4)
+        ax1 = fig.subfigure_axis(xlabel="X", width=0.45, axis_width=3, height=4)
         ax2 = fig.subfigure_axis(xlabel="Y", width=0.45, height=6)
 
+        assert ax1.width == "3cm"
         assert ax1.height == "4cm"
         assert ax2.height == "6cm"
 
@@ -917,15 +972,17 @@ class TestSubfigures:
         """Test that subfigure dimensions appear correctly in TikZ output."""
         fig = TikzFigure()
 
-        ax1 = fig.subfigure_axis(xlabel="Sin", width=0.45, height=4)
+        ax1 = fig.subfigure_axis(xlabel="Sin", width=0.45, axis_width=3, height=4)
         ax1.add_plot(func="sin(x)", label="sin(x)")
 
-        ax2 = fig.subfigure_axis(xlabel="Cos", width=0.45, height=5)
+        ax2 = fig.subfigure_axis(xlabel="Cos", width=0.45, axis_width="5cm", height=5)
         ax2.add_plot(func="cos(x)", label="cos(x)")
 
         tikz = fig.generate_tikz()
 
-        # Verify both subfigures have their heights in output
+        # Verify both subfigures keep explicit dimensions in groupplot output.
+        assert "width=3cm" in tikz
+        assert "width=5cm" in tikz
         assert "height=4cm" in tikz
         assert "height=5cm" in tikz
         assert "\\begin{groupplot}" in tikz
@@ -1049,7 +1106,7 @@ class TestAxis2DIntegration:
         assert "xmax=10" in tikz
         assert "ymin=-1" in tikz
         assert "ymax=1" in tikz
-        assert "grid=true" in tikz
+        assert "grid=major" in tikz
         assert "legend pos=north east" in tikz
 
         # Verify plots

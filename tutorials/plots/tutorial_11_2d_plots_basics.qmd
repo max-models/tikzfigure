@@ -9,6 +9,7 @@ using pgfplots. This tutorial covers the fundamentals:
 - Creating a 2D axis with `axis2d()`
 - Adding data plots
 - Axis labels, limits, and grids
+- Linear and logarithmic axes
 - Multiple plots on one axis
 - Controlling plot dimensions
 
@@ -63,6 +64,36 @@ fig.show()
 {{< include includes/tikz_code_callout.qmd >}}
 
 `grid=True` adds grid lines. `xlim` and `ylim` set explicit axis ranges.
+
+## Log-scale axes
+
+Use `xlog=True` and `ylog=True` to switch either axis (or both) to logarithmic
+scale.
+
+```{python}
+fig = TikzFigure()
+
+# Semilog-x plot (x axis logarithmic, y axis linear)
+ax = fig.axis2d(
+    xlabel="Frequency (Hz)",
+    ylabel="Gain",
+    xlim=(1, 10000),
+    ylim=(0.1, 100),
+    xlog=True,
+    grid=True,
+)
+ax.add_plot(
+    [1, 10, 100, 1000, 10000],
+    [0.2, 2, 5, 50, 100],
+    label="semilog-x",
+    color="blue",
+    mark="*",
+)
+
+fig.show()
+```
+
+{{< include includes/tikz_code_callout.qmd >}}
 
 ## Multiple plots on one axis
 
@@ -157,7 +188,7 @@ ax1.set_legend(position="north east")
 
 ax2 = fig.axis2d(
     xlabel="Hour",
-    ylabel="Humidity (%)",
+    ylabel="Humidity (\\%)",
     xlim=(0, 24),
     ylim=(30, 90),
     grid=True,

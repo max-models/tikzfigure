@@ -80,6 +80,8 @@ nav:
           - Opacity: tutorials/tutorial_19_opacity_and_transparency.md
           - Decorations: tutorials/tutorial_20_decorations.md
           - Advanced Styling: tutorials/tutorial_21_advanced_styling.md
+          - Gantt Charts: tutorials/tutorial_26_gantt.md
+          - Parsing TikZ: tutorials/tutorial_27_parsing_tikz.md
       - Showcases:
           - Calendar: tutorials/tutorial_22_calendar.md
   - API Reference: api.md

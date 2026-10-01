@@ -1,0 +1,22 @@
+% catalogue: title = Syntax the old line-based parser could not handle
+% catalogue: min-coverage = 1.00
+\documentclass[border=10pt]{standalone}
+\PassOptionsToPackage{dvipsnames,svgnames,x11names}{xcolor}
+\usepackage{tikz}
+\usepackage{pgfplots}
+\pgfplotsset{compat=newest}
+\usepgfplotslibrary{groupplots}
+\usetikzlibrary{arrows.meta}
+\begin{document}
+\begin{tikzpicture}
+    % Semicolons and brackets inside braces
+    \node[draw, label={[red]above:{a; b}}] (a)
+        at (0, 0)
+        {$f(x) = [0, 1]; x^2$};
+    \node (b) [draw, fill=blue!10] at (3, 0) {100\% done}; % a trailing comment
+    \draw[->] (a)
+        -- (b); \draw (a) -- (0, -1);
+    \node[draw] (c) at ({max(1, 2)}, {-1}) {nested {braces {deep}}};
+    \draw (c.north east) -- (b.south);
+\end{tikzpicture}
+\end{document}

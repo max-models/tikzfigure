@@ -16,10 +16,13 @@ from tikzfigure.core.figure_layout import FigureLayoutMixin
 from tikzfigure.core.figure_parsing import FigureParsingMixin
 from tikzfigure.core.figure_paths import FigurePathMixin
 from tikzfigure.core.figure_render import FigureRenderMixin
+from tikzfigure.core.fit import Fit, FitLibrary
+from tikzfigure.core.gantt import GanttChart
 from tikzfigure.core.grid import Grid
 from tikzfigure.core.layer import LayerCollection
 from tikzfigure.core.line import Line
 from tikzfigure.core.loop import Loop
+from tikzfigure.core.matrix import Matrix, MatrixLibrary
 from tikzfigure.core.node import Node
 from tikzfigure.core.parabola import Parabola
 from tikzfigure.core.path import TikzPath
@@ -32,17 +35,16 @@ from tikzfigure.core.scope import Scope
 from tikzfigure.core.serialization import deserialize_tikz_value, serialize_tikz_value
 from tikzfigure.core.spy import (
     Spy,
+    SpyLibrary,
     SpyScopeMode,
-    build_spy_command_parts,
-    build_spy_scope_parts,
 )
+from tikzfigure.core.style_options import collect_style
+from tikzfigure.core.tikz_library import TikzLibrary
 from tikzfigure.core.types import (
     _Align,
     _Anchor,
-    _Decoration,
     _LineCap,
     _LineJoin,
-    _Mark,
     _Option,
     _Pattern,
     _Shading,
@@ -58,12 +60,26 @@ WEB_COMPILATION_ENV_VAR = "TIKZFIGURE_USE_WEB_COMPILATION"
 logger = logging.getLogger(__name__)
 
 
-def _normalize_tikz_libraries(*libraries: str) -> list[str]:
+def _coerce_tikz_library_name(
+    library: "str | TikzLibrary | type[TikzLibrary]",
+) -> str:
+    """Resolve a plain name, a TikzLibrary instance, or a TikzLibrary subclass."""
+    if isinstance(library, type) and issubclass(library, TikzLibrary):
+        return library.name
+    if isinstance(library, TikzLibrary):
+        return library.name
+    return library
+
+
+def _normalize_tikz_libraries(
+    *libraries: "str | TikzLibrary | type[TikzLibrary]",
+) -> list[str]:
     normalized: list[str] = []
     seen: set[str] = set()
 
     for raw_value in libraries:
-        for part in raw_value.split(","):
+        coerced = _coerce_tikz_library_name(raw_value)
+        for part in coerced.split(","):
             name = part.strip()
             if name == "":
                 raise ValueError("TikZ library names must not be empty.")
@@ -88,14 +104,17 @@ class TikzFigure(
     to compile it, and :meth:`savefig` / :meth:`show` to export or display
     the result.
 
-    Compilation: By default, :meth:`compile_pdf`, :meth:`savefig`, and
-    :meth:`show` use pdflatex if available on your system. If pdflatex is
-    unavailable, tikzfigure automatically falls back to the latex-on-http
-    web API for compilation. You can explicitly request web-based compilation
-    by passing ``use_web_compilation=True`` to these methods. This allows
-    figures to be compiled and rendered without requiring a local LaTeX
-    installation. You can also force this behavior process-wide by setting
-    the ``TIKZFIGURE_USE_WEB_COMPILATION=1`` environment variable. See
+    Compilation: :meth:`compile_pdf`, :meth:`savefig`, and :meth:`show`
+    compile with a local pdflatex. If pdflatex is missing or the document
+    fails to build, they raise a :class:`RuntimeError` describing what went
+    wrong.
+
+    Without a local LaTeX installation, tikzfigure can compile through the
+    latex-on-http web API instead. That uploads the LaTeX source of the figure
+    to a third-party server, so it is opt-in and never happens on its own:
+    pass ``use_web_compilation=True`` to those methods, or set
+    ``TIKZFIGURE_USE_WEB_COMPILATION=1`` to enable it process-wide. Either way
+    a :class:`UserWarning` is emitted when a figure is uploaded. See
     https://github.com/max-models/tikzfigure for more details.
 
     Attributes:
@@ -359,7 +378,7 @@ class TikzFigure(
         # Grid stores either an axis cell or a bare subfigure cell.
         self._subfigure_grid: dict[
             tuple[int, int],
-            tuple[Axis2D, float] | tuple["TikzFigure", float, str],
+            tuple[Axis2D, float] | tuple[TikzFigure, float, str],
         ] = {}
         self._is_bare_subfigure: bool = False
         self._subfigure_position: int = 0
@@ -384,6 +403,38 @@ class TikzFigure(
     # ------------------------------------------------------------- #
     # Class methods
 
+    def to_python(
+        self, name: str = "fig", header: bool = True, verify: bool = True
+    ) -> str:
+        """Return Python code that rebuilds this figure.
+
+        Useful together with :meth:`from_tikz_code` to turn existing TikZ
+        source into a tikzfigure script.
+
+        Examples:
+            >>> fig = TikzFigure()
+            >>> _ = fig.add_node(0, 0, label="a", content="A")
+            >>> print(fig.to_python(header=False), end="")
+            fig = TikzFigure()
+            fig.add_node(0, 0, label='a', content='A')
+
+        Args:
+            name: Variable name for the figure in the generated code.
+            header: Include the ``import`` lines.
+            verify: Run the generated code and check it produces the same
+                TikZ output as this figure.
+
+        Returns:
+            Python source code.
+
+        Raises:
+            CodegenError: If the figure uses features that cannot be
+                expressed as Python calls yet (pgfplots axes or subfigures).
+        """
+        from tikzfigure.codegen import figure_to_python
+
+        return figure_to_python(self, name=name, header=header, verify=verify)
+
     def to_dict(self) -> dict[str, Any]:
         """Serialize this figure to a plain dictionary.
 
@@ -404,19 +455,21 @@ class TikzFigure(
                 "extra_packages": (
                     list(self._extra_packages) if self._extra_packages else None
                 ),
-                "tikz_libraries": list(self._tikz_libraries)
-                if self._tikz_libraries
-                else None,
-                "named_styles": [
-                    {
-                        "name": style_def["name"],
-                        "options": style_def["options"],
-                        "kwargs": style_def["kwargs"],
-                    }
-                    for style_def in self._named_styles
-                ]
-                if self._named_styles
-                else None,
+                "tikz_libraries": (
+                    list(self._tikz_libraries) if self._tikz_libraries else None
+                ),
+                "named_styles": (
+                    [
+                        {
+                            "name": style_def["name"],
+                            "options": style_def["options"],
+                            "kwargs": style_def["kwargs"],
+                        }
+                        for style_def in self._named_styles
+                    ]
+                    if self._named_styles
+                    else None
+                ),
                 "document_setup": self._document_setup,
                 "figure_setup": self._figure_setup,
                 "figsize": list(self._figsize),
@@ -505,11 +558,7 @@ class TikzFigure(
         for layer_label, items_data in layers_data.items():
             for item_data in items_data:
                 item_type = item_data.get("type")
-                if item_type == "Node":
-                    fig.layers.add_item(
-                        node_lookup[item_data["label"]], layer=layer_label
-                    )
-                elif item_type == "Coordinate":
+                if item_type == "Node" or item_type == "Coordinate":
                     fig.layers.add_item(
                         node_lookup[item_data["label"]], layer=layer_label
                     )
@@ -567,10 +616,25 @@ class TikzFigure(
                     )
                 elif item_type == "Square":
                     fig.layers.add_item(Square.from_dict(item_data), layer=layer_label)
+                elif item_type == "Matrix":
+                    fig.layers.add_item(Matrix.from_dict(item_data), layer=layer_label)
+                elif item_type == "Fit":
+                    fig.layers.add_item(Fit.from_dict(item_data), layer=layer_label)
+                elif item_type == "GanttChart":
+                    fig.layers.add_item(
+                        GanttChart.from_dict(item_data), layer=layer_label
+                    )
 
         # Keep node counter consistent with restored nodes
+        auto_labeled_types = {"Matrix", "Fit"}
+        auto_labels = [
+            item_data.get("label", "")
+            for items_data in layers_data.values()
+            for item_data in items_data
+            if item_data.get("type") in auto_labeled_types
+        ]
         max_auto = -1
-        for label in node_lookup:
+        for label in list(node_lookup) + auto_labels:
             if label.startswith("node"):
                 try:
                     max_auto = max(max_auto, int(label[4:]))
@@ -686,7 +750,7 @@ class TikzFigure(
 
     def _ensure_figure_spy_scope(self) -> None:
         """Ensure the figure loads the spy library and has a usable top-level scope."""
-        self.usetikzlibrary("spy")
+        SpyLibrary.ensure(self)
         if not self._figure_has_spy_scope():
             self._append_figure_setup_items(["spy scope"])
 
@@ -715,8 +779,8 @@ class TikzFigure(
         which is useful when several ``fig.spy(...)`` calls should share the
         same magnification, lens, node styling, or connection-path settings.
         """
-        self.usetikzlibrary("spy")
-        scope_options, scope_kwargs = build_spy_scope_parts(
+        SpyLibrary.ensure(self)
+        scope_options, scope_kwargs = SpyLibrary.build_scope_parts(
             mode=mode,
             options=options,
             magnification=magnification,
@@ -766,7 +830,7 @@ class TikzFigure(
         command works without extra setup.
         """
         self._ensure_figure_spy_scope()
-        spy_options, spy_kwargs = build_spy_command_parts(
+        spy_options, spy_kwargs = SpyLibrary.build_command_parts(
             options=options,
             magnification=magnification,
             lens=lens,
@@ -818,8 +882,8 @@ class TikzFigure(
         or when you want nested spy configurations such as an outer
         ``outlines`` scope with an inner ``overlays`` scope.
         """
-        self.usetikzlibrary("spy")
-        scope_options, scope_kwargs = build_spy_scope_parts(
+        SpyLibrary.ensure(self)
+        scope_options, scope_kwargs = SpyLibrary.build_scope_parts(
             mode=mode,
             options=options,
             magnification=magnification,
@@ -873,13 +937,13 @@ class TikzFigure(
         self.layers.add_item(item=copied, layer=copied.layer or 0, verbose=verbose)
         return copied
 
-    def add(
-        self, items: list | tuple | Node, layer: int = 0, verbose: bool = False
-    ) -> None:
+    def add(self, items: Any, layer: int = 0, verbose: bool = False) -> None:
         """Add one or more pre-built items to the figure.
 
         Args:
-            items: A single :class:`Node` or a list/tuple of items to add.
+            items: A single TikZ object (:class:`Node`, :class:`TikzPath`,
+                :class:`~tikzfigure.core.circle.Circle`, ...) or a
+                list/tuple of them.
             layer: Target layer index. Defaults to ``0``.
             verbose: If ``True``, print a debug message for each insertion.
         """
@@ -890,7 +954,7 @@ class TikzFigure(
             if isinstance(item, Node):
                 self._assign_auto_node_label(item)
                 self._sync_node_counter_from_label(item.label)
-                self.layers.add_item(item=item, layer=layer, verbose=verbose)
+            self.layers.add_item(item=item, layer=layer, verbose=verbose)
 
     def colorlet(
         self,
@@ -967,8 +1031,18 @@ class TikzFigure(
     @overload
     def usetikzlibrary(self, *libraries: str) -> None: ...
 
-    def usetikzlibrary(self, *libraries: str) -> None:
+    @overload
+    def usetikzlibrary(self, *libraries: TikzLibrary | type[TikzLibrary]) -> None: ...
+
+    def usetikzlibrary(
+        self, *libraries: "str | TikzLibrary | type[TikzLibrary]"
+    ) -> None:
         """Register TikZ libraries for standalone output and compilation.
+
+        Accepts plain library name strings, or a :class:`TikzLibrary`
+        subclass/instance for libraries with dedicated Python support (e.g.
+        :class:`~tikzfigure.core.matrix.MatrixLibrary`,
+        :class:`~tikzfigure.core.spy.SpyLibrary`).
 
         Examples:
             >>> fig = TikzFigure()
@@ -983,7 +1057,6 @@ class TikzFigure(
         self,
         x: (
             float
-            | int
             | str
             | tuple[float | int | str, float | int | str]
             | tuple[float | int | str, float | int | str, float | int | str]
@@ -991,8 +1064,8 @@ class TikzFigure(
             | TikzCoordinate
             | None
         ) = None,
-        y: float | int | str | None = None,
-        z: float | int | str | None = None,
+        y: float | str | None = None,
+        z: float | str | None = None,
         label: str | None = None,
         content: str = "",
         layer: int = 0,
@@ -1414,15 +1487,14 @@ class TikzFigure(
         label: str,
         x: (
             float
-            | int
             | str
             | tuple[float | int | str, float | int | str]
             | tuple[float | int | str, float | int | str, float | int | str]
             | TikzCoordinate
             | None
         ) = None,
-        y: float | int | str | None = None,
-        z: float | int | str | None = None,
+        y: float | str | None = None,
+        z: float | str | None = None,
         at: str | None = None,
         layer: int = 0,
         comment: str | None = None,
@@ -1502,7 +1574,7 @@ class TikzFigure(
     def add_variable(
         self,
         label: str,
-        value: int | float | str,
+        value: float | str,
         layer: int | None = 0,
         comment: str | None = None,
         verbose: bool = False,
@@ -1602,6 +1674,67 @@ class TikzFigure(
         self.layers.add_item(item=plot, layer=layer, verbose=verbose)
         return plot
 
+    def add_parametric_grid(
+        self,
+        x: Any,
+        y: Any,
+        *,
+        u_variable: str,
+        v_variable: str,
+        u_values: list[Any] | tuple[Any, ...] | range,
+        v_values: list[Any] | tuple[Any, ...] | range,
+        u_domain: tuple[Any, Any] | str = (0, 1),
+        v_domain: tuple[Any, Any] | str = (0, 1),
+        samples: int | None = None,
+        smooth: bool = False,
+        layer: int = 0,
+        comment: str | None = None,
+        verbose: bool = False,
+        options: OptionInput | None = None,
+        **kwargs: Any,
+    ) -> tuple[Loop, Loop]:
+        """Draw both coordinate families of a parametric quadrilateral grid.
+
+        ``x`` and ``y`` are expressions in ``u_variable`` and
+        ``v_variable``.  The first family fixes each value in ``u_values``
+        and samples ``v_variable``; the second fixes each value in
+        ``v_values`` and samples ``u_variable``.  This is useful for mapped
+        meshes, finite-element patches, and other curvilinear grids.
+
+        The variables should normally be created with :func:`Var`, for
+        example ``x = map_x(Var("u"), Var("v"))``.  The returned loops allow
+        callers to inspect or further customize the generated TikZ.
+        """
+        u_lines = self.loop(u_variable, u_values, layer=layer, comment=comment)
+        with u_lines as _u:
+            u_lines.plot(
+                x,
+                y,
+                variable=v_variable,
+                domain=v_domain,
+                samples=samples,
+                smooth=smooth,
+                options=options,
+                **kwargs,
+            )
+
+        v_lines = self.loop(v_variable, v_values, layer=layer)
+        with v_lines as _v:
+            v_lines.plot(
+                x,
+                y,
+                variable=u_variable,
+                domain=u_domain,
+                samples=samples,
+                smooth=smooth,
+                options=options,
+                **kwargs,
+            )
+
+        if verbose:
+            print("Added parametric grid")
+        return u_lines, v_lines
+
     def add_raw(
         self,
         tikz_code: str,
@@ -1629,6 +1762,41 @@ class TikzFigure(
             verbose=verbose,
         )
         return raw_tikz
+
+    def add_gantt_chart(
+        self,
+        start: int | str,
+        end: int | str,
+        rows: list[dict[str, Any]] | tuple[dict[str, Any], ...] = (),
+        layer: int = 0,
+        comment: str | None = None,
+        options: OptionInput | None = None,
+        verbose: bool = False,
+        **kwargs: Any,
+    ) -> GanttChart:
+        """Add a chart rendered by LaTeX's ``pgfgantt`` package.
+
+        Each row is a dictionary with ``type`` set to ``title``,
+        ``titlelist``, ``group``, ``bar``, ``milestone``, ``link``, or
+        ``raw``. For example: ``{"type": "bar", "content": "Build",
+        "start": 1, "end": 3}``.
+        """
+        self.add_package("pgfgantt")
+        chart = GanttChart(
+            start=start,
+            end=end,
+            rows=rows,
+            comment=comment,
+            layer=layer,
+            options=options,
+            **kwargs,
+        )
+        self.layers.add_item(item=chart, layer=layer, verbose=verbose)
+        return chart
+
+    add_gantt = add_gantt_chart
+    gantt = add_gantt_chart
+    gantt_chart = add_gantt_chart
 
     def arc(
         self,
@@ -1713,49 +1881,7 @@ class TikzFigure(
         if arrows:
             options.append(arrows)
 
-        arc_kwargs: dict[str, Any] = {}
-        if color is not None:
-            arc_kwargs["color"] = color
-        if fill is not None:
-            arc_kwargs["fill"] = fill
-        if draw is not None:
-            arc_kwargs["draw"] = draw
-        if text is not None:
-            arc_kwargs["text"] = text
-        if opacity is not None:
-            arc_kwargs["opacity"] = opacity
-        if draw_opacity is not None:
-            arc_kwargs["draw_opacity"] = draw_opacity
-        if fill_opacity is not None:
-            arc_kwargs["fill_opacity"] = fill_opacity
-        if text_opacity is not None:
-            arc_kwargs["text_opacity"] = text_opacity
-        if line_width is not None:
-            arc_kwargs["line_width"] = line_width
-        if line_cap is not None:
-            arc_kwargs["line_cap"] = line_cap
-        if line_join is not None:
-            arc_kwargs["line_join"] = line_join
-        if miter_limit is not None:
-            arc_kwargs["miter_limit"] = miter_limit
-        if dash_pattern is not None:
-            arc_kwargs["dash_pattern"] = dash_pattern
-        if dash_phase is not None:
-            arc_kwargs["dash_phase"] = dash_phase
-        if rotate is not None:
-            arc_kwargs["rotate"] = rotate
-        if xshift is not None:
-            arc_kwargs["xshift"] = xshift
-        if yshift is not None:
-            arc_kwargs["yshift"] = yshift
-        if scale is not None:
-            arc_kwargs["scale"] = scale
-        if xscale is not None:
-            arc_kwargs["xscale"] = xscale
-        if yscale is not None:
-            arc_kwargs["yscale"] = yscale
-
-        arc_kwargs.update(kwargs)
+        arc_kwargs = collect_style(locals(), kwargs)
 
         arc = Arc(
             start=start,
@@ -1843,49 +1969,7 @@ class TikzFigure(
         Returns:
             The :class:`Circle` object that was added.
         """
-        circle_kwargs: dict[str, Any] = {}
-        if color is not None:
-            circle_kwargs["color"] = color
-        if fill is not None:
-            circle_kwargs["fill"] = fill
-        if draw is not None:
-            circle_kwargs["draw"] = draw
-        if text is not None:
-            circle_kwargs["text"] = text
-        if opacity is not None:
-            circle_kwargs["opacity"] = opacity
-        if draw_opacity is not None:
-            circle_kwargs["draw_opacity"] = draw_opacity
-        if fill_opacity is not None:
-            circle_kwargs["fill_opacity"] = fill_opacity
-        if text_opacity is not None:
-            circle_kwargs["text_opacity"] = text_opacity
-        if line_width is not None:
-            circle_kwargs["line_width"] = line_width
-        if line_cap is not None:
-            circle_kwargs["line_cap"] = line_cap
-        if line_join is not None:
-            circle_kwargs["line_join"] = line_join
-        if miter_limit is not None:
-            circle_kwargs["miter_limit"] = miter_limit
-        if dash_pattern is not None:
-            circle_kwargs["dash_pattern"] = dash_pattern
-        if dash_phase is not None:
-            circle_kwargs["dash_phase"] = dash_phase
-        if rotate is not None:
-            circle_kwargs["rotate"] = rotate
-        if xshift is not None:
-            circle_kwargs["xshift"] = xshift
-        if yshift is not None:
-            circle_kwargs["yshift"] = yshift
-        if scale is not None:
-            circle_kwargs["scale"] = scale
-        if xscale is not None:
-            circle_kwargs["xscale"] = xscale
-        if yscale is not None:
-            circle_kwargs["yscale"] = yscale
-
-        circle_kwargs.update(kwargs)
+        circle_kwargs = collect_style(locals(), kwargs)
 
         circle = Circle(
             center=center,
@@ -1973,51 +2057,7 @@ class TikzFigure(
         Returns:
             The :class:`Rectangle` object that was added.
         """
-        rect_kwargs: dict[str, Any] = {}
-        if color is not None:
-            rect_kwargs["color"] = color
-        if fill is not None:
-            rect_kwargs["fill"] = fill
-        if draw is not None:
-            rect_kwargs["draw"] = draw
-        if text is not None:
-            rect_kwargs["text"] = text
-        if opacity is not None:
-            rect_kwargs["opacity"] = opacity
-        if draw_opacity is not None:
-            rect_kwargs["draw_opacity"] = draw_opacity
-        if fill_opacity is not None:
-            rect_kwargs["fill_opacity"] = fill_opacity
-        if text_opacity is not None:
-            rect_kwargs["text_opacity"] = text_opacity
-        if line_width is not None:
-            rect_kwargs["line_width"] = line_width
-        if line_cap is not None:
-            rect_kwargs["line_cap"] = line_cap
-        if line_join is not None:
-            rect_kwargs["line_join"] = line_join
-        if miter_limit is not None:
-            rect_kwargs["miter_limit"] = miter_limit
-        if dash_pattern is not None:
-            rect_kwargs["dash_pattern"] = dash_pattern
-        if dash_phase is not None:
-            rect_kwargs["dash_phase"] = dash_phase
-        if rounded_corners is not None:
-            rect_kwargs["rounded_corners"] = rounded_corners
-        if rotate is not None:
-            rect_kwargs["rotate"] = rotate
-        if xshift is not None:
-            rect_kwargs["xshift"] = xshift
-        if yshift is not None:
-            rect_kwargs["yshift"] = yshift
-        if scale is not None:
-            rect_kwargs["scale"] = scale
-        if xscale is not None:
-            rect_kwargs["xscale"] = xscale
-        if yscale is not None:
-            rect_kwargs["yscale"] = yscale
-
-        rect_kwargs.update(kwargs)
+        rect_kwargs = collect_style(locals(), kwargs)
 
         rectangle = Rectangle(
             corner1=corner1,
@@ -2030,6 +2070,189 @@ class TikzFigure(
 
         self.layers.add_item(item=rectangle, layer=layer, verbose=verbose)
         return rectangle
+
+    def add_matrix(
+        self,
+        rows: list[list[Any]],
+        x: (
+            float
+            | str
+            | tuple[float | int | str, float | int | str]
+            | tuple[float | int | str, float | int | str, float | int | str]
+            | TikzCoordinate
+            | None
+        ) = None,
+        y: float | str | None = None,
+        z: float | str | None = None,
+        label: str | None = None,
+        layer: int = 0,
+        comment: str | None = None,
+        options: OptionInput | None = None,
+        row_sep: str | None = None,
+        column_sep: str | None = None,
+        cell_style: str | list[str] | None = None,
+        anchor: _Anchor = None,
+        verbose: bool = False,
+        **kwargs: Any,
+    ) -> Matrix:
+        """Add a matrix of nodes (``\\matrix``) to the TikZ figure.
+
+        A first-class alternative to hand-writing raw ``\\matrix`` TikZ,
+        with row/column separation, per-cell styling, and easy cell
+        addressing via :meth:`Matrix.cell`.
+
+        Examples::
+
+            m = fig.add_matrix(
+                [["A", "B"], ["C", "D"]],
+                label="m",
+                row_sep="5pt",
+                column_sep="1cm",
+                cell_style="draw, minimum size=8mm, anchor=center",
+            )
+            fig.add_coordinate("c11", at=m.cell(1, 1))
+            fig.add_coordinate("c22", at=m.cell(2, 2))
+            fig.draw(["c11", "c22"])
+
+        Args:
+            rows: Grid of cells, given row by row. Each cell is either a
+                plain string (node content), a dict of
+                ``{"content": str, "options": ..., **node_kwargs}`` for
+                per-cell styling, or ``None`` for an empty cell.
+            x: X-coordinate, a ``(x, y)`` / ``(x, y, z)`` tuple, or a
+                :class:`TikzCoordinate` giving the matrix's anchor
+                position. Use ``None`` to let TikZ place it at the origin.
+            y: Y-coordinate. Use ``None`` when ``x`` already provides the
+                full position.
+            z: Z-coordinate for 3-D figures.
+            label: Internal TikZ name. Auto-assigned when ``None``.
+                Required (explicitly or via auto-assignment) to address
+                individual cells with :meth:`Matrix.cell`.
+            layer: Target layer index. Defaults to ``0``.
+            comment: Optional comment prepended in the TikZ output.
+            options: Flag-style TikZ options for the matrix node itself.
+            row_sep: Row separation (e.g. ``"5pt"``).
+            column_sep: Column separation (e.g. ``"1cm"``).
+            cell_style: Shared TikZ style(s) applied to every cell node,
+                rendered as ``nodes={<cell_style>}``.
+            anchor: Anchor point for the whole matrix node.
+            verbose: If ``True``, print a debug message.
+            **kwargs: Additional matrix-level TikZ options.
+
+        Returns:
+            The :class:`Matrix` object that was added.
+        """
+        MatrixLibrary.ensure(self)
+
+        if label is None:
+            label = f"node{self._node_counter}"
+            self._node_counter += 1
+        else:
+            self._sync_node_counter_from_label(label)
+
+        matrix = Matrix(
+            rows=rows,
+            x=x,
+            y=y,
+            z=z,
+            label=label,
+            comment=comment,
+            layer=layer,
+            options=options,
+            row_sep=row_sep,
+            column_sep=column_sep,
+            cell_style=cell_style,
+            anchor=anchor,
+            **kwargs,
+        )
+        self.layers.add_item(item=matrix, layer=layer, verbose=verbose)
+        return matrix
+
+    def add_fit(
+        self,
+        targets: list[Any],
+        content: str = "",
+        label: str | None = None,
+        layer: int = 0,
+        comment: str | None = None,
+        options: OptionInput | None = None,
+        verbose: bool = False,
+        **kwargs: Any,
+    ) -> Fit:
+        """Wrap existing nodes/coordinates in a bounding node (``fit`` library).
+
+        A first-class alternative to hand-writing raw ``fit=(...)...`` node
+        options.
+
+        Examples::
+
+            a = fig.add_node((0, 0), content="A")
+            b = fig.add_node((2, 1), content="B")
+            fig.add_fit([a, b], options=["draw", "dashed", "rounded corners"])
+
+        Args:
+            targets: Nodes/coordinates to fit around, as a list of
+                :class:`Node`/:class:`Coordinate` objects or label strings
+                (optionally with a ``.anchor`` suffix, e.g. ``"a.north"``).
+                At least one is required.
+            content: Text or LaTeX content displayed inside the fit node.
+                Usually left empty.
+            label: Internal TikZ name. Auto-assigned when ``None``.
+            layer: Target layer index. Defaults to ``0``.
+            comment: Optional comment prepended in the TikZ output.
+            options: Flag-style TikZ options (e.g. ``["draw", "dashed"]``).
+            verbose: If ``True``, print a debug message.
+            **kwargs: Additional TikZ options for the fit node (e.g.
+                ``inner_sep="5pt"``).
+
+        Returns:
+            The :class:`Fit` object that was added.
+        """
+        FitLibrary.ensure(self)
+
+        if not isinstance(targets, list):
+            raise ValueError("targets parameter must be a list of nodes/coordinates.")
+
+        resolved_targets: list[str] = []
+        for target in targets:
+            if isinstance(target, (Node, Coordinate)):
+                if not target.label:
+                    raise ValueError(
+                        "Fit targets must reference labeled nodes/coordinates."
+                    )
+                resolved_targets.append(target.label)
+            elif isinstance(target, str):
+                try:
+                    resolved_targets.append(self.layers.get_node(target).label or "")
+                except ValueError:
+                    if "." in target:
+                        label_part, _anchor_part = target.rsplit(".", 1)
+                        self.layers.get_node(label_part)
+                        resolved_targets.append(target)
+                    else:
+                        raise
+            else:
+                raise NotImplementedError(
+                    f"{target =}, {type(target) =} is not a valid fit target type!",
+                )
+
+        if label is None:
+            label = f"node{self._node_counter}"
+            self._node_counter += 1
+        else:
+            self._sync_node_counter_from_label(label)
+
+        fit = Fit(
+            targets=resolved_targets,
+            content=content,
+            label=label,
+            comment=comment,
+            layer=layer,
+            options=options,
+            **kwargs,
+        )
+        self.layers.add_item(item=fit, layer=layer, verbose=verbose)
+        return fit
 
     def ellipse(
         self,
@@ -2103,49 +2326,7 @@ class TikzFigure(
         Returns:
             The :class:`Ellipse` object that was added.
         """
-        ellipse_kwargs: dict[str, Any] = {}
-        if color is not None:
-            ellipse_kwargs["color"] = color
-        if fill is not None:
-            ellipse_kwargs["fill"] = fill
-        if draw is not None:
-            ellipse_kwargs["draw"] = draw
-        if text is not None:
-            ellipse_kwargs["text"] = text
-        if opacity is not None:
-            ellipse_kwargs["opacity"] = opacity
-        if draw_opacity is not None:
-            ellipse_kwargs["draw_opacity"] = draw_opacity
-        if fill_opacity is not None:
-            ellipse_kwargs["fill_opacity"] = fill_opacity
-        if text_opacity is not None:
-            ellipse_kwargs["text_opacity"] = text_opacity
-        if line_width is not None:
-            ellipse_kwargs["line_width"] = line_width
-        if line_cap is not None:
-            ellipse_kwargs["line_cap"] = line_cap
-        if line_join is not None:
-            ellipse_kwargs["line_join"] = line_join
-        if miter_limit is not None:
-            ellipse_kwargs["miter_limit"] = miter_limit
-        if dash_pattern is not None:
-            ellipse_kwargs["dash_pattern"] = dash_pattern
-        if dash_phase is not None:
-            ellipse_kwargs["dash_phase"] = dash_phase
-        if rotate is not None:
-            ellipse_kwargs["rotate"] = rotate
-        if xshift is not None:
-            ellipse_kwargs["xshift"] = xshift
-        if yshift is not None:
-            ellipse_kwargs["yshift"] = yshift
-        if scale is not None:
-            ellipse_kwargs["scale"] = scale
-        if xscale is not None:
-            ellipse_kwargs["xscale"] = xscale
-        if yscale is not None:
-            ellipse_kwargs["yscale"] = yscale
-
-        ellipse_kwargs.update(kwargs)
+        ellipse_kwargs = collect_style(locals(), kwargs)
 
         ellipse = Ellipse(
             center=center,
@@ -2223,37 +2404,7 @@ class TikzFigure(
         Returns:
             The :class:`Grid` object that was added.
         """
-        grid_kwargs: dict[str, Any] = {}
-        if color is not None:
-            grid_kwargs["color"] = color
-        if opacity is not None:
-            grid_kwargs["opacity"] = opacity
-        if draw_opacity is not None:
-            grid_kwargs["draw_opacity"] = draw_opacity
-        if line_width is not None:
-            grid_kwargs["line_width"] = line_width
-        if line_cap is not None:
-            grid_kwargs["line_cap"] = line_cap
-        if line_join is not None:
-            grid_kwargs["line_join"] = line_join
-        if dash_pattern is not None:
-            grid_kwargs["dash_pattern"] = dash_pattern
-        if dash_phase is not None:
-            grid_kwargs["dash_phase"] = dash_phase
-        if rotate is not None:
-            grid_kwargs["rotate"] = rotate
-        if xshift is not None:
-            grid_kwargs["xshift"] = xshift
-        if yshift is not None:
-            grid_kwargs["yshift"] = yshift
-        if scale is not None:
-            grid_kwargs["scale"] = scale
-        if xscale is not None:
-            grid_kwargs["xscale"] = xscale
-        if yscale is not None:
-            grid_kwargs["yscale"] = yscale
-
-        grid_kwargs.update(kwargs)
+        grid_kwargs = collect_style(locals(), kwargs)
 
         grid_obj = Grid(
             corner1=corner1,
@@ -2349,49 +2500,7 @@ class TikzFigure(
         if arrows:
             options.append(arrows)
 
-        parabola_kwargs: dict[str, Any] = {}
-        if color is not None:
-            parabola_kwargs["color"] = color
-        if fill is not None:
-            parabola_kwargs["fill"] = fill
-        if draw is not None:
-            parabola_kwargs["draw"] = draw
-        if text is not None:
-            parabola_kwargs["text"] = text
-        if opacity is not None:
-            parabola_kwargs["opacity"] = opacity
-        if draw_opacity is not None:
-            parabola_kwargs["draw_opacity"] = draw_opacity
-        if fill_opacity is not None:
-            parabola_kwargs["fill_opacity"] = fill_opacity
-        if text_opacity is not None:
-            parabola_kwargs["text_opacity"] = text_opacity
-        if line_width is not None:
-            parabola_kwargs["line_width"] = line_width
-        if line_cap is not None:
-            parabola_kwargs["line_cap"] = line_cap
-        if line_join is not None:
-            parabola_kwargs["line_join"] = line_join
-        if miter_limit is not None:
-            parabola_kwargs["miter_limit"] = miter_limit
-        if dash_pattern is not None:
-            parabola_kwargs["dash_pattern"] = dash_pattern
-        if dash_phase is not None:
-            parabola_kwargs["dash_phase"] = dash_phase
-        if rotate is not None:
-            parabola_kwargs["rotate"] = rotate
-        if xshift is not None:
-            parabola_kwargs["xshift"] = xshift
-        if yshift is not None:
-            parabola_kwargs["yshift"] = yshift
-        if scale is not None:
-            parabola_kwargs["scale"] = scale
-        if xscale is not None:
-            parabola_kwargs["xscale"] = xscale
-        if yscale is not None:
-            parabola_kwargs["yscale"] = yscale
-
-        parabola_kwargs.update(kwargs)
+        parabola_kwargs = collect_style(locals(), kwargs)
 
         parabola = Parabola(
             start=start,
@@ -2479,41 +2588,7 @@ class TikzFigure(
         if arrows:
             normalized_options.append(arrows)
 
-        line_kwargs: dict[str, Any] = {}
-        if color is not None:
-            line_kwargs["color"] = color
-        if text is not None:
-            line_kwargs["text"] = text
-        if opacity is not None:
-            line_kwargs["opacity"] = opacity
-        if draw_opacity is not None:
-            line_kwargs["draw_opacity"] = draw_opacity
-        if line_width is not None:
-            line_kwargs["line_width"] = line_width
-        if line_cap is not None:
-            line_kwargs["line_cap"] = line_cap
-        if line_join is not None:
-            line_kwargs["line_join"] = line_join
-        if miter_limit is not None:
-            line_kwargs["miter_limit"] = miter_limit
-        if dash_pattern is not None:
-            line_kwargs["dash_pattern"] = dash_pattern
-        if dash_phase is not None:
-            line_kwargs["dash_phase"] = dash_phase
-        if rotate is not None:
-            line_kwargs["rotate"] = rotate
-        if xshift is not None:
-            line_kwargs["xshift"] = xshift
-        if yshift is not None:
-            line_kwargs["yshift"] = yshift
-        if scale is not None:
-            line_kwargs["scale"] = scale
-        if xscale is not None:
-            line_kwargs["xscale"] = xscale
-        if yscale is not None:
-            line_kwargs["yscale"] = yscale
-
-        line_kwargs.update(kwargs)
+        line_kwargs = collect_style(locals(), kwargs)
 
         line = Line(
             start=start,
@@ -2604,49 +2679,7 @@ class TikzFigure(
         if sides < 3:
             raise ValueError("Polygon must have at least 3 sides")
 
-        polygon_kwargs: dict[str, Any] = {}
-        if color is not None:
-            polygon_kwargs["color"] = color
-        if fill is not None:
-            polygon_kwargs["fill"] = fill
-        if draw is not None:
-            polygon_kwargs["draw"] = draw
-        if text is not None:
-            polygon_kwargs["text"] = text
-        if opacity is not None:
-            polygon_kwargs["opacity"] = opacity
-        if draw_opacity is not None:
-            polygon_kwargs["draw_opacity"] = draw_opacity
-        if fill_opacity is not None:
-            polygon_kwargs["fill_opacity"] = fill_opacity
-        if text_opacity is not None:
-            polygon_kwargs["text_opacity"] = text_opacity
-        if line_width is not None:
-            polygon_kwargs["line_width"] = line_width
-        if line_cap is not None:
-            polygon_kwargs["line_cap"] = line_cap
-        if line_join is not None:
-            polygon_kwargs["line_join"] = line_join
-        if miter_limit is not None:
-            polygon_kwargs["miter_limit"] = miter_limit
-        if dash_pattern is not None:
-            polygon_kwargs["dash_pattern"] = dash_pattern
-        if dash_phase is not None:
-            polygon_kwargs["dash_phase"] = dash_phase
-        if rotate is not None:
-            polygon_kwargs["rotate"] = rotate
-        if xshift is not None:
-            polygon_kwargs["xshift"] = xshift
-        if yshift is not None:
-            polygon_kwargs["yshift"] = yshift
-        if scale is not None:
-            polygon_kwargs["scale"] = scale
-        if xscale is not None:
-            polygon_kwargs["xscale"] = xscale
-        if yscale is not None:
-            polygon_kwargs["yscale"] = yscale
-
-        polygon_kwargs.update(kwargs)
+        polygon_kwargs = collect_style(locals(), kwargs)
 
         polygon = Polygon(
             center=center,
@@ -2709,27 +2742,7 @@ class TikzFigure(
         Returns:
             The :class:`Triangle` object that was added.
         """
-        triangle_kwargs: dict[str, Any] = {}
-        if color is not None:
-            triangle_kwargs["color"] = color
-        if fill is not None:
-            triangle_kwargs["fill"] = fill
-        if draw is not None:
-            triangle_kwargs["draw"] = draw
-        if text is not None:
-            triangle_kwargs["text"] = text
-        if opacity is not None:
-            triangle_kwargs["opacity"] = opacity
-        if draw_opacity is not None:
-            triangle_kwargs["draw_opacity"] = draw_opacity
-        if fill_opacity is not None:
-            triangle_kwargs["fill_opacity"] = fill_opacity
-        if text_opacity is not None:
-            triangle_kwargs["text_opacity"] = text_opacity
-        if line_width is not None:
-            triangle_kwargs["line_width"] = line_width
-
-        triangle_kwargs.update(kwargs)
+        triangle_kwargs = collect_style(locals(), kwargs)
 
         triangle = Triangle(
             center=center,
@@ -2791,27 +2804,7 @@ class TikzFigure(
         Returns:
             The :class:`Square` object that was added.
         """
-        square_kwargs: dict[str, Any] = {}
-        if color is not None:
-            square_kwargs["color"] = color
-        if fill is not None:
-            square_kwargs["fill"] = fill
-        if draw is not None:
-            square_kwargs["draw"] = draw
-        if text is not None:
-            square_kwargs["text"] = text
-        if opacity is not None:
-            square_kwargs["opacity"] = opacity
-        if draw_opacity is not None:
-            square_kwargs["draw_opacity"] = draw_opacity
-        if fill_opacity is not None:
-            square_kwargs["fill_opacity"] = fill_opacity
-        if text_opacity is not None:
-            square_kwargs["text_opacity"] = text_opacity
-        if line_width is not None:
-            square_kwargs["line_width"] = line_width
-
-        square_kwargs.update(kwargs)
+        square_kwargs = collect_style(locals(), kwargs)
 
         square = Square(
             center=center,
@@ -2870,9 +2863,11 @@ class TikzFigure(
         ylabel: str = "",
         xlim: tuple[float, float] | None = None,
         ylim: tuple[float, float] | None = None,
+        xlog: bool = False,
+        ylog: bool = False,
         grid: bool | str = True,
-        width: str | int | float | None = None,
-        height: str | int | float | None = None,
+        width: str | float | None = None,
+        height: str | float | None = None,
         layer: int = 0,
         comment: str | None = None,
         **kwargs: Any,
@@ -2884,6 +2879,8 @@ class TikzFigure(
             ylabel: Label for y-axis. Defaults to "".
             xlim: (min, max) tuple for x-axis limits, or None for auto.
             ylim: (min, max) tuple for y-axis limits, or None for auto.
+            xlog: Whether to use logarithmic scaling on the x-axis.
+            ylog: Whether to use logarithmic scaling on the y-axis.
             grid: Enable grid lines. Pass ``True`` / ``False`` for the usual
                 pgfplots values or a string such as ``"major"``.
             width: Width of the axis as a string (e.g., "8cm"), number in cm,
@@ -2902,6 +2899,8 @@ class TikzFigure(
             ylabel=ylabel,
             xlim=xlim,
             ylim=ylim,
+            xlog=xlog,
+            ylog=ylog,
             grid=grid,
             width=width,
             height=height,
@@ -3060,6 +3059,7 @@ class TikzFigure(
     function = declare_function
     raw = add_raw
     plot = add_plot
+    parametric_grid = add_parametric_grid
     spy = add_spy
     spy_scope = add_spy_scope
     subfigure = FigureLayoutMixin.add_subfigure

@@ -15,9 +15,8 @@ from tikzfigure.core.raw import RawTikz
 from tikzfigure.core.serialization import deserialize_tikz_value, serialize_tikz_value
 from tikzfigure.core.spy import (
     Spy,
+    SpyLibrary,
     SpyScopeMode,
-    build_spy_command_parts,
-    build_spy_scope_parts,
 )
 from tikzfigure.options import OptionInput
 
@@ -190,6 +189,16 @@ class Scope(FigurePathMixin, TikzObject):
         self._items.append(coord)
         return coord
 
+    def add(self, items: Any) -> None:
+        """Add one or more pre-built TikZ objects to this scope.
+
+        Args:
+            items: A single TikZ object or a list/tuple of them.
+        """
+        if not isinstance(items, list | tuple):
+            items = [items]
+        self._items.extend(items)
+
     def add_raw(self, tikz_code: str) -> RawTikz:
         raw = RawTikz(tikz_code)
         self._items.append(raw)
@@ -253,7 +262,7 @@ class Scope(FigurePathMixin, TikzObject):
         """
         if self._library_loader is not None:
             self._library_loader("spy")
-        spy_options, spy_kwargs = build_spy_command_parts(
+        spy_options, spy_kwargs = SpyLibrary.build_command_parts(
             options=options,
             magnification=magnification,
             lens=lens,
@@ -297,7 +306,7 @@ class Scope(FigurePathMixin, TikzObject):
         every_spy_on_node_style: dict[str, Any] | None = None,
         spy_connection_path: str | None = None,
         **kwargs: Any,
-    ) -> "Scope":
+    ) -> Scope:
         """Create a nested scope configured for local spy defaults.
 
         The returned scope can be used as a context manager. Its local options
@@ -306,7 +315,7 @@ class Scope(FigurePathMixin, TikzObject):
         """
         if self._library_loader is not None:
             self._library_loader("spy")
-        scope_options, scope_kwargs = build_spy_scope_parts(
+        scope_options, scope_kwargs = SpyLibrary.build_scope_parts(
             mode=mode,
             options=options,
             magnification=magnification,
@@ -360,7 +369,7 @@ class Scope(FigurePathMixin, TikzObject):
         comment: str | None = None,
         options: OptionInput | None = None,
         **kwargs: Any,
-    ) -> "Scope":
+    ) -> Scope:
         scope = Scope(
             comment=comment,
             layer=self._container_layer(),
@@ -408,7 +417,7 @@ class Scope(FigurePathMixin, TikzObject):
         cls,
         d: dict[str, Any],
         node_lookup: dict[str, Node | Coordinate] | None = None,
-    ) -> "Scope":
+    ) -> Scope:
         from tikzfigure.core.loop import Loop
 
         restored = deserialize_tikz_value(d)
@@ -452,13 +461,13 @@ class Scope(FigurePathMixin, TikzObject):
                 scope._items.append(RawTikz.from_dict(item_data))
         return scope
 
-    def copy(self, **overrides: Any) -> "Scope":
+    def copy(self, **overrides: Any) -> Scope:
         clone = type(self).from_dict(self.to_dict())
         clone._node_resolver = self._node_resolver
         clone._library_loader = self._library_loader
         return self._apply_base_copy_overrides(clone, overrides)  # type: ignore[return-value]
 
-    def __enter__(self) -> "Scope":
+    def __enter__(self) -> Scope:
         if self._enter_callback is not None:
             self._enter_callback(self)
         return self

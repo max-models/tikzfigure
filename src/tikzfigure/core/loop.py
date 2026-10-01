@@ -340,6 +340,16 @@ class Loop(FigurePathMixin, TikzObject):
         self._items.append(loop)
         return loop
 
+    def add(self, items: Any) -> None:
+        """Add one or more pre-built TikZ objects to this loop.
+
+        Args:
+            items: A single TikZ object or a list/tuple of them.
+        """
+        if not isinstance(items, list | tuple):
+            items = [items]
+        self._items.extend(items)
+
     def add_raw(self, tikz_code: str) -> RawTikz:
         raw = RawTikz(tikz_code)
         self._items.append(raw)
@@ -468,9 +478,9 @@ class Loop(FigurePathMixin, TikzObject):
                 "type": "Loop",
                 "variable": self._variable,
                 "values": list(self._values),
-                "range_spec": dict(self._range_spec)
-                if self._range_spec is not None
-                else None,
+                "range_spec": (
+                    dict(self._range_spec) if self._range_spec is not None else None
+                ),
                 "items": [item.to_dict() for item in self._items],
             }
         )

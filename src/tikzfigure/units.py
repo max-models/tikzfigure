@@ -19,11 +19,11 @@ _TO_PT: dict[str, float] = {
 class TikzDimension:
     """A TikZ dimension value with a unit, e.g. 2.5cm or 10pt."""
 
-    def __init__(self, value: float | int, unit: str) -> None:
+    def __init__(self, value: float, unit: str) -> None:
         self.value = value
         self.unit = unit
 
-    def to(self, target_unit: str) -> "TikzDimension":
+    def to(self, target_unit: str) -> TikzDimension:
         """Convert to another TikZ unit."""
         if self.unit == target_unit:
             return TikzDimension(self.value, self.unit)
@@ -59,10 +59,10 @@ class _Unit:
     def __init__(self, unit: str) -> None:
         self._unit = unit
 
-    def __rmul__(self, value: float | int) -> TikzDimension:
+    def __rmul__(self, value: float) -> TikzDimension:
         return TikzDimension(value, self._unit)
 
-    def __mul__(self, value: float | int) -> TikzDimension:
+    def __mul__(self, value: float) -> TikzDimension:
         return TikzDimension(value, self._unit)
 
 

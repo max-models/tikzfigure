@@ -250,7 +250,8 @@ fig.grid(
 fig.grid(
     (4, 0),
     (7, 3),
-    step="0.5cm, 1cm",
+    xstep="0.5cm",
+    ystep="1cm",
     color="blue!20",
 )
 
@@ -478,6 +479,111 @@ fig.triangle(
     color="blue",
     fill="blue!20",
 )
+
+fig.show()
+```
+
+{{< include includes/tikz_code_callout.qmd >}}
+
+## Matrix of nodes
+
+`add_matrix()` lays out a grid of nodes using TikZ's `matrix` library, so you
+don't need to hand-write raw `\matrix` code. Cells are given row by row, and
+per-cell styling is set with a `{"content": ..., **options}` dict. Use
+`row_sep`, `column_sep`, and `cell_style` to control spacing and the shared
+look of every cell.
+
+```{python}
+fig = TikzFigure()
+
+fig.add_matrix(
+    [
+        ["A", "B", "C"],
+        ["D", {"content": "E", "fill": "yellow!60"}, "F"],
+    ],
+    label="grid",
+    options="matrix of nodes",
+    row_sep="5pt",
+    column_sep="5pt",
+    cell_style="draw, minimum size=1cm, anchor=center",
+)
+
+fig.show()
+```
+
+{{< include includes/tikz_code_callout.qmd >}}
+
+Individual cells are addressable with `Matrix.cell(row, col)`, which returns
+the TikZ node name for that cell (`"<label>-<row>-<col>"`, 1-indexed). Turn
+that name into a figure coordinate with `add_coordinate(..., at=...)` to draw
+connections between cells:
+
+```{python}
+fig = TikzFigure()
+
+grid = fig.add_matrix(
+    [["A", "B"], ["C", "D"]],
+    label="grid",
+    options="matrix of nodes",
+    row_sep="5pt",
+    column_sep="5pt",
+    cell_style="draw, minimum size=1cm, anchor=center",
+)
+
+fig.add_coordinate("c1", at=grid.cell(1, 1))
+fig.add_coordinate("c2", at=grid.cell(2, 2))
+fig.draw(["c1", "c2"], arrows=arrows.forward, color="red", line_width="1.5pt")
+
+fig.show()
+```
+
+{{< include includes/tikz_code_callout.qmd >}}
+
+## Fit boxes around nodes
+
+`add_fit()` wraps a group of existing nodes/coordinates in a single bounding
+node, using TikZ's `fit` library - handy for drawing a background box around
+related elements without hand-writing `fit=(...)...`. Pass the `Node`/
+`Coordinate` objects (or their label strings) to fit around.
+
+```{python}
+fig = TikzFigure()
+
+a = fig.node((0, 0), shape="circle", fill="blue!30", content="A")
+b = fig.node((3, 0), shape="circle", fill="blue!30", content="B")
+c = fig.node((1.5, 2), shape="circle", fill="blue!30", content="C")
+
+fig.add_fit(
+    [a, b, c],
+    options=["draw", "dashed", "rounded corners"],
+    inner_sep="0.4cm",
+)
+
+fig.show()
+```
+
+{{< include includes/tikz_code_callout.qmd >}}
+
+Fit nodes can be styled like any other node (`fill`, `color`, ...) and, since
+`add_fit()` returns a regular `Node`-like object, a title can be placed above
+it at an absolute coordinate:
+
+```{python}
+fig = TikzFigure()
+
+x = fig.node((0, 0), content="x")
+y = fig.node((2, 0), content="y")
+z = fig.node((1, 1.5), content="z")
+
+fig.add_fit(
+    [x, y, z],
+    label="group",
+    options=["draw"],
+    color="orange!60",
+    fill="orange!10",
+    inner_sep="0.3cm",
+)
+fig.node((1, 2.3), content="\\textbf{Group}", draw="none")
 
 fig.show()
 ```

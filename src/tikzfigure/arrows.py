@@ -2,32 +2,17 @@ from __future__ import annotations
 
 from typing import TypeAlias
 
+from tikzfigure.core.tikz_token import TikzToken
 
-class TikzArrow:
+
+class TikzArrow(TikzToken):
     """A reusable TikZ arrow-tip specification."""
 
+    _attr = "arrow_spec"
+    arrow_spec: str
+
     def __init__(self, arrow_spec: str) -> None:
-        if arrow_spec == "":
-            raise ValueError("arrow_spec must not be empty")
-        self.arrow_spec = arrow_spec
-
-    def to_tikz(self) -> str:
-        """Return the raw TikZ arrow specification."""
-        return self.arrow_spec
-
-    def __str__(self) -> str:
-        return self.arrow_spec
-
-    def __repr__(self) -> str:
-        return f"TikzArrow({self.arrow_spec!r})"
-
-    def __eq__(self, other: object) -> bool:
-        if not isinstance(other, TikzArrow):
-            return NotImplemented
-        return self.arrow_spec == other.arrow_spec
-
-    def __hash__(self) -> int:
-        return hash(self.arrow_spec)
+        super().__init__(arrow_spec)
 
 
 ArrowInput: TypeAlias = str | TikzArrow
@@ -52,19 +37,19 @@ latex_reversed: TikzArrow = TikzArrow("latex-")
 latex_both: TikzArrow = TikzArrow("latex-latex")
 
 __all__ = [
-    "TikzArrow",
     "ArrowInput",
-    "tip",
-    "forward",
+    "TikzArrow",
     "backward",
-    "both",
-    "bar_forward",
     "bar_backward",
     "bar_both",
-    "stealth",
-    "stealth_reversed",
-    "stealth_both",
+    "bar_forward",
+    "both",
+    "forward",
     "latex",
-    "latex_reversed",
     "latex_both",
+    "latex_reversed",
+    "stealth",
+    "stealth_both",
+    "stealth_reversed",
+    "tip",
 ]

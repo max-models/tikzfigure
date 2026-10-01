@@ -1,3 +1,4 @@
+import math
 from typing import Any
 
 from tikzfigure.core.base import TikzObject
@@ -5,6 +6,31 @@ from tikzfigure.core.coordinate import TikzCoordinate
 from tikzfigure.core.path import TikzPath
 from tikzfigure.core.serialization import deserialize_tikz_value, serialize_tikz_value
 from tikzfigure.options import OptionInput, normalize_options
+
+
+def format_number(value: Any, precision: int | None = None) -> str:
+    """Write a coordinate value for pgfplots.
+
+    Integers are written as they are. Floats are written in full, or with
+    ``precision`` significant digits; NaN and infinities as ``nan``, ``inf``
+    and ``-inf``, which pgfplots reads as unbounded coordinates.
+    """
+    if isinstance(value, bool):
+        return str(value)
+    if not isinstance(value, (int, float)):
+        item = getattr(value, "item", None)  # a NumPy scalar
+        if item is None:
+            return str(value)
+        value = item()
+    if isinstance(value, int):
+        return str(value)
+    if math.isnan(value):
+        return "nan"
+    if math.isinf(value):
+        return "inf" if value > 0 else "-inf"
+    if precision is None:
+        return str(value)
+    return f"{value:.{precision}g}"
 
 
 class Plot2D(TikzObject):
@@ -22,6 +48,9 @@ class Plot2D(TikzObject):
         label: str = "",
         comment: str | None = None,
         options: OptionInput | None = None,
+        cycle: bool = False,
+        meta: list[float] | None = None,
+        precision: int | None = None,
         **kwargs: Any,
     ) -> None:
         """Initialize a Plot2D.
@@ -33,6 +62,13 @@ class Plot2D(TikzObject):
             label: Plot label (used in legend and serialization). Defaults to "".
             comment: Optional comment prepended in the TikZ output.
             options: Flag-style pgfplots options (e.g., ["thick"]).
+            cycle: Close the path back to its first point (``-- cycle``),
+                e.g. for a filled polygon. Defaults to ``False``.
+            meta: One value per point, written as ``(x,y) [meta]`` and
+                used by pgfplots as point meta (e.g. a scatter plot colored
+                through a colormap with ``point meta=explicit``).
+            precision: Significant digits of the written coordinates;
+                ``None`` writes them in full. Defaults to ``None``.
             **kwargs: Keyword-style pgfplots options (e.g., color="red").
 
         Raises:
@@ -46,6 +82,8 @@ class Plot2D(TikzObject):
             raise ValueError("Cannot specify both func and (x, y) data")
         if func is None and (x is None or y is None):
             raise ValueError("Must specify either func or both (x, y) data")
+        if meta is not None and (func is not None or len(meta) != len(x or [])):
+            raise ValueError("meta needs one value per (x, y) point")
 
         # Extract layer if provided in kwargs to avoid conflict
         # (layer is a property of the parent Axis2D, not the plot itself)
@@ -61,6 +99,9 @@ class Plot2D(TikzObject):
         self._x = x if x is not None else []
         self._y = y if y is not None else []
         self._func = func
+        self._cycle = cycle
+        self._meta = meta
+        self._precision = precision
 
     @property
     def x(self) -> list[float]:
@@ -82,6 +123,55 @@ class Plot2D(TikzObject):
         """True if this plot uses a function expression, False if explicit data."""
         return self._func is not None
 
+    @property
+    def cycle(self) -> bool:
+        """Whether the path is closed back to its first point."""
+        return self._cycle
+
+    @property
+    def meta(self) -> list[float] | None:
+        """Point meta values, one per point, or None."""
+        return self._meta
+
+    @property
+    def precision(self) -> int | None:
+        """Significant digits of the written coordinates, or None for all."""
+        return self._precision
+
+    def coordinates_tikz(self) -> str:
+        """The ``coordinates {...}`` body of the plot: ``(x,y)`` or ``(x,y) [meta]``."""
+        precision = self._precision
+
+        def number(value: Any) -> str:
+            return format_number(value, precision)
+
+        if self._meta is None:
+            points = (f"({number(x)},{number(y)})" for x, y in zip(self.x, self.y))
+        else:
+            points = (
+                f"({number(x)},{number(y)}) [{number(m)}]"
+                for x, y, m in zip(self.x, self.y, self._meta)
+            )
+        return " ".join(points)
+
+    def to_addplot(self, output_unit: str | None = None, extra_options=()) -> str:
+        """The ``\\addplot`` command of this plot inside a pgfplots axis.
+
+        Args:
+            output_unit: Unit that dimension values are converted to.
+            extra_options: Options appended to the plot's own, e.g.
+                ``"forget plot"``.
+        """
+        options = self.tikz_options(output_unit)
+        extra = ", ".join(str(option) for option in extra_options)
+        options = ", ".join(part for part in (options, extra) if part)
+        if self.is_function:
+            return f"\\addplot[{options}] {{{self.func}}};\n"
+        cycle = " -- cycle" if self._cycle else ""
+        return (
+            f"\\addplot[{options}] coordinates {{{self.coordinates_tikz()}}}{cycle};\n"
+        )
+
     def to_dict(self) -> dict[str, Any]:
         """Serialize this plot to a plain dictionary.
 
@@ -97,6 +187,9 @@ class Plot2D(TikzObject):
                 "label": self.label,
                 "comment": self.comment,
                 "options": self.options,
+                "cycle": self._cycle,
+                "meta": self._meta,
+                "precision": self._precision,
                 "kwargs": self.kwargs,
             }
         )
@@ -136,6 +229,9 @@ class Plot2D(TikzObject):
                 label=restored.get("label", ""),
                 comment=restored.get("comment"),
                 options=restored.get("options"),
+                cycle=restored.get("cycle", False),
+                meta=restored.get("meta"),
+                precision=restored.get("precision"),
                 **kwargs,
             )
 
@@ -371,7 +467,7 @@ class Plot3D(TikzPath):
     @classmethod
     def from_dict(
         cls, d: dict[str, Any], node_lookup: dict[str, Any] | None = None
-    ) -> "Plot3D":  # noqa: ARG003
+    ) -> "Plot3D":
         """Reconstruct a Plot3D from a dictionary.
 
         Args:

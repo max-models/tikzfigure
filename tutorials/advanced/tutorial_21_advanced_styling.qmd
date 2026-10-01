@@ -10,7 +10,7 @@ and line widths:
 - `dash_pattern` and `dash_phase` for custom dash sequences
 - `line_cap` styles: butt, rect, round
 - `line_join` styles: miter, bevel, round
-- shadow effects: `shadow_xshift`, `shadow_yshift`, `shadow_color`
+- shadow effects: `shadow_xshift`, `shadow_yshift`, and the `drop shadow` style
 - `pin` annotations: attaching small labels to nodes
 - special shapes: star, regular polygon, cylinder
 
@@ -206,7 +206,9 @@ fig.show()
 ## Shadow effects
 
 The `shadows` library adds drop shadows to nodes. Control the shadow offset with
-`shadow_xshift` / `shadow_yshift` and the shadow color with `shadow_color`.
+`shadow_xshift` / `shadow_yshift`. The shadow color is a parameter of the
+`drop shadow` style itself (`drop shadow={fill=<color>}`), not a standalone
+TikZ key.
 
 ```{python}
 fig = TikzFigure(
@@ -229,10 +231,9 @@ for i, (sc, sx, sy, label) in enumerate(shadow_specs):
         minimum_width="2cm",
         minimum_height="1cm",
         content=label,
-        options=["drop shadow"],  # activate the drop shadow style
+        options=[f"drop shadow={{fill={sc}}}"],  # activate the drop shadow style
         shadow_xshift=sx,
         shadow_yshift=sy,
-        shadow_color=sc,
         font=r"\small",
         rounded_corners="3pt",
     )

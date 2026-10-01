@@ -116,14 +116,14 @@ ax2 = fig.subfigure_axis(
     ylabel="$y$",
     width=0.3,
 )
-ax2.add_plot([0, 1], [0, 1], plot_style="dashed")
+ax2.add_plot([0, 1], [0, 1], options="dashed")
 
 ax3 = fig.subfigure_axis(
     xlabel="Cubic",
     ylabel="$y$",
     width=0.3,
 )
-ax3.add_plot([0, 1], [0, 1], plot_style="dotted")
+ax3.add_plot([0, 1], [0, 1], options="dotted")
 
 ax4 = fig.subfigure_axis(
     xlabel="Square Root",
@@ -157,7 +157,7 @@ ax1.add_plot(
     [0, 1, 2, 3, 4],
     [0, 2, 4, 6, 8],
     label="Linear",
-    marker="*",
+    mark="*",
 )
 ax1.set_legend()
 
@@ -171,7 +171,7 @@ ax2.add_plot(
     [0, 1, 2, 3, 4],
     [1, 2, 4, 8, 16],
     label="Exponential",
-    marker="o",
+    mark="o",
 )
 ax2.set_legend()
 
@@ -229,7 +229,7 @@ ax = fig.subfigure_axis(
 ax.add_plot(
     [1, 2, 3, 4, 5],
     [0.8, 0.4, 0.2, 0.1, 0.05],
-    marker="o",
+    mark="o",
     label="Convergence",
 )
 ax.set_legend()

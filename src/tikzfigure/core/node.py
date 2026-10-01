@@ -12,7 +12,7 @@ from tikzfigure.core.coordinate import (
     VectorInput,
 )
 from tikzfigure.core.serialization import deserialize_tikz_value, serialize_tikz_value
-from tikzfigure.core.types import _Align, _Anchor, _Option, _Pattern, _Shading, _Shape
+from tikzfigure.core.types import _Align, _Anchor, _Pattern, _Shading, _Shape
 from tikzfigure.options import OptionInput
 
 if TYPE_CHECKING:
@@ -37,11 +37,13 @@ class Node(TikzObject):
 
     def __init__(
         self,
-        x: CoordinateValue
-        | CoordinateTuple2D
-        | CoordinateTuple3D
-        | TikzCoordinate
-        | None = None,
+        x: (
+            CoordinateValue
+            | CoordinateTuple2D
+            | CoordinateTuple3D
+            | TikzCoordinate
+            | None
+        ) = None,
         y: CoordinateValue | None = None,
         z: CoordinateValue | None = None,
         label: str = "",

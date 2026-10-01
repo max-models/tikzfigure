@@ -1,0 +1,14 @@
+\documentclass[border=10pt]{standalone}
+\PassOptionsToPackage{dvipsnames,svgnames,x11names}{xcolor}
+\usepackage{tikz}
+\usepackage{pgfplots}
+\pgfplotsset{compat=newest}
+\usepgfplotslibrary{groupplots}
+\usetikzlibrary{arrows.meta,spy}
+\begin{document}
+\begin{tikzpicture}[spy scope]
+    \draw[fill=red!30] ({0}, {0}) circle (1.0);
+    \spy on ({0.5}, {0.5}) in node;
+\end{tikzpicture}
+
+\end{document}

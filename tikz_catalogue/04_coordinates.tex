@@ -1,0 +1,23 @@
+% catalogue: title = Named, polar, relative and calc coordinates
+% catalogue: min-coverage = 0.50
+\documentclass[border=10pt]{standalone}
+\PassOptionsToPackage{dvipsnames,svgnames,x11names}{xcolor}
+\usepackage{tikz}
+\usepackage{pgfplots}
+\pgfplotsset{compat=newest}
+\usepgfplotslibrary{groupplots}
+\usetikzlibrary{arrows.meta,calc}
+\begin{document}
+\begin{tikzpicture}
+    \coordinate (origin) at (0, 0);
+    \coordinate (p) at (30:2cm);
+    \coordinate (q) at (3, 1);
+    \coordinate (mid) at ($(p)!0.5!(q)$);
+    \draw (origin) -- (p) -- (q);
+    \draw[red] (origin) -- ++(1, 0) -- ++(0, 1) -- cycle;
+    \draw[blue] (q) -- +(0, -1);
+    \fill (mid) circle (1pt);
+    \draw[dotted] (origin) -- ($(q) + (0, 1)$);
+    \node[above] at (mid) {mid};
+\end{tikzpicture}
+\end{document}

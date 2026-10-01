@@ -18,7 +18,7 @@ class Variable(TikzObject):
     def __init__(
         self,
         label: str,
-        value: int | float | str,
+        value: float | str,
         layer: int | None = 0,
         comment: str | None = None,
     ) -> None:

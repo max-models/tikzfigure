@@ -65,3 +65,26 @@ def test_figure_plot_attaches_to_active_loop_context():
     assert "\\foreach \\i in {0,1,...,2}{" in tikz
     assert "variable=\\theta, domain=0:1, samples=5" in tikz
     assert "plot ({\\theta}, {(\\i * \\theta)});" in tikz
+
+
+def test_parametric_grid_renders_both_coordinate_families():
+    from tikzfigure.math import Var
+
+    fig = TikzFigure()
+    u, v = Var("u"), Var("v")
+
+    fig.parametric_grid(
+        u + v,
+        u - v,
+        u_variable="u",
+        v_variable="v",
+        u_values=[0, 0.5, 1],
+        v_values=[0, 1],
+        samples=7,
+    )
+
+    tikz = fig.generate_tikz()
+
+    assert tikz.count("\\foreach \\u in {0,0.5,1}") == 1
+    assert tikz.count("\\foreach \\v in {0,1}") == 1
+    assert tikz.count("samples=7") == 2

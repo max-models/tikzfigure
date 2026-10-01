@@ -2,32 +2,17 @@ from __future__ import annotations
 
 from typing import TypeAlias
 
+from tikzfigure.core.tikz_token import TikzToken
 
-class TikzPattern:
+
+class TikzPattern(TikzToken):
     """A reusable TikZ fill-pattern specification."""
 
+    _attr = "pattern_spec"
+    pattern_spec: str
+
     def __init__(self, pattern_spec: str) -> None:
-        if pattern_spec == "":
-            raise ValueError("pattern_spec must not be empty")
-        self.pattern_spec = pattern_spec
-
-    def to_tikz(self) -> str:
-        """Return the raw TikZ pattern specification."""
-        return self.pattern_spec
-
-    def __str__(self) -> str:
-        return self.pattern_spec
-
-    def __repr__(self) -> str:
-        return f"TikzPattern({self.pattern_spec!r})"
-
-    def __eq__(self, other: object) -> bool:
-        if not isinstance(other, TikzPattern):
-            return NotImplemented
-        return self.pattern_spec == other.pattern_spec
-
-    def __hash__(self) -> int:
-        return hash(self.pattern_spec)
+        super().__init__(pattern_spec)
 
 
 PatternInput: TypeAlias = str | TikzPattern
@@ -52,19 +37,19 @@ bricks: TikzPattern = TikzPattern("bricks")
 checkerboard: TikzPattern = TikzPattern("checkerboard")
 
 __all__ = [
-    "TikzPattern",
     "PatternInput",
-    "pattern",
-    "horizontal_lines",
-    "vertical_lines",
-    "north_east_lines",
-    "north_west_lines",
-    "grid",
-    "crosshatch",
-    "dots",
-    "crosshatch_dots",
-    "fivepointed_stars",
-    "sixpointed_stars",
+    "TikzPattern",
     "bricks",
     "checkerboard",
+    "crosshatch",
+    "crosshatch_dots",
+    "dots",
+    "fivepointed_stars",
+    "grid",
+    "horizontal_lines",
+    "north_east_lines",
+    "north_west_lines",
+    "pattern",
+    "sixpointed_stars",
+    "vertical_lines",
 ]

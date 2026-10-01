@@ -5,18 +5,16 @@ requires = [ "setuptools", "wheel" ]
 
 [project]
 name = "tikzfigure"
-version = "0.3.0"
+version = "0.4.0"
 description = "Python interface to generate (readable) Tikz figures."
 readme = "README.md"
 keywords = [ "python" ]
 license = { file = "LICENSE.txt" }
 authors = [ { name = "Max" } ]
-requires-python = ">=3.8"
+requires-python = ">=3.10"
 classifiers = [
   "Development Status :: 3 - Alpha",
   "Programming Language :: Python :: 3 :: Only",
-  "Programming Language :: Python :: 3.8",
-  "Programming Language :: Python :: 3.9",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
@@ -67,12 +65,48 @@ urls."Source" = "https://github.com/max-models/tikzfigure"
 [tool.setuptools.packages.find]
 where = [ "src" ]
 
+[tool.setuptools.package-data]
+tikzfigure = [ "py.typed" ]
+
 [tool.mypy]
+python_version = "3.10"
 ignore_missing_imports = true
 check_untyped_defs = true
 warn_return_any = true
 warn_unused_ignores = true
 exclude = ["src/tikzfigure/tests"]
+
+# Modules that are fully annotated. New modules should be added here; the
+# long-term goal is to enable `disallow_untyped_defs` globally.
+[[tool.mypy.overrides]]
+module = [
+  "tikzfigure.core.style_options",
+  "tikzfigure.core.web_compiler",
+  "tikzfigure.options",
+  "tikzfigure.arrows",
+  "tikzfigure.decorations",
+  "tikzfigure.marks",
+  "tikzfigure.patterns",
+  "tikzfigure.shapes",
+  "tikzfigure.styles",
+  "tikzfigure.units",
+]
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+
+[tool.coverage.run]
+source = [ "tikzfigure" ]
+omit = [ "*/tikzfigure/tests/*" ]
+
+[tool.coverage.report]
+fail_under = 85
+show_missing = true
+exclude_lines = [
+  "pragma: no cover",
+  "if TYPE_CHECKING:",
+  "raise NotImplementedError",
+  "@overload",
+]
 
 [tool.isort]
 profile = "black"

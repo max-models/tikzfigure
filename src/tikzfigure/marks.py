@@ -2,32 +2,17 @@ from __future__ import annotations
 
 from typing import TypeAlias
 
+from tikzfigure.core.tikz_token import TikzToken
 
-class TikzMark:
+
+class TikzMark(TikzToken):
     """A reusable pgfplots plot-mark specification."""
 
+    _attr = "mark_spec"
+    mark_spec: str
+
     def __init__(self, mark_spec: str) -> None:
-        if mark_spec == "":
-            raise ValueError("mark_spec must not be empty")
-        self.mark_spec = mark_spec
-
-    def to_tikz(self) -> str:
-        """Return the raw pgfplots mark specification."""
-        return self.mark_spec
-
-    def __str__(self) -> str:
-        return self.mark_spec
-
-    def __repr__(self) -> str:
-        return f"TikzMark({self.mark_spec!r})"
-
-    def __eq__(self, other: object) -> bool:
-        if not isinstance(other, TikzMark):
-            return NotImplemented
-        return self.mark_spec == other.mark_spec
-
-    def __hash__(self) -> int:
-        return hash(self.mark_spec)
+        super().__init__(mark_spec)
 
 
 MarkInput: TypeAlias = str | TikzMark
@@ -62,29 +47,29 @@ ten_pointed_star: TikzMark = TikzMark("10-pointed star")
 ball: TikzMark = TikzMark("ball")
 
 __all__ = [
-    "TikzMark",
     "MarkInput",
-    "mark",
+    "TikzMark",
     "asterisk",
-    "x",
-    "circle",
-    "plus",
+    "ball",
     "bar",
+    "circle",
     "dash",
-    "square",
-    "square_filled",
-    "triangle",
-    "triangle_filled",
     "diamond",
     "diamond_filled",
-    "pentagon",
-    "pentagon_filled",
+    "mark",
     "oplus",
     "oplus_filled",
     "otimes",
     "otimes_filled",
+    "pentagon",
+    "pentagon_filled",
+    "plus",
     "spoked_asterisk",
+    "square",
+    "square_filled",
     "star",
     "ten_pointed_star",
-    "ball",
+    "triangle",
+    "triangle_filled",
+    "x",
 ]

@@ -1,0 +1,20 @@
+% catalogue: title = Relative placement with the positioning library
+% catalogue: min-coverage = 1.00
+\documentclass[border=10pt]{standalone}
+\PassOptionsToPackage{dvipsnames,svgnames,x11names}{xcolor}
+\usepackage{tikz}
+\usepackage{pgfplots}
+\pgfplotsset{compat=newest}
+\usepgfplotslibrary{groupplots}
+\usetikzlibrary{arrows.meta,positioning}
+\begin{document}
+\begin{tikzpicture}[node distance=1cm and 1.5cm]
+    \node[draw] (start) {Start};
+    \node[draw, right=of start] (next) {Next};
+    \node[draw, below=of next] (below) {Below};
+    \node[draw, below left=0.5cm and 1cm of below] (far) {Far};
+    \draw[->] (start) -- (next);
+    \draw[->] (next) -- (below);
+    \draw[->] (below) -| (far);
+\end{tikzpicture}
+\end{document}

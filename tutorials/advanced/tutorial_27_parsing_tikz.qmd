@@ -1,0 +1,168 @@
+---
+title: "Parsing TikZ"
+jupyter: python3
+---
+
+Most tutorials start from Python and produce TikZ. This one goes the other way:
+`TikzFigure.from_tikz_code` reads existing TikZ source and rebuilds it as
+tikzfigure objects, so you can edit a figure you already have - or a figure
+someone sent you - with the Python API.
+
+This tutorial covers: - importing a `tikzpicture` and editing it - inspecting
+what the parser understood - the raw-TikZ fallback for constructs tikzfigure
+does not model - strict mode and parse errors - turning TikZ into Python code
+
+```{python}
+from tikzfigure import TikzFigure
+from tikzfigure.parser import TikzParseError, parse_tikz
+```
+
+## Importing an existing figure
+
+Pass any `tikzpicture` to `from_tikz_code`. Nodes, paths, coordinates, scopes,
+loops, layers and definitions become real objects.
+
+```{python}
+source = r"""
+\begin{tikzpicture}[scale=1.2, box/.style={draw, rounded corners, fill=blue!15}]
+    \node[box] (input) at (0, 0) {Input};
+    \node[box] (model) at (3, 0) {Model};
+    \node[box] (output) at (6, 0) {Output};
+    \draw[->, thick] (input) -- node[above] {$x$} (model);
+    \draw[->, thick] (model) -- node[above] {$y$} (output);
+\end{tikzpicture}
+"""
+
+fig = TikzFigure.from_tikz_code(source)
+fig.show()
+```
+
+The figure is a normal `TikzFigure`, so you can look up the nodes it contains
+and keep building on it:
+
+```{python}
+model = fig.layers.get_node("model")
+print(f"{model.label!r} at ({model.x}, {model.y}) with options {model.options}")
+```
+
+```{python}
+loss = fig.add_node(3, -2, label="loss", content="Loss", options=["box"], fill="red!20")
+fig.draw(["output", "loss"], options=["->", "dashed"], color="red")
+fig.draw(["loss", "model"], options=["->", "dashed"], color="red")
+fig.show()
+```
+
+## Seeing what the parser understood
+
+`parse_tikz` returns the figure together with one diagnostic per statement, so
+you can check what became a tikzfigure object and what did not.
+
+```{python}
+result = parse_tikz(source)
+
+print(f"coverage: {result.coverage:.0%}")
+for diagnostic in result.diagnostics:
+    print(diagnostic)
+```
+
+## Raw TikZ fallback
+
+TikZ is much larger than tikzfigure's API. Anything the library cannot
+represent is kept verbatim as raw TikZ instead of being dropped, so the figure
+still renders exactly as before. Here `edge` and `plot` have no Python
+equivalent yet:
+
+```{python}
+mixed = r"""
+\begin{tikzpicture}
+    \node[draw, circle] (a) at (0, 0) {a};
+    \node[draw, circle] (b) at (3, 0) {b};
+    \draw (a) edge[bend left, ->] (b);
+    \draw[domain=0:3, smooth, blue] plot (\x, {0.3*\x*\x - 1});
+\end{tikzpicture}
+"""
+
+result = parse_tikz(mixed)
+print(result.summary())
+```
+
+`summary()` lists the statements that stayed raw and why. The figure still
+draws the curve and the bent arrow:
+
+```{python}
+result.figure.show()
+```
+
+Because those statements survive untouched, you can keep editing the parts that
+*were* understood:
+
+```{python}
+b = result.figure.layers.get_node("b")
+b.kwargs["fill"] = "green!30"
+result.figure.show()
+```
+
+## Strict mode
+
+When you want to know that a figure is fully represented as objects - for
+instance before rewriting it programmatically - pass `strict=True` and handle
+the error:
+
+```{python}
+try:
+    TikzFigure.from_tikz_code(mixed, strict=True)
+except TikzParseError as error:
+    print(error)
+```
+
+Malformed input is reported with a line number rather than failing silently:
+
+```{python}
+broken = "\\begin{tikzpicture}\n    \\node at (0, 0) {unclosed;\n\\end{tikzpicture}"
+
+try:
+    TikzFigure.from_tikz_code(broken)
+except TikzParseError as error:
+    print(error)
+```
+
+## From TikZ to Python code
+
+`to_python()` writes the Python that rebuilds a figure. Combined with the
+parser, it converts existing TikZ into a tikzfigure script:
+
+```{python}
+print(TikzFigure.from_tikz_code(source).to_python())
+```
+
+The generated code is executed and compared against the original figure before
+it is returned, so it is verified rather than merely plausible. The same thing
+is available on the command line:
+
+```bash
+python -m tikzfigure.codegen figure.tikz -o figure.py
+```
+
+## What survives a round trip
+
+A statement is only turned into an object when that object renders back to
+equivalent TikZ, which means importing a figure never quietly changes it:
+
+```{python}
+imported = TikzFigure.from_tikz_code(source)
+reparsed = TikzFigure.from_tikz_code(imported.generate_tikz())
+
+print(imported.generate_tikz() == reparsed.generate_tikz())
+```
+
+{{< include includes/tikz_code_callout.qmd >}}
+
+The `tikz_catalogue/` directory in the repository collects TikZ documents used
+to measure this. Run
+
+```bash
+python -m tikzfigure.parser.catalogue tikz_catalogue --details
+```
+
+for a report of how much of each example maps onto tikzfigure objects, and
+which TikZ constructs still fall back to raw output.

@@ -1,0 +1,18 @@
+% catalogue: title = Matrix of nodes
+% catalogue: min-coverage = 0.00
+\documentclass[border=10pt]{standalone}
+\PassOptionsToPackage{dvipsnames,svgnames,x11names}{xcolor}
+\usepackage{tikz}
+\usepackage{pgfplots}
+\pgfplotsset{compat=newest}
+\usepgfplotslibrary{groupplots}
+\usetikzlibrary{arrows.meta,matrix}
+\begin{document}
+\begin{tikzpicture}
+    \matrix (m) [matrix of nodes, nodes={draw, minimum size=6mm}, column sep=2mm] {
+        1 & 2 & 3 \\
+        4 & 5 & 6 \\
+    };
+    \draw[->, red] (m-1-1) -- (m-2-3);
+\end{tikzpicture}
+\end{document}

@@ -180,7 +180,7 @@ fig.variable("scaled", Var("distance") * 2)
 # Place nodes at (x, y), (distance, 0), and (scaled, 0)
 fig.node(
     (Var("x"), Var("y")),
-    label="(x, y)",
+    label="xy_point",
     content="(x, y)",
     fill="blue!20",
     shape="circle",

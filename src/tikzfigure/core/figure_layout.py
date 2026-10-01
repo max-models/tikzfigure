@@ -10,6 +10,9 @@ if TYPE_CHECKING:
 
 
 class FigureLayoutMixin:
+    GROUPPLOT_HORIZONTAL_SEP_CM = 1.5
+    GROUPPLOT_VERTICAL_SEP_CM = 2.0
+
     _subfigure_rows: int | None
     _subfigure_cols: int | None
     _subfigure_position: int
@@ -24,11 +27,17 @@ class FigureLayoutMixin:
         ylim: tuple[float, float] | None = None,
         grid: bool = True,
         width: float = 0.45,
-        height: str | int | float | None = None,
+        height: str | float | None = None,
+        axis_width: str | float | None = None,
         comment: str | None = None,
         **kwargs: Any,
     ) -> Axis2D:
-        """Create a 2D axis for side-by-side subfigure layout."""
+        """Create a 2D axis for side-by-side subfigure layout.
+
+        The ``width`` argument controls the layout fraction used for subfigure
+        placement. Use ``axis_width`` and ``height`` to set explicit pgfplots
+        dimensions on the rendered axis itself.
+        """
         if not (0 < width <= 1.0):
             raise ValueError(
                 f"subfigure width must be in range (0.0, 1.0], got {width}"
@@ -40,6 +49,7 @@ class FigureLayoutMixin:
             xlim=xlim,
             ylim=ylim,
             grid=grid,
+            width=axis_width,
             height=height,
             label="",
             comment=comment,
@@ -66,8 +76,8 @@ class FigureLayoutMixin:
     def add_subfigure(
         self,
         width: float = 0.45,
-        height: str | int | float | None = None,
-    ) -> "TikzFigure":
+        height: str | float | None = None,
+    ) -> TikzFigure:
         """Create a subfigure using the full TikZ API in grid layout."""
         if width <= 0 or width > 1.0:
             raise ValueError(f"width must be in range (0.0, 1.0], got {width}")
@@ -140,8 +150,8 @@ class FigureLayoutMixin:
         group_opts = (
             f"group style={{"
             f"group size={num_cols} by {num_rows}, "
-            f"horizontal sep=1.5cm, "
-            f"vertical sep=2cm"
+            f"horizontal sep={self.GROUPPLOT_HORIZONTAL_SEP_CM}cm, "
+            f"vertical sep={self.GROUPPLOT_VERTICAL_SEP_CM}cm"
             f"}}"
         )
         result = f"\\begin{{groupplot}}[{group_opts}]\n"
@@ -158,8 +168,8 @@ class FigureLayoutMixin:
 
     def _render_mixed_grid(self, num_rows: int, num_cols: int) -> str:
         textwidth_cm = 14.0
-        h_sep = 2.0
-        v_sep = 2.0
+        h_sep = self.GROUPPLOT_HORIZONTAL_SEP_CM
+        v_sep = self.GROUPPLOT_VERTICAL_SEP_CM
         default_height = 6.0
 
         from tikzfigure.core.figure import TikzFigure
@@ -254,7 +264,7 @@ class FigureLayoutMixin:
 
     @staticmethod
     def generate_subfigures(
-        figures: list["TikzFigure"],
+        figures: list[TikzFigure],
         labels: list[str] | None = None,
         widths: list[float] | None = None,
         spacing: str = "0.5cm",

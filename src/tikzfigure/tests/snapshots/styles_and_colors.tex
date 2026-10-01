@@ -1,0 +1,16 @@
+\documentclass[border=10pt]{standalone}
+\PassOptionsToPackage{dvipsnames,svgnames,x11names}{xcolor}
+\usepackage{tikz}
+\usepackage{pgfplots}
+\pgfplotsset{compat=newest}
+\usepgfplotslibrary{groupplots}
+\usetikzlibrary{arrows.meta}
+\begin{document}
+\begin{tikzpicture}[
+        boxed/.style={draw, rounded corners, fill=mycolor!20}
+    ]
+    \colorlet{mycolor}{blue!60!black}
+    \node[boxed] (node0) at ({0}, {0}) {styled};
+\end{tikzpicture}
+
+\end{document}

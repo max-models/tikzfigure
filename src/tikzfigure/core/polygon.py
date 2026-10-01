@@ -127,8 +127,10 @@ class Polygon(TikzObject):
         vertices = []
         for i in range(self._sides):
             angle = 2 * math.pi * i / self._sides + rot_rad
-            x = cx + r * math.cos(angle)
-            y = cy + r * math.sin(angle)
+            # Rounded to avoid platform-dependent ULP differences in libm's
+            # sin/cos (e.g. Windows vs. Linux/macOS) leaking into snapshots.
+            x = round(cx + r * math.cos(angle), 12)
+            y = round(cy + r * math.sin(angle), 12)
             vertices.append((str(x), str(y)))
 
         return vertices

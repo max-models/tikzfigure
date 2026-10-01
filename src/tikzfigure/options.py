@@ -28,4 +28,4 @@ def normalize_options(options: OptionInput | None) -> list[OptionValue]:
     return list(options)
 
 
-__all__ = ["OptionValue", "OptionInput", "normalize_options"]
+__all__ = ["OptionInput", "OptionValue", "normalize_options"]

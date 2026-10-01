@@ -1,0 +1,18 @@
+\documentclass[border=10pt]{standalone}
+\PassOptionsToPackage{dvipsnames,svgnames,x11names}{xcolor}
+\usepackage{tikz}
+\usepackage{pgfplots}
+\pgfplotsset{compat=newest}
+\usepgfplotslibrary{groupplots}
+\usetikzlibrary{arrows.meta}
+\begin{document}
+\begin{tikzpicture}
+    \draw[fill=red!30, draw=black] ({0}, {0}) circle (1.0);
+    \draw[fill=blue!20, rounded corners=3pt] ({2}, {-1}) rectangle ({4}, {1});
+    \draw[draw=green!60!black, dash pattern=on 2pt off 2pt] ({6}, {0}) ellipse (1.5 and 0.8);
+    \draw[fill=yellow!40] (10.0, 0.0) -- (9.5, 0.866025403784) -- (8.5, 0.866025403784) -- (8.0, 0.0) -- (8.5, -0.866025403784) -- (9.5, -0.866025403784) -- cycle;
+    \draw[fill=purple!30] (13.0, 0.0) -- (11.5, 0.866025403784) -- (11.5, -0.866025403784) -- cycle;
+    \draw[fill=orange!30] (15.707106781187, 0.707106781187) -- (14.292893218813, 0.707106781187) -- (14.292893218813, -0.707106781187) -- (15.707106781187, -0.707106781187) -- cycle;
+\end{tikzpicture}
+
+\end{document}

@@ -67,6 +67,7 @@ export default defineConfig({
             { label: "Opacity", slug: "tutorials/tutorial_19_opacity_and_transparency" },
             { label: "Decorations", slug: "tutorials/tutorial_20_decorations" },
             { label: "Advanced Styling", slug: "tutorials/tutorial_21_advanced_styling" },
+            { label: "Gantt Charts", slug: "tutorials/tutorial_26_gantt" },
           ],
         },
         {

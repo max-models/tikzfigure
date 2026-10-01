@@ -8,7 +8,6 @@ from tikzfigure.core.coordinate import (
     VectorInput,
 )
 from tikzfigure.core.serialization import deserialize_tikz_value, serialize_tikz_value
-from tikzfigure.core.types import _Option
 from tikzfigure.options import OptionInput
 
 

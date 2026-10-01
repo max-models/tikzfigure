@@ -1,5 +1,6 @@
 from tikzfigure.core.coordinate import TikzCoordinate, TikzVector
 from tikzfigure.core.figure import TikzFigure
+from tikzfigure.core.gantt import GanttChart
 from tikzfigure.core.node import Node
 
 from . import (
@@ -9,25 +10,31 @@ from . import (
     marks,
     options,
     patterns,
+    pyplot,
     shapes,
     styles,
     units,
 )
+from .pyplot import *  # noqa: F403
+from .pyplot import __all__ as _pyplot_all
 
 __all__ = [
-    "TikzFigure",
+    "GanttChart",
     "Node",
     "TikzCoordinate",
+    "TikzFigure",
     "TikzVector",
-    "units",
+    "arrows",
     "colors",
-    "patterns",
     "decorations",
     "marks",
-    "shapes",
     "options",
+    "patterns",
+    "pyplot",
+    "shapes",
     "styles",
-    "arrows",
+    "units",
+    *_pyplot_all,
 ]
 
 

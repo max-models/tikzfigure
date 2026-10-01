@@ -99,8 +99,7 @@ def fix_image_paths(content: str, tutorial_name: str) -> str:
     def rewrite(path: str) -> str:
         if path.startswith(("http://", "https://", "/")):
             return path
-        if path.startswith(files_prefix):
-            path = path[len(files_prefix) :]
+        path = path.removeprefix(files_prefix)
         return f"{BASE_PATH}/tutorials/{tutorial_name}/{path}"
         # return f"./{path}"
 

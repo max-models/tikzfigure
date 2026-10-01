@@ -28,7 +28,7 @@ ax.add_plot(
     [0, 1, 2],
     [0, 1, 4],
     label="$y=x^2$",
-    marker="o",
+    mark="o",
 )
 ax.set_legend()
 
@@ -104,7 +104,7 @@ ax1.add_plot(
     [0, 1, 2, 3],
     [0, 1, 2, 3],
     label="Linear",
-    marker="o",
+    mark="o",
 )
 ax1.set_legend()
 
@@ -118,7 +118,7 @@ ax2.add_plot(
     [0, 1, 2, 3],
     [0, 1, 4, 9],
     label="Quadratic",
-    marker="s",
+    mark="s",
 )
 ax2.set_legend()
 
@@ -210,6 +210,7 @@ Combine an algorithm flowchart with performance data.
 
 ```{python}
 fig = TikzFigure(rows=2, cols=1)
+fig.usetikzlibrary("shapes.geometric")
 
 # Top: Convergence comparison
 ax = fig.subfigure_axis(
@@ -222,13 +223,13 @@ ax.add_plot(
     x,
     [1.0, 0.5, 0.25, 0.125, 0.06, 0.03],
     label="Fast",
-    marker="o",
+    mark="o",
 )
 ax.add_plot(
     x,
     [1.0, 0.9, 0.8, 0.7, 0.6, 0.5],
     label="Slow",
-    marker="s",
+    mark="s",
 )
 ax.set_legend()
 
@@ -347,22 +348,22 @@ ax.add_plot(
     sizes,
     time_state1,
     label="State 1",
-    marker="o",
-    plot_style="solid",
+    mark="o",
+    options="solid",
 )
 ax.add_plot(
     sizes,
     time_state2,
     label="State 2",
-    marker="s",
-    plot_style="dashed",
+    mark="s",
+    options="dashed",
 )
 ax.add_plot(
     sizes,
     time_state3,
     label="State 3",
-    marker="^",
-    plot_style="dotted",
+    mark="^",
+    options="dotted",
 )
 ax.set_legend()
 

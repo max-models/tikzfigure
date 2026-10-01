@@ -10,17 +10,17 @@ repos:
         args: [--maxkb=500]
       - id: check-merge-conflict # Check for files that contain merge conflict strings.
   - repo: https://github.com/kynan/nbstripout
-    rev: 0.9.0
+    rev: 0.9.1
     hooks:
       - id: nbstripout # strip jupyter noteook output
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.9.1
+    rev: v0.15.13
     hooks:
       - id: ruff
         args: [--fix, --select, I]
       - id: ruff-format
-  - repo: https://github.com/jolars/panache
-    rev: v2.16.0 # Use the latest version
-    hooks:
-      - id: panache-format # Format files
-      - id: panache-lint # Lint and auto-fix issues
+  #- repo: https://github.com/jolars/panache
+  #  rev: v2.16.0 # Use the latest version
+  #  hooks:
+  #    - id: panache-format # Format files
+  #    - id: panache-lint # Lint and auto-fix issues
