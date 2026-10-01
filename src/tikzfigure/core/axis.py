@@ -387,9 +387,11 @@ class Axis2D(TikzObject):
             "at": None if at is None else (float(at[0]), float(at[1])),
             "anchor": anchor,
             "columns": columns,
-            "style": []
-            if style is None
-            else ([style] if isinstance(style, str) else list(style)),
+            "style": (
+                []
+                if style is None
+                else ([style] if isinstance(style, str) else list(style))
+            ),
         }
 
     def add_plot(
