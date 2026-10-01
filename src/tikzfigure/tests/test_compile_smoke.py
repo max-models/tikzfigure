@@ -115,6 +115,61 @@ def _axis() -> TikzFigure:
     return fig
 
 
+def _tiny_png() -> bytes:
+    """A 2x2 RGB PNG, made without an imaging library."""
+    import struct
+    import zlib
+
+    def chunk(kind: bytes, data: bytes) -> bytes:
+        body = kind + data
+        return struct.pack(">I", len(data)) + body + struct.pack(">I", zlib.crc32(body))
+
+    rows = b"".join(
+        b"\x00" + bytes(pixels)
+        for pixels in ([255, 0, 0, 0, 0, 255], [0, 255, 0, 255, 255, 0])
+    )
+    return (
+        b"\x89PNG\r\n\x1a\n"
+        + chunk(b"IHDR", struct.pack(">IIBBBBB", 2, 2, 8, 2, 0, 0, 0))
+        + chunk(b"IDAT", zlib.compress(rows))
+        + chunk(b"IEND", b"")
+    )
+
+
+def _axis_extras() -> TikzFigure:
+    fig = TikzFigure()
+    axis = fig.axis2d(
+        xlabel="$x$, in cm",
+        ylabel="$y$",
+        title="Extras, all of them",
+        xlim=(0, 2),
+        ylim=(0, 2),
+    )
+    axis.add_graphics(
+        0,
+        2,
+        0,
+        2,
+        data=_tiny_png(),
+        filename="extras.png",
+        plot_options=["forget plot"],
+    )
+    axis.add_plot([0, 1, 2], [0, 1.5, 0.5], label="line, labelled", color="red")
+    axis.add_plot(
+        [0.2, 0.8, 0.5], [0.2, 0.2, 0.8], cycle=True, fill="blue", fill_opacity=0.3
+    )
+    axis.add_plot(
+        [0.5, 1.0, 1.5],
+        [1.5, 1.0, 1.8],
+        meta=[0.0, 1.0, 2.0],
+        options=["scatter", "only marks", "point meta=explicit"],
+    )
+    axis.add_raw(r"\node at (axis cs:1.5,0.3) {raw};")
+    axis.set_ticks("x", [0, 1, 2], ["zero", "one, really", "two"])
+    axis.set_legend(at=(0.02, 0.98), anchor="north west", style="draw=none")
+    return fig
+
+
 def _matrix() -> TikzFigure:
     fig = TikzFigure()
     fig.add_matrix([["a", "b"], ["c", "d"]], x=0, y=0, options="matrix of nodes, draw")
@@ -168,6 +223,7 @@ def _raw() -> TikzFigure:
 #: name -> builder. The name is also the snapshot filename.
 FIGURES = {
     "axis": _axis,
+    "axis_extras": _axis_extras,
     "declared_functions": _declared_functions,
     "fit": _fit,
     "gantt": _gantt,
@@ -224,9 +280,12 @@ def test_tikz_matches_snapshot(name):
 @pytest.mark.parametrize("name", sorted(FIGURES))
 def test_figure_compiles(name, tmp_path):
     """The generated standalone document compiles with pdflatex."""
-    document = FIGURES[name]().generate_standalone()
+    figure = FIGURES[name]()
+    document = figure.generate_standalone()
     tex_file = tmp_path / f"{name}.tex"
     tex_file.write_text(document)
+    for file_name, data in figure.files().items():  # images the axes refer to
+        (tmp_path / file_name).write_bytes(data)
 
     completed = subprocess.run(
         ["pdflatex", "-interaction=nonstopmode", "-halt-on-error", tex_file.name],

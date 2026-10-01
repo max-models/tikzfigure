@@ -1,0 +1,155 @@
+---
+title: "2D Plots: Images, Legends and Ticks"
+jupyter: python3
+---
+
+This tutorial covers what a pgfplots axis holds besides lines:
+
+- A title, and labels with commas in them
+- Ticks at chosen positions, with your own labels
+- Filled polygons and colored points
+- Images placed in data coordinates (`add_graphics`)
+- Verbatim code in the axis coordinate system (`add_raw`)
+- Legends that leave some plots out, placed anywhere
+- Saving a figure together with its images
+
+```{python}
+import io
+
+import matplotlib
+
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+import numpy as np
+
+from tikzfigure import TikzFigure
+```
+
+## Titles, labels and ticks
+
+`title=` puts a title above the axis. Labels and titles that contain a comma or
+`=` are braced for pgfplots automatically. `set_ticks` places ticks at the given
+positions, optionally with your own labels.
+
+```{python}
+fig = TikzFigure()
+ax = fig.axis2d(
+    title="Measurements, first week",
+    xlabel="day",
+    ylabel="temperature, $^\\circ$C",
+    xlim=(0, 6),
+    ylim=(10, 25),
+)
+ax.add_plot([0, 1, 2, 3, 4, 5, 6], [14, 15, 19, 22, 21, 18, 16], color="red", mark="*")
+ax.set_ticks("x", [0, 2, 4, 6], ["Mon", "Wed", "Fri", "Sun"])
+
+fig.show()
+```
+
+{{< include includes/tikz_code_callout.qmd >}}
+
+## Filled polygons and colored points
+
+`cycle=True` closes a plot's path back to its first point, for a polygon.
+`meta=` gives every point a value, written as `(x,y) [value]`; with the pgfplots
+options `scatter` and `point meta=explicit` the points are colored by it
+through the axis colormap.
+
+```{python}
+fig = TikzFigure()
+ax = fig.axis2d(xlim=(0, 4), ylim=(0, 3), colorbar=True)
+ax.add_plot([0.5, 2.0, 1.2], [0.5, 0.8, 2.5], cycle=True, fill="blue", fill_opacity=0.2)
+
+x = np.linspace(0.5, 3.5, 12)
+ax.add_plot(
+    x.tolist(),
+    (1.5 + np.sin(2 * x)).tolist(),
+    meta=x.tolist(),
+    options=["scatter", "only marks", "point meta=explicit"],
+)
+
+fig.show()
+```
+
+{{< include includes/tikz_code_callout.qmd >}}
+
+`precision=` limits the digits of the written coordinates, which keeps long
+data series readable: `ax.add_plot(x, y, precision=4)`.
+
+## Images in data coordinates
+
+Large colormap data would be slow and memory hungry as pgfplots coordinates.
+`add_graphics` places an image instead, its edges at the given data
+coordinates. Give an existing file as `path=`, or the image bytes as `data=`:
+the figure then writes them next to the TikZ code when it compiles or saves it.
+
+```{python}
+x, y = np.meshgrid(np.linspace(-2, 2, 200), np.linspace(-1, 1, 100))
+field = np.exp(-(x**2) - 4 * y**2) * np.cos(4 * x)
+png = io.BytesIO()
+plt.imsave(png, field, cmap="RdBu_r", origin="lower", format="png")
+
+fig = TikzFigure()
+ax = fig.axis2d(xlabel="$x$", ylabel="$y$", xlim=(-2, 2), ylim=(-1, 1), grid=False)
+ax.add_graphics(-2, 2, -1, 1, data=png.getvalue(), filename="field.png")
+ax.add_plot([-2, 2], [0, 0], color="black", dashed=True)
+
+fig.show()
+```
+
+{{< include includes/tikz_code_callout.qmd >}}
+
+The plots, images and raw code of an axis are drawn in the order they were
+added, so the dashed line is on top of the image. `fig.files()` lists the
+images the figure needs:
+
+```{python}
+list(fig.files())
+```
+
+## Raw code in the axis coordinate system
+
+`add_raw` inserts verbatim code inside the axis, where `axis cs:` refers to data
+coordinates and `axis description cs:` to the axis box, `(0,0)` at its lower
+left and `(1,1)` at its upper right.
+
+```{python}
+fig = TikzFigure()
+ax = fig.axis2d(xlim=(0, 10), ylim=(0, 1))
+ax.add_plot([0, 2, 4, 6, 8, 10], [0.1, 0.5, 0.9, 0.6, 0.3, 0.2], color="teal")
+ax.add_raw(r"\draw[->, thick] (axis cs:6,0.9) -- (axis cs:4.3,0.9);")
+ax.add_raw(r"\node[anchor=west] at (axis cs:6,0.9) {maximum};")
+ax.add_raw(r"\node[anchor=north east] at (axis description cs:0.98,0.98) {(a)};")
+
+fig.show()
+```
+
+{{< include includes/tikz_code_callout.qmd >}}
+
+## Legends
+
+Plots with a `label` get a legend entry. If some plots have none, they are left
+out of the legend (`forget plot`) instead of taking the next entry. `at=` places
+the legend at a point of the axis box, `anchor=` says which point of the legend
+goes there.
+
+```{python}
+fig = TikzFigure()
+ax = fig.axis2d(xlabel="$t$", ylabel="signal", xlim=(0, 10), ylim=(-1.5, 1.5))
+t = np.linspace(0, 10, 60)
+ax.add_plot(t.tolist(), np.sin(t).tolist(), label="measured, raw", color="blue", precision=4)
+ax.add_plot([0, 10], [0, 0], color="gray")  # a reference line, not in the legend
+ax.add_plot(t.tolist(), np.sin(t + 0.2).tolist(), label="model", color="red", precision=4)
+ax.set_legend(at=(0.02, 0.02), anchor="south west", columns=2, style="draw=none")
+
+fig.show()
+```
+
+{{< include includes/tikz_code_callout.qmd >}}
+
+## Saving with images
+
+`savefig("figure.tikz")` writes the `tikzpicture`, for `\input` into a document
+that loads pgfplots; `savefig("figure.tex")` a standalone document. Both write
+the images the figure refers to next to the file. `.pdf` and `.png` compile the
+figure with them.

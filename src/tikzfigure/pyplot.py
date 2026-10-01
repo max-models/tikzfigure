@@ -89,6 +89,7 @@ __all__ = [
     "draw",
     "ellipse",
     "figure",
+    "files",
     "fill",
     "filldraw",
     "from_dict",
@@ -466,6 +467,11 @@ def generate_tikz(*args: Any, **kwargs: Any) -> str:
 def generate_standalone(*args: Any, **kwargs: Any) -> str:
     """Return a standalone document. See :meth:`TikzFigure.generate_standalone`."""
     return gcf().generate_standalone(*args, **kwargs)
+
+
+def files() -> dict[str, bytes]:
+    """The image files of the current figure. See :meth:`TikzFigure.files`."""
+    return gcf().files()
 
 
 def compile_pdf(*args: Any, **kwargs: Any) -> None:

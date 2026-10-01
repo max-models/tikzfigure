@@ -90,6 +90,8 @@ class TikzObject:
         from tikzfigure.units import TikzDimension
 
         def _fmt(v: object) -> str:
+            if isinstance(v, bool):  # TikZ booleans are lower case
+                return "true" if v else "false"
             if isinstance(v, TikzDimension):
                 return str(v.to(output_unit)) if output_unit is not None else str(v)
             if isinstance(v, (TikzArrow, TikzColor, TikzStyle)):
