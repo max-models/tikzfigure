@@ -45,6 +45,25 @@ class FigureExportMixin:
     ) -> str:
         raise NotImplementedError
 
+    def files(self) -> dict[str, bytes]:
+        """The image files the figure's axes refer to, by file name.
+
+        :meth:`compile_pdf` writes them where it compiles, and
+        :meth:`savefig` next to a saved ``.tikz`` or ``.tex`` file.
+        """
+        axes = list(getattr(self, "axes", []))
+        axes += [item[0] for item in getattr(self, "_subfigure_axes", [])]
+        axes += [item[0] for item in getattr(self, "_subfigure_grid", {}).values()]
+        files: dict[str, bytes] = {}
+        for axis in axes:
+            if hasattr(axis, "files"):
+                files.update(axis.files())
+        return files
+
+    def _write_files(self, directory: Path) -> None:
+        for name, data in self.files().items():
+            (Path(directory) / name).write_bytes(data)
+
     def _run_optional_check(
         self, check: bool = False, output_unit: str | None = None
     ) -> None:
@@ -75,29 +94,37 @@ class FigureExportMixin:
         if use_web_compilation:
             from tikzfigure.core.web_compiler import compile_with_latex_on_http
 
+            if self.files():
+                raise RuntimeError(
+                    "web compilation cannot include the figure's image files; "
+                    "compile it locally instead"
+                )
+
             compile_with_latex_on_http(latex_document, filename, verbose=verbose)
             return
 
+        # pdflatex runs in a temporary directory: a relative output path
+        # refers to the caller's working directory, not to that one
+        filename = filename.resolve()
         with tempfile.TemporaryDirectory() as tempdir:
             tex_file = Path(tempdir) / "figure.tex"
             with open(tex_file, "w") as f:
                 f.write(latex_document)
+            self._write_files(Path(tempdir))
+            output_directory = str(filename.parent)
+            jobname = filename.name.replace(".pdf", "")
+            cmd = [
+                "pdflatex",
+                "-interaction=nonstopmode",
+                "-jobname",
+                f"{jobname}",
+                "-output-directory",
+                f"{output_directory}",
+                str(tex_file),
+            ]
+            if verbose:
+                print(f"{cmd =}")
             try:
-                head_tail = (str(filename.parent), filename.name)
-
-                output_directory = head_tail[0]
-                jobname = head_tail[1].replace(".pdf", "")
-                cmd = [
-                    "pdflatex",
-                    "-interaction=nonstopmode",
-                    "-jobname",
-                    f"{jobname}",
-                    "-output-directory",
-                    f"{output_directory}",
-                    str(tex_file),
-                ]
-                if verbose:
-                    print(f"{cmd =}")
                 subprocess.run(
                     cmd,
                     cwd=tempdir,
@@ -105,8 +132,6 @@ class FigureExportMixin:
                     stdout=subprocess.PIPE,
                     stderr=subprocess.PIPE,
                 )
-                os.remove(filename.with_suffix(".aux"))
-                os.remove(filename.with_suffix(".log"))
             except FileNotFoundError as e:
                 raise RuntimeError(
                     f"pdflatex was not found on this system ({e}).\n\n"
@@ -114,11 +139,20 @@ class FigureExportMixin:
                 ) from e
             except subprocess.CalledProcessError as e:
                 details = e.stderr.decode() if e.stderr else str(e)
+                # pdflatex reports errors on stdout: show the first one
+                output = e.stdout.decode(errors="replace") if e.stdout else ""
+                error_lines = output.splitlines()
+                for index, line in enumerate(error_lines):
+                    if line.startswith("!"):
+                        details += "\n\n" + "\n".join(error_lines[index : index + 8])
+                        break
                 raise RuntimeError(
                     "pdflatex failed to compile the figure:\n\n"
                     f"{details}\n\n"
                     f"{_WEB_COMPILATION_HINT}"
                 ) from e
+            for suffix in (".aux", ".log"):
+                filename.with_suffix(suffix).unlink(missing_ok=True)
 
     def savefig(
         self,
@@ -152,6 +186,13 @@ class FigureExportMixin:
             tikz_code = self.generate_tikz(output_unit=output_unit)
             with open(filename, "w") as f:
                 f.write(tikz_code)
+            self._write_files(filename.parent)
+        elif ext == ".tex":
+            if verbose:
+                print(f"Saving standalone LaTeX document to {filename}")
+            with open(filename, "w") as f:
+                f.write(self.generate_standalone(output_unit=output_unit))
+            self._write_files(filename.parent)
         elif ext in [".png", ".jpg", ".jpeg"]:
             import fitz
 
