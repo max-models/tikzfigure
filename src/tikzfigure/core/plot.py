@@ -15,11 +15,13 @@ def format_number(value: Any, precision: int | None = None) -> str:
     ``precision`` significant digits; NaN and infinities as ``nan``, ``inf``
     and ``-inf``, which pgfplots reads as unbounded coordinates.
     """
-    if isinstance(value, bool) or not isinstance(value, (int, float)):
-        try:
-            value = value.item()  # a NumPy scalar
-        except AttributeError:
+    if isinstance(value, bool):
+        return str(value)
+    if not isinstance(value, (int, float)):
+        item = getattr(value, "item", None)  # a NumPy scalar
+        if item is None:
             return str(value)
+        value = item()
     if isinstance(value, int):
         return str(value)
     if math.isnan(value):
@@ -138,11 +140,11 @@ class Plot2D(TikzObject):
 
     def coordinates_tikz(self) -> str:
         """The ``coordinates {...}`` body of the plot: ``(x,y)`` or ``(x,y) [meta]``."""
-        number = (
-            format_number
-            if self._precision is None
-            else (lambda value: format_number(value, self._precision))
-        )
+        precision = self._precision
+
+        def number(value: Any) -> str:
+            return format_number(value, precision)
+
         if self._meta is None:
             points = (f"({number(x)},{number(y)})" for x, y in zip(self.x, self.y))
         else:

@@ -358,7 +358,7 @@ class Axis2D(TikzObject):
         at: tuple[float, float] | None = None,
         anchor: str | None = None,
         columns: int | None = None,
-        style: OptionInput | None = None,
+        style: str | list[str] | None = None,
     ) -> None:
         """Configure legend.
 
@@ -681,7 +681,7 @@ class Axis2D(TikzObject):
 
         legend_tikz = ""
         if labelled and self._has_legend and not per_plot:
-            legend_labels = ", ".join(_braced(plot.label) for plot in labelled)
+            legend_labels = ", ".join(_braced(str(plot.label)) for plot in labelled)
             legend_tikz = f"\\legend{{{legend_labels}}}\n"
 
         axis_tikz = f"\\begin{{axis}}[{axis_opts_str}]\n"
