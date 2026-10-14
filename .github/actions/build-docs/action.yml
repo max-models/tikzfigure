@@ -74,8 +74,10 @@ runs:
       with:
         path: astro_docs
 
+    # The links in the pages carry the /tikzfigure base path, so they cannot all resolve in a
+    # site served from /; the link check already ran on the real build above.
     - name: Rebuild without base path for local artifact inspection
       if: ${{ inputs.build-site == 'true' }}
       shell: bash
       working-directory: astro_docs
-      run: npx astro build --base /
+      run: DOCS_VALIDATE_LINKS=false npx astro build --base /
