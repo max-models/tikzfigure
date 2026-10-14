@@ -14,8 +14,9 @@ from __future__ import annotations
 
 import re
 from collections import Counter
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any, Callable
+from typing import TYPE_CHECKING, Any
 
 from tikzfigure.core.circle import Circle
 from tikzfigure.core.coordinate import Coordinate, TikzCoordinate

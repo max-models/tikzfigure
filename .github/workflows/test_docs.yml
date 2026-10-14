@@ -32,21 +32,20 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Build tutorial directory
+      - name: Execute the notebooks of one tutorial directory
         uses: ./.github/actions/build-docs
         with:
           python-version: "3.12"
           build-site: "false"
-          tutorial-build-args: --serial --directory ${{ matrix.tutorial-dir }}
+          notebook-directory: ${{ matrix.tutorial-dir }}
 
       - name: Upload tutorial directory artifact
         uses: actions/upload-artifact@v4
         if: always()
         with:
           name: tutorials-dir-${{ matrix.tutorial-dir }}
-          path: |
-            astro_docs/src/content/docs/tutorials/
-            astro_docs/public/tutorials/
+          path: astro_docs/.cache/notebooks/
+          include-hidden-files: true
           retention-days: 7
 
   test-docs:
@@ -66,14 +65,14 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           pattern: tutorials-dir-*
-          path: astro_docs
+          path: astro_docs/.cache/notebooks
           merge-multiple: true
 
       - name: Build documentation
         uses: ./.github/actions/build-docs
         with:
           python-version: "3.12"
-          build-tutorials: "false"
+          execute-notebooks: "false"
 
       - name: Upload docs artifact
         uses: actions/upload-artifact@v4
