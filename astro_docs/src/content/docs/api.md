@@ -131,7 +131,7 @@ source into a tikzfigure script.
   >>> print(fig.to_python(header=False), end="")
   fig = TikzFigure()
   fig.add_node(0, 0, label='a', content='A')
-  
+
 
 **Arguments**:
 
@@ -139,12 +139,12 @@ source into a tikzfigure script.
 - `header` - Include the ``import`` lines.
 - `verify` - Run the generated code and check it produces the same
   TikZ output as this figure.
-  
+
 
 **Returns**:
 
   Python source code.
-  
+
 
 **Raises**:
 
@@ -180,7 +180,7 @@ Reconstruct a TikzFigure from a dictionary.
 **Arguments**:
 
 - `d` - Dictionary as produced by `to_dict`.
-  
+
 
 **Returns**:
 
@@ -335,7 +335,7 @@ Define a named color with ``\colorlet``.
 - `name` - The name to assign to the color in LaTeX.
 - `color_spec` - A TikZ color specification (e.g. ``"blue!20"``).
 - `layer` - Layer index (currently unused). Defaults to ``0``.
-  
+
 
 **Returns**:
 
@@ -591,7 +591,7 @@ Add a node to the TikZ figure.
 - `pin` - Pin label specification (e.g. ``"above:text"``).
 - `**kwargs` - Additional TikZ options. Underscores in keys become
   spaces (e.g. ``signal_from`` → ``signal from``).
-  
+
 
 **Returns**:
 
@@ -621,12 +621,12 @@ Add a node at the midpoint between two existing nodes.
 - `layer` - Target layer index. Defaults to ``0``.
 - `content` - Text content for the midpoint node.
 - `**kwargs` - Additional options forwarded to `add_node`.
-  
+
 
 **Returns**:
 
   The new `Node` placed at the computed midpoint.
-  
+
 
 **Raises**:
 
@@ -689,17 +689,17 @@ fig.add_coordinate("atip", at="A.north")
 - `z` - Z-coordinate value when passing explicit scalar coordinates.
   Mutually exclusive with ``at``.
 - `at` - Raw TikZ coordinate expression.  Examples:
-  
+
   * ``"$(A)!0.5!(B)$"`` — midpoint via ``calc`` library
   * ``"A.north"`` — at a node anchor
   * ``"30:2cm"`` — polar coordinates
-  
+
   Parentheses are added automatically if absent.
   Mutually exclusive with ``x``/``y``.
 - `layer` - Target layer index. Defaults to ``0``.
 - `comment` - Optional comment prepended in the TikZ output.
 - `verbose` - If ``True``, print a debug message after insertion.
-  
+
 
 **Returns**:
 
@@ -730,7 +730,7 @@ so they can be referenced anywhere in the figure.
 - `layer` - Layer index (currently unused). Defaults to ``0``.
 - `comment` - Optional comment prepended in the TikZ output.
 - `verbose` - Unused; reserved for future debug output.
-  
+
 
 **Returns**:
 
@@ -826,7 +826,7 @@ Insert a verbatim TikZ code block into the figure.
 - `tikz_code` - Raw TikZ source to include verbatim.
 - `layer` - Target layer index. Defaults to ``0``.
 - `verbose` - If ``True``, print a debug message after insertion.
-  
+
 
 **Returns**:
 
@@ -927,7 +927,7 @@ Add an arc to the figure.
 - `xscale` - Horizontal scaling factor.
 - `yscale` - Vertical scaling factor.
 - `**kwargs` - Catch-all for unlisted TikZ options.
-  
+
 
 **Returns**:
 
@@ -999,7 +999,7 @@ Add a circle to the figure.
 - `xscale` - Horizontal scaling factor.
 - `yscale` - Vertical scaling factor.
 - `**kwargs` - Catch-all for unlisted TikZ options.
-  
+
 
 **Returns**:
 
@@ -1072,7 +1072,7 @@ Add a rectangle to the figure.
 - `xscale` - Horizontal scaling factor.
 - `yscale` - Vertical scaling factor.
 - `**kwargs` - Catch-all for unlisted TikZ options.
-  
+
 
 **Returns**:
 
@@ -1149,7 +1149,7 @@ fig.draw(["c11", "c22"])
 - `anchor` - Anchor point for the whole matrix node.
 - `verbose` - If ``True``, print a debug message.
 - `**kwargs` - Additional matrix-level TikZ options.
-  
+
 
 **Returns**:
 
@@ -1196,7 +1196,7 @@ fig.add_fit([a, b], options=["draw", "dashed", "rounded corners"])
 - `verbose` - If ``True``, print a debug message.
 - `**kwargs` - Additional TikZ options for the fit node (e.g.
   ``inner_sep="5pt"``).
-  
+
 
 **Returns**:
 
@@ -1268,7 +1268,7 @@ Add an ellipse to the figure.
 - `xscale` - Horizontal scaling factor.
 - `yscale` - Vertical scaling factor.
 - `**kwargs` - Catch-all for unlisted TikZ options.
-  
+
 
 **Returns**:
 
@@ -1331,7 +1331,7 @@ Add a grid to the figure.
 - `xscale` - Horizontal scaling factor.
 - `yscale` - Vertical scaling factor.
 - `**kwargs` - Catch-all for unlisted TikZ options.
-  
+
 
 **Returns**:
 
@@ -1407,7 +1407,7 @@ Add a parabola to the figure.
 - `xscale` - Horizontal scaling factor.
 - `yscale` - Vertical scaling factor.
 - `**kwargs` - Catch-all for unlisted TikZ options.
-  
+
 
 **Returns**:
 
@@ -1475,7 +1475,7 @@ Add a line segment to the figure.
 - `xscale` - Horizontal scaling factor.
 - `yscale` - Vertical scaling factor.
 - `**kwargs` - Catch-all for unlisted TikZ options.
-  
+
 
 **Returns**:
 
@@ -1549,7 +1549,7 @@ Add a regular polygon to the figure.
 - `xscale` - Horizontal scaling factor.
 - `yscale` - Vertical scaling factor.
 - `**kwargs` - Catch-all for unlisted TikZ options.
-  
+
 
 **Returns**:
 
@@ -1599,7 +1599,7 @@ Add an equilateral triangle to the figure.
 - `text_opacity` - Text opacity (0–1).
 - `line_width` - Line width (e.g. ``"1pt"``).
 - `**kwargs` - Catch-all for unlisted TikZ options.
-  
+
 
 **Returns**:
 
@@ -1649,7 +1649,7 @@ Add a square to the figure.
 - `text_opacity` - Text opacity (0–1).
 - `line_width` - Line width (e.g. ``"1pt"``).
 - `**kwargs` - Catch-all for unlisted TikZ options.
-  
+
 
 **Returns**:
 
@@ -1682,7 +1682,7 @@ Add a 3-D data plot with ``\addplot3``.
 - `center` - If ``True``, connect through ``.center`` anchors.
 - `verbose` - If ``True``, print a debug message.
 - `**kwargs` - Additional pgfplots options (e.g. ``mark="*"``).
-  
+
 
 **Returns**:
 
@@ -1726,7 +1726,7 @@ Create and register a 2D axis.
 - `layer` - Layer index (for metadata; axes render after all layers).
 - `comment` - Optional comment prepended in TikZ output.
 - `**kwargs` - Additional pgfplots axis options.
-  
+
 
 **Returns**:
 
@@ -1754,7 +1754,7 @@ Add a ``\foreach`` loop to the figure.
 - `layer` - Target layer index. Defaults to ``0``.
 - `comment` - Optional comment prepended in the TikZ output.
 - `verbose` - If ``True``, print a debug message.
-  
+
 
 **Returns**:
 
@@ -2331,7 +2331,7 @@ Reconstruct a Node from a dictionary.
 **Arguments**:
 
 - `d` - Dictionary as produced by `to_dict`.
-  
+
 
 **Returns**:
 
@@ -2394,12 +2394,12 @@ Make *fig* the current figure.
 **Arguments**:
 
 - `fig` - The figure the module-level functions should draw on.
-  
+
 
 **Returns**:
 
   The figure that was passed in.
-  
+
 
 **Raises**:
 
@@ -3058,16 +3058,16 @@ expression via ``at``.
 - `z` - Z-coordinate value when passing explicit scalar coordinates.
   Mutually exclusive with ``at``.
 - `at` - Raw TikZ coordinate expression. Examples:
-  
+
   * ``"$(A)!0.5!(B)$"`` — midpoint via ``calc`` library
   * ``"A.north"`` — at a node anchor
   * ``"30:2cm"`` — polar coordinates
-  
+
   If the string does not begin with ``(``, parentheses are
   added automatically. Mutually exclusive with ``x``/``y``.
 - `layer` - Layer index this coordinate belongs to. Defaults to ``0``.
 - `comment` - Optional comment prepended in the TikZ output.
-  
+
 
 **Raises**:
 
@@ -3191,7 +3191,7 @@ Reconstruct a Coordinate from a dictionary.
 **Arguments**:
 
 - `d` - Dictionary as produced by `to_dict`.
-  
+
 
 **Returns**:
 
@@ -3375,7 +3375,7 @@ Reconstruct a TikzCoordinate from a dictionary.
 **Arguments**:
 
 - `d` - Dictionary as produced by `to_dict`.
-  
+
 
 **Returns**:
 
