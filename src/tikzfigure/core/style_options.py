@@ -121,7 +121,7 @@ def collect_style(
     style = {
         name: scope[name]
         for name in STYLE_FIELDS
-        if scope.get(name) is not None  # noqa: SIM118 -- Mapping, not a dict
+        if scope.get(name) is not None
     }
     if extra:
         style.update(extra)

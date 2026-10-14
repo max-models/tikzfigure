@@ -15,7 +15,7 @@ from . import (
     styles,
     units,
 )
-from .pyplot import *  # noqa: F403
+from .pyplot import *
 from .pyplot import __all__ as _pyplot_all
 
 __all__ = [
