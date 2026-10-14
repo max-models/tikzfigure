@@ -118,11 +118,7 @@ def collect_style(
     Returns:
         The style options to pass on to a :class:`~tikzfigure.core.base.TikzObject`.
     """
-    style = {
-        name: scope[name]
-        for name in STYLE_FIELDS
-        if scope.get(name) is not None
-    }
+    style = {name: scope[name] for name in STYLE_FIELDS if scope.get(name) is not None}
     if extra:
         style.update(extra)
     return style
