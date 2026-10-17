@@ -29,9 +29,15 @@ python -m tikzfigure.codegen tikz_catalogue/19_commutative_diagram.tex
 
 ```python
 fig = TikzFigure()
-fig.add_node(0, 2, label='A', content='$A$')
-fig.add_node(2.5, 2, label='B', content='$B$')
-fig.draw(['A', 'B'], segment_options=[{'connector': '--', 'node': {'content': '$f$', 'options': ['above']}}], options=['->'])
+fig.add_node(0, 2, label="A", content="$A$")
+fig.add_node(2.5, 2, label="B", content="$B$")
+fig.draw(
+    ["A", "B"],
+    segment_options=[
+        {"connector": "--", "node": {"content": "$f$", "options": ["above"]}}
+    ],
+    options=["->"],
+)
 ```
 
 `figure.to_python()` runs the generated code and compares its TikZ output with

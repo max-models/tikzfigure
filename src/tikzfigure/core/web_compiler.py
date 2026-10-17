@@ -4,14 +4,13 @@ from __future__ import annotations
 
 import warnings
 from pathlib import Path
-from typing import Union
 
 LATEX_ON_HTTP_URL = "https://latex.ytotech.com/builds/sync"
 
 
 def compile_with_latex_on_http(
     latex_content: str,
-    output_path: Union[Path, str],
+    output_path: Path | str,
     timeout: int = 30,
     verbose: bool = False,
 ) -> None:

@@ -1,23 +1,28 @@
 {
-  "name": "peaceful-plasma",
+  "name": "tikzfigure-docs",
+  "private": true,
   "type": "module",
   "version": "0.0.1",
+  "engines": {
+    "node": ">=22.12.0"
+  },
   "scripts": {
     "docs:api": "python scripts/generate_api_docs.py",
-    "predev": "python scripts/generate_api_docs.py",
+    "predev": "python scripts/generate_api_docs.py && starlight-notebooks convert",
     "dev": "astro dev",
-    "prestart": "python scripts/generate_api_docs.py",
+    "prestart": "python scripts/generate_api_docs.py && starlight-notebooks convert",
     "start": "astro dev",
     "prebuild": "python scripts/generate_api_docs.py",
     "build": "astro build",
     "preview": "astro preview",
+    "check:mdx": "starlight-check-mdx",
+    "notebooks": "starlight-notebooks",
     "astro": "astro"
   },
   "dependencies": {
-    "@astrojs/starlight": "^0.38.2",
-    "astro": "^6.0.1",
-    "rehype-katex": "^7.0.1",
-    "remark-math": "^6.0.0",
-    "sharp": "^0.34.2"
+    "@astrojs/starlight": "^0.42.6",
+    "@max-models/starlight-theme": "github:max-models/starlight-theme#347851725c6014b379c3d90ffea1d6a51b7d937e",
+    "astro": "^7.3.8",
+    "sharp": "^0.35.3"
   }
 }

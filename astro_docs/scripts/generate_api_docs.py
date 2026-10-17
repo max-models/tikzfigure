@@ -124,6 +124,7 @@ def build_api_page() -> str:
         ---
         title: API Reference
         description: Generated reference for the current tikzfigure Python API.
+        editUrl: false
         ---
 
         > This page is generated from the current Python docstrings by

@@ -1,20 +1,20 @@
 name: "Build Documentation"
-description: "Build Astro/Starlight documentation"
+description: "Execute the tutorial notebooks and build the Astro/Starlight documentation"
 inputs:
   python-version:
     description: "Python version to use"
     required: false
     default: "3.12"
-  build-tutorials:
-    description: "Whether to generate tutorial markdown/assets"
+  execute-notebooks:
+    description: "Whether to execute the tutorial notebooks (into astro_docs/.cache/notebooks)"
     required: false
     default: "true"
-  tutorial-build-args:
-    description: "Extra arguments passed to build_tutorials.py"
+  notebook-directory:
+    description: "Execute only the notebooks in this directory of tutorials/ (a CI shard)"
     required: false
     default: ""
   build-site:
-    description: "Whether to build the Astro site"
+    description: "Whether to convert the executed notebooks into pages and build the Astro site"
     required: false
     default: "true"
 runs:
@@ -24,6 +24,11 @@ runs:
       uses: actions/setup-python@v5
       with:
         python-version: ${{ inputs.python-version }}
+
+    - name: Set up Node
+      uses: actions/setup-node@v4
+      with:
+        node-version: 22
 
     - name: Check if pdflatex is available
       shell: bash
@@ -36,11 +41,32 @@ runs:
       run: |
         python -m pip install --upgrade pip
         python -m pip install ".[docs]"
+        python -m ipykernel install --user --name python3
+        echo "DOCS_PYTHON=$(command -v python)" >> "$GITHUB_ENV"
 
-    - name: Build tutorials (Quarto + Jupyter → Markdown)
-      if: ${{ inputs.build-tutorials == 'true' }}
+    - name: Install the npm packages
       shell: bash
-      run: python astro_docs/scripts/build_tutorials.py ${{ inputs.tutorial-build-args }}
+      working-directory: astro_docs
+      run: npm ci
+
+    - name: Execute the tutorial notebooks
+      if: ${{ inputs.execute-notebooks == 'true' }}
+      shell: bash
+      working-directory: astro_docs
+      run: |
+        if [ -n "${{ inputs.notebook-directory }}" ]; then
+          npx starlight-notebooks execute --source "../tutorials/${{ inputs.notebook-directory }}" --section tutorials
+        else
+          npx starlight-notebooks execute
+        fi
+
+    - name: Convert the notebooks into pages
+      if: ${{ inputs.build-site == 'true' }}
+      shell: bash
+      working-directory: astro_docs
+      run: |
+        npx starlight-notebooks convert --strict
+        npx starlight-check-mdx
 
     - name: Build and upload site
       if: ${{ inputs.build-site == 'true' }}
@@ -48,8 +74,10 @@ runs:
       with:
         path: astro_docs
 
+    # The links in the pages carry the /tikzfigure base path, so they cannot all resolve in a
+    # site served from /; the link check already ran on the real build above.
     - name: Rebuild without base path for local artifact inspection
       if: ${{ inputs.build-site == 'true' }}
       shell: bash
       working-directory: astro_docs
-      run: npx astro build --base /
+      run: DOCS_VALIDATE_LINKS=false npx astro build --base /
