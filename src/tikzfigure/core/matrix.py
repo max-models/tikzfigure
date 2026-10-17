@@ -461,12 +461,13 @@ class Matrix(TikzObject):
             **kwargs,
         )
         for arrow in restored.get("arrows") or []:
-            ends = [
-                end if isinstance(end, str) else tuple(end)
+            source, target = (
+                end if isinstance(end, str) else (int(end[0]), int(end[1]))
                 for end in (arrow["source"], arrow["target"])
-            ]
+            )
             matrix.arrow(
-                *ends,
+                source,
+                target,
                 label=arrow.get("label"),
                 label_position=arrow.get("label_position", "above"),
                 label_options=arrow.get("label_options") or None,
