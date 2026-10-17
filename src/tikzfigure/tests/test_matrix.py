@@ -105,3 +105,63 @@ def test_figure_add_matrix_second_auto_label_increments_counter():
     fig.add_matrix([["A"]])
     second = fig.add_matrix([["B"]])
     assert second.label == "node1"
+
+
+def test_matrix_arrows_connect_cells_with_labels():
+    matrix = Matrix(
+        rows=[["V^0", "V^1"], ["H^1", "L^2"]],
+        label="d",
+        options="matrix of math nodes",
+    )
+    matrix.arrow((1, 1), (1, 2), label=r"$\nabla$").arrow(
+        (2, 1),
+        (1, 1),
+        label=r"$\pi^0$",
+        label_position="left",
+        label_options="font=\\scriptsize",
+        options="dashed",
+        color="blue",
+    )
+    tikz = matrix.to_tikz()
+    assert tikz.index("\\matrix") < tikz.index("\\draw")
+    assert "\\draw[->] (d-1-1) to node[above] {$\\nabla$} (d-1-2);" in tikz
+    assert (
+        "\\draw[->, dashed, color=blue] (d-2-1) to "
+        "node[left, font=\\scriptsize] {$\\pi^0$} (d-1-1);"
+    ) in tikz
+    assert len(matrix.arrows) == 2
+
+
+def test_matrix_arrow_without_label_and_to_named_nodes():
+    first = Matrix(rows=[["A", "B"]], label="m")
+    second = Matrix(rows=[["C"]], label="n")
+    first.arrow((1, 2), second.cell(1, 1), arrows="<-").arrow("m-1-1.east", (1, 2))
+    tikz = first.to_tikz()
+    assert "\\draw[<-] (m-1-2) to (n-1-1);" in tikz
+    assert "\\draw[->] (m-1-1.east) to (m-1-2);" in tikz
+
+
+def test_matrix_arrow_validates_cells():
+    with pytest.raises(ValueError):
+        Matrix(rows=[["A", "B"]], label="m").arrow((1, 1), (2, 1))
+    with pytest.raises(ValueError):
+        Matrix(rows=[["A", "B"]]).arrow((1, 1), (1, 2))
+
+
+def test_matrix_arrows_round_trip():
+    matrix = Matrix(rows=[["A", "B"], ["C", "D"]], label="m")
+    matrix.arrow((1, 1), (1, 2), label="f", label_options=["sloped"], bend_left=20)
+    matrix.arrow((2, 1), "m-1-1", options="dashed")
+    restored = Matrix.from_dict(matrix.to_dict())
+    assert restored.to_dict() == matrix.to_dict()
+    assert restored.to_tikz() == matrix.to_tikz()
+    assert "bend left=20" in restored.to_tikz()
+
+
+def test_figure_matrix_arrows_render_in_the_document():
+    fig = TikzFigure()
+    matrix = fig.add_matrix(
+        [["A", "B"]], label="m", options="matrix of math nodes", column_sep="1cm"
+    )
+    matrix.arrow((1, 1), (1, 2), label="$f$")
+    assert "\\draw[->] (m-1-1) to node[above] {$f$} (m-1-2);" in fig.generate_tikz()
