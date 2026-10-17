@@ -12,6 +12,7 @@ from tikzfigure.core.tikz_library import TikzLibrary
 from tikzfigure.options import OptionInput, normalize_options
 
 MatrixCell = str | dict[str, Any] | None
+CellReference = tuple[int, int] | str
 
 
 class MatrixLibrary(TikzLibrary):
@@ -47,6 +48,19 @@ class Matrix(TikzObject):
         fig.add_coordinate("c11", at=m.cell(1, 1))
         fig.add_coordinate("c22", at=m.cell(2, 2))
         fig.draw(["c11", "c22"])
+
+    :meth:`arrow` connects cells directly, with an optional label, which
+    makes a matrix of math nodes a commutative diagram::
+
+        m = fig.add_matrix(
+            [["V^0", "V^1"], ["H^1", "L^2"]],
+            label="d",
+            options="matrix of math nodes",
+            column_sep="1.5cm",
+            row_sep="1cm",
+        )
+        m.arrow((1, 1), (1, 2), label=r"$\\nabla$")
+        m.arrow((2, 1), (1, 1), label=r"$\\pi^0$", label_position="left")
 
     Attributes:
         rows: The grid of cells, as a list of rows of :data:`MatrixCell`.
@@ -119,6 +133,7 @@ class Matrix(TikzObject):
         self._row_sep = row_sep
         self._column_sep = column_sep
         self._cell_style = cell_style
+        self._arrows: list[dict[str, Any]] = []
 
         tikz_kwargs = dict(kwargs)
         if row_sep is not None:
@@ -229,6 +244,89 @@ class Matrix(TikzObject):
             )
         return MatrixLibrary.cell_name(self.label, row, col)
 
+    @property
+    def arrows(self) -> list[dict[str, Any]]:
+        """The arrows between cells added with :meth:`arrow`, in order."""
+        return [dict(arrow) for arrow in self._arrows]
+
+    def arrow(
+        self,
+        source: CellReference,
+        target: CellReference,
+        label: str | None = None,
+        label_position: str = "above",
+        label_options: OptionInput | None = None,
+        arrows: str = "->",
+        options: OptionInput | None = None,
+        **kwargs: Any,
+    ) -> "Matrix":
+        """Draw an arrow between two cells, e.g. a map of a commutative diagram.
+
+        The arrow runs from the border of the source cell to the border of
+        the target cell (``\\draw[->] (m-1-1) to node[above] {f} (m-1-2);``),
+        and is drawn after the matrix.
+
+        Args:
+            source: The start cell, as a 1-indexed ``(row, col)`` tuple of
+                this matrix, or any TikZ node name (e.g. a cell of another
+                matrix, from its :meth:`cell`, or ``"m-1-1.east"``).
+            target: The end cell, given like ``source``.
+            label: Content of a node placed midway along the arrow (TikZ
+                text, so math needs ``$...$``). Default: no label.
+            label_position: Where the label sits relative to the arrow
+                (``"above"``, ``"below"``, ``"left"``, ``"right"``,
+                ``"above left"``, ...). Defaults to ``"above"``.
+            label_options: Further TikZ options of the label node, e.g.
+                ``"font=\\scriptsize"`` or ``["sloped", "pos=0.3"]``.
+            arrows: The arrow specification. Defaults to ``"->"``.
+            options: Further flag-style TikZ options of the arrow, e.g.
+                ``"dashed"`` or ``"bend left=20"``.
+            **kwargs: Further TikZ options of the arrow; underscores in keys
+                become spaces (e.g. ``color="blue"``, ``line_width="1pt"``).
+
+        Returns:
+            This matrix, so arrows can be chained.
+
+        Raises:
+            ValueError: If a ``(row, col)`` cell is out of range, or this
+                matrix has no label.
+        """
+        for end in (source, target):
+            if not isinstance(end, str):
+                self.cell(*end)  # validates the label and the range
+        self._arrows.append(
+            {
+                "source": source if isinstance(source, str) else tuple(source),
+                "target": target if isinstance(target, str) else tuple(target),
+                "label": label,
+                "label_position": label_position,
+                "label_options": [str(o) for o in normalize_options(label_options)],
+                "arrows": arrows,
+                "options": [str(o) for o in normalize_options(options)],
+                "kwargs": dict(kwargs),
+            }
+        )
+        return self
+
+    def _reference(self, end: CellReference) -> str:
+        """The TikZ node name of an arrow end."""
+        return end if isinstance(end, str) else self.cell(*end)
+
+    def _arrow_to_tikz(self, arrow: dict[str, Any]) -> str:
+        """Render one arrow added with :meth:`arrow` as a ``\\draw`` command."""
+        draw_options = [arrow["arrows"], *arrow["options"]]
+        draw_options += [
+            f"{k.replace('_', ' ')}={v}" for k, v in arrow["kwargs"].items()
+        ]
+        node = ""
+        if arrow["label"] is not None:
+            node_options = ", ".join([arrow["label_position"], *arrow["label_options"]])
+            node = f" node[{node_options}] {{{arrow['label']}}}"
+        return (
+            f"\\draw[{', '.join(draw_options)}] ({self._reference(arrow['source'])}) to"
+            f"{node} ({self._reference(arrow['target'])});\n"
+        )
+
     @staticmethod
     def _cell_to_tikz(cell: MatrixCell) -> str:
         """Render a single cell to its TikZ representation."""
@@ -275,6 +373,7 @@ class Matrix(TikzObject):
         body = "\n  ".join(row_strings)
 
         matrix_string = f"\\matrix{options_str}{label_str}{at_str} {{\n  {body}\n}};\n"
+        matrix_string += "".join(self._arrow_to_tikz(arrow) for arrow in self._arrows)
         matrix_string = self.add_comment(matrix_string)
         return matrix_string
 
@@ -297,6 +396,18 @@ class Matrix(TikzObject):
                 "row_sep": self._row_sep,
                 "column_sep": self._column_sep,
                 "cell_style": self._cell_style,
+                "arrows": [
+                    {
+                        **arrow,
+                        "source": list(arrow["source"])
+                        if isinstance(arrow["source"], tuple)
+                        else arrow["source"],
+                        "target": list(arrow["target"])
+                        if isinstance(arrow["target"], tuple)
+                        else arrow["target"],
+                    }
+                    for arrow in self._arrows
+                ],
             }
         )
         serialized = serialize_tikz_value(d)
@@ -335,7 +446,7 @@ class Matrix(TikzObject):
             )
             marker = f"nodes={{{style_str}}}"
             options = [o for o in options if o != marker]
-        return cls(
+        matrix = cls(
             rows=restored.get("rows", []),
             x=restored.get("x"),
             y=restored.get("y"),
@@ -349,3 +460,18 @@ class Matrix(TikzObject):
             cell_style=restored.get("cell_style"),
             **kwargs,
         )
+        for arrow in restored.get("arrows") or []:
+            ends = [
+                end if isinstance(end, str) else tuple(end)
+                for end in (arrow["source"], arrow["target"])
+            ]
+            matrix.arrow(
+                *ends,
+                label=arrow.get("label"),
+                label_position=arrow.get("label_position", "above"),
+                label_options=arrow.get("label_options") or None,
+                arrows=arrow.get("arrows", "->"),
+                options=arrow.get("options") or None,
+                **(arrow.get("kwargs") or {}),
+            )
+        return matrix
