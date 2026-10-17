@@ -43,3 +43,11 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
+      # the pages must answer once deployed (an empty or missing site is a 404)
+      - name: Check the deployed site
+        env:
+          URL: ${{ steps.deployment.outputs.page_url }}
+        run: |
+          curl --fail --silent --show-error --location --output /dev/null \
+            --retry 12 --retry-delay 10 --retry-all-errors "${URL%/}/index.html"
