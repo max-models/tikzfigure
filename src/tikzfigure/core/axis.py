@@ -37,6 +37,148 @@ class Axis2D(TikzObject):
     were added, then coordinates and spies.
     """
 
+    def add_coordinate(
+        self,
+        label: str,
+        x: (
+            CoordinateValue
+            | CoordinateTuple2D
+            | CoordinateTuple3D
+            | TikzCoordinate
+            | None
+        ) = None,
+        y: CoordinateValue | None = None,
+        z: CoordinateValue | None = None,
+        at: str | None = None,
+        comment: str | None = None,
+    ) -> Coordinate:
+        """Add a named coordinate inside the axis environment."""
+        coord = Coordinate(
+            label=label,
+            x=x,
+            y=y,
+            z=z,
+            at=at,
+            layer=self.layer if self.layer is not None else 0,
+            comment=comment,
+        )
+        self._items.append(coord)
+        return coord
+
+    coordinate = add_coordinate
+
+    def add_spy(
+        self,
+        on: Any,
+        *,
+        comment: str | None = None,
+        options: OptionInput | None = None,
+        magnification: float | None = None,
+        lens: OptionInput | str | None = None,
+        lens_kwargs: dict[str, Any] | None = None,
+        size: str | object | None = None,
+        width: str | object | None = None,
+        height: str | object | None = None,
+        connect_spies: bool = False,
+        at: Any = None,
+        node_label: str | None = None,
+        node_options: OptionInput | None = None,
+        node_style: dict[str, Any] | None = None,
+        **kwargs: Any,
+    ) -> Spy:
+        """Add a ``\\spy`` command inside the axis environment."""
+        if self._library_loader is not None:
+            self._library_loader("spy")
+        if self._spy_scope_enabler is not None:
+            self._spy_scope_enabler()
+
+        spy_options, spy_kwargs = SpyLibrary.build_command_parts(
+            options=options,
+            magnification=magnification,
+            lens=lens,
+            lens_kwargs=lens_kwargs,
+            size=size,
+            width=width,
+            height=height,
+            connect_spies=connect_spies,
+            **kwargs,
+        )
+        spy = Spy(
+            on=on,
+            at=at,
+            node_label=node_label,
+            node_options=node_options,
+            node_style=node_style,
+            comment=comment,
+            layer=self.layer if self.layer is not None else 0,
+            options=spy_options,
+            **spy_kwargs,
+        )
+        self._items.append(spy)
+        return spy
+
+    spy = add_spy
+
+    @staticmethod
+    def _normalize_dimension(value: str | float | None, param_name: str) -> str | None:
+        """Normalize dimension input to pgfplots format string.
+
+        Args:
+            value: String (e.g., "8cm"), number (e.g., 8), or None
+            param_name: Name of parameter ("width", "height") for error messages
+
+        Returns:
+            Normalized string (e.g., "8cm") or None
+
+        Raises:
+            TypeError: If value is invalid type
+            ValueError: If string format invalid or number out of range
+        """
+        if value is None:
+            return None
+
+        if isinstance(value, str):
+            # Validate: must contain a unit suffix
+            valid_units = ["cm", "pt", "mm", "ex", "in"]
+            if not any(value.endswith(unit) for unit in valid_units):
+                raise ValueError(
+                    f'{param_name} string must include a unit (e.g., "8cm"), got "{value}"'
+                )
+            return value
+
+        if isinstance(value, (int, float)):
+            # Validate: must be positive
+            if value <= 0:
+                raise ValueError(f"{param_name} must be positive, got {value}")
+            return f"{value}cm"
+
+        raise TypeError(
+            f"{param_name} must be a string, number, or None, got {type(value).__name__}"
+        )
+
+    def _validate_limits(self, limits: tuple[float, float] | None, name: str) -> None:
+        """Validate axis limits format.
+
+        Args:
+            limits: (min, max) tuple or None
+            name: Axis name for error message ("xlim" or "ylim")
+
+        Raises:
+            ValueError: If limits is not a 2-tuple of numbers or None
+        """
+        if limits is not None:
+            if not isinstance(limits, tuple) or len(limits) != 2:
+                raise ValueError(
+                    f"{name} must be a (min, max) tuple or None, got {limits}"
+                )
+            if not all(isinstance(v, (int, float)) for v in limits):
+                raise ValueError(f"{name} values must be numeric, got {limits}")
+
+    @staticmethod
+    def _validate_log_flag(value: bool, name: str) -> None:
+        if not isinstance(value, bool):
+            raise TypeError(f"{name} must be a bool, got {type(value).__name__}")
+
     def __init__(
         self,
         xlabel: str = "",
@@ -118,66 +260,6 @@ class Axis2D(TikzObject):
         self._legend_style: dict[str, Any] = {}
         self._library_loader = library_loader
         self._spy_scope_enabler = spy_scope_enabler
-
-    @staticmethod
-    def _normalize_dimension(value: str | float | None, param_name: str) -> str | None:
-        """Normalize dimension input to pgfplots format string.
-
-        Args:
-            value: String (e.g., "8cm"), number (e.g., 8), or None
-            param_name: Name of parameter ("width", "height") for error messages
-
-        Returns:
-            Normalized string (e.g., "8cm") or None
-
-        Raises:
-            TypeError: If value is invalid type
-            ValueError: If string format invalid or number out of range
-        """
-        if value is None:
-            return None
-
-        if isinstance(value, str):
-            # Validate: must contain a unit suffix
-            valid_units = ["cm", "pt", "mm", "ex", "in"]
-            if not any(value.endswith(unit) for unit in valid_units):
-                raise ValueError(
-                    f'{param_name} string must include a unit (e.g., "8cm"), got "{value}"'
-                )
-            return value
-
-        if isinstance(value, (int, float)):
-            # Validate: must be positive
-            if value <= 0:
-                raise ValueError(f"{param_name} must be positive, got {value}")
-            return f"{value}cm"
-
-        raise TypeError(
-            f"{param_name} must be a string, number, or None, got {type(value).__name__}"
-        )
-
-    def _validate_limits(self, limits: tuple[float, float] | None, name: str) -> None:
-        """Validate axis limits format.
-
-        Args:
-            limits: (min, max) tuple or None
-            name: Axis name for error message ("xlim" or "ylim")
-
-        Raises:
-            ValueError: If limits is not a 2-tuple of numbers or None
-        """
-        if limits is not None:
-            if not isinstance(limits, tuple) or len(limits) != 2:
-                raise ValueError(
-                    f"{name} must be a (min, max) tuple or None, got {limits}"
-                )
-            if not all(isinstance(v, (int, float)) for v in limits):
-                raise ValueError(f"{name} values must be numeric, got {limits}")
-
-    @staticmethod
-    def _validate_log_flag(value: bool, name: str) -> None:
-        if not isinstance(value, bool):
-            raise TypeError(f"{name} must be a bool, got {type(value).__name__}")
 
     @property
     def xlabel(self) -> str:
@@ -506,83 +588,15 @@ class Axis2D(TikzObject):
         sequence.extend(e for i, e in enumerate(self._extras) if i not in seen_extras)
         return sequence
 
-    def add_coordinate(
-        self,
-        label: str,
-        x: (
-            CoordinateValue
-            | CoordinateTuple2D
-            | CoordinateTuple3D
-            | TikzCoordinate
-            | None
-        ) = None,
-        y: CoordinateValue | None = None,
-        z: CoordinateValue | None = None,
-        at: str | None = None,
-        comment: str | None = None,
-    ) -> Coordinate:
-        """Add a named coordinate inside the axis environment."""
-        coord = Coordinate(
-            label=label,
-            x=x,
-            y=y,
-            z=z,
-            at=at,
-            layer=self.layer if self.layer is not None else 0,
-            comment=comment,
-        )
-        self._items.append(coord)
-        return coord
-
-    def add_spy(
-        self,
-        on: Any,
-        *,
-        comment: str | None = None,
-        options: OptionInput | None = None,
-        magnification: float | None = None,
-        lens: OptionInput | str | None = None,
-        lens_kwargs: dict[str, Any] | None = None,
-        size: str | object | None = None,
-        width: str | object | None = None,
-        height: str | object | None = None,
-        connect_spies: bool = False,
-        at: Any = None,
-        node_label: str | None = None,
-        node_options: OptionInput | None = None,
-        node_style: dict[str, Any] | None = None,
-        **kwargs: Any,
-    ) -> Spy:
-        """Add a ``\\spy`` command inside the axis environment."""
-        if self._library_loader is not None:
-            self._library_loader("spy")
-        if self._spy_scope_enabler is not None:
-            self._spy_scope_enabler()
-
-        spy_options, spy_kwargs = SpyLibrary.build_command_parts(
-            options=options,
-            magnification=magnification,
-            lens=lens,
-            lens_kwargs=lens_kwargs,
-            size=size,
-            width=width,
-            height=height,
-            connect_spies=connect_spies,
-            **kwargs,
-        )
-        spy = Spy(
-            on=on,
-            at=at,
-            node_label=node_label,
-            node_options=node_options,
-            node_style=node_style,
-            comment=comment,
-            layer=self.layer if self.layer is not None else 0,
-            options=spy_options,
-            **spy_kwargs,
-        )
-        self._items.append(spy)
-        return spy
+    def _legend_style_options(self) -> list[str]:
+        style = self._legend_style
+        options = []
+        if style.get("at") is not None:
+            x, y = style["at"]
+            options.append(f"at={{({x:g},{y:g})}}")
+            options.append(f"anchor={style.get('anchor') or 'north east'}")
+        options.extend(str(option) for option in style.get("style", []))
+        return options
 
     def axis_options(self, output_unit: str | None = None) -> list[str]:
         """The options of the ``axis`` environment, as a list."""
@@ -638,16 +652,6 @@ class Axis2D(TikzObject):
             value = ("true" if v else "false") if isinstance(v, bool) else str(v)
             axis_opts.append(f"{k.replace('_', ' ')}={value}")
         return axis_opts
-
-    def _legend_style_options(self) -> list[str]:
-        style = self._legend_style
-        options = []
-        if style.get("at") is not None:
-            x, y = style["at"]
-            options.append(f"at={{({x:g},{y:g})}}")
-            options.append(f"anchor={style.get('anchor') or 'north east'}")
-        options.extend(str(option) for option in style.get("style", []))
-        return options
 
     @property
     def _has_legend(self) -> bool:
@@ -833,6 +837,3 @@ class Axis2D(TikzObject):
         axis._legend_pos = legend_pos
         axis._legend_style = legend_style or {}
         return axis
-
-    coordinate = add_coordinate
-    spy = add_spy

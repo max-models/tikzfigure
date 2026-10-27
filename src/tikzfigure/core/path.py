@@ -25,6 +25,14 @@ class TikzPath(TikzObject):
             connector or extra path operation in the sequence.
     """
 
+    #: Connector types that accept bracket options.
+    _BRACKET_CONNECTORS: frozenset[str] = frozenset({"to", "arc"})
+
+    #: Connector types that are emitted as-is with no bracket options.
+    _PLAIN_CONNECTORS: frozenset[str] = frozenset(
+        {"--", "..", "|-", "-|", "sin", "cos"}
+    )
+
     def __init__(
         self,
         nodes: list,
@@ -120,14 +128,6 @@ class TikzPath(TikzObject):
     def segment_options(self) -> list[SegmentOption] | None:
         """Per-segment TikZ options for each ``to`` connector, or ``None``."""
         return self._segment_options
-
-    #: Connector types that accept bracket options.
-    _BRACKET_CONNECTORS: frozenset[str] = frozenset({"to", "arc"})
-
-    #: Connector types that are emitted as-is with no bracket options.
-    _PLAIN_CONNECTORS: frozenset[str] = frozenset(
-        {"--", "..", "|-", "-|", "sin", "cos"}
-    )
 
     @staticmethod
     def _format_segment_opts(
@@ -235,21 +235,6 @@ class TikzPath(TikzObject):
             parts.append(kwargs_str)
         return ", ".join(parts)
 
-    @property
-    def label_list(self) -> list[str]:
-        """Rendered TikZ reference strings for each node in this path.
-
-        Per-node anchors (from :attr:`node_anchors`) take precedence over
-        the global :attr:`center` flag.  :class:`Coordinate` objects are
-        referenced by label exactly like :class:`Node` objects.
-
-        Returns:
-            A list of strings such as ``["(nodeA)", "(nodeB.center)"]``,
-            ``["(coordA)"]``, or coordinate tuples for inline
-            :class:`TikzCoordinate` waypoints.
-        """
-        return self._render_label_list()
-
     def _render_label_list(self, output_unit: str | None = None) -> list[str]:
         """Render path waypoints, converting inline dimensions when requested."""
         label_list = []
@@ -280,6 +265,21 @@ class TikzPath(TikzObject):
                     parts.append(formatted)
                 label_list.append(f"({', '.join(parts)})")
         return label_list
+
+    @property
+    def label_list(self) -> list[str]:
+        """Rendered TikZ reference strings for each node in this path.
+
+        Per-node anchors (from :attr:`node_anchors`) take precedence over
+        the global :attr:`center` flag.  :class:`Coordinate` objects are
+        referenced by label exactly like :class:`Node` objects.
+
+        Returns:
+            A list of strings such as ``["(nodeA)", "(nodeB.center)"]``,
+            ``["(coordA)"]``, or coordinate tuples for inline
+            :class:`TikzCoordinate` waypoints.
+        """
+        return self._render_label_list()
 
     @property
     def tikz_command(self) -> str:

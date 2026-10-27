@@ -268,6 +268,100 @@ def _rendered_statement(item: Any) -> Statement:
     return statements[0]
 
 
+_NODE_RESERVED = frozenset(
+    {"x", "y", "z", "label", "content", "comment", "layer", "options", "kwargs", "self"}
+)
+_PATH_RESERVED = frozenset(
+    {
+        "nodes",
+        "cycle",
+        "label",
+        "comment",
+        "layer",
+        "center",
+        "node_anchors",
+        "segment_options",
+        "options",
+        "tikz_command",
+        "self",
+    }
+)
+_SHAPE_RESERVED = frozenset(
+    {
+        "center",
+        "radius",
+        "corner1",
+        "corner2",
+        "label",
+        "comment",
+        "layer",
+        "options",
+        "tikz_command",
+        "self",
+    }
+)
+_SCOPE_RESERVED = frozenset(
+    {"label", "comment", "layer", "options", "node_resolver", "library_loader", "self"}
+)
+
+
+def _style_definition(option: Option) -> tuple[str, list[str], dict[str, str]] | None:
+    """Return ``(name, flags, kwargs)`` for a ``name/.style={...}`` option."""
+    if option.key is None or not option.key.endswith("/.style"):
+        return None
+    value = (option.value or "").strip()
+    if not (value.startswith("{") and value.endswith("}")):
+        return None
+    name = option.key[: -len("/.style")].strip()
+    if not name or "/" in name:
+        return None
+    inner = parse_options(value[1:-1])
+    flags, kwargs = split_options(inner)
+    rendered = [f"{k.replace('_', ' ')}={v}" for k, v in kwargs.items()]
+    if [normalize_space(x) for x in flags + rendered] != [o.canonical for o in inner]:
+        return None
+    return name, flags, kwargs
+
+
+def _simple_shape(tokens: list[PathToken]) -> tuple[str, list[Coord]] | None:
+    """Detect ``(c) circle (r)`` and ``(a) rectangle (b)`` paths."""
+    if (
+        len(tokens) == 3
+        and tokens[0].kind == "coord"
+        and tokens[2].kind == "coord"
+        and tokens[1].is_word("circle", "rectangle")
+    ):
+        first, second = tokens[0].coord, tokens[2].coord
+        assert first is not None and second is not None
+        if first.kind != "cartesian" or first.prefix or second.prefix:
+            return None
+        if tokens[1].text == "rectangle" and second.kind != "cartesian":
+            return None
+        if tokens[1].text == "circle" and second.kind == "cartesian":
+            return None
+        return tokens[1].text, [first, second]
+    return None
+
+
+def _mask_comments(text: str) -> str:
+    """Replace comment text with spaces, keeping offsets and newlines."""
+    out = list(text)
+    i = 0
+    while i < len(text):
+        if text[i] == "\\":
+            i += 2
+            continue
+        if text[i] == "%":
+            end = text.find("\n", i)
+            end = len(text) if end == -1 else end
+            for j in range(i, end):
+                out[j] = " "
+            i = end
+            continue
+        i += 1
+    return "".join(out)
+
+
 # ---------------------------------------------------------------------- #
 # Builder
 
@@ -281,62 +375,6 @@ class TikzBuilder:
         self._hoist_rank = -1
         self._hoisting = True
         self._declared_layers: list[int] = []
-
-    # -------------------------------------------------------------- #
-    # Entry point
-
-    def load(self, source: str) -> ParseResult:
-        masked = _mask_comments(source)
-        begin = re.search(r"\\begin\s*\{tikzpicture\}", masked)
-        if begin is None:
-            raise TikzParseError("no \\begin{tikzpicture} environment found")
-
-        preamble = source[: begin.start()]
-        if "\\documentclass" in masked[: begin.start()]:
-            self._load_preamble(preamble)
-
-        scanner = Scanner(source, pos=begin.end())
-        after_begin = scanner.pos
-        scanner.skip_whitespace()
-        picture_options: str | None = None
-        if scanner.peek() == "[":
-            picture_options = scanner.read_group("[")
-        else:
-            scanner.pos = after_begin
-        body_start = scanner.pos
-        _read_environment(scanner, "tikzpicture")
-        end_match = list(
-            re.finditer(r"\\end\s*\{tikzpicture\}", source[body_start : scanner.pos])
-        )[-1]
-        body = source[body_start : body_start + end_match.start()]
-        trailer = masked[scanner.pos :]
-
-        if picture_options is not None:
-            self._load_picture_options(picture_options)
-
-        label = re.search(r"\\label\s*\{([^}]*)\}", trailer)
-        if label and self.figure._label is None and "\\begin{figure" in masked:
-            self.figure._label = label.group(1)
-
-        self._reserve_auto_labels(body)
-        line_offset = source.count("\n", 0, body_start)
-        self._build(split_statements(body, line_offset=line_offset), _Sink(self.figure))
-        for declared in self._declared_layers:
-            # Declared but never used: keep the layer so it is declared again.
-            self.figure.layers.add_layer(declared)
-
-        extra = re.search(r"\\begin\s*\{tikzpicture\}", trailer)
-        if extra:
-            self.diagnostics.append(
-                Diagnostic(
-                    line=source.count("\n", 0, scanner.pos + extra.start()) + 1,
-                    statement="\\begin{tikzpicture}",
-                    status="raw",
-                    object_type="ignored",
-                    reason="additional tikzpicture ignored",
-                )
-            )
-        return ParseResult(self.figure, self.diagnostics)
 
     # -------------------------------------------------------------- #
     # Document-level pieces
@@ -424,76 +462,61 @@ class TikzBuilder:
             ]
             self._build_statement(statement, sink, comments)
 
-    def _handler(self, statement: Statement) -> Callable[..., str] | None:
-        if statement.kind == "environment":
-            return {
-                "scope": self._build_scope,
-                "pgfonlayer": self._build_pgfonlayer,
-            }.get(statement.name)
-        if statement.kind == "foreach":
-            return self._build_foreach
-        if statement.kind != "command":
-            return None
-        if statement.name in _DRAW_COMMANDS:
-            return self._build_path
-        return {
-            "node": self._build_node,
-            "coordinate": self._build_coordinate,
-            "pgfmathsetmacro": self._build_variable,
-            "colorlet": self._build_colorlet,
-            "pgfkeys": self._build_function,
-            "tikzset": self._build_tikzset,
-            "pgfdeclarelayer": self._build_layer_declaration,
-            "pgfsetlayers": self._build_layer_order,
-        }.get(statement.name)
+    # -------------------------------------------------------------- #
+    # Entry point
 
-    def _build_statement(
-        self, statement: Statement, sink: _Sink, comments: list[str]
-    ) -> None:
-        handler = self._handler(statement)
-        # Only the comment line touching a statement becomes its comment.
-        leading, comment = (
-            (comments[:-1], comments[-1].strip()) if comments else ([], None)
-        )
-        for extra in leading:
-            sink.add(RawTikz(f"%{extra}"))
-        try:
-            if handler is None:
-                if statement.kind == "environment":
-                    raise Unsupported(f"environment '{statement.name}'")
-                if statement.kind == "command":
-                    raise Unsupported(f"command '\\{statement.name}'")
-                raise Unsupported("unrecognised text")
-            object_type = handler(statement, sink, comment)
-        except Unsupported as exc:
-            self._hoisting = False
-            code = dedent_lines(statement.text)
-            prefix = f"%{comments[-1]}\n" if comments else ""
-            sink.add(RawTikz(prefix + code))
-            self._record(statement, "raw", "RawTikz", exc.reason, exc.detail)
-            return
-        if object_type != "PgfOnLayer":
-            self._record(statement, "mapped", object_type)
+    def load(self, source: str) -> ParseResult:
+        masked = _mask_comments(source)
+        begin = re.search(r"\\begin\s*\{tikzpicture\}", masked)
+        if begin is None:
+            raise TikzParseError("no \\begin{tikzpicture} environment found")
 
-    def _record(
-        self,
-        statement: Statement,
-        status: str,
-        object_type: str,
-        reason: str | None = None,
-        detail: str | None = None,
-    ) -> None:
-        self.diagnostics.append(
-            Diagnostic(
-                line=statement.line,
-                statement=statement.label,
-                status=status,
-                object_type=object_type,
-                reason=reason,
-                detail=detail,
-                source=normalize_space(strip_comments(statement.text)),
+        preamble = source[: begin.start()]
+        if "\\documentclass" in masked[: begin.start()]:
+            self._load_preamble(preamble)
+
+        scanner = Scanner(source, pos=begin.end())
+        after_begin = scanner.pos
+        scanner.skip_whitespace()
+        picture_options: str | None = None
+        if scanner.peek() == "[":
+            picture_options = scanner.read_group("[")
+        else:
+            scanner.pos = after_begin
+        body_start = scanner.pos
+        _read_environment(scanner, "tikzpicture")
+        end_match = list(
+            re.finditer(r"\\end\s*\{tikzpicture\}", source[body_start : scanner.pos])
+        )[-1]
+        body = source[body_start : body_start + end_match.start()]
+        trailer = masked[scanner.pos :]
+
+        if picture_options is not None:
+            self._load_picture_options(picture_options)
+
+        label = re.search(r"\\label\s*\{([^}]*)\}", trailer)
+        if label and self.figure._label is None and "\\begin{figure" in masked:
+            self.figure._label = label.group(1)
+
+        self._reserve_auto_labels(body)
+        line_offset = source.count("\n", 0, body_start)
+        self._build(split_statements(body, line_offset=line_offset), _Sink(self.figure))
+        for declared in self._declared_layers:
+            # Declared but never used: keep the layer so it is declared again.
+            self.figure.layers.add_layer(declared)
+
+        extra = re.search(r"\\begin\s*\{tikzpicture\}", trailer)
+        if extra:
+            self.diagnostics.append(
+                Diagnostic(
+                    line=source.count("\n", 0, scanner.pos + extra.start()) + 1,
+                    statement="\\begin{tikzpicture}",
+                    status="raw",
+                    object_type="ignored",
+                    reason="additional tikzpicture ignored",
+                )
             )
-        )
+        return ParseResult(self.figure, self.diagnostics)
 
     def _hoist(self, kind: str, sink: _Sink) -> None:
         """Allow a definition that the generator emits before the body."""
@@ -528,85 +551,6 @@ class TikzBuilder:
             if render(item) == expected:
                 return item
         raise Unsupported("lossy mapping")
-
-    def _build_path(
-        self, statement: Statement, sink: _Sink, comment: str | None
-    ) -> str:
-        syntax = parse_command(statement.text)
-        tokens = syntax.tokens
-        options: list[Option] = []
-        i = 0
-        while i < len(tokens) and tokens[i].kind == "options":
-            options.extend(tokens[i].options)
-            i += 1
-        body = tokens[i:]
-        expected = canonical_path(
-            ([PathToken("options", options=tuple(options))] if options else []) + body
-        )
-
-        def render(item: Any) -> Any:
-            rendered = parse_command(_rendered_statement(item).text)
-            if rendered.name != syntax.name:
-                return None
-            return canonical_path(rendered.tokens)
-
-        shape = _simple_shape(body)
-        if shape is not None:
-            kind, coords = shape
-            cls: Any = Circle if kind == "circle" else Rectangle
-
-            def build_shape(structured: bool) -> Any:
-                flags, kwargs = split_options(options, _SHAPE_RESERVED, structured)
-                if kind == "circle":
-                    radius = to_number(coords[1].inner)
-                    positional: dict[str, Any] = {
-                        "center": _cartesian(coords[0], False),
-                        "radius": radius,
-                    }
-                else:
-                    # TikzCoordinate.to_tikz() wraps components in braces.
-                    positional = {
-                        "corner1": _cartesian(coords[0], False),
-                        "corner2": _cartesian(coords[1], False),
-                    }
-                return cls(
-                    **positional,
-                    comment=comment,
-                    layer=sink.layer,
-                    options=flags,
-                    tikz_command=syntax.name,
-                    **kwargs,
-                )
-
-            item = self._structured_attempts(build_shape, expected, render)
-            sink.add(item)
-            self._placed()
-            return str(cls.__name__)
-
-        waypoints, anchors, segments, cycle = self._path_waypoints(body, sink)
-
-        def build(structured: bool) -> TikzPath:
-            flags, kwargs = split_options(options, _PATH_RESERVED, structured)
-            return TikzPath(
-                nodes=waypoints,
-                cycle=cycle,
-                comment=comment,
-                # Mirror TikzFigure._add_path, which leaves the path's own
-                # layer at 0 and records the layer through LayerCollection.
-                layer=sink.layer if sink.container is not None else 0,
-                node_anchors=anchors if any(a is not None for a in anchors) else None,
-                segment_options=(
-                    segments if any(s is not None for s in segments) else None
-                ),
-                options=flags,
-                tikz_command=syntax.name,
-                **kwargs,
-            )
-
-        path = self._structured_attempts(build, expected, render)
-        sink.add(path)
-        self._placed()
-        return "TikzPath"
 
     def _waypoint(self, token: PathToken, sink: _Sink) -> tuple[Any, str | None]:
         if token.kind != "coord":
@@ -690,6 +634,85 @@ class TikzBuilder:
                 i += 1
             segments.append(segment or None)
         return waypoints, anchors, segments, cycle
+
+    def _build_path(
+        self, statement: Statement, sink: _Sink, comment: str | None
+    ) -> str:
+        syntax = parse_command(statement.text)
+        tokens = syntax.tokens
+        options: list[Option] = []
+        i = 0
+        while i < len(tokens) and tokens[i].kind == "options":
+            options.extend(tokens[i].options)
+            i += 1
+        body = tokens[i:]
+        expected = canonical_path(
+            ([PathToken("options", options=tuple(options))] if options else []) + body
+        )
+
+        def render(item: Any) -> Any:
+            rendered = parse_command(_rendered_statement(item).text)
+            if rendered.name != syntax.name:
+                return None
+            return canonical_path(rendered.tokens)
+
+        shape = _simple_shape(body)
+        if shape is not None:
+            kind, coords = shape
+            cls: Any = Circle if kind == "circle" else Rectangle
+
+            def build_shape(structured: bool) -> Any:
+                flags, kwargs = split_options(options, _SHAPE_RESERVED, structured)
+                if kind == "circle":
+                    radius = to_number(coords[1].inner)
+                    positional: dict[str, Any] = {
+                        "center": _cartesian(coords[0], False),
+                        "radius": radius,
+                    }
+                else:
+                    # TikzCoordinate.to_tikz() wraps components in braces.
+                    positional = {
+                        "corner1": _cartesian(coords[0], False),
+                        "corner2": _cartesian(coords[1], False),
+                    }
+                return cls(
+                    **positional,
+                    comment=comment,
+                    layer=sink.layer,
+                    options=flags,
+                    tikz_command=syntax.name,
+                    **kwargs,
+                )
+
+            item = self._structured_attempts(build_shape, expected, render)
+            sink.add(item)
+            self._placed()
+            return str(cls.__name__)
+
+        waypoints, anchors, segments, cycle = self._path_waypoints(body, sink)
+
+        def build(structured: bool) -> TikzPath:
+            flags, kwargs = split_options(options, _PATH_RESERVED, structured)
+            return TikzPath(
+                nodes=waypoints,
+                cycle=cycle,
+                comment=comment,
+                # Mirror TikzFigure._add_path, which leaves the path's own
+                # layer at 0 and records the layer through LayerCollection.
+                layer=sink.layer if sink.container is not None else 0,
+                node_anchors=anchors if any(a is not None for a in anchors) else None,
+                segment_options=(
+                    segments if any(s is not None for s in segments) else None
+                ),
+                options=flags,
+                tikz_command=syntax.name,
+                **kwargs,
+            )
+
+        path = self._structured_attempts(build, expected, render)
+        sink.add(path)
+        self._placed()
+        return "TikzPath"
 
     def _build_node(
         self, statement: Statement, sink: _Sink, comment: str | None
@@ -904,6 +927,14 @@ class TikzBuilder:
         body = text[scanner.pos : end.start()]
         return options, body, statement.line - 1 + text.count("\n", 0, scanner.pos)
 
+    def _attach(self, container: Scope | Loop, sink: _Sink) -> None:
+        if sink.container is None:
+            self.figure._attach_container_callbacks(container)
+        else:
+            container._enter_callback = sink.container._enter_callback
+            container._exit_callback = sink.container._exit_callback
+        sink.add(container)
+
     def _build_scope(
         self, statement: Statement, sink: _Sink, comment: str | None
     ) -> str:
@@ -990,14 +1021,6 @@ class TikzBuilder:
         )
         return "Loop"
 
-    def _attach(self, container: Scope | Loop, sink: _Sink) -> None:
-        if sink.container is None:
-            self.figure._attach_container_callbacks(container)
-        else:
-            container._enter_callback = sink.container._enter_callback
-            container._exit_callback = sink.container._exit_callback
-        sink.add(container)
-
     def _build_pgfonlayer(
         self, statement: Statement, sink: _Sink, comment: str | None
     ) -> str:
@@ -1021,99 +1044,76 @@ class TikzBuilder:
         )
         return "PgfOnLayer"
 
-
-_NODE_RESERVED = frozenset(
-    {"x", "y", "z", "label", "content", "comment", "layer", "options", "kwargs", "self"}
-)
-_PATH_RESERVED = frozenset(
-    {
-        "nodes",
-        "cycle",
-        "label",
-        "comment",
-        "layer",
-        "center",
-        "node_anchors",
-        "segment_options",
-        "options",
-        "tikz_command",
-        "self",
-    }
-)
-_SHAPE_RESERVED = frozenset(
-    {
-        "center",
-        "radius",
-        "corner1",
-        "corner2",
-        "label",
-        "comment",
-        "layer",
-        "options",
-        "tikz_command",
-        "self",
-    }
-)
-_SCOPE_RESERVED = frozenset(
-    {"label", "comment", "layer", "options", "node_resolver", "library_loader", "self"}
-)
-
-
-def _style_definition(option: Option) -> tuple[str, list[str], dict[str, str]] | None:
-    """Return ``(name, flags, kwargs)`` for a ``name/.style={...}`` option."""
-    if option.key is None or not option.key.endswith("/.style"):
-        return None
-    value = (option.value or "").strip()
-    if not (value.startswith("{") and value.endswith("}")):
-        return None
-    name = option.key[: -len("/.style")].strip()
-    if not name or "/" in name:
-        return None
-    inner = parse_options(value[1:-1])
-    flags, kwargs = split_options(inner)
-    rendered = [f"{k.replace('_', ' ')}={v}" for k, v in kwargs.items()]
-    if [normalize_space(x) for x in flags + rendered] != [o.canonical for o in inner]:
-        return None
-    return name, flags, kwargs
-
-
-def _simple_shape(tokens: list[PathToken]) -> tuple[str, list[Coord]] | None:
-    """Detect ``(c) circle (r)`` and ``(a) rectangle (b)`` paths."""
-    if (
-        len(tokens) == 3
-        and tokens[0].kind == "coord"
-        and tokens[2].kind == "coord"
-        and tokens[1].is_word("circle", "rectangle")
-    ):
-        first, second = tokens[0].coord, tokens[2].coord
-        assert first is not None and second is not None
-        if first.kind != "cartesian" or first.prefix or second.prefix:
+    def _handler(self, statement: Statement) -> Callable[..., str] | None:
+        if statement.kind == "environment":
+            return {
+                "scope": self._build_scope,
+                "pgfonlayer": self._build_pgfonlayer,
+            }.get(statement.name)
+        if statement.kind == "foreach":
+            return self._build_foreach
+        if statement.kind != "command":
             return None
-        if tokens[1].text == "rectangle" and second.kind != "cartesian":
-            return None
-        if tokens[1].text == "circle" and second.kind == "cartesian":
-            return None
-        return tokens[1].text, [first, second]
-    return None
+        if statement.name in _DRAW_COMMANDS:
+            return self._build_path
+        return {
+            "node": self._build_node,
+            "coordinate": self._build_coordinate,
+            "pgfmathsetmacro": self._build_variable,
+            "colorlet": self._build_colorlet,
+            "pgfkeys": self._build_function,
+            "tikzset": self._build_tikzset,
+            "pgfdeclarelayer": self._build_layer_declaration,
+            "pgfsetlayers": self._build_layer_order,
+        }.get(statement.name)
 
+    def _record(
+        self,
+        statement: Statement,
+        status: str,
+        object_type: str,
+        reason: str | None = None,
+        detail: str | None = None,
+    ) -> None:
+        self.diagnostics.append(
+            Diagnostic(
+                line=statement.line,
+                statement=statement.label,
+                status=status,
+                object_type=object_type,
+                reason=reason,
+                detail=detail,
+                source=normalize_space(strip_comments(statement.text)),
+            )
+        )
 
-def _mask_comments(text: str) -> str:
-    """Replace comment text with spaces, keeping offsets and newlines."""
-    out = list(text)
-    i = 0
-    while i < len(text):
-        if text[i] == "\\":
-            i += 2
-            continue
-        if text[i] == "%":
-            end = text.find("\n", i)
-            end = len(text) if end == -1 else end
-            for j in range(i, end):
-                out[j] = " "
-            i = end
-            continue
-        i += 1
-    return "".join(out)
+    def _build_statement(
+        self, statement: Statement, sink: _Sink, comments: list[str]
+    ) -> None:
+        handler = self._handler(statement)
+        # Only the comment line touching a statement becomes its comment.
+        leading, comment = (
+            (comments[:-1], comments[-1].strip()) if comments else ([], None)
+        )
+        for extra in leading:
+            sink.add(RawTikz(f"%{extra}"))
+        try:
+            if handler is None:
+                if statement.kind == "environment":
+                    raise Unsupported(f"environment '{statement.name}'")
+                if statement.kind == "command":
+                    raise Unsupported(f"command '\\{statement.name}'")
+                raise Unsupported("unrecognised text")
+            object_type = handler(statement, sink, comment)
+        except Unsupported as exc:
+            self._hoisting = False
+            code = dedent_lines(statement.text)
+            prefix = f"%{comments[-1]}\n" if comments else ""
+            sink.add(RawTikz(prefix + code))
+            self._record(statement, "raw", "RawTikz", exc.reason, exc.detail)
+            return
+        if object_type != "PgfOnLayer":
+            self._record(statement, "mapped", object_type)
 
 
 def load_tikz(figure: TikzFigure, source: str, strict: bool = False) -> ParseResult:

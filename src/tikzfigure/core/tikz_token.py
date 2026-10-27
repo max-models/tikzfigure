@@ -41,12 +41,6 @@ class TikzToken:
         """Return the raw TikZ specification string."""
         return self.spec
 
-    def __str__(self) -> str:
-        return self.spec
-
-    def __repr__(self) -> str:
-        return f"{type(self).__name__}({self.spec!r})"
-
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, type(self)):
             return NotImplemented
@@ -54,3 +48,9 @@ class TikzToken:
 
     def __hash__(self) -> int:
         return hash(self.spec)
+
+    def __repr__(self) -> str:
+        return f"{type(self).__name__}({self.spec!r})"
+
+    def __str__(self) -> str:
+        return self.spec

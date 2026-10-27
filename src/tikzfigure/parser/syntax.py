@@ -59,6 +59,32 @@ def parse_options(inner: str) -> list[Option]:
     return options
 
 
+def unbrace_component(text: str) -> str:
+    """Strip one pair of wrapping braces from a coordinate component."""
+    text = text.strip()
+    if text.startswith("{") and text.endswith("}"):
+        scanner = Scanner(text)
+        try:
+            scanner.read_group("{")
+        except TikzParseError:
+            return text
+        if scanner.eof():
+            return text[1:-1].strip()
+    return text
+
+
+def canonical_component(text: str) -> str:
+    """Canonical form of a coordinate component for equivalence checks.
+
+    Braces are only insignificant when the content has no characters that
+    would otherwise confuse TikZ's coordinate parser.
+    """
+    inner = unbrace_component(text)
+    if inner != text.strip() and _SIMPLE_COMPONENT_CHARS.search(inner):
+        return "{" + normalize_space(inner) + "}"
+    return normalize_space(inner)
+
+
 @dataclass(frozen=True)
 class Coord:
     """A parenthesised TikZ coordinate.
@@ -109,32 +135,6 @@ class Coord:
                 canonical_component(p) for p in self.components
             )
         return self.prefix + self.inner
-
-
-def unbrace_component(text: str) -> str:
-    """Strip one pair of wrapping braces from a coordinate component."""
-    text = text.strip()
-    if text.startswith("{") and text.endswith("}"):
-        scanner = Scanner(text)
-        try:
-            scanner.read_group("{")
-        except TikzParseError:
-            return text
-        if scanner.eof():
-            return text[1:-1].strip()
-    return text
-
-
-def canonical_component(text: str) -> str:
-    """Canonical form of a coordinate component for equivalence checks.
-
-    Braces are only insignificant when the content has no characters that
-    would otherwise confuse TikZ's coordinate parser.
-    """
-    inner = unbrace_component(text)
-    if inner != text.strip() and _SIMPLE_COMPONENT_CHARS.search(inner):
-        return "{" + normalize_space(inner) + "}"
-    return normalize_space(inner)
 
 
 @dataclass(frozen=True)

@@ -223,7 +223,7 @@ class FigureLayoutMixin:
                     assert len(item_data) == 3
                     item = item_data[0]
                     width = item_data[1]
-                    height_str = item_data[2]
+                    height_str = item_data[2]  # noqa: F841 (parsed, not used yet)
 
                 x = x_offsets[col]
                 y = y_offsets[row]

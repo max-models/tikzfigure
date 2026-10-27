@@ -49,12 +49,6 @@ class TikzLibrary:
         """Register this library on *figure*. Safe to call more than once."""
         figure.usetikzlibrary(cls.name)
 
-    def __str__(self) -> str:
-        return self.name
-
-    def __repr__(self) -> str:
-        return f"{type(self).__name__}({self.name!r})"
-
     def __eq__(self, other: object) -> bool:
         if isinstance(other, TikzLibrary):
             return self.name == other.name
@@ -64,6 +58,12 @@ class TikzLibrary:
 
     def __hash__(self) -> int:
         return hash(self.name)
+
+    def __repr__(self) -> str:
+        return f"{type(self).__name__}({self.name!r})"
+
+    def __str__(self) -> str:
+        return self.name
 
 
 class ArrowsMetaLibrary(TikzLibrary):
