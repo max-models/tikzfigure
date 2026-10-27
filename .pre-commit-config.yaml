@@ -4,23 +4,24 @@ repos:
     rev: v6.0.0
     hooks:
       - id: check-yaml
+      - id: check-toml
       - id: end-of-file-fixer
       - id: trailing-whitespace
       - id: check-added-large-files # Prevent giant files from being committed.
         args: [--maxkb=500]
+        exclude: ^(uv\.lock|docs/package-lock\.json)$ # generated lock files
       - id: check-merge-conflict # Check for files that contain merge conflict strings.
   - repo: https://github.com/kynan/nbstripout
     rev: 0.9.1
     hooks:
-      - id: nbstripout # strip jupyter noteook output
-  - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.15.13
+      - id: nbstripout # strip jupyter notebook output
+  - repo: https://github.com/bwhmather/ssort
+    rev: 0.17.0
     hooks:
-      - id: ruff
-        args: [--fix, --select, I]
+      - id: ssort # order statements so names are defined before they are used
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.17.3
+    hooks:
+      - id: ruff-check # lint, including import sorting (the I rules)
+        args: [--fix]
       - id: ruff-format
-  #- repo: https://github.com/jolars/panache
-  #  rev: v2.16.0 # Use the latest version
-  #  hooks:
-  #    - id: panache-format # Format files
-  #    - id: panache-lint # Lint and auto-fix issues

@@ -20,6 +20,11 @@ class DeclaredFunction(TikzObject):
     building expressions.
     """
 
+    @staticmethod
+    def _normalize_args(args: str | Sequence[str]) -> list[str]:
+        raw_args = [args] if isinstance(args, str) else list(args)
+        return [arg.removeprefix("\\") for arg in raw_args]
+
     def __init__(
         self,
         name: str,
@@ -41,11 +46,6 @@ class DeclaredFunction(TikzObject):
         self._args = self._normalize_args(args)
         self._body = str(body)
 
-    @staticmethod
-    def _normalize_args(args: str | Sequence[str]) -> list[str]:
-        raw_args = [args] if isinstance(args, str) else list(args)
-        return [arg.removeprefix("\\") for arg in raw_args]
-
     @property
     def name(self) -> str:
         """Declared function name."""
@@ -60,22 +60,6 @@ class DeclaredFunction(TikzObject):
     def body(self) -> str:
         """PGF expression used as the function body."""
         return self._body
-
-    def __call__(self, *args: Any) -> Expr:
-        """Build an expression calling this declared function.
-
-        Raises:
-            ValueError: If the number of supplied arguments does not match the
-                declared function signature.
-        """
-        from tikzfigure.math import Expr
-
-        if len(args) != len(self._args):
-            raise ValueError(
-                f"{self._name} expects {len(self._args)} argument(s), got {len(args)}."
-            )
-        rendered_args = [arg.pgf if isinstance(arg, Expr) else str(arg) for arg in args]
-        return Expr(f"{self._name}({', '.join(rendered_args)})")
 
     def render_declaration(self) -> str:
         """Render the inner declaration used by PGF's ``declare function`` key."""
@@ -125,3 +109,19 @@ class DeclaredFunction(TikzObject):
             body=restored.get("body", ""),
             comment=restored.get("comment"),
         )
+
+    def __call__(self, *args: Any) -> Expr:
+        """Build an expression calling this declared function.
+
+        Raises:
+            ValueError: If the number of supplied arguments does not match the
+                declared function signature.
+        """
+        from tikzfigure.math import Expr
+
+        if len(args) != len(self._args):
+            raise ValueError(
+                f"{self._name} expects {len(self._args)} argument(s), got {len(args)}."
+            )
+        rendered_args = [arg.pgf if isinstance(arg, Expr) else str(arg) for arg in args]
+        return Expr(f"{self._name}({', '.join(rendered_args)})")

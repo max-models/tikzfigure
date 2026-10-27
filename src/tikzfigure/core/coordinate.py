@@ -19,6 +19,275 @@ CoordinateTuple2D: TypeAlias = tuple[CoordinateValue, CoordinateValue]
 CoordinateTuple3D: TypeAlias = tuple[CoordinateValue, CoordinateValue, CoordinateValue]
 
 
+class TikzCoordinate(TikzObject):
+    """A bare coordinate point (no drawn node) in a TikZ figure.
+
+    Used to define path waypoints without producing visible nodes.
+
+    Attributes:
+        x: X-coordinate value (numeric or PGF expression string).
+        y: Y-coordinate value (numeric or PGF expression string).
+        z: Z-coordinate value, or ``None`` for 2-D figures.
+        ndim: Number of dimensions (``2`` or ``3``).
+        coordinate: Coordinate as a tuple ready for TikZ output.
+    """
+
+    @staticmethod
+    def _normalize_coordinate_values(
+        x: CoordinateValue | CoordinateTuple2D | CoordinateTuple3D | TikzCoordinate,
+        y: CoordinateValue | None = None,
+        z: CoordinateValue | None = None,
+    ) -> tuple[CoordinateValue, CoordinateValue, CoordinateValue | None]:
+        """Normalize scalar, tuple, and TikzCoordinate inputs."""
+        if isinstance(x, TikzCoordinate):
+            if y is not None or z is not None:
+                raise ValueError("When x is a TikzCoordinate, do not also pass y or z.")
+            return x.x, x.y, x.z
+
+        if isinstance(x, tuple):
+            if y is not None or z is not None:
+                raise ValueError(
+                    "When x is a coordinate tuple, do not also pass y or z."
+                )
+            if len(x) == 2:
+                return x[0], x[1], None
+            if len(x) == 3:
+                return x[0], x[1], x[2]
+            raise ValueError(
+                "Coordinate tuples passed to TikzCoordinate must have length 2 or 3."
+            )
+
+        if y is None:
+            raise ValueError(
+                "Provide both x and y coordinates, or pass a coordinate tuple/TikzCoordinate."
+            )
+        return x, y, z
+
+    def __init__(
+        self,
+        x: CoordinateValue | CoordinateTuple2D | CoordinateTuple3D | TikzCoordinate,
+        y: CoordinateValue | None = None,
+        z: CoordinateValue | None = None,
+        layer: int = 0,
+    ) -> None:
+        """Initialize a TikzCoordinate.
+
+        Args:
+            x: X-coordinate value, a ``(x, y)`` / ``(x, y, z)`` tuple, or an
+                existing :class:`TikzCoordinate`.
+            y: Y-coordinate value when passing explicit scalar coordinates.
+            z: Z-coordinate value when passing explicit scalar coordinates.
+                When provided, the coordinate is treated as 3-D. Defaults to
+                ``None`` (2-D).
+            layer: Layer index this coordinate belongs to. Defaults to ``0``.
+        """
+        super().__init__(layer=layer)
+        self._x, self._y, self._z = self._normalize_coordinate_values(x=x, y=y, z=z)
+        self._ndim = 2 if self._z is None else 3
+
+    @property
+    def x(self) -> CoordinateValue:
+        """X-coordinate value (numeric or PGF expression string)."""
+        return self._x
+
+    @property
+    def y(self) -> CoordinateValue:
+        """Y-coordinate value (numeric or PGF expression string)."""
+        return self._y
+
+    @property
+    def z(self) -> CoordinateValue | None:
+        """Z-coordinate value (numeric or PGF expression string), or ``None`` for 2-D coordinates."""
+        return self._z
+
+    @property
+    def coordinate(self) -> tuple[CoordinateValue, ...]:
+        """Coordinate as a tuple, either ``(x, y)`` or ``(x, y, z)``."""
+        if self.ndim == 2:
+            return ((self.x), self.y)
+        else:
+            return (self.x, self.y, self.z)  # type: ignore[return-value]
+
+    @property
+    def ndim(self) -> int:
+        """Number of spatial dimensions (``2`` or ``3``)."""
+        return self._ndim
+
+    @staticmethod
+    def _format_component(
+        value: CoordinateValue, output_unit: str | None = None
+    ) -> str:
+        """Format one coordinate component for TikZ output."""
+        from tikzfigure.units import TikzDimension
+
+        if isinstance(value, TikzDimension):
+            return str(value.to(output_unit)) if output_unit is not None else str(value)
+        value_str = str(value)
+        if (
+            value_str.startswith("(")
+            and value_str.endswith(")")
+            and not value_str.startswith("((")
+        ):
+            value_str = value_str[1:-1]
+        return value_str
+
+    def _numeric_components(self, operation: str) -> tuple[float, ...]:
+        """Return numeric components for linear algebra operations."""
+        numeric_components: list[float] = []
+        for value in self.coordinate:
+            try:
+                numeric_components.append(float(value))
+            except (TypeError, ValueError) as exc:
+                raise TypeError(
+                    f"{self.__class__.__name__} {operation} requires numeric coordinates, got {value!r}."
+                ) from exc
+        return tuple(numeric_components)
+
+    def _validate_same_dimension(
+        self, other: TikzCoordinate | TikzVector, operation: str
+    ) -> None:
+        """Ensure both operands share the same dimension."""
+        if self.ndim != other.ndim:
+            raise ValueError(
+                f"Cannot {operation} operands with different dimensions: {self.ndim}D and {other.ndim}D."
+            )
+
+    def _coordinate_from_numeric_components(
+        self, components: tuple[float, ...]
+    ) -> TikzCoordinate:
+        """Build a point from numeric components while preserving dimension."""
+        if len(components) == 2:
+            return TikzCoordinate(components[0], components[1], layer=self.layer or 0)
+        if len(components) == 3:
+            return TikzCoordinate(
+                components[0],
+                components[1],
+                components[2],
+                layer=self.layer or 0,
+            )
+        raise ValueError("Coordinates must be 2-D or 3-D.")
+
+    def _vector_from_numeric_components(
+        self, components: tuple[float, ...]
+    ) -> TikzVector:
+        """Build a vector from numeric components while preserving dimension."""
+        if len(components) == 2:
+            return TikzVector(components[0], components[1], layer=self.layer or 0)
+        if len(components) == 3:
+            return TikzVector(
+                components[0],
+                components[1],
+                components[2],
+                layer=self.layer or 0,
+            )
+        raise ValueError("Vectors must be 2-D or 3-D.")
+
+    def to_vector(self) -> TikzVector:
+        """Interpret this point as a vector from the origin."""
+        return TikzVector(self, layer=self.layer or 0)
+
+    def vector_to(self, other: TikzCoordinate) -> TikzVector:
+        """Return the vector from this point to another point."""
+        self._validate_same_dimension(other, "subtract")
+        point_a = self._numeric_components("subtraction")
+        point_b = other._numeric_components("subtraction")
+        return self._vector_from_numeric_components(
+            tuple(b - a for a, b in zip(point_a, point_b, strict=True))
+        )
+
+    def distance_to(self, other: TikzCoordinate) -> float:
+        """Return the Euclidean distance to another point."""
+        return self.vector_to(other).norm()
+
+    def translate(self, vector: TikzVector) -> TikzCoordinate:
+        """Return the translated point."""
+        return self + vector
+
+    def to_tikz(self, output_unit: str | None = None) -> str:
+        """Render this coordinate as a TikZ position expression."""
+        # 2-D coordinate: render as (x, y)
+        x_str = self._format_component(self.x, output_unit)
+        y_str = self._format_component(self.y, output_unit)
+        if self.ndim == 2:
+            return f"({{{x_str}}}, {{{y_str}}})"
+
+        # 3-D coordinate: use axis cs for proper layering in 3D plots
+        assert self.z is not None
+        z_str = self._format_component(self.z, output_unit)
+        return f"(axis cs:{{{x_str}}}, {{{y_str}}}, {{{z_str}}})"
+
+    def to_dict(self) -> dict[str, Any]:
+        """Serialize this coordinate to a plain dictionary.
+
+        Returns:
+            A dictionary with ``type``, ``x``, ``y``, ``z``, and ``layer``
+            keys.
+        """
+        serialized = serialize_tikz_value(
+            {
+                "type": "TikzCoordinate",
+                "x": self._x,
+                "y": self._y,
+                "z": self._z,
+                "layer": self._layer,
+            }
+        )
+        if not isinstance(serialized, dict):
+            raise TypeError("Serialized TikzCoordinate data must remain a dict.")
+        return serialized
+
+    @classmethod
+    def from_dict(cls, d: dict[str, Any]) -> TikzCoordinate:
+        """Reconstruct a TikzCoordinate from a dictionary.
+
+        Args:
+            d: Dictionary as produced by :meth:`to_dict`.
+
+        Returns:
+            A new :class:`TikzCoordinate` instance.
+        """
+        restored = deserialize_tikz_value(d)
+        if not isinstance(restored, dict):
+            raise TypeError(
+                "Serialized TikzCoordinate data must deserialize to a dict."
+            )
+        return cls(
+            x=restored["x"],
+            y=restored["y"],
+            z=restored.get("z"),
+            layer=restored.get("layer", 0),
+        )
+
+    def __add__(self, other: TikzVector) -> TikzCoordinate:
+        if not isinstance(other, TikzVector):
+            return NotImplemented
+        self._validate_same_dimension(other, "add")
+        point = self._numeric_components("addition")
+        vector = other._numeric_components("addition")
+        return self._coordinate_from_numeric_components(
+            tuple(a + b for a, b in zip(point, vector, strict=True))
+        )
+
+    def __sub__(
+        self, other: TikzCoordinate | TikzVector
+    ) -> TikzCoordinate | TikzVector:
+        if isinstance(other, TikzVector):
+            self._validate_same_dimension(other, "subtract")
+            point = self._numeric_components("subtraction")
+            vector = other._numeric_components("subtraction")
+            return self._coordinate_from_numeric_components(
+                tuple(a - b for a, b in zip(point, vector, strict=True))
+            )
+        if isinstance(other, TikzCoordinate):
+            self._validate_same_dimension(other, "subtract")
+            point_a = self._numeric_components("subtraction")
+            point_b = other._numeric_components("subtraction")
+            return self._vector_from_numeric_components(
+                tuple(a - b for a, b in zip(point_a, point_b, strict=True))
+            )
+        return NotImplemented
+
+
 class Coordinate(TikzObject):
     """A named TikZ coordinate declared with ``\\coordinate``.
 
@@ -226,275 +495,6 @@ class Coordinate(TikzObject):
         )
 
 
-class TikzCoordinate(TikzObject):
-    """A bare coordinate point (no drawn node) in a TikZ figure.
-
-    Used to define path waypoints without producing visible nodes.
-
-    Attributes:
-        x: X-coordinate value (numeric or PGF expression string).
-        y: Y-coordinate value (numeric or PGF expression string).
-        z: Z-coordinate value, or ``None`` for 2-D figures.
-        ndim: Number of dimensions (``2`` or ``3``).
-        coordinate: Coordinate as a tuple ready for TikZ output.
-    """
-
-    def __init__(
-        self,
-        x: CoordinateValue | CoordinateTuple2D | CoordinateTuple3D | TikzCoordinate,
-        y: CoordinateValue | None = None,
-        z: CoordinateValue | None = None,
-        layer: int = 0,
-    ) -> None:
-        """Initialize a TikzCoordinate.
-
-        Args:
-            x: X-coordinate value, a ``(x, y)`` / ``(x, y, z)`` tuple, or an
-                existing :class:`TikzCoordinate`.
-            y: Y-coordinate value when passing explicit scalar coordinates.
-            z: Z-coordinate value when passing explicit scalar coordinates.
-                When provided, the coordinate is treated as 3-D. Defaults to
-                ``None`` (2-D).
-            layer: Layer index this coordinate belongs to. Defaults to ``0``.
-        """
-        super().__init__(layer=layer)
-        self._x, self._y, self._z = self._normalize_coordinate_values(x=x, y=y, z=z)
-        self._ndim = 2 if self._z is None else 3
-
-    @staticmethod
-    def _normalize_coordinate_values(
-        x: CoordinateValue | CoordinateTuple2D | CoordinateTuple3D | TikzCoordinate,
-        y: CoordinateValue | None = None,
-        z: CoordinateValue | None = None,
-    ) -> tuple[CoordinateValue, CoordinateValue, CoordinateValue | None]:
-        """Normalize scalar, tuple, and TikzCoordinate inputs."""
-        if isinstance(x, TikzCoordinate):
-            if y is not None or z is not None:
-                raise ValueError("When x is a TikzCoordinate, do not also pass y or z.")
-            return x.x, x.y, x.z
-
-        if isinstance(x, tuple):
-            if y is not None or z is not None:
-                raise ValueError(
-                    "When x is a coordinate tuple, do not also pass y or z."
-                )
-            if len(x) == 2:
-                return x[0], x[1], None
-            if len(x) == 3:
-                return x[0], x[1], x[2]
-            raise ValueError(
-                "Coordinate tuples passed to TikzCoordinate must have length 2 or 3."
-            )
-
-        if y is None:
-            raise ValueError(
-                "Provide both x and y coordinates, or pass a coordinate tuple/TikzCoordinate."
-            )
-        return x, y, z
-
-    @property
-    def x(self) -> CoordinateValue:
-        """X-coordinate value (numeric or PGF expression string)."""
-        return self._x
-
-    @property
-    def y(self) -> CoordinateValue:
-        """Y-coordinate value (numeric or PGF expression string)."""
-        return self._y
-
-    @property
-    def z(self) -> CoordinateValue | None:
-        """Z-coordinate value (numeric or PGF expression string), or ``None`` for 2-D coordinates."""
-        return self._z
-
-    @property
-    def coordinate(self) -> tuple[CoordinateValue, ...]:
-        """Coordinate as a tuple, either ``(x, y)`` or ``(x, y, z)``."""
-        if self.ndim == 2:
-            return ((self.x), self.y)
-        else:
-            return (self.x, self.y, self.z)  # type: ignore[return-value]
-
-    @property
-    def ndim(self) -> int:
-        """Number of spatial dimensions (``2`` or ``3``)."""
-        return self._ndim
-
-    @staticmethod
-    def _format_component(
-        value: CoordinateValue, output_unit: str | None = None
-    ) -> str:
-        """Format one coordinate component for TikZ output."""
-        from tikzfigure.units import TikzDimension
-
-        if isinstance(value, TikzDimension):
-            return str(value.to(output_unit)) if output_unit is not None else str(value)
-        value_str = str(value)
-        if (
-            value_str.startswith("(")
-            and value_str.endswith(")")
-            and not value_str.startswith("((")
-        ):
-            value_str = value_str[1:-1]
-        return value_str
-
-    def _numeric_components(self, operation: str) -> tuple[float, ...]:
-        """Return numeric components for linear algebra operations."""
-        numeric_components: list[float] = []
-        for value in self.coordinate:
-            try:
-                numeric_components.append(float(value))
-            except (TypeError, ValueError) as exc:
-                raise TypeError(
-                    f"{self.__class__.__name__} {operation} requires numeric coordinates, got {value!r}."
-                ) from exc
-        return tuple(numeric_components)
-
-    def _validate_same_dimension(
-        self, other: TikzCoordinate | TikzVector, operation: str
-    ) -> None:
-        """Ensure both operands share the same dimension."""
-        if self.ndim != other.ndim:
-            raise ValueError(
-                f"Cannot {operation} operands with different dimensions: {self.ndim}D and {other.ndim}D."
-            )
-
-    def _coordinate_from_numeric_components(
-        self, components: tuple[float, ...]
-    ) -> TikzCoordinate:
-        """Build a point from numeric components while preserving dimension."""
-        if len(components) == 2:
-            return TikzCoordinate(components[0], components[1], layer=self.layer or 0)
-        if len(components) == 3:
-            return TikzCoordinate(
-                components[0],
-                components[1],
-                components[2],
-                layer=self.layer or 0,
-            )
-        raise ValueError("Coordinates must be 2-D or 3-D.")
-
-    def _vector_from_numeric_components(
-        self, components: tuple[float, ...]
-    ) -> TikzVector:
-        """Build a vector from numeric components while preserving dimension."""
-        if len(components) == 2:
-            return TikzVector(components[0], components[1], layer=self.layer or 0)
-        if len(components) == 3:
-            return TikzVector(
-                components[0],
-                components[1],
-                components[2],
-                layer=self.layer or 0,
-            )
-        raise ValueError("Vectors must be 2-D or 3-D.")
-
-    def to_vector(self) -> TikzVector:
-        """Interpret this point as a vector from the origin."""
-        return TikzVector(self, layer=self.layer or 0)
-
-    def vector_to(self, other: TikzCoordinate) -> TikzVector:
-        """Return the vector from this point to another point."""
-        self._validate_same_dimension(other, "subtract")
-        point_a = self._numeric_components("subtraction")
-        point_b = other._numeric_components("subtraction")
-        return self._vector_from_numeric_components(
-            tuple(b - a for a, b in zip(point_a, point_b, strict=True))
-        )
-
-    def distance_to(self, other: TikzCoordinate) -> float:
-        """Return the Euclidean distance to another point."""
-        return self.vector_to(other).norm()
-
-    def translate(self, vector: TikzVector) -> TikzCoordinate:
-        """Return the translated point."""
-        return self + vector
-
-    def __add__(self, other: TikzVector) -> TikzCoordinate:
-        if not isinstance(other, TikzVector):
-            return NotImplemented
-        self._validate_same_dimension(other, "add")
-        point = self._numeric_components("addition")
-        vector = other._numeric_components("addition")
-        return self._coordinate_from_numeric_components(
-            tuple(a + b for a, b in zip(point, vector, strict=True))
-        )
-
-    def __sub__(
-        self, other: TikzCoordinate | TikzVector
-    ) -> TikzCoordinate | TikzVector:
-        if isinstance(other, TikzVector):
-            self._validate_same_dimension(other, "subtract")
-            point = self._numeric_components("subtraction")
-            vector = other._numeric_components("subtraction")
-            return self._coordinate_from_numeric_components(
-                tuple(a - b for a, b in zip(point, vector, strict=True))
-            )
-        if isinstance(other, TikzCoordinate):
-            self._validate_same_dimension(other, "subtract")
-            point_a = self._numeric_components("subtraction")
-            point_b = other._numeric_components("subtraction")
-            return self._vector_from_numeric_components(
-                tuple(a - b for a, b in zip(point_a, point_b, strict=True))
-            )
-        return NotImplemented
-
-    def to_tikz(self, output_unit: str | None = None) -> str:
-        """Render this coordinate as a TikZ position expression."""
-        # 2-D coordinate: render as (x, y)
-        x_str = self._format_component(self.x, output_unit)
-        y_str = self._format_component(self.y, output_unit)
-        if self.ndim == 2:
-            return f"({{{x_str}}}, {{{y_str}}})"
-
-        # 3-D coordinate: use axis cs for proper layering in 3D plots
-        assert self.z is not None
-        z_str = self._format_component(self.z, output_unit)
-        return f"(axis cs:{{{x_str}}}, {{{y_str}}}, {{{z_str}}})"
-
-    def to_dict(self) -> dict[str, Any]:
-        """Serialize this coordinate to a plain dictionary.
-
-        Returns:
-            A dictionary with ``type``, ``x``, ``y``, ``z``, and ``layer``
-            keys.
-        """
-        serialized = serialize_tikz_value(
-            {
-                "type": "TikzCoordinate",
-                "x": self._x,
-                "y": self._y,
-                "z": self._z,
-                "layer": self._layer,
-            }
-        )
-        if not isinstance(serialized, dict):
-            raise TypeError("Serialized TikzCoordinate data must remain a dict.")
-        return serialized
-
-    @classmethod
-    def from_dict(cls, d: dict[str, Any]) -> TikzCoordinate:
-        """Reconstruct a TikzCoordinate from a dictionary.
-
-        Args:
-            d: Dictionary as produced by :meth:`to_dict`.
-
-        Returns:
-            A new :class:`TikzCoordinate` instance.
-        """
-        restored = deserialize_tikz_value(d)
-        if not isinstance(restored, dict):
-            raise TypeError(
-                "Serialized TikzCoordinate data must deserialize to a dict."
-            )
-        return cls(
-            x=restored["x"],
-            y=restored["y"],
-            z=restored.get("z"),
-            layer=restored.get("layer", 0),
-        )
-
-
 class TikzVector(TikzCoordinate):
     """A geometric vector used for linear algebra operations."""
 
@@ -541,6 +541,25 @@ class TikzVector(TikzCoordinate):
     def magnitude(self) -> float:
         """Return the Euclidean norm."""
         return self.norm()
+
+    def to_dict(self) -> dict[str, Any]:
+        """Serialize this vector to a plain dictionary."""
+        d = super().to_dict()
+        d["type"] = "TikzVector"
+        return d
+
+    @classmethod
+    def from_dict(cls, d: dict[str, Any]) -> TikzVector:
+        """Reconstruct a TikzVector from a dictionary."""
+        restored = deserialize_tikz_value(d)
+        if not isinstance(restored, dict):
+            raise TypeError("Serialized TikzVector data must deserialize to a dict.")
+        return cls(
+            x=restored["x"],
+            y=restored["y"],
+            z=restored.get("z"),
+            layer=restored.get("layer", 0),
+        )
 
     def __add__(self, other: TikzVector) -> TikzVector:
         if not isinstance(other, TikzVector):
@@ -601,25 +620,6 @@ class TikzVector(TikzCoordinate):
 
     def __neg__(self) -> TikzVector:
         return -1 * self
-
-    def to_dict(self) -> dict[str, Any]:
-        """Serialize this vector to a plain dictionary."""
-        d = super().to_dict()
-        d["type"] = "TikzVector"
-        return d
-
-    @classmethod
-    def from_dict(cls, d: dict[str, Any]) -> TikzVector:
-        """Reconstruct a TikzVector from a dictionary."""
-        restored = deserialize_tikz_value(d)
-        if not isinstance(restored, dict):
-            raise TypeError("Serialized TikzVector data must deserialize to a dict.")
-        return cls(
-            x=restored["x"],
-            y=restored["y"],
-            z=restored.get("z"),
-            layer=restored.get("layer", 0),
-        )
 
 
 PositionInput: TypeAlias = CoordinateTuple2D | CoordinateTuple3D | TikzCoordinate

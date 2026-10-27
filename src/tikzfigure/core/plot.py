@@ -244,6 +244,16 @@ class TikzPlot(TikzObject):
     ``\\addplot`` commands inside an ``axis`` environment.
     """
 
+    @staticmethod
+    def _normalize_variable(variable: str) -> str:
+        return variable if variable.startswith("\\") else f"\\{variable}"
+
+    @staticmethod
+    def _normalize_domain(domain: tuple[Any, Any] | str) -> str:
+        if isinstance(domain, str):
+            return domain
+        return f"{domain[0]}:{domain[1]}"
+
     def __init__(
         self,
         x: Any,
@@ -300,16 +310,6 @@ class TikzPlot(TikzObject):
         self._x = str(x)
         self._y = None if y is None else str(y)
         self._tikz_command = tikz_command
-
-    @staticmethod
-    def _normalize_variable(variable: str) -> str:
-        return variable if variable.startswith("\\") else f"\\{variable}"
-
-    @staticmethod
-    def _normalize_domain(domain: tuple[Any, Any] | str) -> str:
-        if isinstance(domain, str):
-            return domain
-        return f"{domain[0]}:{domain[1]}"
 
     @property
     def x(self) -> str:

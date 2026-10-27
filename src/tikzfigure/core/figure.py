@@ -128,590 +128,45 @@ class TikzFigure(
         extra_packages: Extra LaTeX packages to include in the preamble.
     """
 
-    # ------------------------------------------------------------- #
-    # Private methods
+    def add_gantt_chart(
+        self,
+        start: int | str,
+        end: int | str,
+        rows: list[dict[str, Any]] | tuple[dict[str, Any], ...] = (),
+        layer: int = 0,
+        comment: str | None = None,
+        options: OptionInput | None = None,
+        verbose: bool = False,
+        **kwargs: Any,
+    ) -> GanttChart:
+        """Add a chart rendered by LaTeX's ``pgfgantt`` package.
 
-    @staticmethod
-    def _coerce_path_input(
-        nodes: list[Any] | NodePathBuilder,
-        segment_options: list[SegmentOption] | None = None,
-    ) -> tuple[list[Any], list[SegmentOption] | None]:
-        """Normalize draw/filldraw path input to nodes + segment options."""
-        if isinstance(nodes, NodePathBuilder):
-            if segment_options is not None:
-                raise ValueError(
-                    "segment_options cannot be passed to draw()/filldraw() "
-                    "when using a NodePathBuilder."
-                )
-            return nodes.nodes, nodes.segment_options
-        return nodes, segment_options
+        Each row is a dictionary with ``type`` set to ``title``,
+        ``titlelist``, ``group``, ``bar``, ``milestone``, ``link``, or
+        ``raw``. For example: ``{"type": "bar", "content": "Build",
+        "start": 1, "end": 3}``.
+        """
+        self.add_package("pgfgantt")
+        chart = GanttChart(
+            start=start,
+            end=end,
+            rows=rows,
+            comment=comment,
+            layer=layer,
+            options=options,
+            **kwargs,
+        )
+        self.layers.add_item(item=chart, layer=layer, verbose=verbose)
+        return chart
 
-    @staticmethod
-    def _env_requests_web_compilation() -> bool:
-        """Return True when the environment forces web compilation."""
-        value = os.environ.get(WEB_COMPILATION_ENV_VAR)
-        if value is None:
-            return False
-        return value.strip().lower() in {"1", "true", "yes", "on"}
-
-    def _resolve_use_web_compilation(self, use_web_compilation: bool) -> bool:
-        """Resolve the effective web compilation setting."""
-        return use_web_compilation or self._env_requests_web_compilation()
+    add_gantt = add_gantt_chart
+    gantt = add_gantt_chart
+    gantt_chart = add_gantt_chart
 
     def _current_container(self) -> Loop | Scope | None:
         if not self._active_container_stack:
             return None
         return self._active_container_stack[-1]
-
-    def _enter_container(self, container: Loop | Scope) -> None:
-        self._active_container_stack.append(container)
-
-    def _exit_container(self, container: Loop | Scope) -> None:
-        if (
-            not self._active_container_stack
-            or self._active_container_stack[-1] is not container
-        ):
-            raise RuntimeError("Active TikZ container stack is out of sync.")
-        self._active_container_stack.pop()
-
-    def _attach_container_callbacks(self, container: Loop | Scope) -> None:
-        container._enter_callback = self._enter_container
-        container._exit_callback = self._exit_container
-
-    def _add_path(
-        self,
-        nodes: list[Any],
-        layer: int = 0,
-        comment: str | None = None,
-        center: bool = False,
-        tikz_command: str = "draw",
-        verbose: bool = False,
-        options: OptionInput | None = None,
-        cycle: bool = False,
-        segment_options: list[SegmentOption] | None = None,
-        **kwargs: Any,
-    ) -> TikzPath:
-        """Internal helper that creates and registers a :class:`TikzPath`.
-
-        Resolves node labels to :class:`Node` objects and coordinate tuples
-        to :class:`TikzCoordinate` objects before constructing the path.
-
-        Node label strings may include an anchor suffix using TikZ dot
-        notation (e.g. ``"n1.center"`` or ``"n1.north"``).  The suffix is
-        resolved by first trying the full string as a node label, and
-        falling back to splitting at the last ``.`` if no exact match is
-        found.
-
-        Args:
-            nodes: Items to connect. Each element may be a :class:`Node`,
-                :class:`Coordinate`, a node label string (optionally with a
-                ``.anchor`` suffix), or an ``(x, y)`` / ``(x, y, z)``
-                coordinate tuple.
-            layer: Target layer index. Defaults to ``0``.
-            comment: Optional comment prepended in the TikZ output.
-            center: If ``True``, connect all nodes through ``.center``
-                anchors (overridden per-node by dot-notation in *nodes*).
-            tikz_command: TikZ drawing command (``"draw"`` or
-                ``"filldraw"``). Defaults to ``"draw"``.
-            verbose: If ``True``, print the resolved node list.
-            options: Flag-style TikZ options (string or list).
-            cycle: If ``True``, close the path with ``-- cycle``.
-            segment_options: Per-segment TikZ options for each ``to``
-                connector.  At most ``len(nodes) - 1`` entries.  Each
-                entry is ``None`` (plain ``to``), a raw options string, or
-                a dict (see :class:`TikzPath` for the dict format).
-            **kwargs: Keyword-style TikZ path options.
-
-        Returns:
-            The newly created :class:`TikzPath`.
-
-        Raises:
-            ValueError: If *nodes* is not a list.
-            NotImplementedError: If an element of *nodes* has an
-                unrecognised type.
-        """
-        active_container = self._current_container()
-        if active_container is not None:
-            return active_container._add_path(
-                nodes=nodes,
-                layer=layer,
-                comment=comment,
-                center=center,
-                tikz_command=tikz_command,
-                verbose=verbose,
-                options=options,
-                cycle=cycle,
-                segment_options=segment_options,
-                **kwargs,
-            )
-
-        if not isinstance(nodes, list):
-            raise ValueError("nodes parameter must be a list of node names.")
-
-        nodes_cleaned: list[Node | Coordinate | TikzCoordinate] = []
-        node_anchors: list[str | None] = []
-
-        for node in nodes:
-            if isinstance(node, (Node, Coordinate)):
-                nodes_cleaned.append(node)
-                node_anchors.append(None)
-            elif isinstance(node, str):
-                # Try exact label first; if not found and the string
-                # contains a dot, split into label + anchor.
-                try:
-                    nodes_cleaned.append(self.layers.get_node(node))
-                    node_anchors.append(None)
-                except ValueError:
-                    if "." in node:
-                        label_part, anchor_part = node.rsplit(".", 1)
-                        nodes_cleaned.append(self.layers.get_node(label_part))
-                        node_anchors.append(anchor_part)
-                    else:
-                        raise
-            elif isinstance(node, tuple) or isinstance(node, list):
-                coords = tuple(node)
-                nodes_cleaned.append(TikzCoordinate(*coords, layer=layer))  # type: ignore[misc]
-                node_anchors.append(None)
-            else:
-                raise NotImplementedError(
-                    f"{node =}, {type(node) =} is not a valid node type!",
-                )
-
-        if verbose:
-            print(f"Creating a path with the following nodes {nodes_cleaned}")
-
-        options = normalize_options(options)
-
-        resolved_anchors = (
-            node_anchors if any(a is not None for a in node_anchors) else None
-        )
-
-        path = TikzPath(
-            nodes=nodes_cleaned,
-            comment=comment,
-            center=center,
-            node_anchors=resolved_anchors,
-            segment_options=segment_options,
-            tikz_command=tikz_command,
-            options=options,
-            cycle=cycle,
-            **kwargs,
-        )
-        self.layers.add_item(item=path, layer=layer, verbose=verbose)
-        return path
-
-    def __init__(
-        self,
-        ndim: int = 2,
-        label: str | None = None,
-        grid: bool = False,
-        tikz_code: str | None = None,
-        extra_packages: list | None = None,
-        document_setup: str | None = None,
-        figure_setup: str | None = None,
-        figsize: tuple[float, float] = (10, 6),
-        description: str | None = None,
-        show_axes: bool = False,
-        rows: int | None = None,
-        cols: int | None = None,
-    ) -> None:
-        """Initialize a TikzFigure.
-
-        Args:
-            ndim: Number of spatial dimensions. Use ``2`` for standard
-                figures and ``3`` for pgfplots 3-D axis figures.
-                Defaults to ``2``.
-            label: LaTeX ``\\label`` for the surrounding ``figure``
-                environment. When set, the figure is wrapped in a
-                ``figure`` environment.
-            grid: If ``True``, draw a background grid. Defaults to
-                ``False``.
-            tikz_code: Existing TikZ code to parse and import. When
-                provided, nodes and paths are reconstructed from the
-                source. Defaults to ``None``.
-            extra_packages: Additional LaTeX packages to include in the
-                standalone preamble (e.g. ``["amsmath"]``).
-            document_setup: Raw LaTeX to insert in the preamble after
-                the standard packages.
-            figure_setup: TikZ options string placed inside the opening
-                ``\\begin{tikzpicture}[…]`` bracket.
-            figsize: ``(width, height)`` in centimetres used as a hint
-                for display backends. Defaults to ``(10, 6)``.
-            description: Long description stored for documentation
-                purposes (not emitted in TikZ output).
-            show_axes: For 3-D figures, if ``True`` render the pgfplots
-                axis lines and labels. Defaults to ``False``.
-            rows: Number of rows in subfigure grid. Must be specified with cols.
-                Defaults to None (no grid).
-            cols: Number of columns in subfigure grid. Must be specified with rows.
-                Defaults to None (no grid).
-        """
-
-        self._figsize: tuple[float, float] = figsize
-        self._description: str | None = description
-        self._label: str | None = label
-        self._grid: bool = grid
-        self._show_axes: bool = show_axes
-        self._tikz_code: str | None = tikz_code
-        self._figure_setup: str | None = figure_setup
-        self._extra_packages: list[str] | None = (
-            list(extra_packages) if extra_packages else None
-        )
-        self._tikz_libraries: list[str] = []
-        self._named_styles: list[dict[str, Any]] = []
-        self._document_setup: str | None = document_setup
-        # Initialize lists to hold Node and Path objects
-        # TODO: nodes, paths, layers should have @property and @setter methods
-        self._layers: LayerCollection = LayerCollection()
-        self._variables: list[Variable] = []
-        self._declared_functions: list[DeclaredFunction] = []
-        self._colors: list[tuple[str, Color]] = []
-        self._ndim: int = ndim
-        self._axes: list[Axis2D] = []
-        # Subfigure axes with metadata (axis, width)
-        self._subfigure_axes: list[tuple[Axis2D, float]] = []
-        self._active_container_stack: list[Loop | Scope] = []
-
-        # Grid layout parameters
-        self._subfigure_rows: int | None = rows
-        self._subfigure_cols: int | None = cols
-        # Grid stores either an axis cell or a bare subfigure cell.
-        self._subfigure_grid: dict[
-            tuple[int, int],
-            tuple[Axis2D, float] | tuple[TikzFigure, float, str],
-        ] = {}
-        self._is_bare_subfigure: bool = False
-        self._subfigure_position: int = 0
-
-        # Validate grid parameters
-        if (rows is None) != (cols is None):
-            raise ValueError("Both rows and cols must be specified together")
-        if rows is not None:
-            # At this point, we know cols is also not None (from the check above)
-            assert cols is not None  # Help mypy with type narrowing
-            if rows < 1 or cols < 1:
-                raise ValueError(
-                    f"rows and cols must be positive integers, got rows={rows}, cols={cols}"
-                )
-
-        # Counter for unnamed nodes
-        self._node_counter: int = 0
-
-        if self._tikz_code:
-            self._load_tikz_code(self._tikz_code)
-
-    # ------------------------------------------------------------- #
-    # Class methods
-
-    def to_python(
-        self, name: str = "fig", header: bool = True, verify: bool = True
-    ) -> str:
-        """Return Python code that rebuilds this figure.
-
-        Useful together with :meth:`from_tikz_code` to turn existing TikZ
-        source into a tikzfigure script.
-
-        Examples:
-            >>> fig = TikzFigure()
-            >>> _ = fig.add_node(0, 0, label="a", content="A")
-            >>> print(fig.to_python(header=False), end="")
-            fig = TikzFigure()
-            fig.add_node(0, 0, label='a', content='A')
-
-        Args:
-            name: Variable name for the figure in the generated code.
-            header: Include the ``import`` lines.
-            verify: Run the generated code and check it produces the same
-                TikZ output as this figure.
-
-        Returns:
-            Python source code.
-
-        Raises:
-            CodegenError: If the figure uses features that cannot be
-                expressed as Python calls yet (pgfplots axes or subfigures).
-        """
-        from tikzfigure.codegen import figure_to_python
-
-        return figure_to_python(self, name=name, header=header, verify=verify)
-
-    def to_dict(self) -> dict[str, Any]:
-        """Serialize this figure to a plain dictionary.
-
-        Returns:
-            A dictionary capturing all figure settings, layers, variables,
-            and colors, suitable for round-tripping via :meth:`from_dict`.
-        """
-        layers_dict: dict[Any, list[dict[str, Any]]] = {}
-        for layer_label, layer in self._layers.layers.items():
-            layers_dict[layer_label] = [item.to_dict() for item in layer.items]
-        serialized = serialize_tikz_value(
-            {
-                "type": "TikzFigure",
-                "ndim": self._ndim,
-                "label": self._label,
-                "grid": self._grid,
-                "show_axes": self._show_axes,
-                "extra_packages": (
-                    list(self._extra_packages) if self._extra_packages else None
-                ),
-                "tikz_libraries": (
-                    list(self._tikz_libraries) if self._tikz_libraries else None
-                ),
-                "named_styles": (
-                    [
-                        {
-                            "name": style_def["name"],
-                            "options": style_def["options"],
-                            "kwargs": style_def["kwargs"],
-                        }
-                        for style_def in self._named_styles
-                    ]
-                    if self._named_styles
-                    else None
-                ),
-                "document_setup": self._document_setup,
-                "figure_setup": self._figure_setup,
-                "figsize": list(self._figsize),
-                "description": self._description,
-                "subfigure_rows": self._subfigure_rows,
-                "subfigure_cols": self._subfigure_cols,
-                "layers": layers_dict,
-                "variables": [v.to_dict() for v in self._variables],
-                "declared_functions": [
-                    function.to_dict() for function in self._declared_functions
-                ],
-                "colors": [
-                    {"name": name, **color.to_dict()} for name, color in self._colors
-                ],
-                "axes": [axis.to_dict() for axis in self._axes],
-            }
-        )
-        if not isinstance(serialized, dict):
-            raise TypeError("Serialized figure data must remain a dict.")
-        return serialized
-
-    @classmethod
-    def from_dict(cls, d: dict[str, Any]) -> "TikzFigure":
-        """Reconstruct a TikzFigure from a dictionary.
-
-        Args:
-            d: Dictionary as produced by :meth:`to_dict`.
-
-        Returns:
-            A fully restored :class:`TikzFigure` instance.
-        """
-        restored = deserialize_tikz_value(d)
-        if not isinstance(restored, dict):
-            raise TypeError("Serialized figure data must deserialize to a dict.")
-
-        fig = cls(
-            ndim=restored.get("ndim", 2),
-            label=restored.get("label"),
-            grid=restored.get("grid", False),
-            extra_packages=restored.get("extra_packages"),
-            document_setup=restored.get("document_setup"),
-            figure_setup=restored.get("figure_setup"),
-            figsize=tuple(restored.get("figsize", [10, 6])),
-            description=restored.get("description"),
-            show_axes=restored.get("show_axes", False),
-            rows=restored.get("subfigure_rows"),
-            cols=restored.get("subfigure_cols"),
-        )
-
-        for var_dict in restored.get("variables", []):
-            fig._variables.append(Variable.from_dict(var_dict))
-
-        for function_dict in restored.get("declared_functions", []):
-            fig._declared_functions.append(DeclaredFunction.from_dict(function_dict))
-
-        for color_entry in restored.get("colors", []):
-            fig._colors.append((color_entry["name"], Color.from_dict(color_entry)))
-
-        if restored.get("tikz_libraries"):
-            fig._tikz_libraries = _normalize_tikz_libraries(*restored["tikz_libraries"])
-        if restored.get("named_styles"):
-            fig._named_styles = [
-                {
-                    "name": style_def["name"],
-                    "options": normalize_options(style_def.get("options")),
-                    "kwargs": dict(style_def.get("kwargs", {})),
-                }
-                for style_def in restored["named_styles"]
-            ]
-
-        # Build node/coordinate lookup across all layers for path deserialization
-        layers_data: dict[Any, list[dict[str, Any]]] = restored.get("layers", {})
-        node_lookup: dict[str, Node | Coordinate] = {}
-        for items_data in layers_data.values():
-            for item_data in items_data:
-                if item_data.get("type") == "Node":
-                    node = Node.from_dict(item_data)
-                    if node.label is not None:
-                        node_lookup[node.label] = node
-                elif item_data.get("type") == "Coordinate":
-                    coord = Coordinate.from_dict(item_data)
-                    if coord.label:
-                        node_lookup[coord.label] = coord
-
-        # Reconstruct layers in order
-        for layer_label, items_data in layers_data.items():
-            for item_data in items_data:
-                item_type = item_data.get("type")
-                if item_type == "Node" or item_type == "Coordinate":
-                    fig.layers.add_item(
-                        node_lookup[item_data["label"]], layer=layer_label
-                    )
-                elif item_type == "Path":
-                    fig.layers.add_item(
-                        TikzPath.from_dict(item_data, node_lookup=node_lookup),
-                        layer=layer_label,
-                    )
-                elif item_type == "Plot3D":
-                    fig.layers.add_item(Plot3D.from_dict(item_data), layer=layer_label)
-                elif item_type == "TikzPlot":
-                    fig.layers.add_item(
-                        TikzPlot.from_dict(item_data), layer=layer_label
-                    )
-                elif item_type == "Loop":
-                    fig.layers.add_item(
-                        Loop.from_dict(item_data, node_lookup=node_lookup),
-                        layer=layer_label,
-                    )
-                elif item_type == "Scope":
-                    fig.layers.add_item(
-                        Scope.from_dict(item_data, node_lookup=node_lookup),
-                        layer=layer_label,
-                    )
-                elif item_type == "Spy":
-                    fig.layers.add_item(
-                        Spy.from_dict(item_data, node_lookup=node_lookup),
-                        layer=layer_label,
-                    )
-                elif item_type == "RawTikz":
-                    fig.layers.add_item(RawTikz.from_dict(item_data), layer=layer_label)
-                elif item_type == "Arc":
-                    fig.layers.add_item(Arc.from_dict(item_data), layer=layer_label)
-                elif item_type == "Circle":
-                    fig.layers.add_item(Circle.from_dict(item_data), layer=layer_label)
-                elif item_type == "Rectangle":
-                    fig.layers.add_item(
-                        Rectangle.from_dict(item_data), layer=layer_label
-                    )
-                elif item_type == "Ellipse":
-                    fig.layers.add_item(Ellipse.from_dict(item_data), layer=layer_label)
-                elif item_type == "Grid":
-                    fig.layers.add_item(Grid.from_dict(item_data), layer=layer_label)
-                elif item_type == "Parabola":
-                    fig.layers.add_item(
-                        Parabola.from_dict(item_data), layer=layer_label
-                    )
-                elif item_type == "Line":
-                    fig.layers.add_item(Line.from_dict(item_data), layer=layer_label)
-                elif item_type == "Polygon":
-                    fig.layers.add_item(Polygon.from_dict(item_data), layer=layer_label)
-                elif item_type == "Triangle":
-                    fig.layers.add_item(
-                        Triangle.from_dict(item_data), layer=layer_label
-                    )
-                elif item_type == "Square":
-                    fig.layers.add_item(Square.from_dict(item_data), layer=layer_label)
-                elif item_type == "Matrix":
-                    fig.layers.add_item(Matrix.from_dict(item_data), layer=layer_label)
-                elif item_type == "Fit":
-                    fig.layers.add_item(Fit.from_dict(item_data), layer=layer_label)
-                elif item_type == "GanttChart":
-                    fig.layers.add_item(
-                        GanttChart.from_dict(item_data), layer=layer_label
-                    )
-
-        # Keep node counter consistent with restored nodes
-        auto_labeled_types = {"Matrix", "Fit"}
-        auto_labels = [
-            item_data.get("label", "")
-            for items_data in layers_data.values()
-            for item_data in items_data
-            if item_data.get("type") in auto_labeled_types
-        ]
-        max_auto = -1
-        for label in list(node_lookup) + auto_labels:
-            if label.startswith("node"):
-                try:
-                    max_auto = max(max_auto, int(label[4:]))
-                except ValueError:
-                    pass
-        if max_auto >= 0:
-            fig._node_counter = max_auto + 1
-
-        # Reconstruct axes
-        for axis_data in restored.get("axes", []):
-            axis = Axis2D.from_dict(axis_data)
-            fig.axes.append(axis)
-
-        return fig
-
-    def _check(self, output_unit: str | None = None) -> "TikzFigure":
-        """Round-trip through dict/TikZ serialization and verify equivalence."""
-        data = self.to_dict()
-        restored = type(self).from_dict(data)
-        if restored.to_dict() != data:
-            raise AssertionError(
-                "TikzFigure changed after to_dict()/from_dict() round-trip."
-            )
-
-        original_tikz = self.generate_tikz(output_unit=output_unit)
-        restored_tikz = restored.generate_tikz(output_unit=output_unit)
-        if original_tikz != restored_tikz:
-            raise AssertionError("TikzFigure changed after generate_tikz() round-trip.")
-
-        return restored
-
-    @staticmethod
-    def _copy_value(value: Any) -> Any:
-        return deserialize_tikz_value(serialize_tikz_value(value))
-
-    def copy(self, **overrides: Any) -> "TikzFigure":
-        """Return a deep copy of this figure with optional figure-level overrides."""
-        clone = type(self).from_dict(self.to_dict())
-        remaining = {key: self._copy_value(value) for key, value in overrides.items()}
-
-        if "ndim" in remaining:
-            clone._ndim = remaining.pop("ndim")
-        if "label" in remaining:
-            clone._label = remaining.pop("label")
-        if "grid" in remaining:
-            clone._grid = remaining.pop("grid")
-        if "show_axes" in remaining:
-            clone._show_axes = remaining.pop("show_axes")
-        if "extra_packages" in remaining:
-            value = remaining.pop("extra_packages")
-            clone._extra_packages = None if value is None else list(value)
-        if "tikz_libraries" in remaining:
-            value = remaining.pop("tikz_libraries")
-            clone._tikz_libraries = (
-                [] if value is None else _normalize_tikz_libraries(*value)
-            )
-        if "named_styles" in remaining:
-            value = remaining.pop("named_styles")
-            clone._named_styles = [] if value is None else list(value)
-        if "document_setup" in remaining:
-            clone._document_setup = remaining.pop("document_setup")
-        if "figure_setup" in remaining:
-            clone._figure_setup = remaining.pop("figure_setup")
-        if "figsize" in remaining:
-            clone._figsize = tuple(remaining.pop("figsize"))
-        if "description" in remaining:
-            clone._description = remaining.pop("description")
-        if "rows" in remaining:
-            clone._subfigure_rows = remaining.pop("rows")
-        if "cols" in remaining:
-            clone._subfigure_cols = remaining.pop("cols")
-
-        if remaining:
-            invalid = ", ".join(sorted(remaining))
-            raise TypeError(f"TikzFigure.copy() got unexpected override(s): {invalid}")
-
-        return clone
 
     # ------------------------------------------------------------- #
     # Public methods
@@ -730,328 +185,6 @@ class TikzFigure(
         if node.label == "":
             node._label = f"node{self._node_counter}"
             self._node_counter += 1
-
-    def _append_figure_setup_items(self, items: list[str]) -> None:
-        cleaned = [item.strip() for item in items if item.strip()]
-        if not cleaned:
-            return
-        if self._figure_setup is None or self._figure_setup.strip() == "":
-            self._figure_setup = ", ".join(cleaned)
-            return
-        self._figure_setup = f"{self._figure_setup}, " + ", ".join(cleaned)
-
-    def _figure_has_spy_scope(self) -> bool:
-        if self._figure_setup is None:
-            return False
-        return any(
-            key in self._figure_setup
-            for key in ("spy scope", "spy using outlines", "spy using overlays")
-        )
-
-    def _ensure_figure_spy_scope(self) -> None:
-        """Ensure the figure loads the spy library and has a usable top-level scope."""
-        SpyLibrary.ensure(self)
-        if not self._figure_has_spy_scope():
-            self._append_figure_setup_items(["spy scope"])
-
-    def configure_spy_scope(
-        self,
-        *,
-        mode: SpyScopeMode = "scope",
-        options: OptionInput | None = None,
-        magnification: float | None = None,
-        lens: OptionInput | str | None = None,
-        lens_kwargs: dict[str, Any] | None = None,
-        size: str | object | None = None,
-        width: str | object | None = None,
-        height: str | object | None = None,
-        connect_spies: bool = False,
-        every_spy_in_node_options: OptionInput | None = None,
-        every_spy_in_node_style: dict[str, Any] | None = None,
-        every_spy_on_node_options: OptionInput | None = None,
-        every_spy_on_node_style: dict[str, Any] | None = None,
-        spy_connection_path: str | None = None,
-        **kwargs: Any,
-    ) -> None:
-        """Append figure-wide defaults for subsequent spy commands.
-
-        This updates ``figure_setup`` with a top-level spy scope configuration,
-        which is useful when several ``fig.spy(...)`` calls should share the
-        same magnification, lens, node styling, or connection-path settings.
-        """
-        SpyLibrary.ensure(self)
-        scope_options, scope_kwargs = SpyLibrary.build_scope_parts(
-            mode=mode,
-            options=options,
-            magnification=magnification,
-            lens=lens,
-            lens_kwargs=lens_kwargs,
-            size=size,
-            width=width,
-            height=height,
-            connect_spies=connect_spies,
-            every_spy_in_node_options=every_spy_in_node_options,
-            every_spy_in_node_style=every_spy_in_node_style,
-            every_spy_on_node_options=every_spy_on_node_options,
-            every_spy_on_node_style=every_spy_on_node_style,
-            spy_connection_path=spy_connection_path,
-            **kwargs,
-        )
-        figure_items = scope_options + [
-            f"{key}={value}" for key, value in scope_kwargs.items()
-        ]
-        self._append_figure_setup_items(figure_items)
-
-    def add_spy(
-        self,
-        on: Any,
-        *,
-        layer: int = 0,
-        comment: str | None = None,
-        verbose: bool = False,
-        options: OptionInput | None = None,
-        magnification: float | None = None,
-        lens: OptionInput | str | None = None,
-        lens_kwargs: dict[str, Any] | None = None,
-        size: str | object | None = None,
-        width: str | object | None = None,
-        height: str | object | None = None,
-        connect_spies: bool = False,
-        at: Any = None,
-        node_label: str | None = None,
-        node_options: OptionInput | None = None,
-        node_style: dict[str, Any] | None = None,
-        **kwargs: Any,
-    ) -> Spy:
-        """Add a top-level ``\\spy`` command to the figure.
-
-        If the figure does not yet have any spy-scope configuration, this
-        method enables a bare ``spy scope`` automatically so the generated
-        command works without extra setup.
-        """
-        self._ensure_figure_spy_scope()
-        spy_options, spy_kwargs = SpyLibrary.build_command_parts(
-            options=options,
-            magnification=magnification,
-            lens=lens,
-            lens_kwargs=lens_kwargs,
-            size=size,
-            width=width,
-            height=height,
-            connect_spies=connect_spies,
-            **kwargs,
-        )
-        spy = Spy(
-            on=on,
-            at=at,
-            node_label=node_label,
-            node_options=node_options,
-            node_style=node_style,
-            comment=comment,
-            layer=layer,
-            options=spy_options,
-            **spy_kwargs,
-        )
-        self.layers.add_item(item=spy, layer=layer, verbose=verbose)
-        return spy
-
-    def add_spy_scope(
-        self,
-        layer: int = 0,
-        comment: str | None = None,
-        verbose: bool = False,
-        mode: SpyScopeMode = "scope",
-        options: OptionInput | None = None,
-        magnification: float | None = None,
-        lens: OptionInput | str | None = None,
-        lens_kwargs: dict[str, Any] | None = None,
-        size: str | object | None = None,
-        width: str | object | None = None,
-        height: str | object | None = None,
-        connect_spies: bool = False,
-        every_spy_in_node_options: OptionInput | None = None,
-        every_spy_in_node_style: dict[str, Any] | None = None,
-        every_spy_on_node_options: OptionInput | None = None,
-        every_spy_on_node_style: dict[str, Any] | None = None,
-        spy_connection_path: str | None = None,
-        **kwargs: Any,
-    ) -> Scope:
-        """Create a nested scope with local spy defaults.
-
-        Use this when spy behavior should apply only to a region of the figure,
-        or when you want nested spy configurations such as an outer
-        ``outlines`` scope with an inner ``overlays`` scope.
-        """
-        SpyLibrary.ensure(self)
-        scope_options, scope_kwargs = SpyLibrary.build_scope_parts(
-            mode=mode,
-            options=options,
-            magnification=magnification,
-            lens=lens,
-            lens_kwargs=lens_kwargs,
-            size=size,
-            width=width,
-            height=height,
-            connect_spies=connect_spies,
-            every_spy_in_node_options=every_spy_in_node_options,
-            every_spy_in_node_style=every_spy_in_node_style,
-            every_spy_on_node_options=every_spy_on_node_options,
-            every_spy_on_node_style=every_spy_on_node_style,
-            spy_connection_path=spy_connection_path,
-            **kwargs,
-        )
-        scope_obj = Scope(
-            layer=layer,
-            comment=comment,
-            options=scope_options,
-            node_resolver=self.layers.get_node,
-            library_loader=self.usetikzlibrary,
-            **scope_kwargs,
-        )
-        self.layers.add_item(item=scope_obj, layer=layer, verbose=verbose)
-        return scope_obj
-
-    def add_copy(self, node: Node, verbose: bool = False, **overrides: Any) -> Node:
-        """Copy a node into this figure, applying optional constructor-style overrides.
-
-        If the source node has an explicit label and no ``label=...`` override is
-        provided, the copied node keeps that label and a warning is logged. Nodes
-        whose label was auto-generated by a figure are treated as unlabeled here
-        and receive a fresh ``node<N>`` label from this figure.
-        """
-        copied = node.copy(**overrides)
-
-        if "label" in overrides:
-            copied._user_supplied_label = copied.label != ""
-        elif copied._user_supplied_label:
-            logger.warning(
-                "TikzFigure.add_copy() preserved explicit label %r on copied node; pass label=... to override it.",
-                copied.label,
-            )
-        else:
-            copied._label = ""
-
-        copied._user_supplied_label = copied.label != ""
-        self._assign_auto_node_label(copied)
-        self._sync_node_counter_from_label(copied.label)
-        self.layers.add_item(item=copied, layer=copied.layer or 0, verbose=verbose)
-        return copied
-
-    def add(self, items: Any, layer: int = 0, verbose: bool = False) -> None:
-        """Add one or more pre-built items to the figure.
-
-        Args:
-            items: A single TikZ object (:class:`Node`, :class:`TikzPath`,
-                :class:`~tikzfigure.core.circle.Circle`, ...) or a
-                list/tuple of them.
-            layer: Target layer index. Defaults to ``0``.
-            verbose: If ``True``, print a debug message for each insertion.
-        """
-        if not isinstance(items, list | tuple):
-            items = [items]
-
-        for item in items:
-            if isinstance(item, Node):
-                self._assign_auto_node_label(item)
-                self._sync_node_counter_from_label(item.label)
-            self.layers.add_item(item=item, layer=layer, verbose=verbose)
-
-    def colorlet(
-        self,
-        name: str,
-        color_spec: ColorInput,
-        layer: int = 0,
-    ) -> Color:
-        """Define a named color with ``\\colorlet``.
-
-        Args:
-            name: The name to assign to the color in LaTeX.
-            color_spec: A TikZ color specification (e.g. ``"blue!20"``).
-            layer: Layer index (currently unused). Defaults to ``0``.
-
-        Returns:
-            The :class:`Color` object that was registered.
-        """
-        color = Color(color_spec=color_spec)
-
-        self._colors.append((name, color))
-        return color
-
-    def add_package(self, package: str) -> None:
-        """Add a LaTeX package to the standalone preamble.
-
-        Examples:
-            >>> fig = TikzFigure()
-            >>> fig.add_package("amsmath")
-        """
-        package_name = package.strip()
-        if package_name == "":
-            raise ValueError("Package names must not be empty.")
-
-        if self._extra_packages is None:
-            self._extra_packages = []
-        if package_name not in self._extra_packages:
-            self._extra_packages.append(package_name)
-
-    def add_style(
-        self,
-        name: str,
-        options: OptionInput | None = None,
-        **kwargs: Any,
-    ) -> TikzStyle:
-        """Define or update a named TikZ style at figure scope.
-
-        Examples:
-            >>> fig = TikzFigure()
-            >>> axes = fig.add_style("axes")
-            >>> fig.add_style("important line", options=["very thick"])
-            >>> fig.add_style("information text", fill="red!10", inner_sep="1ex")
-            >>> fig.draw([(0, 0), (1, 0)], options=[axes])
-        """
-        style_name = name.strip()
-        if style_name == "":
-            raise ValueError("Style names must not be empty.")
-
-        style_def = {
-            "name": style_name,
-            "options": normalize_options(options),
-            "kwargs": dict(kwargs),
-        }
-        for index, existing in enumerate(self._named_styles):
-            if existing["name"] == style_name:
-                self._named_styles[index] = style_def
-                break
-        else:
-            self._named_styles.append(style_def)
-        return TikzStyle(style_name)
-
-    @overload
-    def usetikzlibrary(self, *libraries: _TikzLibraryLiteral) -> None: ...
-
-    @overload
-    def usetikzlibrary(self, *libraries: str) -> None: ...
-
-    @overload
-    def usetikzlibrary(self, *libraries: TikzLibrary | type[TikzLibrary]) -> None: ...
-
-    def usetikzlibrary(
-        self, *libraries: "str | TikzLibrary | type[TikzLibrary]"
-    ) -> None:
-        """Register TikZ libraries for standalone output and compilation.
-
-        Accepts plain library name strings, or a :class:`TikzLibrary`
-        subclass/instance for libraries with dedicated Python support (e.g.
-        :class:`~tikzfigure.core.matrix.MatrixLibrary`,
-        :class:`~tikzfigure.core.spy.SpyLibrary`).
-
-        Examples:
-            >>> fig = TikzFigure()
-            >>> fig.usetikzlibrary("calc", "intersections")
-            >>> fig.usetikzlibrary("positioning,quotes")
-        """
-        for library in _normalize_tikz_libraries(*libraries):
-            if library not in self._tikz_libraries:
-                self._tikz_libraries.append(library)
 
     def add_node(
         self,
@@ -1422,65 +555,8 @@ class TikzFigure(
         self.layers.add_item(item=node, layer=layer, verbose=verbose)
         return node
 
-    def midpoint(
-        self,
-        node1: "Node | str",
-        node2: "Node | str",
-        label: str | None = None,
-        layer: int = 0,
-        content: str = "",
-        **kwargs: Any,
-    ) -> Node:
-        """Add a node at the midpoint between two existing nodes.
-
-        Args:
-            node1: First node object or its label string.
-            node2: Second node object or its label string.
-            label: Label for the new midpoint node. Auto-assigned when
-                ``None``.
-            layer: Target layer index. Defaults to ``0``.
-            content: Text content for the midpoint node.
-            **kwargs: Additional options forwarded to :meth:`add_node`.
-
-        Returns:
-            The new :class:`Node` placed at the computed midpoint.
-
-        Raises:
-            ValueError: If either node lacks explicit numeric coordinates.
-        """
-        node1_obj: Node | Coordinate = (
-            self.layers.get_node(node1) if isinstance(node1, str) else node1
-        )
-        node2_obj: Node | Coordinate = (
-            self.layers.get_node(node2) if isinstance(node2, str) else node2
-        )
-
-        if node1_obj.x is None or node1_obj.y is None:
-            raise ValueError(
-                f"Node '{node1_obj.label}' does not have explicit coordinates."
-            )
-        if node2_obj.x is None or node2_obj.y is None:
-            raise ValueError(
-                f"Node '{node2_obj.label}' does not have explicit coordinates."
-            )
-
-        mid_x = (node1_obj.x + node2_obj.x) / 2  # type: ignore[operator]
-        mid_y = (node1_obj.y + node2_obj.y) / 2  # type: ignore[operator]
-
-        if node1_obj.z is not None and node2_obj.z is not None:
-            mid_z = (node1_obj.z + node2_obj.z) / 2  # type: ignore[operator]
-        else:
-            mid_z = None
-
-        return self.add_node(
-            x=mid_x,
-            y=mid_y,
-            z=mid_z,
-            label=label,
-            layer=layer,
-            content=content,
-            **kwargs,
-        )
+    # Short public aliases for the add_* helpers.
+    node = add_node
 
     def add_coordinate(
         self,
@@ -1571,6 +647,8 @@ class TikzFigure(
         self.layers.add_item(item=coord, layer=layer, verbose=verbose)
         return coord
 
+    coordinate = add_coordinate
+
     def add_variable(
         self,
         label: str,
@@ -1607,6 +685,8 @@ class TikzFigure(
         # self.layers.add_item(item=variable, layer=layer, verbose=verbose)
         return variable
 
+    variable = add_variable
+
     def declare_function(
         self,
         name: str,
@@ -1626,6 +706,38 @@ class TikzFigure(
         if verbose:
             print(f"Declared PGF function {name}")
         return declared
+
+    function = declare_function
+
+    def add_raw(
+        self,
+        tikz_code: str,
+        layer: int = 0,
+        verbose: bool = False,
+    ) -> RawTikz:
+        """Insert a verbatim TikZ code block into the figure.
+
+        Args:
+            tikz_code: Raw TikZ source to include verbatim.
+            layer: Target layer index. Defaults to ``0``.
+            verbose: If ``True``, print a debug message after insertion.
+
+        Returns:
+            The :class:`RawTikz` object that was added.
+        """
+        active_container = self._current_container()
+        if active_container is not None:
+            return active_container.raw(tikz_code)
+        raw_tikz = RawTikz(tikz_code=tikz_code)
+
+        self.layers.add_item(
+            item=raw_tikz,
+            layer=layer,
+            verbose=verbose,
+        )
+        return raw_tikz
+
+    raw = add_raw
 
     def add_plot(
         self,
@@ -1673,6 +785,8 @@ class TikzFigure(
         )
         self.layers.add_item(item=plot, layer=layer, verbose=verbose)
         return plot
+
+    plot = add_plot
 
     def add_parametric_grid(
         self,
@@ -1735,68 +849,1051 @@ class TikzFigure(
             print("Added parametric grid")
         return u_lines, v_lines
 
-    def add_raw(
+    parametric_grid = add_parametric_grid
+
+    def _append_figure_setup_items(self, items: list[str]) -> None:
+        cleaned = [item.strip() for item in items if item.strip()]
+        if not cleaned:
+            return
+        if self._figure_setup is None or self._figure_setup.strip() == "":
+            self._figure_setup = ", ".join(cleaned)
+            return
+        self._figure_setup = f"{self._figure_setup}, " + ", ".join(cleaned)
+
+    def _figure_has_spy_scope(self) -> bool:
+        if self._figure_setup is None:
+            return False
+        return any(
+            key in self._figure_setup
+            for key in ("spy scope", "spy using outlines", "spy using overlays")
+        )
+
+    def _ensure_figure_spy_scope(self) -> None:
+        """Ensure the figure loads the spy library and has a usable top-level scope."""
+        SpyLibrary.ensure(self)
+        if not self._figure_has_spy_scope():
+            self._append_figure_setup_items(["spy scope"])
+
+    def add_spy(
         self,
-        tikz_code: str,
+        on: Any,
+        *,
         layer: int = 0,
+        comment: str | None = None,
         verbose: bool = False,
-    ) -> RawTikz:
-        """Insert a verbatim TikZ code block into the figure.
+        options: OptionInput | None = None,
+        magnification: float | None = None,
+        lens: OptionInput | str | None = None,
+        lens_kwargs: dict[str, Any] | None = None,
+        size: str | object | None = None,
+        width: str | object | None = None,
+        height: str | object | None = None,
+        connect_spies: bool = False,
+        at: Any = None,
+        node_label: str | None = None,
+        node_options: OptionInput | None = None,
+        node_style: dict[str, Any] | None = None,
+        **kwargs: Any,
+    ) -> Spy:
+        """Add a top-level ``\\spy`` command to the figure.
+
+        If the figure does not yet have any spy-scope configuration, this
+        method enables a bare ``spy scope`` automatically so the generated
+        command works without extra setup.
+        """
+        self._ensure_figure_spy_scope()
+        spy_options, spy_kwargs = SpyLibrary.build_command_parts(
+            options=options,
+            magnification=magnification,
+            lens=lens,
+            lens_kwargs=lens_kwargs,
+            size=size,
+            width=width,
+            height=height,
+            connect_spies=connect_spies,
+            **kwargs,
+        )
+        spy = Spy(
+            on=on,
+            at=at,
+            node_label=node_label,
+            node_options=node_options,
+            node_style=node_style,
+            comment=comment,
+            layer=layer,
+            options=spy_options,
+            **spy_kwargs,
+        )
+        self.layers.add_item(item=spy, layer=layer, verbose=verbose)
+        return spy
+
+    spy = add_spy
+
+    def add_spy_scope(
+        self,
+        layer: int = 0,
+        comment: str | None = None,
+        verbose: bool = False,
+        mode: SpyScopeMode = "scope",
+        options: OptionInput | None = None,
+        magnification: float | None = None,
+        lens: OptionInput | str | None = None,
+        lens_kwargs: dict[str, Any] | None = None,
+        size: str | object | None = None,
+        width: str | object | None = None,
+        height: str | object | None = None,
+        connect_spies: bool = False,
+        every_spy_in_node_options: OptionInput | None = None,
+        every_spy_in_node_style: dict[str, Any] | None = None,
+        every_spy_on_node_options: OptionInput | None = None,
+        every_spy_on_node_style: dict[str, Any] | None = None,
+        spy_connection_path: str | None = None,
+        **kwargs: Any,
+    ) -> Scope:
+        """Create a nested scope with local spy defaults.
+
+        Use this when spy behavior should apply only to a region of the figure,
+        or when you want nested spy configurations such as an outer
+        ``outlines`` scope with an inner ``overlays`` scope.
+        """
+        SpyLibrary.ensure(self)
+        scope_options, scope_kwargs = SpyLibrary.build_scope_parts(
+            mode=mode,
+            options=options,
+            magnification=magnification,
+            lens=lens,
+            lens_kwargs=lens_kwargs,
+            size=size,
+            width=width,
+            height=height,
+            connect_spies=connect_spies,
+            every_spy_in_node_options=every_spy_in_node_options,
+            every_spy_in_node_style=every_spy_in_node_style,
+            every_spy_on_node_options=every_spy_on_node_options,
+            every_spy_on_node_style=every_spy_on_node_style,
+            spy_connection_path=spy_connection_path,
+            **kwargs,
+        )
+        scope_obj = Scope(
+            layer=layer,
+            comment=comment,
+            options=scope_options,
+            node_resolver=self.layers.get_node,
+            library_loader=self.usetikzlibrary,
+            **scope_kwargs,
+        )
+        self.layers.add_item(item=scope_obj, layer=layer, verbose=verbose)
+        return scope_obj
+
+    spy_scope = add_spy_scope
+    subfigure = FigureLayoutMixin.add_subfigure
+
+    def _enter_container(self, container: Loop | Scope) -> None:
+        self._active_container_stack.append(container)
+
+    def _exit_container(self, container: Loop | Scope) -> None:
+        if (
+            not self._active_container_stack
+            or self._active_container_stack[-1] is not container
+        ):
+            raise RuntimeError("Active TikZ container stack is out of sync.")
+        self._active_container_stack.pop()
+
+    def _attach_container_callbacks(self, container: Loop | Scope) -> None:
+        container._enter_callback = self._enter_container
+        container._exit_callback = self._exit_container
+
+    def add_loop(
+        self,
+        variable: str,
+        values: list[Any] | tuple[Any, ...] | range,
+        layer: int = 0,
+        comment: str | None = None,
+        verbose: bool = False,
+    ) -> Loop:
+        """Add a ``\\foreach`` loop to the figure.
 
         Args:
-            tikz_code: Raw TikZ source to include verbatim.
+            variable: Loop variable name (without the leading backslash),
+                e.g. ``"i"`` produces ``\\foreach \\i in {...}``.
+            values: Sequence of values to iterate over.
             layer: Target layer index. Defaults to ``0``.
-            verbose: If ``True``, print a debug message after insertion.
+            comment: Optional comment prepended in the TikZ output.
+            verbose: If ``True``, print a debug message.
 
         Returns:
-            The :class:`RawTikz` object that was added.
+            The :class:`Loop` context manager. Add nodes and paths inside a
+            ``with`` block or by calling methods on the returned object.
         """
         active_container = self._current_container()
-        if active_container is not None:
-            return active_container.raw(tikz_code)
-        raw_tikz = RawTikz(tikz_code=tikz_code)
-
-        self.layers.add_item(
-            item=raw_tikz,
-            layer=layer,
-            verbose=verbose,
+        node_resolver = (
+            active_container.get_node
+            if active_container is not None
+            else self.layers.get_node
         )
-        return raw_tikz
+        loop_obj = Loop(
+            variable=variable,
+            values=values,
+            layer=layer,
+            comment=comment,
+            node_resolver=node_resolver,
+            library_loader=self.usetikzlibrary,
+        )
+        self._attach_container_callbacks(loop_obj)
+        if active_container is not None:
+            active_container.items.append(loop_obj)
+        else:
+            self.layers.add_item(item=loop_obj, layer=layer, verbose=verbose)
+        return loop_obj
 
-    def add_gantt_chart(
+    loop = add_loop
+
+    def add_scope(
         self,
-        start: int | str,
-        end: int | str,
-        rows: list[dict[str, Any]] | tuple[dict[str, Any], ...] = (),
         layer: int = 0,
         comment: str | None = None,
         options: OptionInput | None = None,
         verbose: bool = False,
         **kwargs: Any,
-    ) -> GanttChart:
-        """Add a chart rendered by LaTeX's ``pgfgantt`` package.
-
-        Each row is a dictionary with ``type`` set to ``title``,
-        ``titlelist``, ``group``, ``bar``, ``milestone``, ``link``, or
-        ``raw``. For example: ``{"type": "bar", "content": "Build",
-        "start": 1, "end": 3}``.
-        """
-        self.add_package("pgfgantt")
-        chart = GanttChart(
-            start=start,
-            end=end,
-            rows=rows,
-            comment=comment,
+    ) -> Scope:
+        """Add a TikZ ``scope`` block with local options to the figure."""
+        active_container = self._current_container()
+        node_resolver = (
+            active_container.get_node
+            if active_container is not None
+            else self.layers.get_node
+        )
+        scope_obj = Scope(
             layer=layer,
+            comment=comment,
             options=options,
+            node_resolver=node_resolver,
+            library_loader=self.usetikzlibrary,
             **kwargs,
         )
-        self.layers.add_item(item=chart, layer=layer, verbose=verbose)
-        return chart
+        self._attach_container_callbacks(scope_obj)
+        if active_container is not None:
+            active_container.items.append(scope_obj)
+        else:
+            self.layers.add_item(item=scope_obj, layer=layer, verbose=verbose)
+        return scope_obj
 
-    add_gantt = add_gantt_chart
-    gantt = add_gantt_chart
-    gantt_chart = add_gantt_chart
+    scope = add_scope
+
+    def __init__(
+        self,
+        ndim: int = 2,
+        label: str | None = None,
+        grid: bool = False,
+        tikz_code: str | None = None,
+        extra_packages: list | None = None,
+        document_setup: str | None = None,
+        figure_setup: str | None = None,
+        figsize: tuple[float, float] = (10, 6),
+        description: str | None = None,
+        show_axes: bool = False,
+        rows: int | None = None,
+        cols: int | None = None,
+    ) -> None:
+        """Initialize a TikzFigure.
+
+        Args:
+            ndim: Number of spatial dimensions. Use ``2`` for standard
+                figures and ``3`` for pgfplots 3-D axis figures.
+                Defaults to ``2``.
+            label: LaTeX ``\\label`` for the surrounding ``figure``
+                environment. When set, the figure is wrapped in a
+                ``figure`` environment.
+            grid: If ``True``, draw a background grid. Defaults to
+                ``False``.
+            tikz_code: Existing TikZ code to parse and import. When
+                provided, nodes and paths are reconstructed from the
+                source. Defaults to ``None``.
+            extra_packages: Additional LaTeX packages to include in the
+                standalone preamble (e.g. ``["amsmath"]``).
+            document_setup: Raw LaTeX to insert in the preamble after
+                the standard packages.
+            figure_setup: TikZ options string placed inside the opening
+                ``\\begin{tikzpicture}[…]`` bracket.
+            figsize: ``(width, height)`` in centimetres used as a hint
+                for display backends. Defaults to ``(10, 6)``.
+            description: Long description stored for documentation
+                purposes (not emitted in TikZ output).
+            show_axes: For 3-D figures, if ``True`` render the pgfplots
+                axis lines and labels. Defaults to ``False``.
+            rows: Number of rows in subfigure grid. Must be specified with cols.
+                Defaults to None (no grid).
+            cols: Number of columns in subfigure grid. Must be specified with rows.
+                Defaults to None (no grid).
+        """
+
+        self._figsize: tuple[float, float] = figsize
+        self._description: str | None = description
+        self._label: str | None = label
+        self._grid: bool = grid
+        self._show_axes: bool = show_axes
+        self._tikz_code: str | None = tikz_code
+        self._figure_setup: str | None = figure_setup
+        self._extra_packages: list[str] | None = (
+            list(extra_packages) if extra_packages else None
+        )
+        self._tikz_libraries: list[str] = []
+        self._named_styles: list[dict[str, Any]] = []
+        self._document_setup: str | None = document_setup
+        # Initialize lists to hold Node and Path objects
+        # TODO: nodes, paths, layers should have @property and @setter methods
+        self._layers: LayerCollection = LayerCollection()
+        self._variables: list[Variable] = []
+        self._declared_functions: list[DeclaredFunction] = []
+        self._colors: list[tuple[str, Color]] = []
+        self._ndim: int = ndim
+        self._axes: list[Axis2D] = []
+        # Subfigure axes with metadata (axis, width)
+        self._subfigure_axes: list[tuple[Axis2D, float]] = []
+        self._active_container_stack: list[Loop | Scope] = []
+
+        # Grid layout parameters
+        self._subfigure_rows: int | None = rows
+        self._subfigure_cols: int | None = cols
+        # Grid stores either an axis cell or a bare subfigure cell.
+        self._subfigure_grid: dict[
+            tuple[int, int],
+            tuple[Axis2D, float] | tuple[TikzFigure, float, str],
+        ] = {}
+        self._is_bare_subfigure: bool = False
+        self._subfigure_position: int = 0
+
+        # Validate grid parameters
+        if (rows is None) != (cols is None):
+            raise ValueError("Both rows and cols must be specified together")
+        if rows is not None:
+            # At this point, we know cols is also not None (from the check above)
+            assert cols is not None  # Help mypy with type narrowing
+            if rows < 1 or cols < 1:
+                raise ValueError(
+                    f"rows and cols must be positive integers, got rows={rows}, cols={cols}"
+                )
+
+        # Counter for unnamed nodes
+        self._node_counter: int = 0
+
+        if self._tikz_code:
+            self._load_tikz_code(self._tikz_code)
+
+    # ------------------------------------------------------------- #
+    # Private methods
+
+    @staticmethod
+    def _coerce_path_input(
+        nodes: list[Any] | NodePathBuilder,
+        segment_options: list[SegmentOption] | None = None,
+    ) -> tuple[list[Any], list[SegmentOption] | None]:
+        """Normalize draw/filldraw path input to nodes + segment options."""
+        if isinstance(nodes, NodePathBuilder):
+            if segment_options is not None:
+                raise ValueError(
+                    "segment_options cannot be passed to draw()/filldraw() "
+                    "when using a NodePathBuilder."
+                )
+            return nodes.nodes, nodes.segment_options
+        return nodes, segment_options
+
+    @staticmethod
+    def _env_requests_web_compilation() -> bool:
+        """Return True when the environment forces web compilation."""
+        value = os.environ.get(WEB_COMPILATION_ENV_VAR)
+        if value is None:
+            return False
+        return value.strip().lower() in {"1", "true", "yes", "on"}
+
+    def _resolve_use_web_compilation(self, use_web_compilation: bool) -> bool:
+        """Resolve the effective web compilation setting."""
+        return use_web_compilation or self._env_requests_web_compilation()
+
+    def _add_path(
+        self,
+        nodes: list[Any],
+        layer: int = 0,
+        comment: str | None = None,
+        center: bool = False,
+        tikz_command: str = "draw",
+        verbose: bool = False,
+        options: OptionInput | None = None,
+        cycle: bool = False,
+        segment_options: list[SegmentOption] | None = None,
+        **kwargs: Any,
+    ) -> TikzPath:
+        """Internal helper that creates and registers a :class:`TikzPath`.
+
+        Resolves node labels to :class:`Node` objects and coordinate tuples
+        to :class:`TikzCoordinate` objects before constructing the path.
+
+        Node label strings may include an anchor suffix using TikZ dot
+        notation (e.g. ``"n1.center"`` or ``"n1.north"``).  The suffix is
+        resolved by first trying the full string as a node label, and
+        falling back to splitting at the last ``.`` if no exact match is
+        found.
+
+        Args:
+            nodes: Items to connect. Each element may be a :class:`Node`,
+                :class:`Coordinate`, a node label string (optionally with a
+                ``.anchor`` suffix), or an ``(x, y)`` / ``(x, y, z)``
+                coordinate tuple.
+            layer: Target layer index. Defaults to ``0``.
+            comment: Optional comment prepended in the TikZ output.
+            center: If ``True``, connect all nodes through ``.center``
+                anchors (overridden per-node by dot-notation in *nodes*).
+            tikz_command: TikZ drawing command (``"draw"`` or
+                ``"filldraw"``). Defaults to ``"draw"``.
+            verbose: If ``True``, print the resolved node list.
+            options: Flag-style TikZ options (string or list).
+            cycle: If ``True``, close the path with ``-- cycle``.
+            segment_options: Per-segment TikZ options for each ``to``
+                connector.  At most ``len(nodes) - 1`` entries.  Each
+                entry is ``None`` (plain ``to``), a raw options string, or
+                a dict (see :class:`TikzPath` for the dict format).
+            **kwargs: Keyword-style TikZ path options.
+
+        Returns:
+            The newly created :class:`TikzPath`.
+
+        Raises:
+            ValueError: If *nodes* is not a list.
+            NotImplementedError: If an element of *nodes* has an
+                unrecognised type.
+        """
+        active_container = self._current_container()
+        if active_container is not None:
+            return active_container._add_path(
+                nodes=nodes,
+                layer=layer,
+                comment=comment,
+                center=center,
+                tikz_command=tikz_command,
+                verbose=verbose,
+                options=options,
+                cycle=cycle,
+                segment_options=segment_options,
+                **kwargs,
+            )
+
+        if not isinstance(nodes, list):
+            raise ValueError("nodes parameter must be a list of node names.")
+
+        nodes_cleaned: list[Node | Coordinate | TikzCoordinate] = []
+        node_anchors: list[str | None] = []
+
+        for node in nodes:
+            if isinstance(node, (Node, Coordinate)):
+                nodes_cleaned.append(node)
+                node_anchors.append(None)
+            elif isinstance(node, str):
+                # Try exact label first; if not found and the string
+                # contains a dot, split into label + anchor.
+                try:
+                    nodes_cleaned.append(self.layers.get_node(node))
+                    node_anchors.append(None)
+                except ValueError:
+                    if "." in node:
+                        label_part, anchor_part = node.rsplit(".", 1)
+                        nodes_cleaned.append(self.layers.get_node(label_part))
+                        node_anchors.append(anchor_part)
+                    else:
+                        raise
+            elif isinstance(node, tuple) or isinstance(node, list):
+                coords = tuple(node)
+                nodes_cleaned.append(TikzCoordinate(*coords, layer=layer))  # type: ignore[misc]
+                node_anchors.append(None)
+            else:
+                raise NotImplementedError(
+                    f"{node =}, {type(node) =} is not a valid node type!",
+                )
+
+        if verbose:
+            print(f"Creating a path with the following nodes {nodes_cleaned}")
+
+        options = normalize_options(options)
+
+        resolved_anchors = (
+            node_anchors if any(a is not None for a in node_anchors) else None
+        )
+
+        path = TikzPath(
+            nodes=nodes_cleaned,
+            comment=comment,
+            center=center,
+            node_anchors=resolved_anchors,
+            segment_options=segment_options,
+            tikz_command=tikz_command,
+            options=options,
+            cycle=cycle,
+            **kwargs,
+        )
+        self.layers.add_item(item=path, layer=layer, verbose=verbose)
+        return path
+
+    # ------------------------------------------------------------- #
+    # Class methods
+
+    def to_python(
+        self, name: str = "fig", header: bool = True, verify: bool = True
+    ) -> str:
+        """Return Python code that rebuilds this figure.
+
+        Useful together with :meth:`from_tikz_code` to turn existing TikZ
+        source into a tikzfigure script.
+
+        Examples:
+            >>> fig = TikzFigure()
+            >>> _ = fig.add_node(0, 0, label="a", content="A")
+            >>> print(fig.to_python(header=False), end="")
+            fig = TikzFigure()
+            fig.add_node(0, 0, label='a', content='A')
+
+        Args:
+            name: Variable name for the figure in the generated code.
+            header: Include the ``import`` lines.
+            verify: Run the generated code and check it produces the same
+                TikZ output as this figure.
+
+        Returns:
+            Python source code.
+
+        Raises:
+            CodegenError: If the figure uses features that cannot be
+                expressed as Python calls yet (pgfplots axes or subfigures).
+        """
+        from tikzfigure.codegen import figure_to_python
+
+        return figure_to_python(self, name=name, header=header, verify=verify)
+
+    def to_dict(self) -> dict[str, Any]:
+        """Serialize this figure to a plain dictionary.
+
+        Returns:
+            A dictionary capturing all figure settings, layers, variables,
+            and colors, suitable for round-tripping via :meth:`from_dict`.
+        """
+        layers_dict: dict[Any, list[dict[str, Any]]] = {}
+        for layer_label, layer in self._layers.layers.items():
+            layers_dict[layer_label] = [item.to_dict() for item in layer.items]
+        serialized = serialize_tikz_value(
+            {
+                "type": "TikzFigure",
+                "ndim": self._ndim,
+                "label": self._label,
+                "grid": self._grid,
+                "show_axes": self._show_axes,
+                "extra_packages": (
+                    list(self._extra_packages) if self._extra_packages else None
+                ),
+                "tikz_libraries": (
+                    list(self._tikz_libraries) if self._tikz_libraries else None
+                ),
+                "named_styles": (
+                    [
+                        {
+                            "name": style_def["name"],
+                            "options": style_def["options"],
+                            "kwargs": style_def["kwargs"],
+                        }
+                        for style_def in self._named_styles
+                    ]
+                    if self._named_styles
+                    else None
+                ),
+                "document_setup": self._document_setup,
+                "figure_setup": self._figure_setup,
+                "figsize": list(self._figsize),
+                "description": self._description,
+                "subfigure_rows": self._subfigure_rows,
+                "subfigure_cols": self._subfigure_cols,
+                "layers": layers_dict,
+                "variables": [v.to_dict() for v in self._variables],
+                "declared_functions": [
+                    function.to_dict() for function in self._declared_functions
+                ],
+                "colors": [
+                    {"name": name, **color.to_dict()} for name, color in self._colors
+                ],
+                "axes": [axis.to_dict() for axis in self._axes],
+            }
+        )
+        if not isinstance(serialized, dict):
+            raise TypeError("Serialized figure data must remain a dict.")
+        return serialized
+
+    @classmethod
+    def from_dict(cls, d: dict[str, Any]) -> "TikzFigure":
+        """Reconstruct a TikzFigure from a dictionary.
+
+        Args:
+            d: Dictionary as produced by :meth:`to_dict`.
+
+        Returns:
+            A fully restored :class:`TikzFigure` instance.
+        """
+        restored = deserialize_tikz_value(d)
+        if not isinstance(restored, dict):
+            raise TypeError("Serialized figure data must deserialize to a dict.")
+
+        fig = cls(
+            ndim=restored.get("ndim", 2),
+            label=restored.get("label"),
+            grid=restored.get("grid", False),
+            extra_packages=restored.get("extra_packages"),
+            document_setup=restored.get("document_setup"),
+            figure_setup=restored.get("figure_setup"),
+            figsize=tuple(restored.get("figsize", [10, 6])),
+            description=restored.get("description"),
+            show_axes=restored.get("show_axes", False),
+            rows=restored.get("subfigure_rows"),
+            cols=restored.get("subfigure_cols"),
+        )
+
+        for var_dict in restored.get("variables", []):
+            fig._variables.append(Variable.from_dict(var_dict))
+
+        for function_dict in restored.get("declared_functions", []):
+            fig._declared_functions.append(DeclaredFunction.from_dict(function_dict))
+
+        for color_entry in restored.get("colors", []):
+            fig._colors.append((color_entry["name"], Color.from_dict(color_entry)))
+
+        if restored.get("tikz_libraries"):
+            fig._tikz_libraries = _normalize_tikz_libraries(*restored["tikz_libraries"])
+        if restored.get("named_styles"):
+            fig._named_styles = [
+                {
+                    "name": style_def["name"],
+                    "options": normalize_options(style_def.get("options")),
+                    "kwargs": dict(style_def.get("kwargs", {})),
+                }
+                for style_def in restored["named_styles"]
+            ]
+
+        # Build node/coordinate lookup across all layers for path deserialization
+        layers_data: dict[Any, list[dict[str, Any]]] = restored.get("layers", {})
+        node_lookup: dict[str, Node | Coordinate] = {}
+        for items_data in layers_data.values():
+            for item_data in items_data:
+                if item_data.get("type") == "Node":
+                    node = Node.from_dict(item_data)
+                    if node.label is not None:
+                        node_lookup[node.label] = node
+                elif item_data.get("type") == "Coordinate":
+                    coord = Coordinate.from_dict(item_data)
+                    if coord.label:
+                        node_lookup[coord.label] = coord
+
+        # Reconstruct layers in order
+        for layer_label, items_data in layers_data.items():
+            for item_data in items_data:
+                item_type = item_data.get("type")
+                if item_type == "Node" or item_type == "Coordinate":
+                    fig.layers.add_item(
+                        node_lookup[item_data["label"]], layer=layer_label
+                    )
+                elif item_type == "Path":
+                    fig.layers.add_item(
+                        TikzPath.from_dict(item_data, node_lookup=node_lookup),
+                        layer=layer_label,
+                    )
+                elif item_type == "Plot3D":
+                    fig.layers.add_item(Plot3D.from_dict(item_data), layer=layer_label)
+                elif item_type == "TikzPlot":
+                    fig.layers.add_item(
+                        TikzPlot.from_dict(item_data), layer=layer_label
+                    )
+                elif item_type == "Loop":
+                    fig.layers.add_item(
+                        Loop.from_dict(item_data, node_lookup=node_lookup),
+                        layer=layer_label,
+                    )
+                elif item_type == "Scope":
+                    fig.layers.add_item(
+                        Scope.from_dict(item_data, node_lookup=node_lookup),
+                        layer=layer_label,
+                    )
+                elif item_type == "Spy":
+                    fig.layers.add_item(
+                        Spy.from_dict(item_data, node_lookup=node_lookup),
+                        layer=layer_label,
+                    )
+                elif item_type == "RawTikz":
+                    fig.layers.add_item(RawTikz.from_dict(item_data), layer=layer_label)
+                elif item_type == "Arc":
+                    fig.layers.add_item(Arc.from_dict(item_data), layer=layer_label)
+                elif item_type == "Circle":
+                    fig.layers.add_item(Circle.from_dict(item_data), layer=layer_label)
+                elif item_type == "Rectangle":
+                    fig.layers.add_item(
+                        Rectangle.from_dict(item_data), layer=layer_label
+                    )
+                elif item_type == "Ellipse":
+                    fig.layers.add_item(Ellipse.from_dict(item_data), layer=layer_label)
+                elif item_type == "Grid":
+                    fig.layers.add_item(Grid.from_dict(item_data), layer=layer_label)
+                elif item_type == "Parabola":
+                    fig.layers.add_item(
+                        Parabola.from_dict(item_data), layer=layer_label
+                    )
+                elif item_type == "Line":
+                    fig.layers.add_item(Line.from_dict(item_data), layer=layer_label)
+                elif item_type == "Polygon":
+                    fig.layers.add_item(Polygon.from_dict(item_data), layer=layer_label)
+                elif item_type == "Triangle":
+                    fig.layers.add_item(
+                        Triangle.from_dict(item_data), layer=layer_label
+                    )
+                elif item_type == "Square":
+                    fig.layers.add_item(Square.from_dict(item_data), layer=layer_label)
+                elif item_type == "Matrix":
+                    fig.layers.add_item(Matrix.from_dict(item_data), layer=layer_label)
+                elif item_type == "Fit":
+                    fig.layers.add_item(Fit.from_dict(item_data), layer=layer_label)
+                elif item_type == "GanttChart":
+                    fig.layers.add_item(
+                        GanttChart.from_dict(item_data), layer=layer_label
+                    )
+
+        # Keep node counter consistent with restored nodes
+        auto_labeled_types = {"Matrix", "Fit"}
+        auto_labels = [
+            item_data.get("label", "")
+            for items_data in layers_data.values()
+            for item_data in items_data
+            if item_data.get("type") in auto_labeled_types
+        ]
+        max_auto = -1
+        for label in list(node_lookup) + auto_labels:
+            if label.startswith("node"):
+                try:
+                    max_auto = max(max_auto, int(label[4:]))
+                except ValueError:
+                    pass
+        if max_auto >= 0:
+            fig._node_counter = max_auto + 1
+
+        # Reconstruct axes
+        for axis_data in restored.get("axes", []):
+            axis = Axis2D.from_dict(axis_data)
+            fig.axes.append(axis)
+
+        return fig
+
+    def _check(self, output_unit: str | None = None) -> "TikzFigure":
+        """Round-trip through dict/TikZ serialization and verify equivalence."""
+        data = self.to_dict()
+        restored = type(self).from_dict(data)
+        if restored.to_dict() != data:
+            raise AssertionError(
+                "TikzFigure changed after to_dict()/from_dict() round-trip."
+            )
+
+        original_tikz = self.generate_tikz(output_unit=output_unit)
+        restored_tikz = restored.generate_tikz(output_unit=output_unit)
+        if original_tikz != restored_tikz:
+            raise AssertionError("TikzFigure changed after generate_tikz() round-trip.")
+
+        return restored
+
+    @staticmethod
+    def _copy_value(value: Any) -> Any:
+        return deserialize_tikz_value(serialize_tikz_value(value))
+
+    def copy(self, **overrides: Any) -> "TikzFigure":
+        """Return a deep copy of this figure with optional figure-level overrides."""
+        clone = type(self).from_dict(self.to_dict())
+        remaining = {key: self._copy_value(value) for key, value in overrides.items()}
+
+        if "ndim" in remaining:
+            clone._ndim = remaining.pop("ndim")
+        if "label" in remaining:
+            clone._label = remaining.pop("label")
+        if "grid" in remaining:
+            clone._grid = remaining.pop("grid")
+        if "show_axes" in remaining:
+            clone._show_axes = remaining.pop("show_axes")
+        if "extra_packages" in remaining:
+            value = remaining.pop("extra_packages")
+            clone._extra_packages = None if value is None else list(value)
+        if "tikz_libraries" in remaining:
+            value = remaining.pop("tikz_libraries")
+            clone._tikz_libraries = (
+                [] if value is None else _normalize_tikz_libraries(*value)
+            )
+        if "named_styles" in remaining:
+            value = remaining.pop("named_styles")
+            clone._named_styles = [] if value is None else list(value)
+        if "document_setup" in remaining:
+            clone._document_setup = remaining.pop("document_setup")
+        if "figure_setup" in remaining:
+            clone._figure_setup = remaining.pop("figure_setup")
+        if "figsize" in remaining:
+            clone._figsize = tuple(remaining.pop("figsize"))
+        if "description" in remaining:
+            clone._description = remaining.pop("description")
+        if "rows" in remaining:
+            clone._subfigure_rows = remaining.pop("rows")
+        if "cols" in remaining:
+            clone._subfigure_cols = remaining.pop("cols")
+
+        if remaining:
+            invalid = ", ".join(sorted(remaining))
+            raise TypeError(f"TikzFigure.copy() got unexpected override(s): {invalid}")
+
+        return clone
+
+    def configure_spy_scope(
+        self,
+        *,
+        mode: SpyScopeMode = "scope",
+        options: OptionInput | None = None,
+        magnification: float | None = None,
+        lens: OptionInput | str | None = None,
+        lens_kwargs: dict[str, Any] | None = None,
+        size: str | object | None = None,
+        width: str | object | None = None,
+        height: str | object | None = None,
+        connect_spies: bool = False,
+        every_spy_in_node_options: OptionInput | None = None,
+        every_spy_in_node_style: dict[str, Any] | None = None,
+        every_spy_on_node_options: OptionInput | None = None,
+        every_spy_on_node_style: dict[str, Any] | None = None,
+        spy_connection_path: str | None = None,
+        **kwargs: Any,
+    ) -> None:
+        """Append figure-wide defaults for subsequent spy commands.
+
+        This updates ``figure_setup`` with a top-level spy scope configuration,
+        which is useful when several ``fig.spy(...)`` calls should share the
+        same magnification, lens, node styling, or connection-path settings.
+        """
+        SpyLibrary.ensure(self)
+        scope_options, scope_kwargs = SpyLibrary.build_scope_parts(
+            mode=mode,
+            options=options,
+            magnification=magnification,
+            lens=lens,
+            lens_kwargs=lens_kwargs,
+            size=size,
+            width=width,
+            height=height,
+            connect_spies=connect_spies,
+            every_spy_in_node_options=every_spy_in_node_options,
+            every_spy_in_node_style=every_spy_in_node_style,
+            every_spy_on_node_options=every_spy_on_node_options,
+            every_spy_on_node_style=every_spy_on_node_style,
+            spy_connection_path=spy_connection_path,
+            **kwargs,
+        )
+        figure_items = scope_options + [
+            f"{key}={value}" for key, value in scope_kwargs.items()
+        ]
+        self._append_figure_setup_items(figure_items)
+
+    def add_copy(self, node: Node, verbose: bool = False, **overrides: Any) -> Node:
+        """Copy a node into this figure, applying optional constructor-style overrides.
+
+        If the source node has an explicit label and no ``label=...`` override is
+        provided, the copied node keeps that label and a warning is logged. Nodes
+        whose label was auto-generated by a figure are treated as unlabeled here
+        and receive a fresh ``node<N>`` label from this figure.
+        """
+        copied = node.copy(**overrides)
+
+        if "label" in overrides:
+            copied._user_supplied_label = copied.label != ""
+        elif copied._user_supplied_label:
+            logger.warning(
+                "TikzFigure.add_copy() preserved explicit label %r on copied node; pass label=... to override it.",
+                copied.label,
+            )
+        else:
+            copied._label = ""
+
+        copied._user_supplied_label = copied.label != ""
+        self._assign_auto_node_label(copied)
+        self._sync_node_counter_from_label(copied.label)
+        self.layers.add_item(item=copied, layer=copied.layer or 0, verbose=verbose)
+        return copied
+
+    def add(self, items: Any, layer: int = 0, verbose: bool = False) -> None:
+        """Add one or more pre-built items to the figure.
+
+        Args:
+            items: A single TikZ object (:class:`Node`, :class:`TikzPath`,
+                :class:`~tikzfigure.core.circle.Circle`, ...) or a
+                list/tuple of them.
+            layer: Target layer index. Defaults to ``0``.
+            verbose: If ``True``, print a debug message for each insertion.
+        """
+        if not isinstance(items, list | tuple):
+            items = [items]
+
+        for item in items:
+            if isinstance(item, Node):
+                self._assign_auto_node_label(item)
+                self._sync_node_counter_from_label(item.label)
+            self.layers.add_item(item=item, layer=layer, verbose=verbose)
+
+    def colorlet(
+        self,
+        name: str,
+        color_spec: ColorInput,
+        layer: int = 0,
+    ) -> Color:
+        """Define a named color with ``\\colorlet``.
+
+        Args:
+            name: The name to assign to the color in LaTeX.
+            color_spec: A TikZ color specification (e.g. ``"blue!20"``).
+            layer: Layer index (currently unused). Defaults to ``0``.
+
+        Returns:
+            The :class:`Color` object that was registered.
+        """
+        color = Color(color_spec=color_spec)
+
+        self._colors.append((name, color))
+        return color
+
+    def add_package(self, package: str) -> None:
+        """Add a LaTeX package to the standalone preamble.
+
+        Examples:
+            >>> fig = TikzFigure()
+            >>> fig.add_package("amsmath")
+        """
+        package_name = package.strip()
+        if package_name == "":
+            raise ValueError("Package names must not be empty.")
+
+        if self._extra_packages is None:
+            self._extra_packages = []
+        if package_name not in self._extra_packages:
+            self._extra_packages.append(package_name)
+
+    def add_style(
+        self,
+        name: str,
+        options: OptionInput | None = None,
+        **kwargs: Any,
+    ) -> TikzStyle:
+        """Define or update a named TikZ style at figure scope.
+
+        Examples:
+            >>> fig = TikzFigure()
+            >>> axes = fig.add_style("axes")
+            >>> fig.add_style("important line", options=["very thick"])
+            >>> fig.add_style("information text", fill="red!10", inner_sep="1ex")
+            >>> fig.draw([(0, 0), (1, 0)], options=[axes])
+        """
+        style_name = name.strip()
+        if style_name == "":
+            raise ValueError("Style names must not be empty.")
+
+        style_def = {
+            "name": style_name,
+            "options": normalize_options(options),
+            "kwargs": dict(kwargs),
+        }
+        for index, existing in enumerate(self._named_styles):
+            if existing["name"] == style_name:
+                self._named_styles[index] = style_def
+                break
+        else:
+            self._named_styles.append(style_def)
+        return TikzStyle(style_name)
+
+    @overload
+    def usetikzlibrary(self, *libraries: _TikzLibraryLiteral) -> None: ...
+
+    @overload
+    def usetikzlibrary(self, *libraries: str) -> None: ...
+
+    @overload
+    def usetikzlibrary(self, *libraries: TikzLibrary | type[TikzLibrary]) -> None: ...
+
+    def usetikzlibrary(
+        self, *libraries: "str | TikzLibrary | type[TikzLibrary]"
+    ) -> None:
+        """Register TikZ libraries for standalone output and compilation.
+
+        Accepts plain library name strings, or a :class:`TikzLibrary`
+        subclass/instance for libraries with dedicated Python support (e.g.
+        :class:`~tikzfigure.core.matrix.MatrixLibrary`,
+        :class:`~tikzfigure.core.spy.SpyLibrary`).
+
+        Examples:
+            >>> fig = TikzFigure()
+            >>> fig.usetikzlibrary("calc", "intersections")
+            >>> fig.usetikzlibrary("positioning,quotes")
+        """
+        for library in _normalize_tikz_libraries(*libraries):
+            if library not in self._tikz_libraries:
+                self._tikz_libraries.append(library)
+
+    def midpoint(
+        self,
+        node1: "Node | str",
+        node2: "Node | str",
+        label: str | None = None,
+        layer: int = 0,
+        content: str = "",
+        **kwargs: Any,
+    ) -> Node:
+        """Add a node at the midpoint between two existing nodes.
+
+        Args:
+            node1: First node object or its label string.
+            node2: Second node object or its label string.
+            label: Label for the new midpoint node. Auto-assigned when
+                ``None``.
+            layer: Target layer index. Defaults to ``0``.
+            content: Text content for the midpoint node.
+            **kwargs: Additional options forwarded to :meth:`add_node`.
+
+        Returns:
+            The new :class:`Node` placed at the computed midpoint.
+
+        Raises:
+            ValueError: If either node lacks explicit numeric coordinates.
+        """
+        node1_obj: Node | Coordinate = (
+            self.layers.get_node(node1) if isinstance(node1, str) else node1
+        )
+        node2_obj: Node | Coordinate = (
+            self.layers.get_node(node2) if isinstance(node2, str) else node2
+        )
+
+        if node1_obj.x is None or node1_obj.y is None:
+            raise ValueError(
+                f"Node '{node1_obj.label}' does not have explicit coordinates."
+            )
+        if node2_obj.x is None or node2_obj.y is None:
+            raise ValueError(
+                f"Node '{node2_obj.label}' does not have explicit coordinates."
+            )
+
+        mid_x = (node1_obj.x + node2_obj.x) / 2  # type: ignore[operator]
+        mid_y = (node1_obj.y + node2_obj.y) / 2  # type: ignore[operator]
+
+        if node1_obj.z is not None and node2_obj.z is not None:
+            mid_z = (node1_obj.z + node2_obj.z) / 2  # type: ignore[operator]
+        else:
+            mid_z = None
+
+        return self.add_node(
+            x=mid_x,
+            y=mid_y,
+            z=mid_z,
+            label=label,
+            layer=layer,
+            content=content,
+            **kwargs,
+        )
 
     def arc(
         self,
@@ -2914,79 +3011,6 @@ class TikzFigure(
         self.axes.append(axis)
         return axis
 
-    def add_loop(
-        self,
-        variable: str,
-        values: list[Any] | tuple[Any, ...] | range,
-        layer: int = 0,
-        comment: str | None = None,
-        verbose: bool = False,
-    ) -> Loop:
-        """Add a ``\\foreach`` loop to the figure.
-
-        Args:
-            variable: Loop variable name (without the leading backslash),
-                e.g. ``"i"`` produces ``\\foreach \\i in {...}``.
-            values: Sequence of values to iterate over.
-            layer: Target layer index. Defaults to ``0``.
-            comment: Optional comment prepended in the TikZ output.
-            verbose: If ``True``, print a debug message.
-
-        Returns:
-            The :class:`Loop` context manager. Add nodes and paths inside a
-            ``with`` block or by calling methods on the returned object.
-        """
-        active_container = self._current_container()
-        node_resolver = (
-            active_container.get_node
-            if active_container is not None
-            else self.layers.get_node
-        )
-        loop_obj = Loop(
-            variable=variable,
-            values=values,
-            layer=layer,
-            comment=comment,
-            node_resolver=node_resolver,
-            library_loader=self.usetikzlibrary,
-        )
-        self._attach_container_callbacks(loop_obj)
-        if active_container is not None:
-            active_container.items.append(loop_obj)
-        else:
-            self.layers.add_item(item=loop_obj, layer=layer, verbose=verbose)
-        return loop_obj
-
-    def add_scope(
-        self,
-        layer: int = 0,
-        comment: str | None = None,
-        options: OptionInput | None = None,
-        verbose: bool = False,
-        **kwargs: Any,
-    ) -> Scope:
-        """Add a TikZ ``scope`` block with local options to the figure."""
-        active_container = self._current_container()
-        node_resolver = (
-            active_container.get_node
-            if active_container is not None
-            else self.layers.get_node
-        )
-        scope_obj = Scope(
-            layer=layer,
-            comment=comment,
-            options=options,
-            node_resolver=node_resolver,
-            library_loader=self.usetikzlibrary,
-            **kwargs,
-        )
-        self._attach_container_callbacks(scope_obj)
-        if active_container is not None:
-            active_container.items.append(scope_obj)
-        else:
-            self.layers.add_item(item=scope_obj, layer=layer, verbose=verbose)
-        return scope_obj
-
     # ---------------------------------------------------------------- #
     # Properties
 
@@ -3051,20 +3075,6 @@ class TikzFigure(
     def subfigure_axes(self) -> list[tuple[Axis2D, float]]:
         """List of subfigure axes with widths."""
         return self._subfigure_axes
-
-    # Short public aliases for the add_* helpers.
-    node = add_node
-    coordinate = add_coordinate
-    variable = add_variable
-    function = declare_function
-    raw = add_raw
-    plot = add_plot
-    parametric_grid = add_parametric_grid
-    spy = add_spy
-    spy_scope = add_spy_scope
-    subfigure = FigureLayoutMixin.add_subfigure
-    loop = add_loop
-    scope = add_scope
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, TikzFigure):

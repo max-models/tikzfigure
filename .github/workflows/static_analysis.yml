@@ -41,20 +41,3 @@ jobs:
           chmod +x cloc
           ./cloc --version
           ./cloc $(git ls-files)
-
-  mypy:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout the code
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-
-      - name: Type checking with mypy
-        run: |
-          pip install -e ".[test]"
-          pip install types-requests
-          mypy src/

@@ -62,12 +62,6 @@ class TikzColor:
     def __neg__(self) -> TikzColor:
         return self.complement()
 
-    def __str__(self) -> str:
-        return self.color_spec
-
-    def __repr__(self) -> str:
-        return f"TikzColor({self.color_spec!r})"
-
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, TikzColor):
             return NotImplemented
@@ -75,6 +69,12 @@ class TikzColor:
 
     def __hash__(self) -> int:
         return hash(self.color_spec)
+
+    def __repr__(self) -> str:
+        return f"TikzColor({self.color_spec!r})"
+
+    def __str__(self) -> str:
+        return self.color_spec
 
 
 ColorInput: TypeAlias = str | TikzColor

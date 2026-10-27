@@ -51,6 +51,159 @@ class Loop(FigurePathMixin, TikzObject):
         items: TikZ objects added inside this loop body.
     """
 
+    def add_node(self, *args: Any, **kwargs: Any) -> Node:
+        """Add a node inside this loop body.
+
+        Args:
+            *args: Positional arguments forwarded to :class:`Node`.
+            **kwargs: Keyword arguments forwarded to :class:`Node`.
+
+        Returns:
+            The newly created :class:`Node`.
+        """
+        if len(args) == 1 and isinstance(args[0], Node):
+            if kwargs:
+                raise ValueError(
+                    "When passing an existing Node to add_node(), do not also provide node-construction arguments."
+                )
+            node = args[0]
+            self._items.append(node)
+            return node
+        node = Node(*args, **kwargs)
+        self._items.append(node)
+        return node
+
+    node = add_node
+
+    def _container_layer(self) -> int:
+        return self.layer if self.layer is not None else 0
+
+    def add_coordinate(
+        self,
+        label: str,
+        x: Any = None,
+        y: Any = None,
+        z: Any = None,
+        at: str | None = None,
+        comment: str | None = None,
+    ) -> Coordinate:
+        coord = Coordinate(
+            label=label,
+            x=x,
+            y=y,
+            z=z,
+            at=at,
+            layer=self._container_layer(),
+            comment=comment,
+        )
+        self._items.append(coord)
+        return coord
+
+    coordinate = add_coordinate
+
+    def add_loop(
+        self, variable: str, values: Sequence[Any], comment: str | None = None
+    ) -> "Loop":
+        """Add a nested loop inside this loop body.
+
+        Args:
+            variable: Loop variable name for the nested loop.
+            values: Sequence of values for the nested loop to iterate over.
+            comment: Optional comment prepended to the nested loop.
+
+        Returns:
+            The newly created nested :class:`Loop`.
+        """
+        loop = Loop(
+            variable,
+            values,
+            layer=self.layer or 0,
+            comment=comment,
+            node_resolver=self.get_node,
+            library_loader=self._library_loader,
+            enter_callback=self._enter_callback,
+            exit_callback=self._exit_callback,
+        )
+        self._items.append(loop)
+        return loop
+
+    loop = add_loop
+
+    def add_raw(self, tikz_code: str) -> RawTikz:
+        raw = RawTikz(tikz_code)
+        self._items.append(raw)
+        return raw
+
+    raw = add_raw
+
+    def add_plot(
+        self,
+        x: Any,
+        y: Any | None = None,
+        *,
+        variable: str = "x",
+        domain: tuple[Any, Any] | str | None = None,
+        samples: int | None = None,
+        smooth: bool = False,
+        comment: str | None = None,
+        options: Any = None,
+        tikz_command: str = "draw",
+        **kwargs: Any,
+    ) -> TikzPlot:
+        """Add a plain TikZ expression plot inside this loop body."""
+        plot = TikzPlot(
+            x=x,
+            y=y,
+            variable=variable,
+            domain=domain,
+            samples=samples,
+            smooth=smooth,
+            comment=comment,
+            options=options,
+            tikz_command=tikz_command,
+            layer=self.layer or 0,
+            **kwargs,
+        )
+        self._items.append(plot)
+        return plot
+
+    plot = add_plot
+
+    def add_scope(
+        self,
+        comment: str | None = None,
+        options: Any = None,
+        **kwargs: Any,
+    ) -> Any:
+        from tikzfigure.core.scope import Scope
+
+        scope = Scope(
+            layer=self.layer or 0,
+            comment=comment,
+            options=options,
+            node_resolver=self.get_node,
+            library_loader=self._library_loader,
+            **kwargs,
+        )
+        scope._enter_callback = self._enter_callback
+        scope._exit_callback = self._exit_callback
+        self._items.append(scope)
+        return scope
+
+    scope = add_scope
+
+    @staticmethod
+    def _extract_range_spec(
+        values: Sequence[Any],
+    ) -> dict[str, int] | None:
+        if not isinstance(values, range):
+            return None
+        return {
+            "start": values.start,
+            "stop": values.stop,
+            "step": values.step,
+        }
+
     def __init__(
         self,
         variable: str,
@@ -85,18 +238,6 @@ class Loop(FigurePathMixin, TikzObject):
 
         super().__init__(layer=layer, comment=comment)
 
-    @staticmethod
-    def _extract_range_spec(
-        values: Sequence[Any],
-    ) -> dict[str, int] | None:
-        if not isinstance(values, range):
-            return None
-        return {
-            "start": values.start,
-            "stop": values.stop,
-            "step": values.step,
-        }
-
     def _set_values(self, values: Sequence[Any]) -> None:
         self._range_spec = self._extract_range_spec(values)
         self._values = list(values)
@@ -125,9 +266,6 @@ class Loop(FigurePathMixin, TikzObject):
     def items(self) -> list[Any]:
         """TikZ objects contained in this loop body."""
         return self._items
-
-    def _container_layer(self) -> int:
-        return self.layer if self.layer is not None else 0
 
     @staticmethod
     def _coerce_path_input(
@@ -234,28 +372,6 @@ class Loop(FigurePathMixin, TikzObject):
             print(f"Added {path} to loop")
         return path
 
-    def add_node(self, *args: Any, **kwargs: Any) -> Node:
-        """Add a node inside this loop body.
-
-        Args:
-            *args: Positional arguments forwarded to :class:`Node`.
-            **kwargs: Keyword arguments forwarded to :class:`Node`.
-
-        Returns:
-            The newly created :class:`Node`.
-        """
-        if len(args) == 1 and isinstance(args[0], Node):
-            if kwargs:
-                raise ValueError(
-                    "When passing an existing Node to add_node(), do not also provide node-construction arguments."
-                )
-            node = args[0]
-            self._items.append(node)
-            return node
-        node = Node(*args, **kwargs)
-        self._items.append(node)
-        return node
-
     def add_path(
         self,
         nodes: list[Any] | NodePathBuilder,
@@ -293,53 +409,6 @@ class Loop(FigurePathMixin, TikzObject):
             **kwargs,
         )
 
-    def add_coordinate(
-        self,
-        label: str,
-        x: Any = None,
-        y: Any = None,
-        z: Any = None,
-        at: str | None = None,
-        comment: str | None = None,
-    ) -> Coordinate:
-        coord = Coordinate(
-            label=label,
-            x=x,
-            y=y,
-            z=z,
-            at=at,
-            layer=self._container_layer(),
-            comment=comment,
-        )
-        self._items.append(coord)
-        return coord
-
-    def add_loop(
-        self, variable: str, values: Sequence[Any], comment: str | None = None
-    ) -> "Loop":
-        """Add a nested loop inside this loop body.
-
-        Args:
-            variable: Loop variable name for the nested loop.
-            values: Sequence of values for the nested loop to iterate over.
-            comment: Optional comment prepended to the nested loop.
-
-        Returns:
-            The newly created nested :class:`Loop`.
-        """
-        loop = Loop(
-            variable,
-            values,
-            layer=self.layer or 0,
-            comment=comment,
-            node_resolver=self.get_node,
-            library_loader=self._library_loader,
-            enter_callback=self._enter_callback,
-            exit_callback=self._exit_callback,
-        )
-        self._items.append(loop)
-        return loop
-
     def add(self, items: Any) -> None:
         """Add one or more pre-built TikZ objects to this loop.
 
@@ -349,63 +418,6 @@ class Loop(FigurePathMixin, TikzObject):
         if not isinstance(items, list | tuple):
             items = [items]
         self._items.extend(items)
-
-    def add_raw(self, tikz_code: str) -> RawTikz:
-        raw = RawTikz(tikz_code)
-        self._items.append(raw)
-        return raw
-
-    def add_plot(
-        self,
-        x: Any,
-        y: Any | None = None,
-        *,
-        variable: str = "x",
-        domain: tuple[Any, Any] | str | None = None,
-        samples: int | None = None,
-        smooth: bool = False,
-        comment: str | None = None,
-        options: Any = None,
-        tikz_command: str = "draw",
-        **kwargs: Any,
-    ) -> TikzPlot:
-        """Add a plain TikZ expression plot inside this loop body."""
-        plot = TikzPlot(
-            x=x,
-            y=y,
-            variable=variable,
-            domain=domain,
-            samples=samples,
-            smooth=smooth,
-            comment=comment,
-            options=options,
-            tikz_command=tikz_command,
-            layer=self.layer or 0,
-            **kwargs,
-        )
-        self._items.append(plot)
-        return plot
-
-    def add_scope(
-        self,
-        comment: str | None = None,
-        options: Any = None,
-        **kwargs: Any,
-    ) -> Any:
-        from tikzfigure.core.scope import Scope
-
-        scope = Scope(
-            layer=self.layer or 0,
-            comment=comment,
-            options=options,
-            node_resolver=self.get_node,
-            library_loader=self._library_loader,
-            **kwargs,
-        )
-        scope._enter_callback = self._enter_callback
-        scope._exit_callback = self._exit_callback
-        self._items.append(scope)
-        return scope
 
     def path(
         self,
@@ -442,13 +454,6 @@ class Loop(FigurePathMixin, TikzObject):
             scale=scale,
             **kwargs,
         )
-
-    node = add_node
-    coordinate = add_coordinate
-    loop = add_loop
-    raw = add_raw
-    plot = add_plot
-    scope = add_scope
 
     def to_tikz(self, output_unit: str | None = None) -> str:
         """Generate the TikZ ``\\foreach`` code for this loop.

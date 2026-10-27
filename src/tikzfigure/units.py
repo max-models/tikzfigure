@@ -35,11 +35,10 @@ class TikzDimension:
         converted = pt_value / _TO_PT[target_unit]
         return TikzDimension(converted, target_unit)
 
-    def __str__(self) -> str:
-        v = self.value
-        if isinstance(v, float) and v == int(v):
-            return f"{int(v)}{self.unit}"
-        return f"{v}{self.unit}"
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, TikzDimension):
+            return NotImplemented
+        return self.unit == other.unit and float(self.value) == float(other.value)
 
     def __float__(self) -> float:
         return float(self.value)
@@ -47,10 +46,11 @@ class TikzDimension:
     def __repr__(self) -> str:
         return f"TikzDimension({self.value!r}, {self.unit!r})"
 
-    def __eq__(self, other: object) -> bool:
-        if not isinstance(other, TikzDimension):
-            return NotImplemented
-        return self.unit == other.unit and float(self.value) == float(other.value)
+    def __str__(self) -> str:
+        v = self.value
+        if isinstance(v, float) and v == int(v):
+            return f"{int(v)}{self.unit}"
+        return f"{v}{self.unit}"
 
 
 class _Unit:
@@ -59,10 +59,10 @@ class _Unit:
     def __init__(self, unit: str) -> None:
         self._unit = unit
 
-    def __rmul__(self, value: float) -> TikzDimension:
+    def __mul__(self, value: float) -> TikzDimension:
         return TikzDimension(value, self._unit)
 
-    def __mul__(self, value: float) -> TikzDimension:
+    def __rmul__(self, value: float) -> TikzDimension:
         return TikzDimension(value, self._unit)
 
 

@@ -133,6 +133,38 @@ def _waypoint(node: Any, anchor: str | None) -> Any:
     raise CodegenError(f"unsupported path waypoint {type(node).__name__}")
 
 
+def _defined_labels(items: list) -> set[str]:
+    """Labels of nodes and coordinates defined by *items*, including nested."""
+    labels: set[str] = set()
+    for item in items:
+        if isinstance(item, (Node, Coordinate)) and item.label:
+            labels.add(item.label)
+        nested = getattr(item, "items", None)
+        if nested is not None:
+            labels |= _defined_labels(nested)
+    return labels
+
+
+def _referenced_labels(items: list) -> set[str]:
+    """Labels that paths in *items* refer to, including nested containers."""
+    labels: set[str] = set()
+    for item in items:
+        if isinstance(item, TikzPath):
+            labels |= {
+                node.label
+                for node in item.nodes
+                if isinstance(node, (Node, Coordinate)) and node.label
+            }
+        nested = getattr(item, "items", None)
+        if nested is not None:
+            labels |= _referenced_labels(nested)
+    return labels
+
+
+def _kwargs_source(kwargs: dict[str, Any]) -> str:
+    return ", ".join(f"{key}={literal(value)}" for key, value in kwargs.items())
+
+
 class _FigureCodegen:
     """Emit Python statements rebuilding a figure."""
 
@@ -140,28 +172,6 @@ class _FigureCodegen:
         self.figure = figure
         self.name = name
         self.writer = _Writer()
-
-    # ------------------------------------------------------------------ #
-    # Items
-
-    def emit_item(self, item: Any, target: str, layer: int, depth: int) -> None:
-        in_container = target != self.name
-        if isinstance(item, Node):
-            self._emit_node(item, target, layer, depth, in_container)
-        elif isinstance(item, Coordinate):
-            self._emit_coordinate(item, target, layer, depth, in_container)
-        elif isinstance(item, TikzPath):
-            self._emit_path(item, target, layer, depth, in_container)
-        elif isinstance(item, (Circle, Rectangle)):
-            self._emit_shape(item, target, layer, depth, in_container)
-        elif isinstance(item, RawTikz):
-            self._emit_raw(item, target, layer, depth, in_container)
-        elif isinstance(item, Scope):
-            self._emit_scope(item, target, layer, depth, in_container)
-        elif isinstance(item, Loop):
-            self._emit_loop(item, target, layer, depth, in_container)
-        else:
-            self._emit_generic(item, target, layer, depth, in_container)
 
     def _call_reproduces(
         self,
@@ -191,6 +201,64 @@ class _FigureCodegen:
         if isinstance(item, Scope):
             return bool(rebuilt.tikz_options() == item.tikz_options())
         return bool(rebuilt.to_tikz() == item.to_tikz())
+
+    def _waypoints_source(self, path: TikzPath, target: str) -> str:
+        """Render a path's waypoints, resolving node references by label."""
+        lookup = (
+            f"{target}.get_node"
+            if target != self.name
+            else f"{self.name}.layers.get_node"
+        )
+        parts = []
+        for node in path.nodes:
+            if isinstance(node, (Node, Coordinate)):
+                if not node.label:
+                    raise CodegenError("path refers to a node without a label")
+                parts.append(f"{lookup}({literal(node.label)})")
+            else:
+                parts.append(literal(node))
+        return f"[{', '.join(parts)}]"
+
+    def _emit_generic(
+        self, item: Any, target: str, layer: int, depth: int, in_container: bool
+    ) -> None:
+        """Rebuild any other TikzObject through its own constructor."""
+        init_kwargs = getattr(item, "_copy_init_kwargs", None)
+        if init_kwargs is None:
+            raise CodegenError(
+                f"cannot generate Python for {type(item).__name__} objects"
+            )
+        cls = type(item)
+        defaults = {
+            "label": "",
+            "layer": 0,
+            "comment": None,
+            "options": [],
+            "cycle": False,
+            "center": False,
+            "tikz_command": "draw",
+        }
+        kwargs = {
+            key: value
+            for key, value in init_kwargs().items()
+            if value is not None
+            and value != []
+            and defaults.get(key, object()) != value
+        }
+        sources = {}
+        if isinstance(item, TikzPath):
+            # Paths hold references to Node/Coordinate objects; look them up
+            # by label in the generated code.
+            sources["nodes"] = self._waypoints_source(item, target)
+            kwargs.pop("nodes", None)
+        self.writer.imports.add(f"from {cls.__module__} import {cls.__name__}")
+        arguments = [f"{key}={source}" for key, source in sources.items()]
+        arguments += [f"{key}={literal(value)}" for key, value in kwargs.items()]
+        construction = f"{cls.__name__}({', '.join(arguments)})"
+        if in_container:
+            self.writer.write(call(target, "add", construction), depth)
+        else:
+            self.writer.write(call(target, "add", construction, layer=layer), depth)
 
     def _emit_node(
         self, node: Node, target: str, layer: int, depth: int, in_container: bool
@@ -293,6 +361,12 @@ class _FigureCodegen:
     ) -> None:
         self.writer.write(call(target, "add_raw", literal(raw.tikz_code)), depth)
 
+    def _emit_body(self, items: list, target: str, layer: int, depth: int) -> None:
+        if not items:
+            self.writer.write("pass", depth)
+        for item in items:
+            self.emit_item(item, target, layer, depth)
+
     def _emit_scope(
         self, scope: Scope, target: str, layer: int, depth: int, in_container: bool
     ) -> None:
@@ -323,69 +397,27 @@ class _FigureCodegen:
         self.writer.write(f"with {header} as {variable}:", depth)
         self._emit_body(loop.items, variable, layer, depth + 1)
 
-    def _emit_generic(
-        self, item: Any, target: str, layer: int, depth: int, in_container: bool
-    ) -> None:
-        """Rebuild any other TikzObject through its own constructor."""
-        init_kwargs = getattr(item, "_copy_init_kwargs", None)
-        if init_kwargs is None:
-            raise CodegenError(
-                f"cannot generate Python for {type(item).__name__} objects"
-            )
-        cls = type(item)
-        defaults = {
-            "label": "",
-            "layer": 0,
-            "comment": None,
-            "options": [],
-            "cycle": False,
-            "center": False,
-            "tikz_command": "draw",
-        }
-        kwargs = {
-            key: value
-            for key, value in init_kwargs().items()
-            if value is not None
-            and value != []
-            and defaults.get(key, object()) != value
-        }
-        sources = {}
-        if isinstance(item, TikzPath):
-            # Paths hold references to Node/Coordinate objects; look them up
-            # by label in the generated code.
-            sources["nodes"] = self._waypoints_source(item, target)
-            kwargs.pop("nodes", None)
-        self.writer.imports.add(f"from {cls.__module__} import {cls.__name__}")
-        arguments = [f"{key}={source}" for key, source in sources.items()]
-        arguments += [f"{key}={literal(value)}" for key, value in kwargs.items()]
-        construction = f"{cls.__name__}({', '.join(arguments)})"
-        if in_container:
-            self.writer.write(call(target, "add", construction), depth)
+    # ------------------------------------------------------------------ #
+    # Items
+
+    def emit_item(self, item: Any, target: str, layer: int, depth: int) -> None:
+        in_container = target != self.name
+        if isinstance(item, Node):
+            self._emit_node(item, target, layer, depth, in_container)
+        elif isinstance(item, Coordinate):
+            self._emit_coordinate(item, target, layer, depth, in_container)
+        elif isinstance(item, TikzPath):
+            self._emit_path(item, target, layer, depth, in_container)
+        elif isinstance(item, (Circle, Rectangle)):
+            self._emit_shape(item, target, layer, depth, in_container)
+        elif isinstance(item, RawTikz):
+            self._emit_raw(item, target, layer, depth, in_container)
+        elif isinstance(item, Scope):
+            self._emit_scope(item, target, layer, depth, in_container)
+        elif isinstance(item, Loop):
+            self._emit_loop(item, target, layer, depth, in_container)
         else:
-            self.writer.write(call(target, "add", construction, layer=layer), depth)
-
-    def _waypoints_source(self, path: TikzPath, target: str) -> str:
-        """Render a path's waypoints, resolving node references by label."""
-        lookup = (
-            f"{target}.get_node"
-            if target != self.name
-            else f"{self.name}.layers.get_node"
-        )
-        parts = []
-        for node in path.nodes:
-            if isinstance(node, (Node, Coordinate)):
-                if not node.label:
-                    raise CodegenError("path refers to a node without a label")
-                parts.append(f"{lookup}({literal(node.label)})")
-            else:
-                parts.append(literal(node))
-        return f"[{', '.join(parts)}]"
-
-    def _emit_body(self, items: list, target: str, layer: int, depth: int) -> None:
-        if not items:
-            self.writer.write("pass", depth)
-        for item in items:
-            self.emit_item(item, target, layer, depth)
+            self._emit_generic(item, target, layer, depth, in_container)
 
     # ------------------------------------------------------------------ #
     # Figure
@@ -410,6 +442,29 @@ class _FigureCodegen:
             if value != default:
                 kwargs[key] = value
         return kwargs
+
+    def _layer_order(self, layer_keys: list[int]) -> list[int]:
+        """Order layers so referenced nodes are defined before they are used.
+
+        A path may live on one layer while the nodes it connects live on
+        another, and the generated code refers to nodes by label.
+        """
+        defined: set[str] = set()
+        pending = list(layer_keys)
+        order: list[int] = []
+        while pending:
+            for layer_key in pending:
+                items = self.figure.layers.layers[layer_key].items
+                if _referenced_labels(items) <= defined | _defined_labels(items):
+                    order.append(layer_key)
+                    defined |= _defined_labels(items)
+                    pending.remove(layer_key)
+                    break
+            else:
+                # Cyclic references across layers: keep the original order.
+                order.extend(pending)
+                break
+        return order
 
     def build(self) -> str:
         figure = self.figure
@@ -477,57 +532,6 @@ class _FigureCodegen:
                 self.emit_item(item, self.name, layer_key, depth=0)
         return "\n".join(writer.lines)
 
-    def _layer_order(self, layer_keys: list[int]) -> list[int]:
-        """Order layers so referenced nodes are defined before they are used.
-
-        A path may live on one layer while the nodes it connects live on
-        another, and the generated code refers to nodes by label.
-        """
-        defined: set[str] = set()
-        pending = list(layer_keys)
-        order: list[int] = []
-        while pending:
-            for layer_key in pending:
-                items = self.figure.layers.layers[layer_key].items
-                if _referenced_labels(items) <= defined | _defined_labels(items):
-                    order.append(layer_key)
-                    defined |= _defined_labels(items)
-                    pending.remove(layer_key)
-                    break
-            else:
-                # Cyclic references across layers: keep the original order.
-                order.extend(pending)
-                break
-        return order
-
-
-def _defined_labels(items: list) -> set[str]:
-    """Labels of nodes and coordinates defined by *items*, including nested."""
-    labels: set[str] = set()
-    for item in items:
-        if isinstance(item, (Node, Coordinate)) and item.label:
-            labels.add(item.label)
-        nested = getattr(item, "items", None)
-        if nested is not None:
-            labels |= _defined_labels(nested)
-    return labels
-
-
-def _referenced_labels(items: list) -> set[str]:
-    """Labels that paths in *items* refer to, including nested containers."""
-    labels: set[str] = set()
-    for item in items:
-        if isinstance(item, TikzPath):
-            labels |= {
-                node.label
-                for node in item.nodes
-                if isinstance(node, (Node, Coordinate)) and node.label
-            }
-        nested = getattr(item, "items", None)
-        if nested is not None:
-            labels |= _referenced_labels(nested)
-    return labels
-
 
 def _imports_source(imports: set[str]) -> str:
     """Render import lines, merging names imported from the same module."""
@@ -541,8 +545,16 @@ def _imports_source(imports: set[str]) -> str:
     )
 
 
-def _kwargs_source(kwargs: dict[str, Any]) -> str:
-    return ", ".join(f"{key}={literal(value)}" for key, value in kwargs.items())
+def run_generated_code(code: str, name: str = "fig") -> TikzFigure:
+    """Execute generated code and return the figure it builds."""
+    namespace: dict[str, Any] = {}
+    exec(compile(code, "<tikzfigure-codegen>", "exec"), namespace)  # noqa: S102
+    from tikzfigure.core.figure import TikzFigure
+
+    figure = namespace.get(name)
+    if not isinstance(figure, TikzFigure):
+        raise CodegenError(f"generated code did not define a figure named {name!r}")
+    return figure
 
 
 def figure_to_python(
@@ -589,18 +601,6 @@ def figure_to_python(
                 "this with the figure that triggered it"
             )
     return code
-
-
-def run_generated_code(code: str, name: str = "fig") -> TikzFigure:
-    """Execute generated code and return the figure it builds."""
-    namespace: dict[str, Any] = {}
-    exec(compile(code, "<tikzfigure-codegen>", "exec"), namespace)  # noqa: S102
-    from tikzfigure.core.figure import TikzFigure
-
-    figure = namespace.get(name)
-    if not isinstance(figure, TikzFigure):
-        raise CodegenError(f"generated code did not define a figure named {name!r}")
-    return figure
 
 
 def tikz_to_python(

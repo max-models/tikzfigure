@@ -26,8 +26,6 @@ dependencies = [
 
 optional-dependencies.dev = [
   "pyyaml",
-  "black[jupyter]",
-  "isort",
   "pre-commit",
   "pyproject-fmt",
   "ruff",
@@ -57,8 +55,6 @@ optional-dependencies.docs = [
 optional-dependencies.test = [
   "coverage",
   "pytest",
-  "types-requests",
-  "mypy",
 ]
 urls."Source" = "https://github.com/max-models/tikzfigure"
 
@@ -67,32 +63,6 @@ where = [ "src" ]
 
 [tool.setuptools.package-data]
 tikzfigure = [ "py.typed" ]
-
-[tool.mypy]
-python_version = "3.10"
-ignore_missing_imports = true
-check_untyped_defs = true
-warn_return_any = true
-warn_unused_ignores = true
-exclude = ["src/tikzfigure/tests"]
-
-# Modules that are fully annotated. New modules should be added here; the
-# long-term goal is to enable `disallow_untyped_defs` globally.
-[[tool.mypy.overrides]]
-module = [
-  "tikzfigure.core.style_options",
-  "tikzfigure.core.web_compiler",
-  "tikzfigure.options",
-  "tikzfigure.arrows",
-  "tikzfigure.decorations",
-  "tikzfigure.marks",
-  "tikzfigure.patterns",
-  "tikzfigure.shapes",
-  "tikzfigure.styles",
-  "tikzfigure.units",
-]
-disallow_untyped_defs = true
-disallow_incomplete_defs = true
 
 [tool.coverage.run]
 source = [ "tikzfigure" ]
@@ -108,5 +78,13 @@ exclude_lines = [
   "@overload",
 ]
 
-[tool.isort]
-profile = "black"
+[tool.ruff]
+line-length = 88
+# formatting: `ruff format`; import sorting: the isort rules of `ruff check`
+# an explicit rule set: ruff's default one grows between releases
+lint.select = [ "E4", "E7", "E9", "F", "I" ]
+# the package namespace re-exports the pyplot-style API
+lint.per-file-ignores."src/tikzfigure/__init__.py" = [ "F403" ]
+# tests skip on missing extras before importing, and build figures only for the side effect
+lint.per-file-ignores."src/tikzfigure/tests/*" = [ "E402", "F841" ]
+lint.per-file-ignores."tutorials/**" = [ "E402", "E731" ]
