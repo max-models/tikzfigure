@@ -17,7 +17,7 @@
   },
   "dependencies": {
     "@astrojs/starlight": "^0.42.6",
-    "@max-models/starlight-theme": "github:max-models/starlight-theme#v0.6.0",
+    "@max-models/starlight-theme": "github:max-models/starlight-theme#v0",
     "astro": "^7.3.8",
     "sharp": "^0.35.3"
   }
