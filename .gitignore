@@ -69,14 +69,7 @@ instance/
 # Scrapy stuff:
 .scrapy
 
-# Sphinx documentation
-docs/build/
-docs/_build/
-
-# MkDocs generated tutorials copy
-docs/tutorials/
-docs/src/content/docs/tutorials/*.md
-docs/public/tutorials/
+# Documentation site (docs/.gitignore has the Astro build output)
 
 # Quarto cache
 .quarto/

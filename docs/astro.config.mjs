@@ -1,17 +1,18 @@
 // @ts-check
-// The shared max-models docs setup (@max-models/starlight-theme). The site lives in astro_docs/
-// rather than docs/, hence the editLink override. The tutorial pages are converted from the
-// notebooks in tutorials/ by starlight-notebooks, the API page by scripts/generate_api_docs.py.
+// The shared max-models docs setup (@max-models/starlight-theme): served at
+// https://max-models.github.io/tikzfigure/, with math, the API reference and a link check.
+// The tutorial pages are converted from the notebooks in tutorials/ by starlight-notebooks.
 import { defineDocs } from '@max-models/starlight-theme';
 
 export default defineDocs({
 	repo: 'tikzfigure',
 	title: 'tikzfigure',
 	description: 'A Python library to generate readable TikZ figures.',
+	pythonPackage: 'tikzfigure',
 	nav: [
 		{ label: 'Installation', link: '/installation/' },
 		{ label: 'Tutorials', link: '/tutorials/tutorial-01-getting-started/', section: '/tutorials/' },
-		{ label: 'API Reference', link: '/api/' },
+		{ label: 'API Reference', link: '/api/tikzfigure/', section: '/api/' },
 		{ label: 'Interactive Editor', link: '/editor/' },
 	],
 	sidebar: [
@@ -64,7 +65,6 @@ export default defineDocs({
 			label: 'Showcases',
 			items: [{ label: 'Calendar', slug: 'tutorials/tutorial-22-calendar' }],
 		},
-		{ label: 'API Reference', slug: 'api' },
 		{ label: 'Interactive Editor', slug: 'editor' },
 	],
 	astro: {
@@ -103,6 +103,5 @@ export default defineDocs({
 	},
 	starlight: {
 		logo: { src: './src/assets/logo.png', replacesTitle: true },
-		editLink: { baseUrl: 'https://github.com/max-models/tikzfigure/edit/devel/astro_docs/' },
 	},
 });
