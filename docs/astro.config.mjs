@@ -21,19 +21,19 @@ export default defineDocs({
 		{
 			label: 'Fundamentals',
 			items: [
-				{ label: 'Getting Started', slug: 'tutorials/tutorial-01-getting-started' },
+				{ label: 'Getting started', slug: 'tutorials/tutorial-01-getting-started' },
 				{ label: 'Styling', slug: 'tutorials/tutorial-02-styling' },
-				{ label: 'Saving and Exporting', slug: 'tutorials/tutorial-16-saving-and-exporting' },
+				{ label: 'Saving and exporting', slug: 'tutorials/tutorial-16-saving-and-exporting' },
 			],
 		},
 		{
 			label: 'Drawing',
 			items: [
 				{ label: 'Paths', slug: 'tutorials/tutorial-03-paths' },
-				{ label: 'TikZ Primitives', slug: 'tutorials/tutorial-04-primitives' },
+				{ label: 'TikZ primitives', slug: 'tutorials/tutorial-04-primitives' },
 				{ label: 'Layers', slug: 'tutorials/tutorial-05-layers' },
 				{ label: 'Loops', slug: 'tutorials/tutorial-06-loops' },
-				{ label: 'Coordinates and Midpoints', slug: 'tutorials/tutorial-07-coordinates-and-midpoints' },
+				{ label: 'Coordinates and midpoints', slug: 'tutorials/tutorial-07-coordinates-and-midpoints' },
 			],
 		},
 		{
@@ -42,8 +42,8 @@ export default defineDocs({
 				{ label: 'Basics', slug: 'tutorials/tutorial-11-2d-plots-basics' },
 				{ label: 'Styling', slug: 'tutorials/tutorial-12-2d-plots-styling' },
 				{ label: 'Functions', slug: 'tutorials/tutorial-13-2d-plots-functions' },
-				{ label: 'Subfigures and Grids', slug: 'tutorials/tutorial-14-subfigures' },
-				{ label: 'Mixed Subfigures', slug: 'tutorials/tutorial-15-mixed-subfigures' },
+				{ label: 'Subfigures and grids', slug: 'tutorials/tutorial-14-subfigures' },
+				{ label: 'Mixed subfigures', slug: 'tutorials/tutorial-15-mixed-subfigures' },
 			],
 		},
 		{
@@ -51,14 +51,14 @@ export default defineDocs({
 			items: [
 				{ label: '3D Figures', slug: 'tutorials/tutorial-08-3d-figures' },
 				{ label: 'Raw TikZ', slug: 'tutorials/tutorial-09-raw-tikz' },
-				{ label: 'Math Expressions', slug: 'tutorials/tutorial-10-math-expressions' },
-				{ label: 'Tokamak X-Point', slug: 'tutorials/tutorial-25-parametric-tikz-plots' },
-				{ label: 'Figure Configuration', slug: 'tutorials/tutorial-17-figure-configuration' },
-				{ label: 'Shading and Patterns', slug: 'tutorials/tutorial-18-shading-and-patterns' },
+				{ label: 'Math expressions', slug: 'tutorials/tutorial-10-math-expressions' },
+				{ label: 'Tokamak X-point', slug: 'tutorials/tutorial-25-parametric-tikz-plots' },
+				{ label: 'Figure configuration', slug: 'tutorials/tutorial-17-figure-configuration' },
+				{ label: 'Shading and patterns', slug: 'tutorials/tutorial-18-shading-and-patterns' },
 				{ label: 'Opacity', slug: 'tutorials/tutorial-19-opacity-and-transparency' },
 				{ label: 'Decorations', slug: 'tutorials/tutorial-20-decorations' },
-				{ label: 'Advanced Styling', slug: 'tutorials/tutorial-21-advanced-styling' },
-				{ label: 'Gantt Charts', slug: 'tutorials/tutorial-26-gantt' },
+				{ label: 'Advanced styling', slug: 'tutorials/tutorial-21-advanced-styling' },
+				{ label: 'Gantt charts', slug: 'tutorials/tutorial-26-gantt' },
 			],
 		},
 		{
