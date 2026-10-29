@@ -2,7 +2,7 @@
 """Generate the quickstart output figure shown on the home page.
 
 Run from anywhere:
-    python astro_docs/scripts/generate_quickstart.py
+    python docs/tools/generate_quickstart.py
 """
 
 from pathlib import Path

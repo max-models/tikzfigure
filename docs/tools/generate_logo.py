@@ -2,7 +2,7 @@
 """Generate the tikzfigure logo (simple node graph) using the library itself.
 
 Run from root of the repository with:
-    python astro_docs/scripts/generate_logo2.py
+    python docs/tools/generate_logo.py
 """
 
 from pathlib import Path
