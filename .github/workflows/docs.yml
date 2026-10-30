@@ -23,7 +23,7 @@ concurrency:
 
 jobs:
   docs:
-    uses: max-models/starlight-theme/.github/workflows/docs.yml@v0.6.0
+    uses: max-models/starlight-theme/.github/workflows/docs.yml@v0
     with:
       apt-packages: texlive-latex-base texlive-latex-recommended texlive-latex-extra texlive-pictures texlive-science texlive-fonts-recommended
       smoke-paths: |
