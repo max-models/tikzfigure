@@ -24,6 +24,8 @@ export default defineDocs({
 				{ label: 'Getting started', slug: 'tutorials/tutorial-01-getting-started' },
 				{ label: 'Styling', slug: 'tutorials/tutorial-02-styling' },
 				{ label: 'Saving and exporting', slug: 'tutorials/tutorial-16-saving-and-exporting' },
+				{ label: 'Pyplot-style API', slug: 'tutorials/tutorial-28-pyplot-api' },
+				{ label: 'Jupyter magic', slug: 'tutorials/tutorial-11-jupyter-magic' },
 			],
 		},
 		{
@@ -44,6 +46,7 @@ export default defineDocs({
 				{ label: 'Functions', slug: 'tutorials/tutorial-13-2d-plots-functions' },
 				{ label: 'Subfigures and grids', slug: 'tutorials/tutorial-14-subfigures' },
 				{ label: 'Mixed subfigures', slug: 'tutorials/tutorial-15-mixed-subfigures' },
+				{ label: 'Images and legends', slug: 'tutorials/tutorial-16-images-legends-and-ticks' },
 			],
 		},
 		{
@@ -59,11 +62,17 @@ export default defineDocs({
 				{ label: 'Decorations', slug: 'tutorials/tutorial-20-decorations' },
 				{ label: 'Advanced styling', slug: 'tutorials/tutorial-21-advanced-styling' },
 				{ label: 'Gantt charts', slug: 'tutorials/tutorial-26-gantt' },
+				{ label: 'Spy library', slug: 'tutorials/tutorial-24-spy-library' },
+				{ label: 'Parsing TikZ', slug: 'tutorials/tutorial-27-parsing-tikz' },
+				{ label: 'TikZ tokens', slug: 'tutorials/tutorial-29-tikz-tokens' },
 			],
 		},
 		{
 			label: 'Showcases',
-			items: [{ label: 'Calendar', slug: 'tutorials/tutorial-22-calendar' }],
+			items: [
+				{ label: 'Calendar', slug: 'tutorials/tutorial-22-calendar' },
+				{ label: "Karl's students", slug: 'tutorials/tutorial-23-karl-students' },
+			],
 		},
 		{ label: 'Interactive Editor', slug: 'editor' },
 	],
